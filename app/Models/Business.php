@@ -1,0 +1,115 @@
+<?php
+
+namespace App\Models;
+
+use App\Enums\SubscriptionStatus;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class Business extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'name',
+        'slug',
+        'email',
+        'phone',
+        'address',
+        'tax_number',
+        'currency',
+        'settings',
+        'is_active',
+        'trial_ends_at',
+        'subscription_status',
+        'subscription_ends_at',
+        'subscription_amount',
+    ];
+
+    protected $casts = [
+        'settings' => 'array',
+        'is_active' => 'boolean',
+        'trial_ends_at' => 'datetime',
+        'subscription_ends_at' => 'datetime',
+        'subscription_amount' => 'float',
+    ];
+
+    public function users(): HasMany
+    {
+        return $this->hasMany(User::class);
+    }
+
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class);
+    }
+
+    public function sales(): HasMany
+    {
+        return $this->hasMany(Sale::class);
+    }
+
+    public function customers(): HasMany
+    {
+        return $this->hasMany(Customer::class);
+    }
+
+    public function auditLogs(): HasMany
+    {
+        return $this->hasMany(AuditLog::class);
+    }
+
+    public function subscriptionPayments(): HasMany
+    {
+        return $this->hasMany(SubscriptionPayment::class);
+    }
+
+    public function reconciliations(): HasMany
+    {
+        return $this->hasMany(EndOfDayReconciliation::class);
+    }
+
+    public function expenses(): HasMany
+    {
+        return $this->hasMany(Expense::class);
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
+    public function isSubscriptionExpired(): bool
+    {
+        if ($this->subscription_status === SubscriptionStatus::ACTIVE) {
+            if ($this->subscription_ends_at && $this->subscription_ends_at->isPast()) {
+                return true;
+            }
+
+            return false;
+        }
+
+        if ($this->subscription_status === SubscriptionStatus::TRIAL) {
+            return $this->trial_ends_at && $this->trial_ends_at->isPast();
+        }
+
+        return in_array($this->subscription_status, [
+            SubscriptionStatus::INACTIVE,
+            SubscriptionStatus::EXPIRED,
+        ], true);
+    }
+
+    public function activateSubscription(int $days = 30): void
+    {
+        $startsFrom = $this->subscription_ends_at && $this->subscription_ends_at->isFuture()
+            ? $this->subscription_ends_at
+            : Carbon::now();
+
+        $this->update([
+            'subscription_status' => SubscriptionStatus::ACTIVE,
+            'subscription_ends_at' => $startsFrom->copy()->addDays($days),
+        ]);
+    }
+}

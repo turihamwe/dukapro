@@ -1,0 +1,47 @@
+<?php
+
+namespace App\Models;
+
+use App\Models\Concerns\BelongsToTenant;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class EndOfDayReconciliation extends Model
+{
+    use BelongsToTenant, HasFactory;
+
+    protected $fillable = [
+        'business_id',
+        'user_id',
+        'reconciliation_date',
+        'expected_cash',
+        'expected_mobile_money',
+        'actual_cash',
+        'actual_mobile_money',
+        'cash_variance',
+        'mobile_variance',
+        'notes',
+        'status',
+    ];
+
+    protected $casts = [
+        'reconciliation_date' => 'date',
+        'expected_cash' => 'float',
+        'expected_mobile_money' => 'float',
+        'actual_cash' => 'float',
+        'actual_mobile_money' => 'float',
+        'cash_variance' => 'float',
+        'mobile_variance' => 'float',
+    ];
+
+    public function business(): BelongsTo
+    {
+        return $this->belongsTo(Business::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+}
