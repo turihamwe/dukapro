@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
 use App\Models\Business;
+use App\Models\SystemSetting;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +24,9 @@ class TenantRegistrationService
                 'slug' => $slug,
                 'email' => $data['email'],
                 'phone' => $data['phone'] ?? null,
-                'currency' => $data['currency'] ?? 'KES',
+                'currency' => $data['currency_symbol'] ?? SystemSetting::get('default_currency_symbol', 'UGX'),
+                'currency_symbol' => $data['currency_symbol'] ?? SystemSetting::get('default_currency_symbol', 'UGX'),
+                'currency_position' => $data['currency_position'] ?? SystemSetting::get('default_currency_position', 'prefix'),
                 'is_active' => true,
                 'trial_ends_at' => Carbon::now()->addDays(30),
                 'subscription_status' => SubscriptionStatus::TRIAL,

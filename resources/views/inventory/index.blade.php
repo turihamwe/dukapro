@@ -23,7 +23,7 @@
                     @endif
                 </div>
                 <div class="text-right shrink-0">
-                    <p class="font-semibold text-gray-900 dark:text-white">{{ number_format($product->price, 2) }}</p>
+                    <p class="font-semibold text-gray-900 dark:text-white">@money($product->price)</p>
                     <p class="text-xs {{ $product->stock_quantity <= 5 ? 'text-red-600 font-medium' : 'text-gray-500' }}">Stock: {{ $product->stock_quantity }}</p>
                     <a href="{{ tenant_route('tenant.inventory.edit', ['product' => $product]) }}" class="mt-1 inline-block text-xs font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">Edit</a>
                 </div>
@@ -55,7 +55,7 @@
                             <p class="text-xs text-gray-500">{{ $product->measurement_unit }}</p>
                         </td>
                         <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{{ $product->sku ?? '—' }}</td>
-                        <td class="px-6 py-4 text-right text-sm font-medium text-gray-900 dark:text-white">{{ number_format($product->price, 2) }}</td>
+                        <td class="px-6 py-4 text-right text-sm font-medium text-gray-900 dark:text-white">@money($product->price)</td>
                         <td class="px-6 py-4 text-right text-sm {{ $product->stock_quantity <= 5 ? 'font-medium text-red-600' : 'text-gray-500' }}">{{ $product->stock_quantity }}</td>
                         <td class="px-6 py-4 text-right">
                             <a href="{{ tenant_route('tenant.inventory.edit', ['product' => $product]) }}" class="text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">Edit</a>

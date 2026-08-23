@@ -20,8 +20,8 @@
                     <p class="text-xs text-gray-500 dark:text-gray-400">{{ $recon->user->name }}</p>
                 </div>
                 <div class="text-right text-sm">
-                    <p>Cash: <span class="{{ $recon->cash_variance >= 0 ? 'text-emerald-600' : 'text-red-600' }} font-medium">{{ number_format($recon->cash_variance, 2) }}</span></p>
-                    <p>M-Pesa: <span class="{{ $recon->mobile_variance >= 0 ? 'text-emerald-600' : 'text-red-600' }} font-medium">{{ number_format($recon->mobile_variance, 2) }}</span></p>
+                    <p>Cash: <span class="{{ $recon->cash_variance >= 0 ? 'text-emerald-600' : 'text-red-600' }} font-medium">@money($recon->cash_variance)</span></p>
+                    <p>M-Pesa: <span class="{{ $recon->mobile_variance >= 0 ? 'text-emerald-600' : 'text-red-600' }} font-medium">@money($recon->mobile_variance)</span></p>
                 </div>
             </div>
         </x-card>
@@ -48,9 +48,9 @@
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                         <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">{{ $recon->reconciliation_date->format('M d, Y') }}</td>
                         <td class="px-6 py-4 text-sm text-gray-500">{{ $recon->user->name }}</td>
-                        <td class="px-6 py-4 text-right text-sm text-gray-900 dark:text-white">{{ number_format($recon->expected_cash, 2) }}</td>
-                        <td class="px-6 py-4 text-right text-sm font-medium {{ $recon->cash_variance >= 0 ? 'text-emerald-600' : 'text-red-600' }}">{{ number_format($recon->cash_variance, 2) }}</td>
-                        <td class="px-6 py-4 text-right text-sm font-medium {{ $recon->mobile_variance >= 0 ? 'text-emerald-600' : 'text-red-600' }}">{{ number_format($recon->mobile_variance, 2) }}</td>
+                        <td class="px-6 py-4 text-right text-sm text-gray-900 dark:text-white">@money($recon->expected_cash)</td>
+                        <td class="px-6 py-4 text-right text-sm font-medium {{ $recon->cash_variance >= 0 ? 'text-emerald-600' : 'text-red-600' }}">@money($recon->cash_variance)</td>
+                        <td class="px-6 py-4 text-right text-sm font-medium {{ $recon->mobile_variance >= 0 ? 'text-emerald-600' : 'text-red-600' }}">@money($recon->mobile_variance)</td>
                     </tr>
                 @empty
                     <tr><td colspan="5" class="px-6 py-12 text-center text-sm text-gray-500">No reconciliations yet.</td></tr>

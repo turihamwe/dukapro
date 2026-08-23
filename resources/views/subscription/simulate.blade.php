@@ -16,7 +16,7 @@
             </div>
             <div class="flex justify-between">
                 <dt class="text-gray-500">Amount</dt>
-                <dd class="font-medium text-gray-900 dark:text-white">{{ number_format($payment->amount, 2) }}</dd>
+                <dd class="font-medium text-gray-900 dark:text-white">{{ format_money($payment->amount, auth()->user()->business) }}</dd>
             </div>
             <div class="flex justify-between">
                 <dt class="text-gray-500">Status</dt>

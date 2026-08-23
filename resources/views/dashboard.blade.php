@@ -9,9 +9,9 @@
     @can('manage-inventory')
         <x-stat-card label="Products" :value="$stats['products']" accent="indigo" />
     @endcan
-    <x-stat-card label="Today's Sales" :value="number_format($stats['today_sales'], 2)" accent="emerald" />
+    <x-stat-card label="Today's Sales" :value="format_money($stats['today_sales'])" accent="emerald" />
     @can('view-analytics')
-        <x-stat-card label="Outstanding Credit" :value="number_format($stats['outstanding_debt'], 2) . ' ' . $business->currency" accent="amber" class="col-span-2 lg:col-span-1" />
+        <x-stat-card label="Outstanding Credit" :value="format_money($stats['outstanding_debt'])" accent="amber" class="col-span-2 lg:col-span-1" />
     @endcan
 </div>
 

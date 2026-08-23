@@ -18,6 +18,19 @@
             <x-input type="text" name="name" label="Your Name" value="{{ old('name') }}" required />
             <x-input type="email" name="email" label="Email" value="{{ old('email') }}" required />
             <x-input type="tel" name="phone" label="Phone (optional)" value="{{ old('phone') }}" />
+
+            <div class="grid gap-5 sm:grid-cols-2">
+                <x-select name="currency_symbol" label="Currency Symbol">
+                    @foreach(['UGX' => 'UGX (Uganda)', 'KES' => 'KES (Kenya)', 'TZS' => 'TZS (Tanzania)', '/=' => '/= (Shilling suffix)'] as $value => $label)
+                        <option value="{{ $value }}" {{ old('currency_symbol', 'UGX') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
+                </x-select>
+                <x-select name="currency_position" label="Symbol Position">
+                    <option value="prefix" {{ old('currency_position', 'prefix') === 'prefix' ? 'selected' : '' }}>Prefix (UGX 100,000)</option>
+                    <option value="suffix" {{ old('currency_position') === 'suffix' ? 'selected' : '' }}>Suffix (100,000/=)</option>
+                </x-select>
+            </div>
+
             <x-input type="password" name="password" label="Password" required />
             <x-input type="password" name="password_confirmation" label="Confirm Password" required />
             <x-button variant="primary" size="lg" type="submit">Create Account</x-button>

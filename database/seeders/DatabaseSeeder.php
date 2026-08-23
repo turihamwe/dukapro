@@ -23,6 +23,8 @@ class DatabaseSeeder extends Seeder
             'phone' => '254712345678',
             'address' => 'Nairobi, Kenya',
             'currency' => 'KES',
+            'currency_symbol' => 'KES',
+            'currency_position' => 'prefix',
             'is_active' => true,
             'trial_ends_at' => Carbon::now()->addDays(14),
             'subscription_status' => SubscriptionStatus::TRIAL,
@@ -87,6 +89,16 @@ class DatabaseSeeder extends Seeder
             'credit_limit' => 25000,
             'outstanding_balance' => 3500,
             'is_active' => true,
+        ]);
+
+        User::create([
+            'business_id' => null,
+            'name' => 'Platform SuperAdmin',
+            'email' => 'superadmin@dukapro.test',
+            'password' => Hash::make('password'),
+            'role' => UserRole::OWNER,
+            'is_active' => true,
+            'is_super_admin' => true,
         ]);
     }
 }

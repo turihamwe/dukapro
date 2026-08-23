@@ -78,5 +78,9 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('submit-reconciliation', function (User $user) {
             return in_array($user->role, UserRole::all(), true);
         });
+
+        Gate::define('access-superadmin', function (User $user) {
+            return $user->isSuperAdmin();
+        });
     }
 }

@@ -22,6 +22,7 @@ class User extends Authenticatable
         'password',
         'role',
         'is_active',
+        'is_super_admin',
     ];
 
     protected $hidden = [
@@ -32,6 +33,7 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'is_active' => 'boolean',
+        'is_super_admin' => 'boolean',
     ];
 
     public function business(): BelongsTo
@@ -67,5 +69,10 @@ class User extends Authenticatable
     public function hasRole(string $role): bool
     {
         return $this->role === $role;
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return (bool) $this->is_super_admin;
     }
 }

@@ -16,6 +16,10 @@ class RedirectIfAuthenticated
             if (Auth::guard($guard)->check()) {
                 $user = Auth::guard($guard)->user();
 
+                if ($user->isSuperAdmin()) {
+                    return redirect()->route('superadmin.dashboard');
+                }
+
                 if ($user->business) {
                     if ($user->business->isSubscriptionExpired()) {
                         return redirect()->route('subscription.payment');

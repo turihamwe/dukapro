@@ -58,6 +58,6 @@ class ReconciliationController extends Controller
         $reconciliation = $this->reconciliationService->submit($request->user(), $data);
 
         return redirect()->to(tenant_route('tenant.reconciliation.index'))
-            ->with('success', 'End-of-day reconciliation submitted. Cash variance: ' . number_format($reconciliation->cash_variance, 2));
+            ->with('success', 'End-of-day reconciliation submitted. Cash variance: ' . format_money($reconciliation->cash_variance));
     }
 }

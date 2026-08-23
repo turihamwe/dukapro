@@ -17,11 +17,11 @@
             <div class="mt-4 grid grid-cols-2 gap-4">
                 <div>
                     <p class="text-xs text-gray-500 dark:text-gray-400">Cash</p>
-                    <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ number_format($expected['expected_cash'], 2) }}</p>
+                    <p class="text-lg font-semibold text-gray-900 dark:text-white">@money($expected['expected_cash'])</p>
                 </div>
                 <div>
                     <p class="text-xs text-gray-500 dark:text-gray-400">Mobile Money</p>
-                    <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ number_format($expected['expected_mobile_money'], 2) }}</p>
+                    <p class="text-lg font-semibold text-gray-900 dark:text-white">@money($expected['expected_mobile_money'])</p>
                 </div>
             </div>
             <p class="mt-3 text-xs text-gray-500">{{ $expected['sale_count'] }} sales recorded</p>

@@ -66,5 +66,7 @@ class Kernel extends HttpKernel
         'subscription.active' => \App\Http\Middleware\EnsureSubscriptionActive::class,
         'tenant.access' => \App\Http\Middleware\EnsureTenantAccess::class,
         'role' => \App\Http\Middleware\EnsureRole::class,
+        'superadmin' => \App\Http\Middleware\EnsureSuperAdmin::class,
+        'maintenance' => \App\Http\Middleware\CheckMaintenanceMode::class,
     ];
 }

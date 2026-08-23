@@ -20,8 +20,8 @@
                         <p class="text-xs text-gray-500 dark:text-gray-400">{{ $customer->phone ?? 'No phone' }}</p>
                     </div>
                     <div class="text-right shrink-0">
-                        <p class="font-semibold text-red-600 dark:text-red-400">{{ number_format($customer->outstanding_balance, 2) }}</p>
-                        <p class="text-xs text-gray-500">Limit: {{ number_format($customer->credit_limit, 2) }}</p>
+                        <p class="font-semibold text-red-600 dark:text-red-400">@money($customer->outstanding_balance)</p>
+                        <p class="text-xs text-gray-500">Limit: @money($customer->credit_limit)</p>
                     </div>
                 </div>
             </x-card>

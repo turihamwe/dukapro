@@ -20,6 +20,8 @@ class Business extends Model
         'address',
         'tax_number',
         'currency',
+        'currency_symbol',
+        'currency_position',
         'settings',
         'is_active',
         'trial_ends_at',
@@ -79,6 +81,11 @@ class Business extends Model
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    public function formatMoney($amount, int $decimals = 0): string
+    {
+        return format_money($amount, $this, $decimals);
     }
 
     public function isSubscriptionExpired(): bool

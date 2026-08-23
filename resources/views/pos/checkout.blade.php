@@ -14,7 +14,7 @@
                     <button type="button" onclick="addToCart({{ json_encode($product) }})"
                             class="pos-product group w-full rounded-xl border border-gray-100 bg-white p-4 text-left shadow-sm transition hover:border-indigo-200 hover:shadow-md active:scale-[0.98] dark:border-gray-800 dark:bg-gray-900 dark:hover:border-indigo-800">
                         <p class="text-sm font-medium text-gray-900 group-hover:text-indigo-600 dark:text-white dark:group-hover:text-indigo-400">{{ $product->name }}</p>
-                        <p class="mt-1 text-lg font-semibold text-indigo-600 dark:text-indigo-400">{{ number_format($product->price, 2) }}</p>
+                        <p class="mt-1 text-lg font-semibold text-indigo-600 dark:text-indigo-400">@money($product->price)</p>
                         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Stock: {{ $product->stock_quantity }} {{ $product->measurement_unit }}</p>
                     </button>
                 </div>
@@ -50,7 +50,7 @@
                     <x-select id="customerId" label="Credit Customer">
                         <option value="">Select customer</option>
                         @foreach($customers as $c)
-                            <option value="{{ $c->id }}">{{ $c->name }} (Bal: {{ number_format($c->outstanding_balance, 2) }})</option>
+                            <option value="{{ $c->id }}">{{ $c->name }} (Bal: @money($c->outstanding_balance))</option>
                         @endforeach
                     </x-select>
                 </div>

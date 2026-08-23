@@ -38,12 +38,9 @@
                     <p class="text-xs text-gray-500 dark:text-gray-400">{{ ucfirst(auth()->user()->role) }}</p>
                 </div>
             </div>
-            <form action="{{ route('logout') }}" method="POST">
-                @csrf
-                <button type="submit" class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">
-                    Sign out
-                </button>
-            </form>
+            <a href="{{ route('logout.get') }}" class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">
+                Sign out
+            </a>
         </div>
     </header>
     @endauth
@@ -74,31 +71,36 @@
     @if(auth()->user()->business && request()->routeIs('tenant.*'))
     <nav class="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white/95 backdrop-blur-lg dark:border-gray-800 dark:bg-gray-900/95">
         <div class="mx-auto flex max-w-lg justify-around px-2 py-2">
-            @php
-                $user = auth()->user();
-                $navItems = [];
-
-                if ($user->can('view-dashboard')) {
-                    $navItems[] = ['route' => 'tenant.dashboard', 'match' => 'tenant.dashboard', 'icon' => '🏠', 'label' => 'Home'];
-                }
-
-                if ($user->can('access-pos')) {
-                    $navItems[] = ['route' => 'tenant.pos.index', 'match' => 'tenant.pos.*', 'icon' => '🛒', 'label' => 'POS'];
-                }
-
-                if ($user->can('manage-inventory')) {
-                    $navItems[] = ['route' => 'tenant.inventory.index', 'match' => 'tenant.inventory.*', 'icon' => '📦', 'label' => 'Stock'];
-                }
-
-                if ($user->can('submit-reconciliation')) {
-                    $navItems[] = ['route' => 'tenant.reconciliation.create', 'match' => 'tenant.reconciliation.*', 'icon' => '💰', 'label' => 'EOD'];
-                }
-
-                if ($user->can('manage-debts')) {
-                    $navItems[] = ['route' => 'tenant.debts.index', 'match' => 'tenant.debts.*', 'icon' => '📒', 'label' => 'Debts'];
-                }
-            @endphp
-            @foreach($navItems as $item)
+            @auth
+                @if(auth()->user()->business)
+                    @php
+                        try {
+                            $navItems = [];
+                            $user = auth()->user();
+                            if ($user->can('view-dashboard')) {
+                                $navItems[] = ['route' => 'tenant.dashboard', 'match' => 'tenant.dashboard', 'icon' => '🏠', 'label' => 'Home'];
+                            }
+                            if ($user->can('access-pos')) {
+                                $navItems[] = ['route' => 'tenant.pos.index', 'match' => 'tenant.pos.*', 'icon' => '🛒', 'label' => 'POS'];
+                            }
+                            if ($user->can('manage-inventory')) {
+                                $navItems[] = ['route' => 'tenant.inventory.index', 'match' => 'tenant.inventory.*', 'icon' => '📦', 'label' => 'Stock'];
+                            }
+                            if ($user->can('submit-reconciliation')) {
+                                $navItems[] = ['route' => 'tenant.reconciliation.create', 'match' => 'tenant.reconciliation.*', 'icon' => '💰', 'label' => 'EOD'];
+                            }
+                            if ($user->can('manage-debts')) {
+                                $navItems[] = ['route' => 'tenant.debts.index', 'match' => 'tenant.debts.*', 'icon' => '📒', 'label' => 'Debts'];
+                            }
+                        } catch (\Throwable $e) {
+                            $navItems = [];
+                        }
+                    @endphp
+                @else
+                    @php $navItems = []; @endphp
+                @endif
+            @endauth
+            @foreach($navItems ?? [] as $item)
                 <a href="{{ tenant_route($item['route']) }}"
                    class="flex flex-col items-center rounded-lg px-3 py-1.5 text-[10px] font-medium transition {{ request()->routeIs($item['match']) ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200' }}">
                     <span class="mb-0.5 text-base leading-none">{{ $item['icon'] }}</span>

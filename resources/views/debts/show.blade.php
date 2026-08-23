@@ -7,8 +7,8 @@
 <x-page-header :title="$customer->name" subtitle="Debt ledger and payment history" />
 
 <div class="mb-6 grid grid-cols-2 gap-4">
-    <x-stat-card label="Outstanding" :value="number_format($customer->outstanding_balance, 2)" accent="amber" />
-    <x-stat-card label="Credit Limit" :value="number_format($customer->credit_limit, 2)" accent="indigo" />
+    <x-stat-card label="Outstanding" :value="format_money($customer->outstanding_balance)" accent="amber" />
+    <x-stat-card label="Credit Limit" :value="format_money($customer->credit_limit)" accent="indigo" />
 </div>
 
 <x-card class="mb-6">
@@ -37,8 +37,8 @@
                     <p class="mt-1 text-xs text-gray-500">{{ $entry->created_at->format('M d, H:i') }} · {{ optional($entry->user)->name }}</p>
                 </div>
                 <div class="text-right shrink-0">
-                    <p class="font-semibold text-gray-900 dark:text-white">{{ number_format($entry->amount, 2) }}</p>
-                    <p class="text-xs text-gray-500">Bal: {{ number_format($entry->balance_after, 2) }}</p>
+                    <p class="font-semibold text-gray-900 dark:text-white">@money($entry->amount)</p>
+                    <p class="text-xs text-gray-500">Bal: @money($entry->balance_after)</p>
                 </div>
             </div>
         </x-card>

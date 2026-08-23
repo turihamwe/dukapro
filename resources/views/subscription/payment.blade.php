@@ -20,7 +20,7 @@
 
         <div class="mb-6 rounded-xl border border-indigo-100 bg-indigo-50 p-6 text-center dark:border-indigo-900 dark:bg-indigo-950">
             <p class="text-xs font-medium uppercase tracking-wide text-indigo-600 dark:text-indigo-400">Monthly plan</p>
-            <p class="mt-2 text-3xl font-semibold text-gray-900 dark:text-white">{{ number_format($business->subscription_amount, 2) }} <span class="text-lg font-normal text-gray-500">{{ $business->currency }}</span></p>
+            <p class="mt-2 text-3xl font-semibold text-gray-900 dark:text-white">{{ format_money($business->subscription_amount) }}</p>
         </div>
 
         @if(session('payment'))
