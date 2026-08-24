@@ -57,3 +57,102 @@ if (! function_exists('format_money')) {
         return $symbol . ' ' . $formatted;
     }
 }
+
+if (! function_exists('variant_attributes_for_form')) {
+    /**
+     * Map stored variant_attributes JSON to friendly form fields.
+     */
+    function variant_attributes_for_form(?array $attributes): array
+    {
+        if (empty($attributes)) {
+            return ['name' => '', 'values' => ''];
+        }
+
+        if (count($attributes) === 1) {
+            $name = array_key_first($attributes);
+            $value = $attributes[$name];
+
+            if (is_array($value)) {
+                $value = implode(', ', $value);
+            }
+
+            return [
+                'name' => (string) $name,
+                'values' => (string) $value,
+            ];
+        }
+
+        $pairs = [];
+        foreach ($attributes as $key => $value) {
+            if (is_array($value)) {
+                $value = implode(', ', $value);
+            }
+            $pairs[] = $key . ': ' . $value;
+        }
+
+        return [
+            'name' => '',
+            'values' => implode('; ', $pairs),
+        ];
+    }
+}
+
+if (! function_exists('variant_attributes_from_form')) {
+    /**
+     * Convert friendly form fields back to variant_attributes JSON.
+     */
+    function variant_attributes_from_form(?string $name, ?string $values): ?array
+    {
+        $name = trim((string) ($name ?? ''));
+        $values = trim((string) ($values ?? ''));
+
+        if ($name === '' && $values === '') {
+            return null;
+        }
+
+        if ($name !== '' && $values !== '') {
+            return [$name => $values];
+        }
+
+        if ($name !== '') {
+            return null;
+        }
+
+        $result = [];
+        foreach (preg_split('/\s*;\s*/', $values) as $segment) {
+            $segment = trim($segment);
+            if ($segment === '' || strpos($segment, ':') === false) {
+                continue;
+            }
+
+            [$key, $val] = array_map('trim', explode(':', $segment, 2));
+            if ($key !== '') {
+                $result[$key] = $val;
+            }
+        }
+
+        return empty($result) ? null : $result;
+    }
+}
+
+if (! function_exists('format_variant_attributes')) {
+    /**
+     * Human-readable variant summary for lists and tables.
+     */
+    function format_variant_attributes(?array $attributes): ?string
+    {
+        if (empty($attributes)) {
+            return null;
+        }
+
+        $parts = [];
+        foreach ($attributes as $key => $value) {
+            if (is_array($value)) {
+                $value = implode(', ', $value);
+            }
+            $parts[] = $key . ': ' . $value;
+        }
+
+        return implode(' · ', $parts);
+    }
+}

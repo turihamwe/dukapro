@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('title', $customer->name . ' - Ledger')
 @section('container_class', 'max-w-4xl')
@@ -12,7 +12,7 @@
 </div>
 
 <x-card class="mb-6">
-    <h2 class="mb-4 text-sm font-semibold text-gray-900 dark:text-white">Record Payment</h2>
+    <h2 class="mb-4 text-sm font-semibold text-gray-900">Record Payment</h2>
     <form method="POST" action="{{ tenant_route('tenant.debts.payment', ['customer' => $customer]) }}" class="space-y-4">
         @csrf
         <div class="grid gap-4 sm:grid-cols-3">
@@ -25,7 +25,7 @@
     </form>
 </x-card>
 
-<h2 class="mb-4 text-sm font-semibold text-gray-900 dark:text-white">Ledger History</h2>
+<h2 class="mb-4 text-sm font-semibold text-gray-900">Ledger History</h2>
 
 <div class="space-y-3">
     @forelse($entries as $entry)
@@ -33,11 +33,11 @@
             <div class="flex items-start justify-between gap-4">
                 <div class="min-w-0">
                     <x-badge :color="$entry->type === 'payment' ? 'green' : ($entry->type === 'debit' ? 'red' : 'gray')">{{ ucfirst($entry->type) }}</x-badge>
-                    <p class="mt-2 text-sm text-gray-700 dark:text-gray-300">{{ $entry->description }}</p>
+                    <p class="mt-2 text-sm text-gray-700">{{ $entry->description }}</p>
                     <p class="mt-1 text-xs text-gray-500">{{ $entry->created_at->format('M d, H:i') }} · {{ optional($entry->user)->name }}</p>
                 </div>
                 <div class="text-right shrink-0">
-                    <p class="font-semibold text-gray-900 dark:text-white">@money($entry->amount)</p>
+                    <p class="font-semibold text-gray-900">@money($entry->amount)</p>
                     <p class="text-xs text-gray-500">Bal: @money($entry->balance_after)</p>
                 </div>
             </div>

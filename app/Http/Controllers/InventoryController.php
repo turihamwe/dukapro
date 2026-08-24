@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\AuditLogger;
+use App\Models\Business;
 use App\Models\Product;
 use Illuminate\Http\Request;
 
@@ -34,7 +35,8 @@ class InventoryController extends Controller
             'price' => 'required|numeric|min:0',
             'measurement_unit' => 'required|string|max:50',
             'stock_quantity' => 'required|numeric|min:0',
-            'variant_attributes_json' => 'nullable|string',
+            'variant_attribute_name' => 'nullable|string|max:100',
+            'variant_attribute_values' => 'nullable|string|max:500',
         ];
 
         if ($request->user()->can('view-cost-prices')) {
@@ -43,8 +45,11 @@ class InventoryController extends Controller
 
         $data = $request->validate($rules);
 
-        $data['variant_attributes'] = $this->parseVariantJson($data['variant_attributes_json'] ?? null);
-        unset($data['variant_attributes_json']);
+        $data['variant_attributes'] = variant_attributes_from_form(
+            $data['variant_attribute_name'] ?? null,
+            $data['variant_attribute_values'] ?? null
+        );
+        unset($data['variant_attribute_name'], $data['variant_attribute_values']);
 
         if (! $request->user()->can('view-cost-prices')) {
             unset($data['cost_price']);
@@ -57,12 +62,12 @@ class InventoryController extends Controller
         return redirect()->to(tenant_route('tenant.inventory.index'))->with('success', 'Product added.');
     }
 
-    public function edit(Product $product)
+    public function edit(Business $business, Product $product)
     {
         return view('inventory.edit', compact('product'));
     }
 
-    public function update(Request $request, Product $product)
+    public function update(Request $request, Business $business, Product $product)
     {
         $rules = [
             'name' => 'required|string|max:255',
@@ -71,7 +76,8 @@ class InventoryController extends Controller
             'price' => 'required|numeric|min:0',
             'measurement_unit' => 'required|string|max:50',
             'stock_quantity' => 'required|numeric|min:0',
-            'variant_attributes_json' => 'nullable|string',
+            'variant_attribute_name' => 'nullable|string|max:100',
+            'variant_attribute_values' => 'nullable|string|max:500',
             'is_active' => 'nullable|boolean',
         ];
 
@@ -81,8 +87,11 @@ class InventoryController extends Controller
 
         $data = $request->validate($rules);
 
-        $data['variant_attributes'] = $this->parseVariantJson($data['variant_attributes_json'] ?? null);
-        unset($data['variant_attributes_json']);
+        $data['variant_attributes'] = variant_attributes_from_form(
+            $data['variant_attribute_name'] ?? null,
+            $data['variant_attribute_values'] ?? null
+        );
+        unset($data['variant_attribute_name'], $data['variant_attribute_values']);
         $data['is_active'] = $request->boolean('is_active');
 
         if (! $request->user()->can('view-cost-prices')) {
@@ -97,7 +106,7 @@ class InventoryController extends Controller
         return redirect()->to(tenant_route('tenant.inventory.index'))->with('success', 'Product updated.');
     }
 
-    public function destroy(Product $product)
+    public function destroy(Business $business, Product $product)
     {
         $old = $product->toArray();
         $product->delete();
@@ -105,16 +114,5 @@ class InventoryController extends Controller
         AuditLogger::record('product_deleted', $product, $old, null);
 
         return redirect()->to(tenant_route('tenant.inventory.index'))->with('success', 'Product removed.');
-    }
-
-    protected function parseVariantJson(?string $json): ?array
-    {
-        if (! $json) {
-            return null;
-        }
-
-        $decoded = json_decode($json, true);
-
-        return is_array($decoded) ? $decoded : null;
     }
 }

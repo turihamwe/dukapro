@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('title', 'Customer Debts')
 @section('container_class', 'max-w-4xl')
@@ -16,11 +16,11 @@
             <x-card :padding="false" class="p-4">
                 <div class="flex items-center justify-between gap-4">
                     <div class="min-w-0">
-                        <p class="font-medium text-gray-900 dark:text-white">{{ $customer->name }}</p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ $customer->phone ?? 'No phone' }}</p>
+                        <p class="font-medium text-gray-900">{{ $customer->name }}</p>
+                        <p class="text-xs text-gray-500">{{ $customer->phone ?? 'No phone' }}</p>
                     </div>
                     <div class="text-right shrink-0">
-                        <p class="font-semibold text-red-600 dark:text-red-400">@money($customer->outstanding_balance)</p>
+                        <p class="font-semibold text-red-600">@money($customer->outstanding_balance)</p>
                         <p class="text-xs text-gray-500">Limit: @money($customer->credit_limit)</p>
                     </div>
                 </div>

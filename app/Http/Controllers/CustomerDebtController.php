@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Business;
 use App\Models\Customer;
 use App\Services\DebtLedgerService;
 use Illuminate\Http\Request;
@@ -46,14 +47,14 @@ class CustomerDebtController extends Controller
         return redirect()->to(tenant_route('tenant.debts.index'))->with('success', 'Customer added.');
     }
 
-    public function show(Customer $customer)
+    public function show(Business $business, Customer $customer)
     {
         $entries = $customer->debtEntries()->with('user', 'sale')->latest()->paginate(25);
 
         return view('debts.show', compact('customer', 'entries'));
     }
 
-    public function recordPayment(Request $request, Customer $customer)
+    public function recordPayment(Request $request, Business $business, Customer $customer)
     {
         $this->authorize('view', $customer);
 

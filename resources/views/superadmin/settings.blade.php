@@ -5,26 +5,26 @@
 @section('content')
 <div class="mb-8">
     <h1 class="text-2xl font-bold tracking-tight">System Settings</h1>
-    <p class="mt-1 text-sm text-slate-400">Global platform configuration</p>
+    <p class="mt-1 text-sm text-gray-500">Global platform configuration</p>
 </div>
 
 <form method="POST" action="{{ route('superadmin.settings.update') }}" class="max-w-xl space-y-6">
     @csrf
     @method('PUT')
 
-    <div class="rounded-xl border border-slate-800 bg-slate-900 p-6 space-y-5">
+    <div class="rounded-xl border border-gray-200 bg-white p-6 space-y-5">
         <div>
             <label for="default_currency_symbol" class="mb-1 block text-sm font-medium">Default Currency Symbol</label>
             <input type="text" name="default_currency_symbol" id="default_currency_symbol"
                    value="{{ old('default_currency_symbol', $settings['default_currency_symbol'] ?? 'UGX') }}"
-                   class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none">
-            <p class="mt-1 text-xs text-slate-500">Applied to new business registrations</p>
+                   class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-violet-500 focus:outline-none">
+            <p class="mt-1 text-xs text-gray-500">Applied to new business registrations</p>
         </div>
 
         <div>
             <label for="default_currency_position" class="mb-1 block text-sm font-medium">Currency Position</label>
             <select name="default_currency_position" id="default_currency_position"
-                    class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none">
+                    class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-violet-500 focus:outline-none">
                 <option value="prefix" {{ old('default_currency_position', $settings['default_currency_position'] ?? 'prefix') === 'prefix' ? 'selected' : '' }}>Prefix (UGX 1,000)</option>
                 <option value="suffix" {{ old('default_currency_position', $settings['default_currency_position'] ?? '') === 'suffix' ? 'selected' : '' }}>Suffix (1,000 UGX)</option>
             </select>
@@ -34,14 +34,14 @@
             <label for="support_email" class="mb-1 block text-sm font-medium">Support Email</label>
             <input type="email" name="support_email" id="support_email"
                    value="{{ old('support_email', $settings['support_email'] ?? 'support@dukapro.com') }}"
-                   class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none">
+                   class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-violet-500 focus:outline-none">
         </div>
 
         <div class="flex items-start gap-3 rounded-lg border border-amber-900/50 bg-amber-950/30 p-4">
             <input type="hidden" name="maintenance_mode" value="0">
             <input type="checkbox" name="maintenance_mode" id="maintenance_mode" value="1"
                    {{ old('maintenance_mode', $settings['maintenance_mode'] ?? '0') === '1' ? 'checked' : '' }}
-                   class="mt-0.5 rounded border-slate-600 bg-slate-950 text-violet-600 focus:ring-violet-500">
+                   class="mt-0.5 rounded border-gray-300 bg-white text-violet-600 focus:ring-violet-500">
             <div>
                 <label for="maintenance_mode" class="block text-sm font-medium text-amber-200">Maintenance Mode</label>
                 <p class="mt-0.5 text-xs text-amber-200/70">When enabled, tenant users see a maintenance page. SuperAdmin access is unaffected.</p>

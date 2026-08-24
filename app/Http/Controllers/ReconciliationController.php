@@ -15,6 +15,8 @@ class ReconciliationController extends Controller
     public function __construct(ReconciliationService $reconciliationService)
     {
         $this->reconciliationService = $reconciliationService;
+        $this->middleware('can:view-reconciliation-history')->only('index');
+        $this->middleware('can:submit-reconciliation')->only(['create', 'store']);
     }
 
     public function index(Request $request)
@@ -32,8 +34,6 @@ class ReconciliationController extends Controller
 
     public function create(Request $request)
     {
-        $this->authorize('submit-reconciliation');
-
         $date = $request->get('date', Carbon::today()->toDateString());
         $expected = $this->reconciliationService->calculateExpectedTotals(
             $request->user()->business_id,
@@ -46,8 +46,6 @@ class ReconciliationController extends Controller
 
     public function store(Request $request)
     {
-        $this->authorize('submit-reconciliation');
-
         $data = $request->validate([
             'reconciliation_date' => 'required|date',
             'actual_cash' => 'required|numeric|min:0',

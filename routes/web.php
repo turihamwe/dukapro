@@ -35,16 +35,21 @@ Route::middleware(['maintenance'])->group(function () {
                 return redirect()->route('superadmin.dashboard');
             }
             abort_unless($user->business, 403);
+            if ($user->isCashier()) {
+                return redirect()->route('tenant.pos.index', ['business' => $user->business->slug]);
+            }
             return redirect()->route('tenant.dashboard', ['business' => $user->business->slug]);
         });
         Route::get('/pos', function () {
             $user = auth()->user();
             abort_unless($user->business, 403);
+            abort_unless($user->isCashier(), 403);
             return redirect()->route('tenant.pos.index', ['business' => $user->business->slug]);
         });
         Route::get('/inventory', function () {
             $user = auth()->user();
             abort_unless($user->business, 403);
+            abort_unless($user->can('manage-inventory'), 403);
             return redirect()->route('tenant.inventory.index', ['business' => $user->business->slug]);
         });
 
@@ -59,22 +64,31 @@ Route::middleware(['maintenance'])->group(function () {
         ->name('tenant.')
         ->group(function () {
             Route::middleware(['subscription.active'])->group(function () {
-                Route::get('/dashboard', [DashboardController::class, 'index'])
-                    ->middleware('can:view-dashboard')
-                    ->name('dashboard');
+                Route::middleware(['can:view-dashboard'])->group(function () {
+                    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+                    Route::get('/dashboard/analytics', [DashboardController::class, 'analytics'])->name('dashboard.analytics');
 
-                Route::middleware(['can:manage-inventory'])->prefix('inventory')->name('inventory.')->group(function () {
-                    Route::get('/', [InventoryController::class, 'index'])->name('index');
-                    Route::get('/create', [InventoryController::class, 'create'])->name('create');
-                    Route::post('/', [InventoryController::class, 'store'])->name('store');
-                    Route::get('/{product}/edit', [InventoryController::class, 'edit'])->name('edit');
-                    Route::put('/{product}', [InventoryController::class, 'update'])->name('update');
-                    Route::delete('/{product}', [InventoryController::class, 'destroy'])->name('destroy');
-                });
+                    Route::middleware(['can:manage-inventory'])->prefix('inventory')->name('inventory.')->group(function () {
+                        Route::get('/', [InventoryController::class, 'index'])->name('index');
+                        Route::get('/create', [InventoryController::class, 'create'])->name('create');
+                        Route::post('/', [InventoryController::class, 'store'])->name('store');
+                        Route::get('/{product}/edit', [InventoryController::class, 'edit'])->name('edit');
+                        Route::put('/{product}', [InventoryController::class, 'update'])->name('update');
+                        Route::delete('/{product}', [InventoryController::class, 'destroy'])->name('destroy');
+                    });
 
-                Route::middleware(['can:log-damages'])->prefix('damages')->name('damages.')->group(function () {
-                    Route::get('/', [DamageController::class, 'index'])->name('index');
-                    Route::post('/', [DamageController::class, 'store'])->name('store');
+                    Route::middleware(['can:log-damages'])->prefix('damages')->name('damages.')->group(function () {
+                        Route::get('/', [DamageController::class, 'index'])->name('index');
+                        Route::post('/', [DamageController::class, 'store'])->name('store');
+                    });
+
+                    Route::middleware(['can:manage-debts'])->prefix('debts')->name('debts.')->group(function () {
+                        Route::get('/', [CustomerDebtController::class, 'index'])->name('index');
+                        Route::get('/create', [CustomerDebtController::class, 'create'])->name('create');
+                        Route::post('/', [CustomerDebtController::class, 'store'])->name('store');
+                        Route::get('/{customer}', [CustomerDebtController::class, 'show'])->name('show');
+                        Route::post('/{customer}/payment', [CustomerDebtController::class, 'recordPayment'])->name('payment');
+                    });
                 });
 
                 Route::middleware(['can:access-pos'])->prefix('pos')->name('pos.')->group(function () {
@@ -84,21 +98,14 @@ Route::middleware(['maintenance'])->group(function () {
                 });
 
                 Route::prefix('reconciliation')->name('reconciliation.')->group(function () {
-                    Route::get('/', [ReconciliationController::class, 'index'])->name('index');
-                    Route::get('/create', [ReconciliationController::class, 'create'])
-                        ->middleware('can:submit-reconciliation')
-                        ->name('create');
-                    Route::post('/', [ReconciliationController::class, 'store'])
-                        ->middleware('can:submit-reconciliation')
-                        ->name('store');
-                });
+                    Route::get('/', [ReconciliationController::class, 'index'])
+                        ->middleware('can:view-reconciliation-history')
+                        ->name('index');
 
-                Route::middleware(['can:manage-debts'])->prefix('debts')->name('debts.')->group(function () {
-                    Route::get('/', [CustomerDebtController::class, 'index'])->name('index');
-                    Route::get('/create', [CustomerDebtController::class, 'create'])->name('create');
-                    Route::post('/', [CustomerDebtController::class, 'store'])->name('store');
-                    Route::get('/{customer}', [CustomerDebtController::class, 'show'])->name('show');
-                    Route::post('/{customer}/payment', [CustomerDebtController::class, 'recordPayment'])->name('payment');
+                    Route::middleware(['can:submit-reconciliation'])->group(function () {
+                        Route::get('/create', [ReconciliationController::class, 'create'])->name('create');
+                        Route::post('/', [ReconciliationController::class, 'store'])->name('store');
+                    });
                 });
             });
         });

@@ -7,8 +7,8 @@
 <div class="py-8 sm:py-12">
     <div class="mb-8 text-center">
         <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-600 text-lg font-bold text-white shadow-lg shadow-indigo-600/30">D</div>
-        <h1 class="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">Start your free trial</h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">30 days free — no credit card required</p>
+        <h1 class="text-2xl font-semibold tracking-tight text-gray-900">Start your free trial</h1>
+        <p class="mt-1 text-sm text-gray-500">30 days free — no credit card required</p>
     </div>
 
     <x-card>
@@ -35,8 +35,8 @@
             <x-input type="password" name="password_confirmation" label="Confirm Password" required />
             <x-button variant="primary" size="lg" type="submit">Create Account</x-button>
         </form>
-        <p class="mt-5 text-center text-sm text-gray-500 dark:text-gray-400">
-            Already have an account? <a href="{{ route('login') }}" class="font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">Sign in</a>
+        <p class="mt-5 text-center text-sm text-gray-500">
+            Already have an account? <a href="{{ route('login') }}" class="font-medium text-indigo-600 hover:text-indigo-700">Sign in</a>
         </p>
     </x-card>
 </div>

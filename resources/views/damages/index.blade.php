@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('title', 'Damages & Write-offs')
 @section('container_class', 'max-w-4xl')
@@ -14,7 +14,7 @@
     <x-input type="date" name="date" label="Filter by date" value="{{ $date }}" class="w-auto" />
     <x-button variant="secondary" size="sm" type="submit">Apply</x-button>
     @if(request('date'))
-        <a href="{{ tenant_route('tenant.damages.index') }}" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400">Today</a>
+        <a href="{{ tenant_route('tenant.damages.index') }}" class="text-sm text-gray-500 hover:text-gray-700">Today</a>
     @endif
 </form>
 
@@ -28,20 +28,20 @@
         <x-card :padding="false" class="p-4">
             <div class="flex items-start justify-between gap-4">
                 <div class="min-w-0">
-                    <p class="font-medium text-gray-900 dark:text-white">{{ $damage->product->name }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                    <p class="font-medium text-gray-900">{{ $damage->product->name }}</p>
+                    <p class="text-xs text-gray-500">
                         {{ ucfirst($damage->reason) }} · {{ $damage->quantity }} {{ $damage->product->measurement_unit }}
                         · by {{ $damage->user->name }}
                     </p>
                 </div>
                 <div class="text-right shrink-0">
-                    <p class="font-semibold text-red-600 dark:text-red-400">@money($damage->lossValue())</p>
+                    <p class="font-semibold text-red-600">@money($damage->lossValue())</p>
                     <p class="text-xs text-gray-500">{{ $damage->created_at->format('H:i') }}</p>
                 </div>
             </div>
         </x-card>
     @empty
-        <x-card class="text-center text-sm text-gray-500 dark:text-gray-400">No damages recorded for this date.</x-card>
+        <x-card class="text-center text-sm text-gray-500">No damages recorded for this date.</x-card>
     @endforelse
 </div>
 
@@ -51,10 +51,10 @@
 <div id="damage-modal" class="fixed inset-0 z-50 hidden" aria-hidden="true">
     <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" id="damage-modal-backdrop"></div>
     <div class="flex min-h-full items-end justify-center p-4 sm:items-center">
-        <div class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-gray-900">
+        <div class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
             <div class="mb-5 flex items-center justify-between">
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Log Damaged Stock</h2>
-                <button type="button" id="close-damage-modal" class="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800">&times;</button>
+                <h2 class="text-lg font-semibold text-gray-900">Log Damaged Stock</h2>
+                <button type="button" id="close-damage-modal" class="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600">&times;</button>
             </div>
 
             <form method="POST" action="{{ tenant_route('tenant.damages.store') }}" class="space-y-4">
@@ -79,7 +79,7 @@
 
                 <x-input type="date" name="damage_date" label="Date" value="{{ old('damage_date', $date) }}" required />
 
-                <p class="text-xs text-gray-500 dark:text-gray-400">Stock will be reduced automatically. Loss is calculated from the product cost price.</p>
+                <p class="text-xs text-gray-500">Stock will be reduced automatically. Loss is calculated from the product cost price.</p>
 
                 <div class="flex gap-3 pt-2">
                     <x-button variant="primary" type="submit" class="flex-1">Record Damage</x-button>

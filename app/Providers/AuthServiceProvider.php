@@ -43,7 +43,7 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('view-profit-margins', function (User $user) {
-            return $user->isOwner();
+            return $user->isOwner() || $user->isManager();
         });
 
         Gate::define('manage-settings', function (User $user) {
@@ -75,15 +75,19 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('access-pos', function (User $user) {
-            return in_array($user->role, UserRole::all(), true);
+            return $user->isCashier();
         });
 
         Gate::define('submit-reconciliation', function (User $user) {
-            return in_array($user->role, UserRole::all(), true);
+            return $user->isCashier();
+        });
+
+        Gate::define('view-reconciliation-history', function (User $user) {
+            return $user->isCashier() || $user->isOwner() || $user->isManager();
         });
 
         Gate::define('log-damages', function (User $user) {
-            return in_array($user->role, UserRole::all(), true);
+            return $user->isOwner() || $user->isManager();
         });
 
         Gate::define('access-superadmin', function (User $user) {

@@ -8,7 +8,7 @@
     <x-page-header title="Subscription Required" subtitle="Renew to access inventory, POS, and reports" />
 
     <x-card>
-        <p class="mb-6 text-sm text-gray-600 dark:text-gray-400">
+        <p class="mb-6 text-sm text-gray-600">
             @if($business->subscription_status === 'trial' && $business->trial_ends_at?->isPast())
                 Your free trial ended on {{ $business->trial_ends_at->format('M d, Y') }}.
             @elseif($business->subscription_status === 'inactive')
@@ -18,9 +18,9 @@
             @endif
         </p>
 
-        <div class="mb-6 rounded-xl border border-indigo-100 bg-indigo-50 p-6 text-center dark:border-indigo-900 dark:bg-indigo-950">
-            <p class="text-xs font-medium uppercase tracking-wide text-indigo-600 dark:text-indigo-400">Monthly plan</p>
-            <p class="mt-2 text-3xl font-semibold text-gray-900 dark:text-white">{{ format_money($business->subscription_amount) }}</p>
+        <div class="mb-6 rounded-xl border border-indigo-100 bg-indigo-50 p-6 text-center">
+            <p class="text-xs font-medium uppercase tracking-wide text-indigo-600">Monthly plan</p>
+            <p class="mt-2 text-3xl font-semibold text-gray-900">{{ format_money($business->subscription_amount) }}</p>
         </div>
 
         @if(session('payment'))
@@ -44,7 +44,7 @@
         <x-alert type="warning">Only the business owner can manage billing. Contact your owner to renew.</x-alert>
         @endcan
 
-        <p class="mt-5 text-center text-xs text-gray-500 dark:text-gray-400">
+        <p class="mt-5 text-center text-xs text-gray-500">
             You will receive an STK push on your phone. Payment activates instantly via webhook.
         </p>
     </x-card>

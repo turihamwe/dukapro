@@ -1,6 +1,6 @@
-@extends('layouts.app')
+@extends('layouts.cashier')
 
-@section('title', 'Submit Reconciliation')
+@section('title', 'Close Shift')
 @section('container_class', 'max-w-4xl')
 
 @section('content')
@@ -12,55 +12,55 @@
 
         <x-input type="date" name="reconciliation_date" label="Date" value="{{ $date }}" required />
 
-        <div class="rounded-xl border border-gray-100 bg-gray-50 p-5 dark:border-gray-800 dark:bg-gray-800/50">
-            <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Expected (from completed sales)</h2>
+        <div class="rounded-xl border border-gray-100 bg-gray-50 p-5">
+            <h2 class="text-sm font-semibold text-gray-900">Expected (from completed sales)</h2>
             <div class="mt-4 grid grid-cols-2 gap-4">
                 <div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">Cash</p>
-                    <p class="text-lg font-semibold text-gray-900 dark:text-white">@money($expected['expected_cash'])</p>
+                    <p class="text-xs text-gray-500">Cash</p>
+                    <p class="text-lg font-semibold text-gray-900">@money($expected['expected_cash'])</p>
                 </div>
                 <div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">Mobile Money</p>
-                    <p class="text-lg font-semibold text-gray-900 dark:text-white">@money($expected['expected_mobile_money'])</p>
+                    <p class="text-xs text-gray-500">Mobile Money</p>
+                    <p class="text-lg font-semibold text-gray-900">@money($expected['expected_mobile_money'])</p>
                 </div>
             </div>
             <p class="mt-3 text-xs text-gray-500">{{ $expected['sale_count'] }} sales recorded</p>
         </div>
 
-        <div class="rounded-xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-900/50 dark:bg-amber-950/30">
-            <h2 class="text-sm font-semibold text-amber-900 dark:text-amber-200">Damages &amp; Stock Write-offs</h2>
+        <div class="rounded-xl border border-amber-200 bg-amber-50 p-5">
+            <h2 class="text-sm font-semibold text-amber-900">Damages &amp; Stock Write-offs</h2>
             <div class="mt-4 grid grid-cols-2 gap-4">
                 <div>
-                    <p class="text-xs text-amber-800/70 dark:text-amber-300/70">Items written off</p>
-                    <p class="text-lg font-semibold text-amber-900 dark:text-amber-100">{{ $expected['damages']['total_items'] }}</p>
+                    <p class="text-xs text-amber-800/70">Items written off</p>
+                    <p class="text-lg font-semibold text-amber-900">{{ $expected['damages']['total_items'] }}</p>
                 </div>
                 <div>
-                    <p class="text-xs text-amber-800/70 dark:text-amber-300/70">Financial loss (cost)</p>
-                    <p class="text-lg font-semibold text-red-700 dark:text-red-400">@money($expected['damages']['total_loss'])</p>
+                    <p class="text-xs text-amber-800/70">Financial loss (cost)</p>
+                    <p class="text-lg font-semibold text-red-700">@money($expected['damages']['total_loss'])</p>
                 </div>
             </div>
 
             @if($expected['damages']['entries']->isNotEmpty())
-                <div class="mt-4 divide-y divide-amber-200/60 dark:divide-amber-900/40">
+                <div class="mt-4 divide-y divide-amber-200/60">
                     @foreach($expected['damages']['entries'] as $damage)
                         <div class="flex items-start justify-between gap-3 py-2 text-sm">
                             <div>
-                                <p class="font-medium text-amber-950 dark:text-amber-100">{{ $damage->product->name }}</p>
-                                <p class="text-xs text-amber-800/70 dark:text-amber-300/70">
+                                <p class="font-medium text-amber-950">{{ $damage->product->name }}</p>
+                                <p class="text-xs text-amber-800/70">
                                     {{ ucfirst($damage->reason) }} · {{ $damage->quantity }} {{ $damage->product->measurement_unit }}
                                     · {{ $damage->user->name }}
                                 </p>
                             </div>
-                            <p class="shrink-0 font-medium text-red-700 dark:text-red-400">@money($damage->lossValue())</p>
+                            <p class="shrink-0 font-medium text-red-700">@money($damage->lossValue())</p>
                         </div>
                     @endforeach
                 </div>
             @else
-                <p class="mt-3 text-xs text-amber-800/70 dark:text-amber-300/70">No damages recorded for this date.</p>
+                <p class="mt-3 text-xs text-amber-800/70">No damages recorded for this date.</p>
             @endif
 
             @can('log-damages')
-                <a href="{{ tenant_route('tenant.damages.index', ['date' => $date]) }}" class="mt-3 inline-block text-xs font-medium text-amber-900 underline dark:text-amber-200">Log or view damages →</a>
+                <a href="{{ tenant_route('tenant.damages.index', ['date' => $date]) }}" class="mt-3 inline-block text-xs font-medium text-amber-900 underline">Log or view damages →</a>
             @endcan
         </div>
 
