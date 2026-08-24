@@ -44,6 +44,11 @@ class Product extends Model
         return $this->hasMany(SaleItem::class);
     }
 
+    public function damages(): HasMany
+    {
+        return $this->hasMany(Damage::class);
+    }
+
     public function auditLogs(): MorphMany
     {
         return $this->morphMany(AuditLog::class, 'auditable');

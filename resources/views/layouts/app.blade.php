@@ -86,6 +86,9 @@
                             if ($user->can('manage-inventory')) {
                                 $navItems[] = ['route' => 'tenant.inventory.index', 'match' => 'tenant.inventory.*', 'icon' => '📦', 'label' => 'Stock'];
                             }
+                            if ($user->can('log-damages')) {
+                                $navItems[] = ['route' => 'tenant.damages.index', 'match' => 'tenant.damages.*', 'icon' => '📉', 'label' => 'Damage'];
+                            }
                             if ($user->can('submit-reconciliation')) {
                                 $navItems[] = ['route' => 'tenant.reconciliation.create', 'match' => 'tenant.reconciliation.*', 'icon' => '💰', 'label' => 'EOD'];
                             }

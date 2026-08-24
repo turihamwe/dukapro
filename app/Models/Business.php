@@ -78,6 +78,11 @@ class Business extends Model
         return $this->hasMany(Expense::class);
     }
 
+    public function damages(): HasMany
+    {
+        return $this->hasMany(Damage::class);
+    }
+
     public function getRouteKeyName(): string
     {
         return 'slug';

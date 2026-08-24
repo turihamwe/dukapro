@@ -5,12 +5,14 @@ namespace App\Providers;
 use App\Enums\UserRole;
 use App\Models\AuditLog;
 use App\Models\Customer;
+use App\Models\Damage;
 use App\Models\Expense;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\User;
 use App\Policies\AuditLogPolicy;
 use App\Policies\CustomerPolicy;
+use App\Policies\DamagePolicy;
 use App\Policies\ExpensePolicy;
 use App\Policies\ProductPolicy;
 use App\Policies\SalePolicy;
@@ -25,6 +27,7 @@ class AuthServiceProvider extends ServiceProvider
         Sale::class => SalePolicy::class,
         AuditLog::class => AuditLogPolicy::class,
         Expense::class => ExpensePolicy::class,
+        Damage::class => DamagePolicy::class,
     ];
 
     public function boot()
@@ -76,6 +79,10 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('submit-reconciliation', function (User $user) {
+            return in_array($user->role, UserRole::all(), true);
+        });
+
+        Gate::define('log-damages', function (User $user) {
             return in_array($user->role, UserRole::all(), true);
         });
 

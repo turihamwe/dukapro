@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Damage;
 use App\Models\EndOfDayReconciliation;
 use App\Models\Sale;
 use App\Models\User;
@@ -9,6 +10,13 @@ use Carbon\Carbon;
 
 class ReconciliationService
 {
+    protected DamageService $damageService;
+
+    public function __construct(DamageService $damageService)
+    {
+        $this->damageService = $damageService;
+    }
+
     public function calculateExpectedTotals(int $businessId, int $userId, Carbon $date): array
     {
         $sales = Sale::where('business_id', $businessId)
@@ -25,6 +33,7 @@ class ReconciliationService
             'expected_cash' => round($expectedCash, 2),
             'expected_mobile_money' => round($expectedMobileMoney, 2),
             'sale_count' => $sales->count(),
+            'damages' => $this->damageService->summarizeForDate($businessId, $date),
         ];
     }
 

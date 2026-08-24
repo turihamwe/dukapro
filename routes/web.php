@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CustomerDebtController;
+use App\Http\Controllers\DamageController;
 use App\Http\Controllers\SuperAdmin\ActivityLogController;
 use App\Http\Controllers\SuperAdmin\DashboardController as SuperAdminDashboardController;
 use App\Http\Controllers\DashboardController;
@@ -69,6 +70,11 @@ Route::middleware(['maintenance'])->group(function () {
                     Route::get('/{product}/edit', [InventoryController::class, 'edit'])->name('edit');
                     Route::put('/{product}', [InventoryController::class, 'update'])->name('update');
                     Route::delete('/{product}', [InventoryController::class, 'destroy'])->name('destroy');
+                });
+
+                Route::middleware(['can:log-damages'])->prefix('damages')->name('damages.')->group(function () {
+                    Route::get('/', [DamageController::class, 'index'])->name('index');
+                    Route::post('/', [DamageController::class, 'store'])->name('store');
                 });
 
                 Route::middleware(['can:access-pos'])->prefix('pos')->name('pos.')->group(function () {

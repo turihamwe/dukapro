@@ -27,6 +27,43 @@
             <p class="mt-3 text-xs text-gray-500">{{ $expected['sale_count'] }} sales recorded</p>
         </div>
 
+        <div class="rounded-xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-900/50 dark:bg-amber-950/30">
+            <h2 class="text-sm font-semibold text-amber-900 dark:text-amber-200">Damages &amp; Stock Write-offs</h2>
+            <div class="mt-4 grid grid-cols-2 gap-4">
+                <div>
+                    <p class="text-xs text-amber-800/70 dark:text-amber-300/70">Items written off</p>
+                    <p class="text-lg font-semibold text-amber-900 dark:text-amber-100">{{ $expected['damages']['total_items'] }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-amber-800/70 dark:text-amber-300/70">Financial loss (cost)</p>
+                    <p class="text-lg font-semibold text-red-700 dark:text-red-400">@money($expected['damages']['total_loss'])</p>
+                </div>
+            </div>
+
+            @if($expected['damages']['entries']->isNotEmpty())
+                <div class="mt-4 divide-y divide-amber-200/60 dark:divide-amber-900/40">
+                    @foreach($expected['damages']['entries'] as $damage)
+                        <div class="flex items-start justify-between gap-3 py-2 text-sm">
+                            <div>
+                                <p class="font-medium text-amber-950 dark:text-amber-100">{{ $damage->product->name }}</p>
+                                <p class="text-xs text-amber-800/70 dark:text-amber-300/70">
+                                    {{ ucfirst($damage->reason) }} · {{ $damage->quantity }} {{ $damage->product->measurement_unit }}
+                                    · {{ $damage->user->name }}
+                                </p>
+                            </div>
+                            <p class="shrink-0 font-medium text-red-700 dark:text-red-400">@money($damage->lossValue())</p>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <p class="mt-3 text-xs text-amber-800/70 dark:text-amber-300/70">No damages recorded for this date.</p>
+            @endif
+
+            @can('log-damages')
+                <a href="{{ tenant_route('tenant.damages.index', ['date' => $date]) }}" class="mt-3 inline-block text-xs font-medium text-amber-900 underline dark:text-amber-200">Log or view damages →</a>
+            @endcan
+        </div>
+
         <x-input type="number" step="0.01" name="actual_cash" label="Actual Cash in Drawer" placeholder="Count physical cash" required large />
         <x-input type="number" step="0.01" name="actual_mobile_money" label="Actual Mobile Money Balance" placeholder="M-Pesa / till balance" required large />
         <x-textarea name="notes" label="Notes" rows="2" placeholder="Explain any variance..."></x-textarea>
