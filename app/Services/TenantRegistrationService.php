@@ -4,12 +4,14 @@ namespace App\Services;
 
 use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
+use App\Mail\WelcomeOwnerMail;
 use App\Models\Business;
 use App\Models\SystemSetting;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class TenantRegistrationService
@@ -22,6 +24,7 @@ class TenantRegistrationService
             $business = Business::create([
                 'name' => $data['business_name'],
                 'slug' => $slug,
+                'portal_slug' => $this->uniquePortalSlug($data['business_name']),
                 'email' => $data['email'],
                 'phone' => $data['phone'] ?? null,
                 'currency' => $data['currency_symbol'] ?? SystemSetting::get('default_currency_symbol', 'UGX'),
@@ -31,9 +34,10 @@ class TenantRegistrationService
                 'trial_ends_at' => Carbon::now()->addDays(30),
                 'subscription_status' => SubscriptionStatus::TRIAL,
                 'subscription_amount' => 1500,
+                'employees_onboarding_complete' => true,
             ]);
 
-            return User::create([
+            $user = User::create([
                 'business_id' => $business->id,
                 'name' => $data['name'],
                 'email' => $data['email'],
@@ -41,6 +45,10 @@ class TenantRegistrationService
                 'role' => UserRole::OWNER,
                 'is_active' => true,
             ]);
+
+            Mail::to($user->email)->send(new WelcomeOwnerMail($user, $business));
+
+            return $user;
         });
     }
 
@@ -56,5 +64,16 @@ class TenantRegistrationService
         }
 
         return $slug;
+    }
+
+    protected function uniquePortalSlug(string $name): string
+    {
+        $base = Str::slug($name) ?: 'store';
+
+        do {
+            $portalSlug = $base . '-' . Str::lower(Str::random(8));
+        } while (Business::where('portal_slug', $portalSlug)->exists());
+
+        return $portalSlug;
     }
 }

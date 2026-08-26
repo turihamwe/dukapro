@@ -36,6 +36,7 @@
             <thead class="border-b border-gray-200 text-xs uppercase tracking-wide text-gray-500">
                 <tr>
                     <th class="px-6 py-3">Business</th>
+                    <th class="px-6 py-3">Login URL</th>
                     <th class="px-6 py-3">Email</th>
                     <th class="px-6 py-3">Users</th>
                     <th class="px-6 py-3">Status</th>
@@ -48,6 +49,15 @@
                 @forelse($businesses as $business)
                     <tr class="hover:bg-gray-100/50">
                         <td class="px-6 py-4 font-medium">{{ $business->name }}</td>
+                        <td class="px-6 py-4">
+                            @if($business->portal_slug)
+                                <a href="{{ $business->portalLoginUrl() }}" target="_blank" rel="noopener"
+                                   class="font-medium text-violet-600 hover:text-violet-800">Open portal</a>
+                                <p class="mt-1 max-w-xs break-all text-xs text-gray-500">{{ $business->portalLoginUrl() }}</p>
+                            @else
+                                <span class="text-xs text-gray-400">Not set</span>
+                            @endif
+                        </td>
                         <td class="px-6 py-4 text-gray-500">{{ $business->email }}</td>
                         <td class="px-6 py-4">{{ $business->users_count }}</td>
                         <td class="px-6 py-4">
@@ -65,7 +75,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="px-6 py-8 text-center text-gray-500">No businesses registered yet.</td>
+                        <td colspan="8" class="px-6 py-8 text-center text-gray-500">No businesses registered yet.</td>
                     </tr>
                 @endforelse
             </tbody>

@@ -13,6 +13,7 @@
         @endforeach
     </x-select>
     <x-input type="number" step="0.001" name="stock_quantity" label="Stock Quantity" value="{{ old('stock_quantity', $product->stock_quantity ?? 0) }}" required />
+    <x-input type="number" step="1" name="critical_threshold" label="Critical Threshold" value="{{ old('critical_threshold', $product->critical_threshold ?? 5) }}" hint="Low-stock alert level for this product (used in inventory charts)." required />
 
     @php
         $variantForm = variant_attributes_for_form(

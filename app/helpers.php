@@ -2,6 +2,19 @@
 
 use App\Models\Business;
 
+if (! function_exists('business_portal_url')) {
+    function business_portal_url(?Business $business = null): string
+    {
+        $business = $business ?? active_business();
+
+        if (! $business) {
+            return route('portal');
+        }
+
+        return $business->portalLoginUrl();
+    }
+}
+
 if (! function_exists('tenant_route')) {
     function tenant_route(string $name, array $parameters = [], bool $absolute = true): string
     {

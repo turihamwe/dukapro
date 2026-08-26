@@ -15,6 +15,9 @@ class Business extends Model
     protected $fillable = [
         'name',
         'slug',
+        'portal_slug',
+        'logo_path',
+        'brand_color',
         'email',
         'phone',
         'address',
@@ -28,11 +31,15 @@ class Business extends Model
         'subscription_status',
         'subscription_ends_at',
         'subscription_amount',
+        'sole_proprietor',
+        'employees_onboarding_complete',
     ];
 
     protected $casts = [
         'settings' => 'array',
         'is_active' => 'boolean',
+        'sole_proprietor' => 'boolean',
+        'employees_onboarding_complete' => 'boolean',
         'trial_ends_at' => 'datetime',
         'subscription_ends_at' => 'datetime',
         'subscription_amount' => 'float',
@@ -88,6 +95,29 @@ class Business extends Model
         return 'slug';
     }
 
+    public function resolveRouteBinding($value, $field = null)
+    {
+        if ($field === 'portal_slug') {
+            return static::where('portal_slug', $value)->firstOrFail();
+        }
+
+        return parent::resolveRouteBinding($value, $field);
+    }
+
+    public function logoUrl(): ?string
+    {
+        if (! $this->logo_path) {
+            return null;
+        }
+
+        return asset('storage/' . ltrim($this->logo_path, '/'));
+    }
+
+    public function portalLoginUrl(): string
+    {
+        return route('business.login', ['portal' => $this->portal_slug]);
+    }
+
     public function formatMoney($amount, int $decimals = 0): string
     {
         return format_money($amount, $this, $decimals);
@@ -123,5 +153,10 @@ class Business extends Model
             'subscription_status' => SubscriptionStatus::ACTIVE,
             'subscription_ends_at' => $startsFrom->copy()->addDays($days),
         ]);
+    }
+
+    public function staffUsers()
+    {
+        return $this->users()->where('role', '!=', \App\Enums\UserRole::OWNER);
     }
 }

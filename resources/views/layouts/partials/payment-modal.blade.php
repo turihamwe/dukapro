@@ -1,0 +1,38 @@
+@can('manage-billing')
+<div id="payment-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
+    <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+        <div class="mb-4 flex items-start justify-between">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900">Activate Subscription</h2>
+                <p class="mt-1 text-sm text-gray-500">Pay via mobile money to unlock your plan.</p>
+            </div>
+            <button type="button" id="close-payment-modal" class="text-gray-400 hover:text-gray-600" aria-label="Close">&times;</button>
+        </div>
+
+        <form id="payment-form" method="POST" action="{{ route('subscription.initiate') }}" class="space-y-4">
+            @csrf
+            <div>
+                <label class="mb-2 block text-sm font-medium text-gray-700">Mobile money provider</label>
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 border-gray-200 px-4 py-3 text-sm font-medium has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50">
+                        <input type="radio" name="provider" value="mtn" class="sr-only" checked> MTN
+                    </label>
+                    <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 border-gray-200 px-4 py-3 text-sm font-medium has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50">
+                        <input type="radio" name="provider" value="airtel" class="sr-only"> Airtel
+                    </label>
+                </div>
+            </div>
+            <div>
+                <label class="mb-1 block text-sm font-medium text-gray-700">Phone number</label>
+                <input type="tel" name="phone_number" required placeholder="e.g. 256700000000"
+                       class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+            </div>
+            <p class="text-xs text-gray-500">Amount: {{ format_money(auth()->user()->business->subscription_amount ?? 1500) }} · You will receive a PIN prompt on your phone.</p>
+            <div id="payment-status" class="hidden rounded-lg border px-3 py-2 text-sm"></div>
+            <button type="submit" id="payment-submit" class="w-full rounded-lg bg-indigo-600 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">
+                Send payment request
+            </button>
+        </form>
+    </div>
+</div>
+@endcan

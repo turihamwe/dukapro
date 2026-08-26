@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\Business;
+use App\Models\Customer;
+use App\Models\Damage;
 use App\Models\EndOfDayReconciliation;
 use App\Models\Product;
 use App\Models\Sale;
@@ -36,13 +38,17 @@ class DashboardService
         $products = Product::query()
             ->where('business_id', $business->id)
             ->where('is_active', true)
-            ->get(['id', 'name', 'sku', 'stock_quantity', 'cost_price', 'measurement_unit']);
+            ->get(['id', 'name', 'sku', 'stock_quantity', 'critical_threshold', 'cost_price', 'measurement_unit']);
 
         $inventoryValue = round($products->sum(function (Product $product) {
             return $product->stock_quantity * (float) ($product->cost_price ?? 0);
         }), 2);
 
-        $lowStock = $products->where('stock_quantity', '<=', AnalyticsDateRange::LOW_STOCK_THRESHOLD)
+        $lowStock = $products->filter(function (Product $product) {
+            $threshold = $product->critical_threshold ?? AnalyticsDateRange::LOW_STOCK_THRESHOLD;
+
+            return $product->stock_quantity <= $threshold;
+        })
             ->sortBy('stock_quantity')
             ->values()
             ->take(10);
@@ -65,6 +71,39 @@ class DashboardService
             'low_stock' => $lowStock,
             'eod_reports' => $eodReports,
             'sale_count' => (clone $salesQuery)->count(),
+            'executive' => $this->executiveSummary($business, $range, $salesQuery),
+        ];
+    }
+
+    public function executiveSummary(Business $business, AnalyticsDateRange $range, $salesQuery = null): array
+    {
+        $salesQuery = $salesQuery ?? $this->completedSalesQuery($business, $range);
+
+        $cashAvailable = (float) (clone $salesQuery)->where('payment_method', 'cash')->sum('total');
+        $mobileAvailable = (float) (clone $salesQuery)->where('payment_method', 'mobile_money')->sum('total');
+        $creditSales = (float) (clone $salesQuery)->where('payment_method', 'credit')->sum('total');
+
+        $outstandingDebts = (float) Customer::query()
+            ->where('business_id', $business->id)
+            ->sum('outstanding_balance');
+
+        $damagesLoss = round(Damage::query()
+            ->where('business_id', $business->id)
+            ->whereBetween('damage_date', [$range->start->toDateString(), $range->end->toDateString()])
+            ->get()
+            ->sum(function (Damage $damage) {
+                return $damage->lossValue();
+            }), 2);
+
+        $overallBalance = round($cashAvailable + $mobileAvailable + $outstandingDebts - $damagesLoss, 2);
+
+        return [
+            'cash_available' => round($cashAvailable, 2),
+            'mobile_available' => round($mobileAvailable, 2),
+            'credit_sales' => round($creditSales, 2),
+            'outstanding_debts' => round($outstandingDebts, 2),
+            'damages_loss' => $damagesLoss,
+            'overall_balance' => $overallBalance,
         ];
     }
 
@@ -145,7 +184,7 @@ class DashboardService
 
     protected function stockChartData(Business $business, AnalyticsDateRange $range): array
     {
-        $threshold = AnalyticsDateRange::LOW_STOCK_THRESHOLD;
+        $defaultThreshold = AnalyticsDateRange::LOW_STOCK_THRESHOLD;
 
         $fastMovers = SaleItem::query()
             ->select('product_id', DB::raw('SUM(quantity) as units_sold'))
@@ -166,12 +205,12 @@ class DashboardService
                 ->where('is_active', true)
                 ->orderBy('stock_quantity')
                 ->limit(10)
-                ->get(['id', 'name', 'stock_quantity']);
+                ->get(['id', 'name', 'stock_quantity', 'critical_threshold']);
         } else {
             $products = Product::query()
                 ->where('business_id', $business->id)
                 ->whereIn('id', $productIds)
-                ->get(['id', 'name', 'stock_quantity'])
+                ->get(['id', 'name', 'stock_quantity', 'critical_threshold'])
                 ->sortBy(function (Product $product) use ($fastMovers) {
                     $row = $fastMovers->firstWhere('product_id', $product->id);
 
@@ -187,12 +226,15 @@ class DashboardService
         $stock = [];
         $sold = [];
         $colors = [];
+        $thresholds = [];
 
         foreach ($products as $product) {
+            $threshold = (int) ($product->critical_threshold ?? $defaultThreshold);
             $labels[] = $product->name;
             $qty = (float) $product->stock_quantity;
             $stock[] = $qty;
             $sold[] = (float) ($soldMap[$product->id] ?? 0);
+            $thresholds[] = $threshold;
 
             if ($qty <= $threshold) {
                 $colors[] = '#dc2626';
@@ -208,6 +250,7 @@ class DashboardService
             $stock = [0];
             $sold = [0];
             $colors = ['#94a3b8'];
+            $thresholds = [$defaultThreshold];
         }
 
         return [
@@ -215,7 +258,8 @@ class DashboardService
             'stock' => $stock,
             'sold_in_period' => $sold,
             'colors' => $colors,
-            'threshold' => $threshold,
+            'threshold' => $defaultThreshold,
+            'thresholds' => $thresholds,
         ];
     }
 

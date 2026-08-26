@@ -11,7 +11,7 @@
         <div class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-100 text-3xl">🔧</div>
         <h1 class="text-2xl font-bold text-gray-900">Under Maintenance</h1>
         <p class="mt-3 text-gray-600">DukaPro is temporarily unavailable while we perform system updates. Please check back shortly.</p>
-        <a href="{{ route('login') }}" class="mt-8 inline-block text-sm font-medium text-indigo-600 hover:text-indigo-500">Return to login</a>
+        <a href="{{ route('portal') }}" class="mt-8 inline-block text-sm font-medium text-indigo-600 hover:text-indigo-500">Return to portal</a>
     </div>
 </body>
 </html>

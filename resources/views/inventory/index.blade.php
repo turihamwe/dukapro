@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends(auth()->user()->isCashier() ? 'layouts.cashier' : 'layouts.admin')
 
 @section('title', 'Inventory')
 @section('container_class', 'max-w-4xl')
@@ -6,7 +6,9 @@
 @section('content')
 <x-page-header title="Inventory" subtitle="{{ $products->total() }} products in stock">
     <x-slot name="actions">
-        <x-button variant="primary" size="sm" href="{{ tenant_route('tenant.inventory.create') }}">+ Add Product</x-button>
+        @can('create', App\Models\Product::class)
+            <x-button variant="primary" size="sm" href="{{ tenant_route('tenant.inventory.create') }}">+ Add Product</x-button>
+        @endcan
     </x-slot>
 </x-page-header>
 
@@ -25,7 +27,9 @@
                 <div class="text-right shrink-0">
                     <p class="font-semibold text-gray-900">@money($product->price)</p>
                     <p class="text-xs {{ $product->stock_quantity <= 5 ? 'text-red-600 font-medium' : 'text-gray-500' }}">Stock: {{ $product->stock_quantity }}</p>
-                    <a href="{{ tenant_route('tenant.inventory.edit', ['product' => $product]) }}" class="mt-1 inline-block text-xs font-medium text-indigo-600 hover:text-indigo-700">Edit</a>
+                    @can('update', $product)
+                        <a href="{{ tenant_route('tenant.inventory.edit', ['product' => $product]) }}" class="mt-1 inline-block text-xs font-medium text-indigo-600 hover:text-indigo-700">Edit</a>
+                    @endcan
                 </div>
             </div>
         </x-card>
@@ -58,7 +62,16 @@
                         <td class="px-6 py-4 text-right text-sm font-medium text-gray-900">@money($product->price)</td>
                         <td class="px-6 py-4 text-right text-sm {{ $product->stock_quantity <= 5 ? 'font-medium text-red-600' : 'text-gray-500' }}">{{ $product->stock_quantity }}</td>
                         <td class="px-6 py-4 text-right">
-                            <a href="{{ tenant_route('tenant.inventory.edit', ['product' => $product]) }}" class="text-sm font-medium text-indigo-600 hover:text-indigo-700">Edit</a>
+                            @can('update', $product)
+                                <a href="{{ tenant_route('tenant.inventory.edit', ['product' => $product]) }}" class="text-sm font-medium text-indigo-600 hover:text-indigo-700">Edit</a>
+                            @endcan
+                            @can('delete', $product)
+                                <form method="POST" action="{{ tenant_route('tenant.inventory.destroy', ['product' => $product]) }}" class="ml-3 inline" onsubmit="return confirm('Delete this product?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-sm font-medium text-red-600 hover:text-red-700">Delete</button>
+                                </form>
+                            @endcan
                         </td>
                     </tr>
                 @empty

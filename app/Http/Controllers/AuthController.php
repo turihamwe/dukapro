@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\SystemAuditLogger;
+use App\Mail\WelcomeOwnerMail;
+use App\Models\Business;
 use App\Services\TenantRegistrationService;
+use App\Support\CashierMode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -16,15 +19,94 @@ class AuthController extends Controller
         $this->registrationService = $registrationService;
     }
 
-    public function showLogin(Request $request)
+    public function showPortal()
     {
-        $intended = $request->session()->get('url.intended');
+        return view('auth.portal');
+    }
 
-        if ($intended && parse_url($intended, PHP_URL_HOST) !== $request->getHost()) {
-            $request->session()->forget('url.intended');
+    public function showSuperAdminLogin()
+    {
+        return view('auth.superadmin-login');
+    }
+
+    public function superAdminLogin(Request $request)
+    {
+        $credentials = $request->validate([
+            'email' => 'required|email',
+            'password' => 'required',
+        ]);
+
+        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
+            return back()->withErrors(['email' => 'Invalid credentials.'])->onlyInput('email');
         }
 
-        return view('auth.login');
+        $user = Auth::user();
+        $request->session()->regenerate();
+
+        if (! $user->isSuperAdmin()) {
+            Auth::logout();
+            return back()->withErrors(['email' => 'This portal is for platform administrators only.']);
+        }
+
+        SystemAuditLogger::record('login', 'SuperAdmin login: ' . $user->email, null, $user->id);
+
+        return redirect()->route('superadmin.dashboard');
+    }
+
+    public function showBusinessLogin(Business $portal)
+    {
+        abort_unless($portal->is_active, 404);
+
+        return view('auth.business-login', ['business' => $portal]);
+    }
+
+    public function businessLogin(Request $request, Business $portal)
+    {
+        abort_unless($portal->is_active, 404);
+
+        $credentials = $request->validate([
+            'email' => 'required|email',
+            'password' => 'required',
+        ]);
+
+        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
+            return back()->withErrors(['email' => 'Invalid credentials for this business portal.'])->onlyInput('email');
+        }
+
+        $request->session()->regenerate();
+        $user = Auth::user();
+
+        if ($user->isSuperAdmin()) {
+            Auth::logout();
+            return back()->withErrors(['email' => 'Use the platform admin login instead.']);
+        }
+
+        if ((int) $user->business_id !== (int) $portal->id) {
+            Auth::logout();
+            return back()->withErrors(['email' => 'This account does not belong to ' . $portal->name . '.']);
+        }
+
+        if (! $user->is_active) {
+            Auth::logout();
+            return back()->withErrors(['email' => 'Your account has been deactivated.']);
+        }
+
+        CashierMode::disable($request);
+
+        SystemAuditLogger::record(
+            'login',
+            'User login: ' . $user->email . ' @ ' . $portal->name,
+            $portal->id,
+            $user->id
+        );
+
+        if ($portal->isSubscriptionExpired()) {
+            return redirect()->route('subscription.payment');
+        }
+
+        session()->flash('welcome_message', 'Welcome to DukaPro store, ' . $portal->name);
+
+        return $this->redirectHome($user);
     }
 
     public function showRegister()
@@ -55,59 +137,17 @@ class AuthController extends Controller
             "New business registered: {$user->business->name}",
             $user->business_id,
             $user->id,
-            ['business_slug' => $user->business->slug]
+            ['business_slug' => $user->business->slug, 'portal_slug' => $user->business->portal_slug]
         );
 
         return redirect()->route('tenant.dashboard', ['business' => $user->business->slug])
-            ->with('success', 'Welcome! Your 30-day trial has started.');
-    }
-
-    public function login(Request $request)
-    {
-        $credentials = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
-
-        if (Auth::attempt($credentials, $request->boolean('remember'))) {
-            $request->session()->regenerate();
-
-            $user = Auth::user();
-
-            if ($user->isSuperAdmin()) {
-                SystemAuditLogger::record('login', 'SuperAdmin login: ' . $user->email, null, $user->id);
-                $request->session()->forget('url.intended');
-
-                return redirect()->route('superadmin.dashboard');
-            }
-
-            if (! $user->business_id) {
-                Auth::logout();
-                return back()->withErrors(['email' => 'Your account is not linked to a business.']);
-            }
-
-            SystemAuditLogger::record(
-                'login',
-                'User login: ' . $user->email . ' @ ' . $user->business->name,
-                $user->business_id,
-                $user->id
-            );
-
-            if ($user->business->isSubscriptionExpired()) {
-                return redirect()->route('subscription.payment');
-            }
-
-            $request->session()->forget('url.intended');
-
-            return $this->redirectHome($user);
-        }
-
-        return back()->withErrors(['email' => 'Invalid credentials.'])->onlyInput('email');
+            ->with('success', 'Welcome to DukaPro store, ' . $user->business->name . '! Your portal URL is ' . $user->business->portalLoginUrl());
     }
 
     public function logout(Request $request)
     {
         $user = $request->user();
+        $portalUrl = $user && $user->business ? $user->business->portalLoginUrl() : route('portal');
 
         if ($user) {
             SystemAuditLogger::record(
@@ -122,7 +162,7 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('login');
+        return redirect()->to($portalUrl);
     }
 
     protected function redirectHome($user)
@@ -133,7 +173,7 @@ class AuthController extends Controller
             return redirect()->route('tenant.pos.index', $params);
         }
 
-        if ($user->isManager() || $user->isOwner()) {
+        if ($user->can('view-dashboard')) {
             return redirect()->route('tenant.dashboard', $params);
         }
 

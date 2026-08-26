@@ -30,12 +30,18 @@ class SubscriptionController extends Controller
 
         $data = $request->validate([
             'phone_number' => 'required|string|min:9|max:15',
+            'provider' => 'required|in:mtn,airtel',
         ]);
 
         $result = $this->mobileMoneyService->initiatePayment(
             $request->user()->business,
-            $data['phone_number']
+            $data['phone_number'],
+            $data['provider']
         );
+
+        if ($request->expectsJson()) {
+            return response()->json($result);
+        }
 
         return back()->with('payment', $result);
     }

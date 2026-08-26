@@ -35,6 +35,7 @@ class InventoryController extends Controller
             'price' => 'required|numeric|min:0',
             'measurement_unit' => 'required|string|max:50',
             'stock_quantity' => 'required|numeric|min:0',
+            'critical_threshold' => 'nullable|integer|min:0',
             'variant_attribute_name' => 'nullable|string|max:100',
             'variant_attribute_values' => 'nullable|string|max:500',
         ];
@@ -76,6 +77,7 @@ class InventoryController extends Controller
             'price' => 'required|numeric|min:0',
             'measurement_unit' => 'required|string|max:50',
             'stock_quantity' => 'required|numeric|min:0',
+            'critical_threshold' => 'nullable|integer|min:0',
             'variant_attribute_name' => 'nullable|string|max:100',
             'variant_attribute_values' => 'nullable|string|max:500',
             'is_active' => 'nullable|boolean',

@@ -7,20 +7,23 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     protected $fillable = [
         'business_id',
         'name',
         'email',
+        'phone',
         'password',
         'role',
+        'branch_name',
         'is_active',
         'is_super_admin',
     ];
@@ -64,6 +67,21 @@ class User extends Authenticatable
     public function isCashier(): bool
     {
         return $this->role === UserRole::CASHIER;
+    }
+
+    public function isSupervisor(): bool
+    {
+        return $this->role === UserRole::SUPERVISOR;
+    }
+
+    public function canSwitchToCashierMode(): bool
+    {
+        return $this->isOwner() || $this->isManager() || $this->isSupervisor();
+    }
+
+    public function isStaff(): bool
+    {
+        return in_array($this->role, UserRole::staffRoles(), true);
     }
 
     public function hasRole(string $role): bool

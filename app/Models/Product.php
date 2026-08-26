@@ -8,10 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Product extends Model
 {
-    use BelongsToTenant, HasFactory;
+    use BelongsToTenant, HasFactory, SoftDeletes;
 
     protected $fillable = [
         'business_id',
@@ -23,6 +24,7 @@ class Product extends Model
         'variant_attributes',
         'measurement_unit',
         'stock_quantity',
+        'critical_threshold',
         'is_active',
     ];
 
@@ -31,6 +33,7 @@ class Product extends Model
         'cost_price' => 'float',
         'variant_attributes' => 'array',
         'stock_quantity' => 'float',
+        'critical_threshold' => 'integer',
         'is_active' => 'boolean',
     ];
 

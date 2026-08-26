@@ -17,8 +17,8 @@ class DatabaseSeeder extends Seeder
     public function run()
     {
         $business = Business::create([
-            'name' => 'DukaPro Hardware',
-            'slug' => 'dukapro-hardware',
+            'name' => 'Next Level Academy',
+            'slug' => 'next-level-academy',
             'email' => 'shop@dukapro.test',
             'phone' => '254712345678',
             'address' => 'Nairobi, Kenya',
@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
             'trial_ends_at' => Carbon::now()->addDays(14),
             'subscription_status' => SubscriptionStatus::TRIAL,
             'subscription_amount' => 1500,
+            'employees_onboarding_complete' => true,
         ]);
 
         User::create([
@@ -46,6 +47,16 @@ class DatabaseSeeder extends Seeder
             'email' => 'manager@dukapro.test',
             'password' => Hash::make('password'),
             'role' => UserRole::MANAGER,
+            'is_active' => true,
+        ]);
+
+        User::create([
+            'business_id' => $business->id,
+            'name' => 'Branch Supervisor',
+            'email' => 'supervisor@dukapro.test',
+            'password' => Hash::make('password'),
+            'role' => UserRole::SUPERVISOR,
+            'branch_name' => 'Main Branch',
             'is_active' => true,
         ]);
 

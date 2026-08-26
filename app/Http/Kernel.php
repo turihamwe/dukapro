@@ -68,5 +68,7 @@ class Kernel extends HttpKernel
         'role' => \App\Http\Middleware\EnsureRole::class,
         'superadmin' => \App\Http\Middleware\EnsureSuperAdmin::class,
         'maintenance' => \App\Http\Middleware\CheckMaintenanceMode::class,
+        'management.access' => \App\Http\Middleware\EnsureManagementAccess::class,
+        'cashier.isolation' => \App\Http\Middleware\EnsureCashierModeRoutes::class,
     ];
 }

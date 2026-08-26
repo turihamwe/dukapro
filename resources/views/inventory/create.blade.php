@@ -4,7 +4,7 @@
 @section('container_class', 'max-w-4xl')
 
 @section('content')
-<x-page-header title="Add Product" subtitle="Create a new inventory item" />
+<x-page-header title="Add Product" subtitle="Create your first product" />
 
 <x-card>
     <form method="POST" action="{{ tenant_route('tenant.inventory.store') }}" class="space-y-6">

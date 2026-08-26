@@ -12,34 +12,34 @@ class ProductPolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->isOwner() || $user->isManager();
+        return $user->can('view-inventory');
     }
 
     public function view(User $user, Product $product): bool
     {
-        return ($user->isOwner() || $user->isManager())
+        return $user->can('view-inventory')
             && (int) $user->business_id === (int) $product->business_id;
     }
 
     public function create(User $user): bool
     {
-        return $user->isOwner() || $user->isManager();
+        return $user->can('create-inventory');
     }
 
     public function update(User $user, Product $product): bool
     {
-        return ($user->isOwner() || $user->isManager())
+        return $user->can('update-inventory')
             && (int) $user->business_id === (int) $product->business_id;
     }
 
     public function delete(User $user, Product $product): bool
     {
-        return $user->isOwner()
+        return $user->can('delete-inventory')
             && (int) $user->business_id === (int) $product->business_id;
     }
 
     public function viewCostPrice(User $user): bool
     {
-        return $user->isOwner() || $user->isManager();
+        return $user->can('view-cost-prices');
     }
 }

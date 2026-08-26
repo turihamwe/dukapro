@@ -71,4 +71,10 @@
         <x-button variant="primary" size="lg" type="submit">Submit Reconciliation</x-button>
     </form>
 </x-card>
+
+<div class="mt-4">
+    @can('view-reconciliation-history')
+        <x-button variant="secondary" href="{{ tenant_route('tenant.reconciliation.index') }}">View my shift history</x-button>
+    @endcan
+</div>
 @endsection

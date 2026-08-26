@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\DashboardService;
+use App\Services\OnboardingService;
 use App\Support\AnalyticsDateRange;
 use Illuminate\Http\Request;
 
@@ -10,25 +11,37 @@ class DashboardController extends Controller
 {
     protected DashboardService $dashboardService;
 
-    public function __construct(DashboardService $dashboardService)
+    protected OnboardingService $onboardingService;
+
+    public function __construct(DashboardService $dashboardService, OnboardingService $onboardingService)
     {
         $this->middleware('can:view-dashboard');
         $this->dashboardService = $dashboardService;
+        $this->onboardingService = $onboardingService;
     }
 
     public function index(Request $request)
     {
         $range = AnalyticsDateRange::fromRequest($request);
         $business = $request->user()->business;
-        $payload = $this->dashboardService->chartPayload($business, $range);
+        $onboarding = $this->onboardingService->status($business);
+        $user = $request->user();
+
+        $showFullDashboard = $onboarding['is_complete'] || ! $user->isOwner();
+
+        $payload = $showFullDashboard
+            ? $this->dashboardService->chartPayload($business, $range)
+            : null;
 
         return view('dashboard', [
             'business' => $business,
-            'stats' => $payload['stats'],
+            'onboarding' => $onboarding,
+            'showFullDashboard' => $showFullDashboard,
+            'stats' => $payload['stats'] ?? null,
             'range' => $range,
             'rangePresets' => AnalyticsDateRange::presets(),
-            'revenueChart' => $payload['revenue_chart'],
-            'stockChart' => $payload['stock_chart'],
+            'revenueChart' => $payload['revenue_chart'] ?? null,
+            'stockChart' => $payload['stock_chart'] ?? null,
         ]);
     }
 
@@ -50,6 +63,7 @@ class DashboardController extends Controller
                 'period_sales_formatted' => format_money($payload['stats']['period_sales']),
                 'gross_profit_formatted' => format_money($payload['stats']['gross_profit']),
                 'inventory_value_formatted' => format_money($payload['stats']['inventory_value']),
+                'executive' => $payload['stats']['executive'],
             ],
             'revenue_chart' => array_merge($payload['revenue_chart'], [
                 'total_formatted' => format_money($payload['revenue_chart']['total']),

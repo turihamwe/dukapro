@@ -5,15 +5,32 @@
 @section('content')
 @php
     $canViewMargins = auth()->user()->can('view-profit-margins');
+@endphp
+
+@if(!$onboarding['is_complete'])
+    @include('dashboard.partials.onboarding')
+@endif
+
+@if($showFullDashboard && $stats)
+@php
     $activeRangeKey = $range->key;
     $customFrom = request('from', $range->key === 'custom' ? $range->start->toDateString() : '');
     $customTo = request('to', $range->key === 'custom' ? $range->end->toDateString() : '');
+    $executive = $stats['executive'];
 @endphp
 
 <x-page-header
     title="Executive Analytics"
     subtitle="{{ $business->name }} · {{ $range->label }}"
 />
+
+{{-- Business summary (simplified) --}}
+<div class="mb-6 grid grid-cols-2 gap-4 xl:grid-cols-4">
+    <x-stat-card label="Period Sales" :value="format_money($stats['period_sales'])" accent="emerald" />
+    <x-stat-card label="Cash Available" :value="format_money($executive['cash_available'])" accent="indigo" />
+    <x-stat-card label="Credit / Debts" :value="format_money($executive['outstanding_debts'])" accent="amber" />
+    <x-stat-card label="Overall Balance" :value="format_money($executive['overall_balance'])" accent="emerald" />
+</div>
 
 {{-- Time-range filter bar --}}
 <div class="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
@@ -47,35 +64,6 @@
         <button type="button" id="apply-custom-range" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/40">
             Apply Period
         </button>
-    </div>
-</div>
-
-{{-- KPI stat cards --}}
-<div class="grid grid-cols-2 gap-4 xl:grid-cols-4" id="stat-cards">
-    <x-stat-card id="stat-period-sales" label="Period Sales" :value="format_money($stats['period_sales'])" accent="emerald" />
-    @if($canViewMargins)
-        <x-stat-card id="stat-gross-profit" label="Gross Profit" :value="format_money($stats['gross_profit'])" accent="indigo" />
-        <x-stat-card id="stat-gross-margin" label="Gross Margin" :value="$stats['gross_margin'] . '%'" accent="amber" />
-    @endif
-    <x-stat-card id="stat-inventory-value" label="Inventory Value" :value="format_money($stats['inventory_value'])" accent="indigo" class="{{ $canViewMargins ? '' : 'col-span-2 xl:col-span-1' }}" />
-</div>
-
-<div class="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
-    <div class="rounded-lg border border-gray-200 bg-white px-4 py-3 text-center shadow-sm">
-        <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Transactions</p>
-        <p id="stat-sale-count" class="mt-1 text-xl font-semibold text-gray-900">{{ number_format($stats['sale_count']) }}</p>
-    </div>
-    <div class="rounded-lg border border-gray-200 bg-white px-4 py-3 text-center shadow-sm">
-        <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Low Stock Items</p>
-        <p id="stat-low-stock-count" class="mt-1 text-xl font-semibold text-red-600">{{ number_format($stats['low_stock_count']) }}</p>
-    </div>
-    <div class="rounded-lg border border-gray-200 bg-white px-4 py-3 text-center shadow-sm">
-        <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Products</p>
-        <p class="mt-1 text-xl font-semibold text-gray-900">{{ number_format($stats['product_count']) }}</p>
-    </div>
-    <div class="rounded-lg border border-gray-200 bg-white px-4 py-3 text-center shadow-sm">
-        <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Critical Threshold</p>
-        <p class="mt-1 text-xl font-semibold text-gray-900">{{ \App\Support\AnalyticsDateRange::LOW_STOCK_THRESHOLD }} units</p>
     </div>
 </div>
 
@@ -181,7 +169,7 @@
         <x-button variant="secondary" href="{{ tenant_route('tenant.inventory.index') }}">Inventory ({{ $stats['product_count'] }} products)</x-button>
     @endcan
     @can('manage-debts')
-        <x-button variant="secondary" href="{{ tenant_route('tenant.debts.index') }}">Customer Debts</x-button>
+        <x-button variant="secondary" href="{{ tenant_route('tenant.contacts.index') }}">Contacts</x-button>
     @endcan
     @can('log-damages')
         <x-button variant="secondary" href="{{ tenant_route('tenant.damages.index') }}">Damages & Write-offs</x-button>
@@ -196,8 +184,10 @@
         @endif
     </x-alert>
 @endif
+@endif
 @endsection
 
+@if($showFullDashboard && $stats)
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
@@ -488,3 +478,4 @@
 })();
 </script>
 @endpush
+@endif

@@ -29,7 +29,11 @@ class RedirectIfAuthenticated
                         return redirect()->route('tenant.pos.index', ['business' => $user->business->slug]);
                     }
 
-                    return redirect()->route('tenant.dashboard', ['business' => $user->business->slug]);
+                    if ($user->can('view-dashboard')) {
+                        return redirect()->route('tenant.dashboard', ['business' => $user->business->slug]);
+                    }
+
+                    return redirect()->route('tenant.pos.index', ['business' => $user->business->slug]);
                 }
 
                 return redirect('/');

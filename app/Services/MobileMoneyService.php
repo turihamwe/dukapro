@@ -10,8 +10,9 @@ use Illuminate\Support\Str;
 
 class MobileMoneyService
 {
-    public function initiatePayment(Business $business, string $phoneNumber): array
+    public function initiatePayment(Business $business, string $phoneNumber, string $provider = 'mtn'): array
     {
+        $providerKey = $provider === 'airtel' ? 'airtel_money' : 'mtn_momo';
         $reference = 'DUKA-' . strtoupper(Str::random(10));
 
         $payment = SubscriptionPayment::create([
@@ -19,11 +20,13 @@ class MobileMoneyService
             'amount' => $business->subscription_amount,
             'payment_method' => 'mobile_money',
             'reference' => $reference,
-            'provider' => 'local_mpesa',
+            'provider' => $providerKey,
             'status' => 'pending',
             'metadata' => [
                 'phone_number' => $phoneNumber,
+                'provider' => $provider,
                 'initiated_at' => Carbon::now()->toIso8601String(),
+                'pin_prompt_sent' => true,
             ],
         ]);
 
@@ -39,7 +42,8 @@ class MobileMoneyService
             'success' => true,
             'reference' => $reference,
             'amount' => $payment->amount,
-            'message' => 'STK push initiated. Complete payment on your phone.',
+            'provider' => $provider,
+            'message' => 'PIN prompt sent to ' . $phoneNumber . '. Complete payment on your phone.',
             'simulated_checkout_url' => url('/subscription/simulate/' . $reference),
         ];
     }

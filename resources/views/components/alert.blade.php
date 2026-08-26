@@ -1,4 +1,4 @@
-@props(['type' => 'info'])
+@props(['type' => 'info', 'dismissible' => true])
 
 @php
     $styles = [
@@ -9,6 +9,11 @@
     ];
 @endphp
 
-<div {{ $attributes->merge(['class' => 'rounded-xl border px-4 py-3 text-sm ' . ($styles[$type] ?? $styles['info'])]) }}>
+<div {{ $attributes->merge(['class' => 'alert-banner relative rounded-xl border px-4 py-3 pr-10 text-sm ' . ($styles[$type] ?? $styles['info'])]) }} role="alert">
     {{ $slot }}
+    @if($dismissible)
+        <button type="button" class="alert-dismiss absolute right-3 top-3 rounded p-0.5 opacity-60 transition hover:opacity-100" aria-label="Dismiss">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+    @endif
 </div>

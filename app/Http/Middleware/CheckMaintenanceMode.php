@@ -20,9 +20,12 @@ class CheckMaintenanceMode
         }
 
         if ($request->routeIs(
-            'login',
+            'portal',
+            'business.login',
+            'superadmin.login',
             'logout',
             'logout.get',
+            'register',
             'subscription.payment',
             'subscription.initiate',
             'subscription.simulate',

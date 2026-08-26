@@ -36,7 +36,7 @@
             <x-button variant="primary" size="lg" type="submit">Create Account</x-button>
         </form>
         <p class="mt-5 text-center text-sm text-gray-500">
-            Already have an account? <a href="{{ route('login') }}" class="font-medium text-indigo-600 hover:text-indigo-700">Sign in</a>
+            Already have an account? <a href="{{ route('portal') }}" class="font-medium text-indigo-600 hover:text-indigo-700">Find your business portal</a>
         </p>
     </x-card>
 </div>
