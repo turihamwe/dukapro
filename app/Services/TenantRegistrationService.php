@@ -11,6 +11,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
@@ -18,7 +19,7 @@ class TenantRegistrationService
 {
     public function register(array $data): User
     {
-        return DB::transaction(function () use ($data) {
+        $user = DB::transaction(function () use ($data) {
             $slug = $this->uniqueSlug($data['business_name']);
 
             $business = Business::create([
@@ -37,7 +38,7 @@ class TenantRegistrationService
                 'employees_onboarding_complete' => true,
             ]);
 
-            $user = User::create([
+            return User::create([
                 'business_id' => $business->id,
                 'name' => $data['name'],
                 'email' => $data['email'],
@@ -45,11 +46,25 @@ class TenantRegistrationService
                 'role' => UserRole::OWNER,
                 'is_active' => true,
             ]);
-
-            Mail::to($user->email)->send(new WelcomeOwnerMail($user, $business));
-
-            return $user;
         });
+
+        $user->load('business');
+        $this->sendWelcomeEmail($user);
+
+        return $user;
+    }
+
+    protected function sendWelcomeEmail(User $user): void
+    {
+        try {
+            Mail::to($user->email)->send(new WelcomeOwnerMail($user, $user->business));
+        } catch (\Throwable $e) {
+            Log::warning('Welcome email failed after registration', [
+                'user_id' => $user->id,
+                'business_id' => $user->business_id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     protected function uniqueSlug(string $name): string
