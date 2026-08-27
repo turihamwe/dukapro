@@ -24,10 +24,6 @@ Route::get('/', function () {
     return redirect()->route('portal');
 });
 
-Route::bind('portal', function (string $value) {
-    return Business::where('portal_slug', $value)->firstOrFail();
-});
-
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
 Route::get('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout.get');
 

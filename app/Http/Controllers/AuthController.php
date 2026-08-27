@@ -53,16 +53,36 @@ class AuthController extends Controller
         return redirect()->route('superadmin.dashboard');
     }
 
-    public function showBusinessLogin(Business $portal)
+    public function showBusinessLogin(string $portal)
     {
-        abort_unless($portal->is_active, 404);
+        $business = Business::where('portal_slug', $portal)->first();
 
-        return view('auth.business-login', ['business' => $portal]);
+        if (! $business) {
+            return redirect()
+                ->route('portal')
+                ->withInput(['portal_slug' => $portal])
+                ->withErrors([
+                    'portal_slug' => 'That portal ID was not found. Use the full link from your store owner (e.g. next-level-academy-a1b2c3d4), not the name from the app URL.',
+                ]);
+        }
+
+        abort_unless($business->is_active, 404);
+
+        return view('auth.business-login', ['business' => $business]);
     }
 
-    public function businessLogin(Request $request, Business $portal)
+    public function businessLogin(Request $request, string $portal)
     {
-        abort_unless($portal->is_active, 404);
+        $business = Business::where('portal_slug', $portal)->first();
+
+        if (! $business) {
+            return redirect()
+                ->route('portal')
+                ->withInput(['portal_slug' => $portal])
+                ->withErrors(['portal_slug' => 'That portal ID was not found.']);
+        }
+
+        abort_unless($business->is_active, 404);
 
         $credentials = $request->validate([
             'email' => 'required|email',
@@ -81,9 +101,9 @@ class AuthController extends Controller
             return back()->withErrors(['email' => 'Use the platform admin login instead.']);
         }
 
-        if ((int) $user->business_id !== (int) $portal->id) {
+        if ((int) $user->business_id !== (int) $business->id) {
             Auth::logout();
-            return back()->withErrors(['email' => 'This account does not belong to ' . $portal->name . '.']);
+            return back()->withErrors(['email' => 'This account does not belong to ' . $business->name . '.']);
         }
 
         if (! $user->is_active) {
@@ -95,16 +115,16 @@ class AuthController extends Controller
 
         SystemAuditLogger::record(
             'login',
-            'User login: ' . $user->email . ' @ ' . $portal->name,
-            $portal->id,
+            'User login: ' . $user->email . ' @ ' . $business->name,
+            $business->id,
             $user->id
         );
 
-        if ($portal->isSubscriptionExpired()) {
+        if ($business->isSubscriptionExpired()) {
             return redirect()->route('subscription.payment');
         }
 
-        session()->flash('welcome_message', 'Welcome to DukaPro store, ' . $portal->name);
+        session()->flash('welcome_message', 'Welcome to DukaPro store, ' . $business->name);
 
         return $this->redirectHome($user);
     }

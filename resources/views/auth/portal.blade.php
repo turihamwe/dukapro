@@ -12,9 +12,15 @@
     </div>
 
     <x-card>
+        @if($errors->has('portal_slug'))
+            <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                {{ $errors->first('portal_slug') }}
+            </div>
+        @endif
         <form method="GET" action="#" id="portal-form" class="space-y-5">
             <x-input type="text" name="portal_slug" id="portal_slug" label="Business portal ID" placeholder="e.g. next-level-academy-a1b2c3d4" required large
-                     hint="Ask your store owner for your unique portal link." />
+                     value="{{ old('portal_slug') }}"
+                     hint="Paste your full portal link or just the portal ID from your store owner." />
             <x-button variant="primary" size="lg" type="submit">Continue to sign in</x-button>
         </form>
         <p class="mt-5 text-center text-xs text-gray-500">
@@ -26,9 +32,29 @@
 
 @push('scripts')
 <script>
+function extractPortalSlug(input) {
+    var value = (input || '').trim().replace(/^\/+|\/+$/g, '');
+    if (!value) return '';
+
+    try {
+        if (/^https?:\/\//i.test(value)) {
+            var url = new URL(value);
+            var match = url.pathname.match(/\/business\/([^/]+)\/login\/?$/i);
+            if (match) return decodeURIComponent(match[1]);
+            var parts = url.pathname.split('/').filter(Boolean);
+            return decodeURIComponent(parts[parts.length - 1] === 'login' ? parts[parts.length - 2] : parts[parts.length - 1] || '');
+        }
+    } catch (e) {}
+
+    var pathMatch = value.match(/\/business\/([^/]+)(?:\/login)?\/?$/i);
+    if (pathMatch) return decodeURIComponent(pathMatch[1]);
+
+    return value.replace(/\/login\/?$/i, '');
+}
+
 document.getElementById('portal-form')?.addEventListener('submit', function (e) {
     e.preventDefault();
-    var slug = document.getElementById('portal_slug').value.trim().replace(/^\/+|\/+$/g, '');
+    var slug = extractPortalSlug(document.getElementById('portal_slug').value);
     if (!slug) return;
     var base = @json(url('/business'));
     window.location.href = base + '/' + encodeURIComponent(slug) + '/login';
