@@ -60,6 +60,7 @@ class EmployeeService
             'role' => $role,
             'branch_name' => $role === UserRole::SUPERVISOR ? $data['branch_name'] : null,
             'is_active' => true,
+            'ui_theme' => 'modern',
         ]);
 
         app(OnboardingService::class)->markEmployeesComplete($business);

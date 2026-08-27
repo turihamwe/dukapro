@@ -7,9 +7,16 @@
 @endcan
 @can('view-inventory')
     <a href="{{ tenant_route('tenant.inventory.index') }}"
-       class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition border-l-[3px] {{ request()->routeIs('tenant.inventory.*') ? $navActive : $navIdle }}">
+       class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition border-l-[3px] {{ request()->routeIs('tenant.inventory.*') && request()->get('stock') !== 'low' ? $navActive : $navIdle }}">
         <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
         Inventory
+    </a>
+@endcan
+@can('view-customers')
+    <a href="{{ tenant_route('tenant.contacts.index') }}"
+       class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition border-l-[3px] {{ request()->routeIs('tenant.contacts.*') ? $navActive : $navIdle }}">
+        <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        Contacts
     </a>
 @endcan
 @can('view-sales-reports')
@@ -19,19 +26,13 @@
         Sales
     </a>
 @endcan
-@if(auth()->user()->can('view-sales-reports') || auth()->user()->can('view-all-reconciliations'))
-    @php
-        $reportsUrl = auth()->user()->can('view-all-reconciliations')
-            ? tenant_route('tenant.reconciliation.index')
-            : tenant_route('tenant.reports.sales.index');
-        $reportsActive = request()->routeIs('tenant.reconciliation.*') || request()->routeIs('tenant.reports.*');
-    @endphp
-    <a href="{{ $reportsUrl }}"
-       class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition border-l-[3px] {{ $reportsActive ? $navActive : $navIdle }}">
+@can('view-all-reconciliations')
+    <a href="{{ tenant_route('tenant.reconciliation.index') }}"
+       class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition border-l-[3px] {{ request()->routeIs('tenant.reconciliation.*') ? $navActive : $navIdle }}">
         <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-        Reports
+        EOD
     </a>
-@endif
+@endcan
 @can('view-inventory')
     <a href="{{ tenant_route('tenant.inventory.index', ['stock' => 'low']) }}"
        class="flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition border-l-[3px] {{ request()->get('stock') === 'low' ? $navActive : $navIdle }}">

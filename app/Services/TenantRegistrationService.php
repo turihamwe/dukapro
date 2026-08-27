@@ -54,6 +54,7 @@ class TenantRegistrationService
                 'password' => Hash::make($data['password']),
                 'role' => UserRole::OWNER,
                 'is_active' => true,
+                'ui_theme' => 'modern',
             ]);
         });
 
