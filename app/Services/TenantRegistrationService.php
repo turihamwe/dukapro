@@ -9,6 +9,7 @@ use App\Models\Business;
 use App\Models\SystemSetting;
 use App\Models\User;
 use Carbon\Carbon;
+use App\Services\UsernameService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -17,6 +18,13 @@ use Illuminate\Support\Str;
 
 class TenantRegistrationService
 {
+    protected UsernameService $usernameService;
+
+    public function __construct(UsernameService $usernameService)
+    {
+        $this->usernameService = $usernameService;
+    }
+
     public function register(array $data): User
     {
         $user = DB::transaction(function () use ($data) {
@@ -35,12 +43,13 @@ class TenantRegistrationService
                 'trial_ends_at' => Carbon::now()->addDays(30),
                 'subscription_status' => SubscriptionStatus::TRIAL,
                 'subscription_amount' => 1500,
-                'employees_onboarding_complete' => true,
+                'employees_onboarding_complete' => false,
             ]);
 
             return User::create([
                 'business_id' => $business->id,
                 'name' => $data['name'],
+                'username' => $this->usernameService->generateUnique($data['name']),
                 'email' => $data['email'],
                 'password' => Hash::make($data['password']),
                 'role' => UserRole::OWNER,

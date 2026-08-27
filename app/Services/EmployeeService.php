@@ -10,6 +10,13 @@ use Illuminate\Validation\ValidationException;
 
 class EmployeeService
 {
+    protected UsernameService $usernameService;
+
+    public function __construct(UsernameService $usernameService)
+    {
+        $this->usernameService = $usernameService;
+    }
+
     public function assignableRoles(User $actor): array
     {
         if ($actor->isOwner()) {
@@ -46,6 +53,7 @@ class EmployeeService
         $employee = User::create([
             'business_id' => $business->id,
             'name' => $data['name'],
+            'username' => $this->usernameService->generateUnique($data['username'] ?? $data['name']),
             'email' => $data['email'],
             'phone' => $data['phone'] ?? null,
             'password' => Hash::make($data['password']),

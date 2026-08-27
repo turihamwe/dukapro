@@ -7,8 +7,22 @@
     $canViewMargins = auth()->user()->can('view-profit-margins');
 @endphp
 
+@if(user_ui_theme() === 'modern')
+    @include('dashboard.modern')
+@else
+
 @if(!$onboarding['is_complete'])
     @include('dashboard.partials.onboarding')
+@endif
+
+{{-- Owner summary cards --}}
+@if($summaryCards)
+<div class="mb-6 grid grid-cols-2 gap-4 xl:grid-cols-4">
+    <x-stat-card label="Total stock value" :value="format_money($summaryCards['inventory_value'])" accent="indigo" />
+    <x-stat-card label="Today's sales" :value="format_money($summaryCards['todays_sales'])" accent="emerald" />
+    <x-stat-card label="Low stock items" :value="number_format($summaryCards['low_stock_count'])" accent="amber" />
+    <x-stat-card label="Total products" :value="number_format($summaryCards['product_count'])" accent="indigo" />
+</div>
 @endif
 
 @if($showFullDashboard && $stats)
@@ -20,17 +34,11 @@
 @endphp
 
 <x-page-header
-    title="Executive Analytics"
+    title="Dashboard"
     subtitle="{{ $business->name }} · {{ $range->label }}"
 />
 
-{{-- Business summary (simplified) --}}
-<div class="mb-6 grid grid-cols-2 gap-4 xl:grid-cols-4">
-    <x-stat-card label="Period Sales" :value="format_money($stats['period_sales'])" accent="emerald" />
-    <x-stat-card label="Cash Available" :value="format_money($executive['cash_available'])" accent="indigo" />
-    <x-stat-card label="Credit / Debts" :value="format_money($executive['outstanding_debts'])" accent="amber" />
-    <x-stat-card label="Overall Balance" :value="format_money($executive['overall_balance'])" accent="emerald" />
-</div>
+{{-- Legacy period summary removed — see owner summary cards above --}}
 
 {{-- Time-range filter bar --}}
 <div class="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
@@ -185,9 +193,11 @@
     </x-alert>
 @endif
 @endif
+
+@endif
 @endsection
 
-@if($showFullDashboard && $stats)
+@if(user_ui_theme() !== 'modern' && $showFullDashboard && $stats)
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>

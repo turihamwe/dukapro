@@ -24,6 +24,8 @@
             <x-button variant="primary" size="lg" type="submit">Continue to sign in</x-button>
         </form>
         <p class="mt-5 text-center text-xs text-gray-500">
+            <a href="{{ route('login') }}" class="text-indigo-600 hover:text-indigo-700">Sign in with username or email</a>
+            ·
             New business? <a href="{{ route('register') }}" class="text-indigo-600 hover:text-indigo-700">Create an account</a>
         </p>
     </x-card>

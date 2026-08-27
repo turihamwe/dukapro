@@ -20,6 +20,8 @@ class CheckMaintenanceMode
         }
 
         if ($request->routeIs(
+            'home',
+            'login',
             'portal',
             'business.login',
             'superadmin.login',

@@ -25,6 +25,11 @@ class AnalyticsDateRange
         $this->end = $end->copy()->endOfDay();
     }
 
+    public static function today(): self
+    {
+        return new self('today', 'Today', Carbon::today(), Carbon::today());
+    }
+
     public static function fromRequest(Request $request): self
     {
         $key = $request->input('range', 'today');

@@ -20,16 +20,14 @@ use App\Http\Controllers\SuperAdmin\SettingsController as SuperAdminSettingsCont
 use App\Models\Business;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return redirect()->route('portal');
-});
-
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
 Route::get('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout.get');
 
 Route::middleware(['maintenance'])->group(function () {
     Route::middleware('guest')->group(function () {
-        Route::get('/login', fn () => redirect()->route('portal'));
+        Route::get('/', [AuthController::class, 'showRegister'])->name('home');
+        Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+        Route::post('/login', [AuthController::class, 'login']);
         Route::get('/portal', [AuthController::class, 'showPortal'])->name('portal');
         Route::get('/business/{portal}/login', [AuthController::class, 'showBusinessLogin'])->name('business.login');
         Route::post('/business/{portal}/login', [AuthController::class, 'businessLogin']);

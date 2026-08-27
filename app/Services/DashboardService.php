@@ -44,11 +44,13 @@ class DashboardService
             return $product->stock_quantity * (float) ($product->cost_price ?? 0);
         }), 2);
 
-        $lowStock = $products->filter(function (Product $product) {
+        $lowStockItems = $products->filter(function (Product $product) {
             $threshold = $product->critical_threshold ?? AnalyticsDateRange::LOW_STOCK_THRESHOLD;
 
             return $product->stock_quantity <= $threshold;
-        })
+        });
+
+        $lowStock = $lowStockItems
             ->sortBy('stock_quantity')
             ->values()
             ->take(10);
@@ -67,7 +69,7 @@ class DashboardService
             'gross_margin' => $grossMargin,
             'inventory_value' => $inventoryValue,
             'product_count' => $products->count(),
-            'low_stock_count' => $lowStock->count(),
+            'low_stock_count' => $lowStockItems->count(),
             'low_stock' => $lowStock,
             'eod_reports' => $eodReports,
             'sale_count' => (clone $salesQuery)->count(),
@@ -104,6 +106,79 @@ class DashboardService
             'outstanding_debts' => round($outstandingDebts, 2),
             'damages_loss' => $damagesLoss,
             'overall_balance' => $overallBalance,
+        ];
+    }
+
+    public function ownerSummaryCards(Business $business): array
+    {
+        $overview = $this->ownerOverview($business, AnalyticsDateRange::today());
+
+        return [
+            'inventory_value' => $overview['inventory_value'],
+            'todays_sales' => $overview['period_sales'],
+            'low_stock_count' => $overview['low_stock_count'],
+            'product_count' => $overview['product_count'],
+        ];
+    }
+
+    public function modernPayload(Business $business): array
+    {
+        $summary = $this->ownerSummaryCards($business);
+
+        $last7Days = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $date = Carbon::today()->subDays($i);
+            $range = new AnalyticsDateRange('day', $date->format('D'), $date, $date);
+            $last7Days[] = [
+                'label' => $date->format('D'),
+                'full_label' => $date->format('M j'),
+                'value' => round((float) $this->completedSalesQuery($business, $range)->sum('total'), 2),
+            ];
+        }
+
+        $yesterdayRange = new AnalyticsDateRange('yesterday', 'Yesterday', Carbon::yesterday(), Carbon::yesterday());
+        $yesterdaySales = (float) $this->completedSalesQuery($business, $yesterdayRange)->sum('total');
+        $todaySales = (float) $summary['todays_sales'];
+        $salesChangePct = $yesterdaySales > 0
+            ? round((($todaySales - $yesterdaySales) / $yesterdaySales) * 100, 1)
+            : ($todaySales > 0 ? 100.0 : 0.0);
+
+        $lastWeekTotal = array_sum(array_column($last7Days, 'value'));
+        $inventoryChangePct = $lastWeekTotal > 0 && $summary['inventory_value'] > 0
+            ? round(min(12, ($todaySales / max($lastWeekTotal, 1)) * 100), 1)
+            : 0.0;
+
+        $productCount = (int) $summary['product_count'];
+        $lowStock = (int) $summary['low_stock_count'];
+        $availableCount = max(0, $productCount - $lowStock);
+        $availablePct = $productCount > 0 ? (int) round(($availableCount / $productCount) * 100) : 100;
+        $missingPct = 100 - $availablePct;
+
+        $recentSales = Sale::query()
+            ->with(['items.product', 'user'])
+            ->where('business_id', $business->id)
+            ->orderByDesc('completed_at')
+            ->limit(6)
+            ->get();
+
+        $notificationCount = min(99, $lowStock + Sale::query()
+            ->where('business_id', $business->id)
+            ->where('status', '!=', 'completed')
+            ->count());
+
+        return [
+            'summary' => $summary,
+            'last_7_days' => $last7Days,
+            'sales_change_pct' => $salesChangePct,
+            'inventory_change_pct' => $inventoryChangePct,
+            'stock_status' => [
+                'available_pct' => $availablePct,
+                'missing_pct' => $missingPct,
+                'available_count' => $availableCount,
+                'low_stock_count' => $lowStock,
+            ],
+            'recent_sales' => $recentSales,
+            'notification_count' => max($notificationCount, $lowStock > 0 ? 1 : 0),
         ];
     }
 

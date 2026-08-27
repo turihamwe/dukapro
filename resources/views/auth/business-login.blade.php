@@ -7,8 +7,8 @@
 @php
     $brandColor = $business->brand_color ?? '#4f46e5';
 @endphp
-<div class="py-8 sm:py-12">
-    <div class="mb-8 text-center">
+<div class="flex min-h-[calc(100vh-4rem)] flex-col justify-center py-6">
+    <div class="mb-6 text-center">
         @if($business->logoUrl())
             <img src="{{ $business->logoUrl() }}" alt="{{ $business->name }}" class="mx-auto mb-4 h-16 w-auto max-w-[200px] object-contain">
         @else
@@ -21,14 +21,14 @@
     </div>
 
     <x-card>
-        <form method="POST" action="{{ route('business.login', ['portal' => $business->portal_slug]) }}" class="space-y-5">
-            @csrf
-            <x-input type="email" name="email" label="Email" value="{{ old('email') }}" required autofocus large />
-            <x-input type="password" name="password" label="Password" required large />
-            <x-button variant="primary" size="lg" type="submit" class="w-full" style="background-color: {{ $brandColor }}">Sign In</x-button>
-        </form>
-        <p class="mt-5 text-center text-xs text-gray-500">
+        @include('auth.partials.login-form', [
+            'action' => route('business.login', ['portal' => $business->portal_slug]),
+            'brandColor' => $brandColor,
+        ])
+        <p class="mt-4 text-center text-xs text-gray-500">
             <a href="{{ route('portal') }}" class="text-indigo-600 hover:text-indigo-700">Use a different business portal</a>
+            ·
+            <a href="{{ route('login') }}" class="text-indigo-600 hover:text-indigo-700">Universal sign in</a>
         </p>
     </x-card>
 </div>

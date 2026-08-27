@@ -33,10 +33,20 @@ class DashboardController extends Controller
             ? $this->dashboardService->chartPayload($business, $range)
             : null;
 
+        $summaryCards = $user->isOwner()
+            ? $this->dashboardService->ownerSummaryCards($business)
+            : null;
+
+        $modernPayload = user_ui_theme() === 'modern' && $user->can('view-dashboard')
+            ? $this->dashboardService->modernPayload($business)
+            : null;
+
         return view('dashboard', [
             'business' => $business,
             'onboarding' => $onboarding,
             'showFullDashboard' => $showFullDashboard,
+            'summaryCards' => $summaryCards,
+            'modernPayload' => $modernPayload,
             'stats' => $payload['stats'] ?? null,
             'range' => $range,
             'rangePresets' => AnalyticsDateRange::presets(),

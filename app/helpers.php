@@ -2,6 +2,70 @@
 
 use App\Models\Business;
 
+if (! function_exists('platform_brand')) {
+    function platform_brand(?string $key = null)
+    {
+        $brand = [
+            'name' => \App\Models\SystemSetting::get('company_name', config('app.name', 'DukaPro')),
+            'tagline' => \App\Models\SystemSetting::get('company_tagline', 'Simple POS, inventory & sales for local businesses'),
+            'logo_url' => ($path = \App\Models\SystemSetting::get('company_logo_path'))
+                ? asset('storage/' . ltrim($path, '/'))
+                : null,
+        ];
+
+        return $key ? ($brand[$key] ?? null) : $brand;
+    }
+}
+
+if (! function_exists('user_ui_theme')) {
+    function user_ui_theme(): string
+    {
+        $user = auth()->user();
+
+        if (! $user) {
+            return 'plain';
+        }
+
+        if ($user->ui_theme === 'custom') {
+            return 'modern';
+        }
+
+        return in_array($user->ui_theme, ['plain', 'modern'], true)
+            ? $user->ui_theme
+            : 'plain';
+    }
+}
+
+if (! function_exists('ui_theme_label')) {
+    function ui_theme_label(string $theme): string
+    {
+        return [
+            'plain' => 'Plain Theme',
+            'modern' => 'DukaPro Modern',
+            'custom' => 'DukaPro Modern',
+        ][$theme] ?? 'Plain Theme';
+    }
+}
+
+if (! function_exists('format_money_compact')) {
+    function format_money_compact($amount, ?Business $business = null): string
+    {
+        $amount = (float) $amount;
+        $business = $business ?? active_business();
+        $symbol = $business->currency_symbol ?? 'UGX';
+
+        if ($amount >= 1000000) {
+            return $symbol . ' ' . rtrim(rtrim(number_format($amount / 1000000, 1), '0'), '.') . 'M';
+        }
+
+        if ($amount >= 1000) {
+            return $symbol . ' ' . rtrim(rtrim(number_format($amount / 1000, 1), '0'), '.') . 'K';
+        }
+
+        return format_money($amount, $business);
+    }
+}
+
 if (! function_exists('business_portal_url')) {
     function business_portal_url(?Business $business = null): string
     {

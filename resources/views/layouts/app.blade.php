@@ -93,7 +93,7 @@
                                 $navItems[] = ['route' => 'tenant.reconciliation.create', 'match' => 'tenant.reconciliation.*', 'icon' => '💰', 'label' => 'EOD'];
                             }
                             if ($user->can('manage-debts')) {
-                                $navItems[] = ['route' => 'tenant.debts.index', 'match' => 'tenant.debts.*', 'icon' => '📒', 'label' => 'Debts'];
+                                $navItems[] = ['route' => 'tenant.contacts.index', 'match' => 'tenant.contacts.*', 'icon' => '📒', 'label' => 'Contacts'];
                             }
                         } catch (\Throwable $e) {
                             $navItems = [];
@@ -116,5 +116,21 @@
     @endauth
 
     @stack('scripts')
+    <script>
+    (function () {
+        document.querySelectorAll('.password-toggle').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var input = btn.parentElement.querySelector('input');
+                if (!input) return;
+                var open = btn.querySelector('.eye-open');
+                var closed = btn.querySelector('.eye-closed');
+                var show = input.type === 'password';
+                input.type = show ? 'text' : 'password';
+                open.classList.toggle('hidden', show);
+                closed.classList.toggle('hidden', !show);
+            });
+        });
+    })();
+    </script>
 </body>
 </html>

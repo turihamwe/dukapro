@@ -14,8 +14,9 @@
 <x-card class="max-w-2xl">
     <form method="POST" action="{{ tenant_route('tenant.staff.store') }}" class="space-y-5">
         @csrf
-        <x-input type="text" name="name" label="Full name" required />
-        <div class="grid gap-4 sm:grid-cols-2">
+            <x-input type="text" name="name" label="Full name" required />
+            <x-input type="text" name="username" label="Username (optional)" value="{{ old('username') }}" hint="Auto-generated from name if left blank." />
+            <div class="grid gap-4 sm:grid-cols-2">
             <x-input type="email" name="email" label="Email" required />
             <x-input type="text" name="phone" label="Phone" />
         </div>

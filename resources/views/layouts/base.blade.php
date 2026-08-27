@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="en" class="h-full theme-{{ user_ui_theme() }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -20,7 +20,11 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>body { font-family: Inter, system-ui, sans-serif; }</style>
+    <style>
+        body { font-family: Inter, system-ui, sans-serif; }
+        .theme-modern .modern-app { min-height: 100vh; }
+        .theme-modern .modern-sidebar { background: transparent; }
+    </style>
     @stack('styles')
 </head>
 <body class="h-full bg-gray-50 text-gray-900 antialiased">
