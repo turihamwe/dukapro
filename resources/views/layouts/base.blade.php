@@ -22,8 +22,19 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: Inter, system-ui, sans-serif; }
-        .theme-modern .modern-app { min-height: 100vh; }
+        .theme-modern .modern-app { min-height: 100vh; min-height: 100dvh; }
         .theme-modern .modern-sidebar { background: transparent; }
+        .theme-modern .modern-nav-link { min-height: 44px; }
+        .theme-modern main { -webkit-overflow-scrolling: touch; }
+        .theme-modern .overflow-x-auto { -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+        @media (max-width: 639px) {
+            .theme-modern .modern-metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+            .theme-modern .modern-metric-grid > div { padding: 1rem; }
+            .theme-modern .modern-metric-grid p.text-2xl { font-size: 1.25rem; }
+            .theme-modern header button,
+            .theme-modern header a.rounded-lg { min-height: 44px; min-width: 44px; display: inline-flex; align-items: center; justify-content: center; }
+            .theme-modern main { padding-left: 1rem; padding-right: 1rem; }
+        }
     </style>
     @stack('styles')
 </head>

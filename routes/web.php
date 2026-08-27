@@ -34,6 +34,7 @@ Route::middleware(['maintenance'])->group(function () {
         Route::get('/superadmin/login', [AuthController::class, 'showSuperAdminLogin'])->name('superadmin.login');
         Route::post('/superadmin/login', [AuthController::class, 'superAdminLogin']);
         Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
+        Route::get('/register/check-username', [AuthController::class, 'checkUsername'])->name('register.check-username');
         Route::post('/register', [AuthController::class, 'register']);
     });
 

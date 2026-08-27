@@ -16,9 +16,21 @@ class InventoryController extends Controller
 
     public function index(Request $request)
     {
-        $products = Product::orderBy('name')->paginate(20);
+        $search = trim((string) $request->input('search', ''));
 
-        return view('inventory.index', compact('products'));
+        $query = Product::query()->orderBy('name');
+
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', '%' . $search . '%')
+                    ->orWhere('sku', 'like', '%' . $search . '%')
+                    ->orWhere('measurement_unit', 'like', '%' . $search . '%');
+            });
+        }
+
+        $products = $query->paginate(20)->appends(['search' => $search]);
+
+        return view('inventory.index', compact('products', 'search'));
     }
 
     public function create()

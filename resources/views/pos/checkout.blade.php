@@ -43,6 +43,7 @@
                 <x-select id="paymentMethod" label="Payment">
                     <option value="cash">Cash</option>
                     <option value="mobile_money">Mobile Money</option>
+                    <option value="bank">Bank Transfer</option>
                     <option value="credit">Credit (Hardware)</option>
                 </x-select>
 

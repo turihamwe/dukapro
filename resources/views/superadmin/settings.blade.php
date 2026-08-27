@@ -49,6 +49,31 @@
         </div>
     </div>
 
+    <div class="rounded-xl border border-gray-200 bg-white p-6 space-y-5">
+        <div>
+            <h2 class="text-sm font-semibold text-gray-900">Platform payment API keys</h2>
+            <p class="mt-1 text-xs text-gray-500">Used for subscription billing and platform mobile-money collections — not individual store POS transactions.</p>
+        </div>
+        <div>
+            <label for="mpesa_api_key" class="mb-1 block text-sm font-medium">M-Pesa / MTN API key</label>
+            <input type="text" name="mpesa_api_key" id="mpesa_api_key"
+                   value="{{ old('mpesa_api_key', $settings['mpesa_api_key'] ?? '') }}"
+                   class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-violet-500 focus:outline-none">
+        </div>
+        <div>
+            <label for="airtel_api_key" class="mb-1 block text-sm font-medium">Airtel Money API key</label>
+            <input type="text" name="airtel_api_key" id="airtel_api_key"
+                   value="{{ old('airtel_api_key', $settings['airtel_api_key'] ?? '') }}"
+                   class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-violet-500 focus:outline-none">
+        </div>
+        <div>
+            <label for="mtn_api_key" class="mb-1 block text-sm font-medium">MTN MoMo API key</label>
+            <input type="text" name="mtn_api_key" id="mtn_api_key"
+                   value="{{ old('mtn_api_key', $settings['mtn_api_key'] ?? '') }}"
+                   class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-violet-500 focus:outline-none">
+        </div>
+    </div>
+
     <button type="submit" class="rounded-lg bg-violet-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-violet-500">
         Save Settings
     </button>

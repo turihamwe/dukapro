@@ -6,7 +6,6 @@ use App\Helpers\SystemAuditLogger;
 use App\Models\Business;
 use App\Services\AuthLoginService;
 use App\Services\TenantRegistrationService;
-use App\Services\UsernameService;
 use App\Support\CashierMode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,16 +16,12 @@ class AuthController extends Controller
 
     protected AuthLoginService $authLoginService;
 
-    protected UsernameService $usernameService;
-
     public function __construct(
         TenantRegistrationService $registrationService,
-        AuthLoginService $authLoginService,
-        UsernameService $usernameService
+        AuthLoginService $authLoginService
     ) {
         $this->registrationService = $registrationService;
         $this->authLoginService = $authLoginService;
-        $this->usernameService = $usernameService;
     }
 
     public function showPortal()
@@ -148,16 +143,39 @@ class AuthController extends Controller
         return view('auth.register');
     }
 
+    public function checkUsername(Request $request)
+    {
+        $username = strtolower(trim((string) $request->query('username', '')));
+
+        if ($username === '' || strlen($username) < 3) {
+            return response()->json(['available' => false, 'message' => 'Username must be at least 3 characters.']);
+        }
+
+        if (! preg_match('/^[A-Za-z0-9_-]+$/', $username)) {
+            return response()->json(['available' => false, 'message' => 'Use only letters, numbers, dashes, or underscores.']);
+        }
+
+        $taken = \App\Models\User::whereRaw('LOWER(username) = ?', [$username])->exists();
+
+        return response()->json([
+            'available' => ! $taken,
+            'message' => $taken ? 'That username is already taken.' : 'Username is available.',
+        ]);
+    }
+
     public function register(Request $request)
     {
+        if ($request->filled('username')) {
+            $request->merge(['username' => strtolower(trim($request->input('username')))]);
+        }
+
         $data = $request->validate([
             'business_name' => 'required|string|max:255',
             'name' => 'required|string|max:255',
+            'username' => 'required|string|max:50|alpha_dash|unique:users,username',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
             'phone' => 'nullable|string|max:30',
-            'currency_symbol' => 'required|string|max:20',
-            'currency_position' => 'required|in:prefix,suffix',
         ]);
 
         $user = $this->registrationService->register($data);

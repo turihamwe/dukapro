@@ -8,12 +8,12 @@
     <x-input
         type="text"
         name="login"
-        label="Username or email"
+        label="Username or Email"
         value="{{ old('login') }}"
         required
         autofocus
         large
-        hint="Use your username for quicker sign in, or your email address."
+        {{-- hint="Enter your username or email address." --}}
     />
     <x-input type="password" name="password" label="Password" required large />
     <label class="flex items-center gap-2 text-sm text-gray-600">

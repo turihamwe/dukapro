@@ -34,18 +34,9 @@ class BusinessSettingsController extends Controller
             'currency_symbol' => 'required|string|max:20',
             'currency_position' => 'required|in:prefix,suffix',
             'brand_color' => 'nullable|string|max:7',
-            'logo' => 'nullable|image|max:2048',
-            'mpesa_api_key' => 'nullable|string|max:255',
-            'airtel_api_key' => 'nullable|string|max:255',
-            'mtn_api_key' => 'nullable|string|max:255',
         ]);
 
         $old = $business->toArray();
-
-        $settings = $business->settings ?? [];
-        $settings['mpesa_api_key'] = $data['mpesa_api_key'] ?? null;
-        $settings['airtel_api_key'] = $data['airtel_api_key'] ?? null;
-        $settings['mtn_api_key'] = $data['mtn_api_key'] ?? null;
 
         $slug = $business->slug;
         if ($business->name !== $data['name']) {
@@ -57,7 +48,7 @@ class BusinessSettingsController extends Controller
             }
         }
 
-        $update = [
+        $business->update([
             'name' => $data['name'],
             'slug' => $slug,
             'email' => $data['email'],
@@ -66,16 +57,9 @@ class BusinessSettingsController extends Controller
             'tax_number' => $data['tax_number'],
             'currency_symbol' => $data['currency_symbol'],
             'currency_position' => $data['currency_position'],
+            'currency' => $data['currency_symbol'],
             'brand_color' => $data['brand_color'] ?? $business->brand_color,
-            'settings' => $settings,
-        ];
-
-        if ($request->hasFile('logo')) {
-            $path = $request->file('logo')->store('business-logos/' . $business->id, 'public');
-            $update['logo_path'] = $path;
-        }
-
-        $business->update($update);
+        ]);
 
         AuditLogger::record('business_updated', $business, $old, $business->fresh()->toArray());
 

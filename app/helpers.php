@@ -6,8 +6,8 @@ if (! function_exists('platform_brand')) {
     function platform_brand(?string $key = null)
     {
         $brand = [
-            'name' => \App\Models\SystemSetting::get('company_name', config('app.name', 'DukaPro')),
-            'tagline' => \App\Models\SystemSetting::get('company_tagline', 'Simple POS, inventory & sales for local businesses'),
+            'name' => \App\Models\SystemSetting::get('company_name', config('app.name', 'Duka Pro')),
+            'tagline' => \App\Models\SystemSetting::get('company_tagline', 'Manage your Business From Anywhere'),
             'logo_url' => ($path = \App\Models\SystemSetting::get('company_logo_path'))
                 ? asset('storage/' . ltrim($path, '/'))
                 : null,

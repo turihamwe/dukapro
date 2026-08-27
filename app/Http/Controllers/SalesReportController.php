@@ -46,6 +46,7 @@ class SalesReportController extends Controller
             'cash' => (float) ($summary['cash']->total ?? 0),
             'mobile_money' => (float) ($summary['mobile_money']->total ?? 0),
             'credit' => (float) ($summary['credit']->total ?? 0),
+            'bank' => (float) ($summary['bank']->total ?? 0),
         ];
 
         return view('reports.sales', compact('period', 'label', 'dailyBreakdown', 'totals', 'range'));
@@ -54,11 +55,17 @@ class SalesReportController extends Controller
     protected function resolvePeriod(string $period, Request $request): array
     {
         switch ($period) {
+            case 'yesterday':
+                return [Carbon::yesterday()->startOfDay(), Carbon::yesterday()->endOfDay(), 'Yesterday'];
+
             case 'weekly':
-                return [Carbon::today()->subDays(6), Carbon::today(), 'Last 7 Days'];
+                return [Carbon::today()->subDays(6)->startOfDay(), Carbon::today()->endOfDay(), 'Last 7 Days'];
 
             case 'monthly':
-                return [Carbon::today()->subDays(29), Carbon::today(), 'Last 30 Days'];
+                return [Carbon::today()->subDays(29)->startOfDay(), Carbon::today()->endOfDay(), 'Last 30 Days'];
+
+            case 'yearly':
+                return [Carbon::today()->startOfYear()->startOfDay(), Carbon::today()->endOfDay(), 'This Year'];
 
             case 'custom':
                 $from = Carbon::parse($request->input('from', Carbon::today()->toDateString()));
@@ -70,7 +77,7 @@ class SalesReportController extends Controller
                 return [$from, $to, $from->format('M j') . ' – ' . $to->format('M j, Y')];
 
             default:
-                return [Carbon::today(), Carbon::today(), 'Today'];
+                return [Carbon::today()->startOfDay(), Carbon::today()->endOfDay(), 'Today'];
         }
     }
 }

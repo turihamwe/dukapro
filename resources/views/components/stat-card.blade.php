@@ -5,6 +5,7 @@
         'indigo' => 'from-indigo-500/10 to-indigo-600/5 border-indigo-100',
         'emerald' => 'from-emerald-500/10 to-emerald-600/5 border-emerald-100',
         'amber' => 'from-amber-500/10 to-amber-600/5 border-amber-100',
+        'sky' => 'from-sky-500/10 to-sky-600/5 border-sky-100',
     ];
 @endphp
 

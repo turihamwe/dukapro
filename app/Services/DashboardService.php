@@ -166,6 +166,9 @@ class DashboardService
             ->where('status', '!=', 'completed')
             ->count());
 
+        $stockDistribution = $this->stockLevelDistribution($business);
+        $stockByCategory = $this->stockByCategory($business);
+
         return [
             'summary' => $summary,
             'last_7_days' => $last7Days,
@@ -177,8 +180,70 @@ class DashboardService
                 'available_count' => $availableCount,
                 'low_stock_count' => $lowStock,
             ],
+            'stock_distribution' => $stockDistribution,
+            'stock_by_category' => $stockByCategory,
             'recent_sales' => $recentSales,
             'notification_count' => max($notificationCount, $lowStock > 0 ? 1 : 0),
+        ];
+    }
+
+    protected function stockLevelDistribution(Business $business): array
+    {
+        $products = Product::query()
+            ->where('business_id', $business->id)
+            ->where('is_active', true)
+            ->get(['stock_quantity', 'critical_threshold']);
+
+        $healthy = 0;
+        $low = 0;
+        $out = 0;
+
+        foreach ($products as $product) {
+            $threshold = $product->critical_threshold ?? AnalyticsDateRange::LOW_STOCK_THRESHOLD;
+            if ($product->stock_quantity <= 0) {
+                $out++;
+            } elseif ($product->stock_quantity <= $threshold) {
+                $low++;
+            } else {
+                $healthy++;
+            }
+        }
+
+        return [
+            'healthy' => $healthy,
+            'low' => $low,
+            'out_of_stock' => $out,
+            'total' => $healthy + $low + $out,
+        ];
+    }
+
+    protected function stockByCategory(Business $business): array
+    {
+        $rows = Product::query()
+            ->where('business_id', $business->id)
+            ->where('is_active', true)
+            ->select('measurement_unit', DB::raw('SUM(stock_quantity) as total_qty'))
+            ->groupBy('measurement_unit')
+            ->orderByDesc('total_qty')
+            ->limit(8)
+            ->get();
+
+        $labels = [];
+        $values = [];
+
+        foreach ($rows as $row) {
+            $labels[] = ucfirst((string) $row->measurement_unit);
+            $values[] = (float) $row->total_qty;
+        }
+
+        if (empty($labels)) {
+            $labels = ['No stock'];
+            $values = [0];
+        }
+
+        return [
+            'labels' => $labels,
+            'values' => $values,
         ];
     }
 
@@ -203,6 +268,7 @@ class DashboardService
             'cash' => 'Cash Sales',
             'mobile_money' => 'Mobile Money',
             'credit' => 'Credit Sales',
+            'bank' => 'Bank Transfer',
         ];
 
         $labels = [];

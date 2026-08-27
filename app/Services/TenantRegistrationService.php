@@ -6,10 +6,8 @@ use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
 use App\Mail\WelcomeOwnerMail;
 use App\Models\Business;
-use App\Models\SystemSetting;
 use App\Models\User;
 use Carbon\Carbon;
-use App\Services\UsernameService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -18,13 +16,6 @@ use Illuminate\Support\Str;
 
 class TenantRegistrationService
 {
-    protected UsernameService $usernameService;
-
-    public function __construct(UsernameService $usernameService)
-    {
-        $this->usernameService = $usernameService;
-    }
-
     public function register(array $data): User
     {
         $user = DB::transaction(function () use ($data) {
@@ -36,9 +27,9 @@ class TenantRegistrationService
                 'portal_slug' => $this->uniquePortalSlug($data['business_name']),
                 'email' => $data['email'],
                 'phone' => $data['phone'] ?? null,
-                'currency' => $data['currency_symbol'] ?? SystemSetting::get('default_currency_symbol', 'UGX'),
-                'currency_symbol' => $data['currency_symbol'] ?? SystemSetting::get('default_currency_symbol', 'UGX'),
-                'currency_position' => $data['currency_position'] ?? SystemSetting::get('default_currency_position', 'prefix'),
+                'currency' => 'UGX',
+                'currency_symbol' => 'UGX',
+                'currency_position' => 'prefix',
                 'is_active' => true,
                 'trial_ends_at' => Carbon::now()->addDays(30),
                 'subscription_status' => SubscriptionStatus::TRIAL,
@@ -49,7 +40,7 @@ class TenantRegistrationService
             return User::create([
                 'business_id' => $business->id,
                 'name' => $data['name'],
-                'username' => $this->usernameService->generateUnique($data['name']),
+                'username' => strtolower($data['username']),
                 'email' => $data['email'],
                 'password' => Hash::make($data['password']),
                 'role' => UserRole::OWNER,

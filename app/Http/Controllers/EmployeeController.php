@@ -49,9 +49,13 @@ class EmployeeController extends Controller
 
         $roles = $this->employeeService->assignableRoles($request->user());
 
+        if ($request->filled('username')) {
+            $request->merge(['username' => strtolower(trim($request->input('username')))]);
+        }
+
         $data = $request->validate([
             'name' => 'required|string|max:255',
-            'username' => 'nullable|string|max:50|alpha_dash|unique:users,username',
+            'username' => 'required|string|max:50|alpha_dash|unique:users,username',
             'email' => 'required|email|unique:users,email',
             'phone' => 'nullable|string|max:30',
             'password' => 'required|string|min:8|confirmed',

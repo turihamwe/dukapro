@@ -15,7 +15,7 @@
 <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
     <div>
         <h1 class="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">Dashboard</h1>
-        <p class="mt-1 text-sm text-gray-500">Welcome back, {{ auth()->user()->name }} · {{ now()->format('l, F j, Y') }}</p>
+        <p class="mt-1 text-sm text-gray-500">Welcome back, {{ auth()->user()->name }}</p>
     </div>
     @can('manage-inventory')
         <a href="{{ tenant_route('tenant.inventory.create') }}"
@@ -27,7 +27,7 @@
 </div>
 
 {{-- Metric cards --}}
-<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+<div class="modern-metric-grid mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
     <div class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
         <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Total Stock Value</p>
         <p class="mt-2 text-2xl font-bold text-gray-900">{{ format_money_compact($s['inventory_value'], $business) }}</p>
@@ -75,6 +75,69 @@
     </div>
 </div>
 
+{{-- Stock levels chart --}}
+@php
+    $dist = $m['stock_distribution'];
+    $distTotal = max(1, (int) $dist['total']);
+    $healthyPct = round(($dist['healthy'] / $distTotal) * 100, 1);
+    $lowPct = round(($dist['low'] / $distTotal) * 100, 1);
+    $outPct = round(($dist['out_of_stock'] / $distTotal) * 100, 1);
+    $pieEndHealthy = $healthyPct;
+    $pieEndLow = $healthyPct + $lowPct;
+    $catMax = max(1, max($m['stock_by_category']['values']));
+@endphp
+<div class="mb-6 grid gap-6 lg:grid-cols-2">
+    <div class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
+        <h2 class="text-lg font-semibold text-gray-900">Stock Level Distribution</h2>
+        <p class="text-sm text-gray-500">Healthy, low, and out-of-stock products</p>
+        <div class="mt-6 flex flex-col items-center gap-6 sm:flex-row sm:items-center sm:justify-center">
+            <div class="relative h-40 w-40 shrink-0 rounded-full shadow-inner"
+                 style="background: conic-gradient(#10B981 0% {{ $pieEndHealthy }}%, #F59E0B {{ $pieEndHealthy }}% {{ $pieEndLow }}%, #EF4444 {{ $pieEndLow }}% 100%);">
+                <div class="absolute inset-4 flex flex-col items-center justify-center rounded-full bg-white text-center">
+                    <span class="text-2xl font-bold text-gray-900">{{ $dist['total'] }}</span>
+                    <span class="text-xs text-gray-500">Products</span>
+                </div>
+            </div>
+            <div class="grid w-full max-w-xs gap-3 text-sm">
+                <div class="flex items-center justify-between gap-3">
+                    <span class="flex items-center gap-2 text-gray-600"><span class="h-3 w-3 rounded-full bg-emerald-500"></span> Healthy</span>
+                    <span class="font-semibold text-gray-900">{{ $dist['healthy'] }} ({{ $healthyPct }}%)</span>
+                </div>
+                <div class="flex items-center justify-between gap-3">
+                    <span class="flex items-center gap-2 text-gray-600"><span class="h-3 w-3 rounded-full bg-amber-500"></span> Low stock</span>
+                    <span class="font-semibold text-gray-900">{{ $dist['low'] }} ({{ $lowPct }}%)</span>
+                </div>
+                <div class="flex items-center justify-between gap-3">
+                    <span class="flex items-center gap-2 text-gray-600"><span class="h-3 w-3 rounded-full bg-red-500"></span> Out of stock</span>
+                    <span class="font-semibold text-gray-900">{{ $dist['out_of_stock'] }} ({{ $outPct }}%)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
+        <h2 class="text-lg font-semibold text-gray-900">Stock by Category</h2>
+        <p class="text-sm text-gray-500">Units on hand across product types</p>
+        <div class="mt-6 space-y-3">
+            @foreach($m['stock_by_category']['labels'] as $index => $label)
+                @php
+                    $qty = $m['stock_by_category']['values'][$index];
+                    $width = max(4, ($qty / $catMax) * 100);
+                @endphp
+                <div>
+                    <div class="mb-1 flex items-center justify-between text-xs">
+                        <span class="font-medium text-gray-700">{{ $label }}</span>
+                        <span class="text-gray-500">{{ number_format($qty, 0) }} units</span>
+                    </div>
+                    <div class="h-2.5 overflow-hidden rounded-full bg-gray-100">
+                        <div class="h-full rounded-full bg-gradient-to-r from-blue-500 to-emerald-400" style="width: {{ $width }}%"></div>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    </div>
+</div>
+
 {{-- Lower sections --}}
 <div class="grid gap-6 xl:grid-cols-3">
     {{-- Sales overview chart --}}
@@ -85,7 +148,7 @@
                 <p class="text-sm text-gray-500">Daily performance · last 7 days</p>
             </div>
         </div>
-        <div class="flex h-56 items-end justify-between gap-2 sm:gap-3">
+        <div class="flex h-48 min-w-[280px] items-end justify-between gap-2 overflow-x-auto pb-2 sm:h-56 sm:gap-3 sm:overflow-visible sm:min-w-0">
             @foreach($m['last_7_days'] as $index => $day)
                 @php
                     $height = max(8, ($day['value'] / $maxBar) * 100);

@@ -12,7 +12,7 @@
             <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-600 text-lg font-bold text-white shadow-lg shadow-indigo-600/30">D</div>
         @endif
         <h1 class="text-2xl font-semibold tracking-tight text-gray-900">{{ platform_brand('name') }}</h1>
-        <p class="mt-1 text-sm text-gray-500">Sign in with your username or email</p>
+        <p class="mt-1 text-sm text-gray-500">Sign In</p>
     </div>
 
     <x-card>
@@ -24,7 +24,7 @@
 
         @include('auth.partials.login-form', [
             'action' => route('login'),
-            'portalHint' => 'Works for all businesses — no portal link required.',
+            // 'portalHint' => 'Works for all businesses — no portal link required.',
         ])
         @include('auth.partials.login-footer-global')
     </x-card>

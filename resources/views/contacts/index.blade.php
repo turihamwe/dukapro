@@ -3,7 +3,7 @@
 @section('title', 'Contacts')
 
 @section('content')
-<x-page-header title="Contacts" subtitle="Your business address book — all contacts in one place">
+<x-page-header title="Contacts" subtitle="All your business contacts in one place">
     <x-slot name="actions">
         @can('manage-debts')
             <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.contacts.import.show') }}">Import CSV</x-button>

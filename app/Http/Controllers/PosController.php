@@ -56,7 +56,7 @@ class PosController extends Controller
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.quantity' => 'required|numeric|min:0.001',
             'items.*.unit_price' => 'nullable|numeric|min:0',
-            'payment_method' => 'required|in:cash,mobile_money,credit',
+            'payment_method' => 'required|in:cash,mobile_money,credit,bank',
             'is_credit_sale' => 'boolean',
             'customer_id' => 'nullable|exists:customers,id',
             'tax_amount' => 'nullable|numeric|min:0',

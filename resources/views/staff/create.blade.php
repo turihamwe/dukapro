@@ -15,7 +15,7 @@
     <form method="POST" action="{{ tenant_route('tenant.staff.store') }}" class="space-y-5">
         @csrf
             <x-input type="text" name="name" label="Full name" required />
-            <x-input type="text" name="username" label="Username (optional)" value="{{ old('username') }}" hint="Auto-generated from name if left blank." />
+            <x-input type="text" name="username" label="Username" value="{{ old('username') }}" required hint="Simple login name for this staff member." />
             <div class="grid gap-4 sm:grid-cols-2">
             <x-input type="email" name="email" label="Email" required />
             <x-input type="text" name="phone" label="Phone" />
