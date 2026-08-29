@@ -153,7 +153,9 @@ class EntityController extends Controller
                     'expense_date' => 'required|date',
                     'description' => 'nullable|string|max:1000',
                 ]);
-                $record = Expense::create($data);
+                $record = Expense::create(array_merge($data, [
+                    'description' => $data['description'] ?? '',
+                ]));
                 break;
         }
 
@@ -266,7 +268,9 @@ class EntityController extends Controller
                     'expense_date' => 'required|date',
                     'description' => 'nullable|string|max:1000',
                 ]);
-                $item->update($data);
+                $item->update(array_merge($data, [
+                    'description' => $data['description'] ?? '',
+                ]));
                 break;
 
             default:

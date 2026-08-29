@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Business;
 use App\Models\Expense;
 use App\Services\ExpenseService;
 use Illuminate\Http\Request;
@@ -74,7 +75,7 @@ class ExpenseController extends Controller
             ->with('success', 'Expense recorded.');
     }
 
-    public function edit(Expense $expense)
+    public function edit(Business $business, Expense $expense)
     {
         return view('expenses.edit', [
             'expense' => $expense,
@@ -82,7 +83,7 @@ class ExpenseController extends Controller
         ]);
     }
 
-    public function update(Request $request, Expense $expense)
+    public function update(Request $request, Business $business, Expense $expense)
     {
         $data = $request->validate([
             'title' => 'required|string|max:255',
@@ -101,7 +102,7 @@ class ExpenseController extends Controller
             ->with('success', 'Expense updated.');
     }
 
-    public function destroy(Expense $expense)
+    public function destroy(Business $business, Expense $expense)
     {
         $expense->delete();
 

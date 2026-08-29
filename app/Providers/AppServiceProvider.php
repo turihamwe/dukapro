@@ -39,5 +39,13 @@ class AppServiceProvider extends ServiceProvider
         Blade::directive('money', function ($expression) {
             return "<?php echo e(format_money($expression)); ?>";
         });
+
+        Blade::directive('selected', function ($expression) {
+            return "<?php if ($expression): echo 'selected'; endif; ?>";
+        });
+
+        Blade::directive('checked', function ($expression) {
+            return "<?php if ($expression): echo 'checked'; endif; ?>";
+        });
     }
 }

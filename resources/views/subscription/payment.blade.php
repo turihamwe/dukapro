@@ -9,7 +9,7 @@
 
     <x-card>
         <p class="mb-6 text-sm text-gray-600">
-            @if($business->subscription_status === 'trial' && $business->trial_ends_at?->isPast())
+            @if($business->subscription_status === 'trial' && optional($business->trial_ends_at)->isPast())
                 Your free trial ended on {{ $business->trial_ends_at->format('M d, Y') }}.
             @elseif($business->subscription_status === 'inactive')
                 Your subscription is inactive.

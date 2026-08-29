@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\AuditLogger;
+use App\Models\Business;
 use App\Models\User;
 use App\Services\EmployeeService;
 use App\Services\OnboardingService;
@@ -72,7 +73,7 @@ class EmployeeController extends Controller
             ->with('success', 'Staff member added successfully.');
     }
 
-    public function edit(User $employee)
+    public function edit(Business $business, User $employee)
     {
         $this->authorize('update', $employee);
 
@@ -81,7 +82,7 @@ class EmployeeController extends Controller
         return view('staff.edit', compact('employee', 'roles'));
     }
 
-    public function update(Request $request, User $employee)
+    public function update(Request $request, Business $business, User $employee)
     {
         $this->authorize('update', $employee);
 
@@ -119,7 +120,7 @@ class EmployeeController extends Controller
             ->with('success', 'Staff member updated.');
     }
 
-    public function destroy(Request $request, User $employee)
+    public function destroy(Request $request, Business $business, User $employee)
     {
         $this->authorize('delete', $employee);
 
