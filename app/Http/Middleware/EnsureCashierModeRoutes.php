@@ -22,7 +22,7 @@ class EnsureCashierModeRoutes
         }
 
         if ($user->canSwitchToCashierMode() && ! CashierMode::isActive()) {
-            if ($request->routeIs('tenant.pos.*', 'tenant.reconciliation.create', 'tenant.reconciliation.store', 'tenant.cashier-mode.*')) {
+            if ($request->routeIs('tenant.pos.*', 'tenant.reconciliation.create', 'tenant.reconciliation.store')) {
                 return redirect()
                     ->to(tenant_route('tenant.dashboard'))
                     ->with('info', 'Switch to Cashier Mode to use the POS terminal.');
