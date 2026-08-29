@@ -27,7 +27,7 @@ class ExpenseService
             'user_id' => $user->id,
             'title' => $data['title'],
             'category' => $data['category'],
-            'description' => $data['description'] ?? $data['notes'] ?? null,
+            'description' => $data['description'] ?? $data['notes'] ?? '',
             'amount' => $data['amount'],
             'expense_date' => $data['expense_date'],
             'payment_method' => $data['payment_method'] ?? 'cash',
@@ -40,7 +40,7 @@ class ExpenseService
         $expense->update([
             'title' => $data['title'],
             'category' => $data['category'],
-            'description' => $data['description'] ?? $data['notes'] ?? null,
+            'description' => $data['description'] ?? $data['notes'] ?? '',
             'amount' => $data['amount'],
             'expense_date' => $data['expense_date'],
             'payment_method' => $data['payment_method'] ?? $expense->payment_method,
