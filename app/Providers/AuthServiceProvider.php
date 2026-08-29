@@ -141,7 +141,19 @@ class AuthServiceProvider extends ServiceProvider
             return (bool) $user->business_id;
         });
 
+        Gate::define('manage-expenses', function (User $user) {
+            return $user->isOwner() || $user->isManager();
+        });
+
+        Gate::define('view-expenses', function (User $user) {
+            return $user->isOwner() || $user->isManager();
+        });
+
         Gate::define('access-superadmin', function (User $user) {
+            return $user->isPlatformAdmin();
+        });
+
+        Gate::define('platform-full-access', function (User $user) {
             return $user->isSuperAdmin();
         });
     }

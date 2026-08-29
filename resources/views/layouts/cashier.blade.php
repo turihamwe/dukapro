@@ -2,71 +2,74 @@
 
 @section('body')
 @if(auth()->user()->canSwitchToCashierMode() && \App\Support\CashierMode::isActive())
-    <div class="sticky top-0 z-[60] border-b border-indigo-700 bg-indigo-600 px-4 py-2.5 text-center text-sm text-white shadow-md">
+    <div class="sticky top-0 z-[60] border-b border-indigo-700 bg-indigo-600 px-4 py-3 text-center text-sm text-white shadow-md">
         <div class="mx-auto flex max-w-6xl flex-col items-center justify-center gap-2 sm:flex-row sm:gap-4">
-            <span class="font-medium">Cashier Mode — POS only. Management features are hidden.</span>
+            <span class="font-semibold">Cashier Mode active</span>
             <form method="POST" action="{{ tenant_route('tenant.cashier-mode.disable') }}" class="inline">
                 @csrf
-                <button type="submit" class="rounded-lg bg-white px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-indigo-700 shadow hover:bg-indigo-50">
-                    Switch back to Management
+                <button type="submit" class="min-h-[44px] rounded-lg bg-white px-4 py-2 text-xs font-bold uppercase tracking-wide text-indigo-700 shadow hover:bg-indigo-50">
+                    Exit Cashier Mode
                 </button>
             </form>
         </div>
     </div>
 @endif
 
-<div class="flex min-h-full flex-col bg-gray-100">
+<div class="cashier-shell flex min-h-[100dvh] flex-col bg-gray-100">
     @if(!auth()->user()->canSwitchToCashierMode() || !\App\Support\CashierMode::isActive())
         @include('layouts.partials.trial-banner')
     @endif
 
-    <header class="sticky top-0 z-40 border-b border-gray-200 bg-white/95 backdrop-blur">
-        <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-            <div class="flex items-center gap-3">
-                @if(auth()->user()->business?->logoUrl())
-                    <img src="{{ auth()->user()->business->logoUrl() }}" alt="" class="h-9 w-9 rounded-lg object-cover">
-                @else
-                    <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-600 text-sm font-bold text-white">POS</div>
-                @endif
-                <div>
-                    <p class="text-sm font-semibold">{{ auth()->user()->business->name ?? 'DukaPro' }}</p>
-                    <p class="text-xs text-gray-500">{{ auth()->user()->name }} · Cashier</p>
+    <header class="sticky top-0 z-40 border-b border-gray-200 bg-white shadow-sm">
+        <div class="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
+            <div class="flex min-w-0 items-center gap-3">
+                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-sm font-bold text-white shadow-md">POS</div>
+                <div class="min-w-0">
+                    <p class="truncate text-sm font-bold text-gray-900">{{ auth()->user()->business->name ?? 'DukaPro' }}</p>
+                    <p class="truncate text-xs text-gray-500">{{ auth()->user()->name }} · {{ ucfirst(auth()->user()->role) }}</p>
                 </div>
             </div>
             @unless(auth()->user()->canSwitchToCashierMode() && \App\Support\CashierMode::isActive())
-                <a href="{{ route('logout.get') }}" class="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700">Logout</a>
+                <a href="{{ route('logout.get') }}" class="inline-flex min-h-[44px] items-center rounded-lg border border-gray-300 px-4 py-2 text-xs font-semibold text-gray-700">Logout</a>
             @endunless
         </div>
     </header>
 
-    <main class="mx-auto w-full max-w-6xl flex-1 px-4 py-6 pb-24">
+    <main class="mx-auto w-full max-w-6xl flex-1 px-3 py-4 pb-28 sm:px-4 sm:py-6">
         @include('layouts.partials.flash')
         @yield('content')
     </main>
 
-    <nav class="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white/95 backdrop-blur">
-        <div class="mx-auto flex max-w-lg justify-around px-2 py-2">
+    <nav class="cashier-bottom-nav fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white/95 backdrop-blur-md" style="padding-bottom: env(safe-area-inset-bottom);">
+        <div class="mx-auto grid max-w-lg grid-cols-3 gap-1 px-2 py-2">
             @can('access-pos')
                 <a href="{{ tenant_route('tenant.pos.index') }}"
-                   class="flex flex-col items-center rounded-lg px-4 py-1.5 text-[10px] font-medium {{ request()->routeIs('tenant.pos.*') ? 'text-emerald-600' : 'text-gray-500' }}">
-                    <span class="mb-0.5 text-base">🛒</span> POS
+                   class="flex min-h-[56px] flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-semibold {{ request()->routeIs('tenant.pos.*') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600' }}">
+                    <span class="mb-0.5 text-xl leading-none">🛒</span> POS
                 </a>
             @endcan
             @if(auth()->user()->isCashier())
                 @can('view-inventory')
                     <a href="{{ tenant_route('tenant.inventory.index') }}"
-                       class="flex flex-col items-center rounded-lg px-4 py-1.5 text-[10px] font-medium {{ request()->routeIs('tenant.inventory.*') ? 'text-emerald-600' : 'text-gray-500' }}">
-                        <span class="mb-0.5 text-base">📦</span> Stock
+                       class="flex min-h-[56px] flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-semibold {{ request()->routeIs('tenant.inventory.*') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600' }}">
+                        <span class="mb-0.5 text-xl leading-none">📦</span> Stock
                     </a>
                 @endcan
             @endif
             @can('submit-reconciliation')
                 <a href="{{ tenant_route('tenant.reconciliation.create') }}"
-                   class="flex flex-col items-center rounded-lg px-4 py-1.5 text-[10px] font-medium {{ request()->routeIs('tenant.reconciliation.create') ? 'text-emerald-600' : 'text-gray-500' }}">
-                    <span class="mb-0.5 text-base">💰</span> Close Shift
+                   class="flex min-h-[56px] flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-semibold {{ request()->routeIs('tenant.reconciliation.create') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600' }}">
+                    <span class="mb-0.5 text-xl leading-none">💰</span> Close Shift
                 </a>
             @endcan
         </div>
     </nav>
 </div>
+
+@push('styles')
+<style>
+    .cashier-shell { min-height: 100dvh; }
+    .cashier-bottom-nav a { touch-action: manipulation; }
+</style>
+@endpush
 @endsection

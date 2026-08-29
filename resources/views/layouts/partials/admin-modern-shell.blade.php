@@ -86,9 +86,9 @@
                 <div class="flex items-center gap-2 sm:gap-4">
                     @can('switch-cashier-mode')
                         @if(!\App\Support\CashierMode::isActive())
-                            <form method="POST" action="{{ tenant_route('tenant.cashier-mode.enable') }}" class="hidden sm:block">
+                            <form method="POST" action="{{ tenant_route('tenant.cashier-mode.enable') }}">
                                 @csrf
-                                <button type="submit" class="rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-600">Cashier Mode</button>
+                                <button type="submit" class="inline-flex min-h-[44px] items-center rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-600">Cashier Mode</button>
                             </form>
                         @endif
                     @endcan

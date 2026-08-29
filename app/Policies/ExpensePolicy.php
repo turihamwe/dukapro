@@ -12,7 +12,7 @@ class ExpensePolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->isOwner();
+        return $user->isOwner() || $user->isManager();
     }
 
     public function view(User $user, Expense $expense): bool

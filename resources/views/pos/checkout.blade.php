@@ -3,41 +3,41 @@
 @section('title', 'POS Checkout')
 
 @section('content')
-<div class="grid gap-6 lg:grid-cols-5">
+<div class="flex flex-col gap-4 lg:grid lg:grid-cols-5 lg:gap-6">
     {{-- Product grid --}}
-    <div class="lg:col-span-3">
+    <div class="order-2 lg:order-1 lg:col-span-3">
         <x-input type="search" id="productSearch" placeholder="Search product or SKU..." autofocus large class="mb-4" />
 
-        <div id="productGrid" class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div id="productGrid" class="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3">
             @foreach($products as $product)
                 <div class="product-card" data-name="{{ strtolower($product->name) }}" data-sku="{{ strtolower($product->sku ?? '') }}">
                     <button type="button" onclick="addToCart({{ json_encode($product) }})"
-                            class="pos-product group w-full rounded-xl border border-gray-100 bg-white p-4 text-left shadow-sm transition hover:border-indigo-200 hover:shadow-md active:scale-[0.98]">
-                        <p class="text-sm font-medium text-gray-900 group-hover:text-indigo-600">{{ $product->name }}</p>
-                        <p class="mt-1 text-lg font-semibold text-indigo-600">@money($product->price)</p>
-                        <p class="mt-1 text-xs text-gray-500">Stock: {{ $product->stock_quantity }} {{ $product->measurement_unit }}</p>
+                            class="pos-product group w-full rounded-xl border border-gray-100 bg-white p-3 text-left shadow-sm transition active:scale-[0.98] sm:p-4 hover:border-indigo-200 hover:shadow-md">
+                        <p class="line-clamp-2 text-sm font-semibold text-gray-900 group-hover:text-indigo-600">{{ $product->name }}</p>
+                        <p class="mt-1 text-base font-bold text-indigo-600 sm:text-lg">@money($product->price)</p>
+                        <p class="mt-1 text-[11px] text-gray-500">Stock: {{ $product->stock_quantity }} {{ $product->measurement_unit }}</p>
                     </button>
                 </div>
             @endforeach
         </div>
     </div>
 
-    {{-- Cart sidebar --}}
-    <div class="lg:col-span-2">
-        <x-card :padding="false" class="sticky top-20 overflow-hidden">
-            <div class="flex items-center justify-between border-b border-gray-100 bg-indigo-600 px-5 py-3">
+    {{-- Cart --}}
+    <div class="order-1 lg:order-2 lg:col-span-2">
+        <x-card :padding="false" class="sticky top-[4.5rem] overflow-hidden shadow-lg lg:top-20">
+            <div class="flex items-center justify-between border-b border-gray-100 bg-indigo-600 px-4 py-3 sm:px-5">
                 <span class="font-semibold text-white">Cart</span>
-                <span id="cartCount" class="rounded-full bg-white/20 px-2 py-0.5 text-xs font-medium text-white">0</span>
+                <span id="cartCount" class="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-bold text-white">0</span>
             </div>
 
-            <div id="cartItems" class="max-h-[40vh] space-y-0 overflow-y-auto px-5 py-3">
+            <div id="cartItems" class="max-h-[34vh] space-y-0 overflow-y-auto px-4 py-3 sm:max-h-[40vh] sm:px-5">
                 <p class="text-sm text-gray-500">Tap products to add</p>
             </div>
 
-            <div class="space-y-4 border-t border-gray-100 p-5">
+            <div class="space-y-3 border-t border-gray-100 p-4 sm:space-y-4 sm:p-5">
                 <div class="flex items-center justify-between">
                     <span class="text-sm text-gray-500">Total</span>
-                    <span id="cartTotal" class="text-xl font-semibold text-gray-900">0.00</span>
+                    <span id="cartTotal" class="text-xl font-bold text-gray-900">0.00</span>
                 </div>
 
                 <x-select id="paymentMethod" label="Payment">
@@ -56,7 +56,7 @@
                     </x-select>
                 </div>
 
-                <x-button id="checkoutBtn" variant="success" size="lg" type="button" disabled>Complete Sale</x-button>
+                <x-button id="checkoutBtn" variant="success" size="lg" type="button" class="w-full min-h-[48px]" disabled>Complete Sale</x-button>
             </div>
         </x-card>
     </div>
@@ -111,9 +111,9 @@ function renderCart() {
                     <p class="text-xs text-gray-500">${item.unit_price.toFixed(2)} × ${item.quantity}</p>
                 </div>
                 <div class="flex shrink-0 gap-1">
-                    <button type="button" onclick="changeQty(${idx}, -1)" class="rounded-lg border border-gray-300 px-2 py-1 text-sm shadow-sm hover:bg-gray-50">−</button>
-                    <button type="button" onclick="changeQty(${idx}, 1)" class="rounded-lg border border-gray-300 px-2 py-1 text-sm shadow-sm hover:bg-gray-50">+</button>
-                    <button type="button" onclick="removeItem(${idx})" class="rounded-lg border border-red-200 px-2 py-1 text-sm text-red-600 shadow-sm hover:bg-red-50">×</button>
+                    <button type="button" onclick="changeQty(${idx}, -1)" class="min-h-[40px] min-w-[40px] rounded-lg border border-gray-300 text-sm shadow-sm hover:bg-gray-50">−</button>
+                    <button type="button" onclick="changeQty(${idx}, 1)" class="min-h-[40px] min-w-[40px] rounded-lg border border-gray-300 text-sm shadow-sm hover:bg-gray-50">+</button>
+                    <button type="button" onclick="removeItem(${idx})" class="min-h-[40px] min-w-[40px] rounded-lg border border-red-200 text-sm text-red-600 shadow-sm hover:bg-red-50">×</button>
                 </div>
             </div>
         </div>

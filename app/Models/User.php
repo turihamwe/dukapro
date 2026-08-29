@@ -28,6 +28,7 @@ class User extends Authenticatable
         'ui_theme',
         'is_active',
         'is_super_admin',
+        'is_sub_admin',
     ];
 
     protected $hidden = [
@@ -39,6 +40,7 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'is_active' => 'boolean',
         'is_super_admin' => 'boolean',
+        'is_sub_admin' => 'boolean',
     ];
 
     public function business(): BelongsTo
@@ -94,5 +96,20 @@ class User extends Authenticatable
     public function isSuperAdmin(): bool
     {
         return (bool) $this->is_super_admin;
+    }
+
+    public function isSubAdmin(): bool
+    {
+        return (bool) $this->is_sub_admin;
+    }
+
+    public function isPlatformAdmin(): bool
+    {
+        return $this->isSuperAdmin() || $this->isSubAdmin();
+    }
+
+    public function isBusinessUser(): bool
+    {
+        return (bool) $this->business_id && ! $this->isPlatformAdmin();
     }
 }

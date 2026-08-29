@@ -76,12 +76,17 @@ class AuthController extends Controller
         $user = Auth::user();
         $request->session()->regenerate();
 
-        if (! $user->isSuperAdmin()) {
+        if (! $user->isPlatformAdmin()) {
             Auth::logout();
             return back()->withErrors(['email' => 'This portal is for platform administrators only.']);
         }
 
-        SystemAuditLogger::record('login', 'SuperAdmin login: ' . $user->email, null, $user->id);
+        SystemAuditLogger::record(
+            'login',
+            ($user->isSubAdmin() ? 'SubAdmin' : 'SuperAdmin') . ' login: ' . $user->email,
+            null,
+            $user->id
+        );
 
         return redirect()->route('superadmin.dashboard');
     }
@@ -221,7 +226,7 @@ class AuthController extends Controller
     {
         $request->session()->regenerate();
 
-        if ($user->isSuperAdmin()) {
+        if ($user->isPlatformAdmin()) {
             Auth::logout();
             return back()->withErrors(['login' => 'Use the platform admin login instead.']);
         }

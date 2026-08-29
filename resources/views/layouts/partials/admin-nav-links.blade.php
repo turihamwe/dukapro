@@ -33,6 +33,10 @@
                 <a href="{{ tenant_route('tenant.reconciliation.index') }}"
                    class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('tenant.reconciliation.index') ? 'font-medium text-indigo-700 bg-indigo-50' : 'text-gray-600 hover:bg-gray-100' }}">EOD reports</a>
             @endcan
+            @can('view-expenses')
+                <a href="{{ tenant_route('tenant.expenses.index') }}"
+                   class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('tenant.expenses.*') ? 'font-medium text-indigo-700 bg-indigo-50' : 'text-gray-600 hover:bg-gray-100' }}">Expenses</a>
+            @endcan
         </div>
     </div>
 @endif

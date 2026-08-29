@@ -6,6 +6,7 @@ use App\Models\Business;
 use App\Models\Customer;
 use App\Models\Damage;
 use App\Models\EndOfDayReconciliation;
+use App\Models\Expense;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
@@ -97,7 +98,12 @@ class DashboardService
                 return $damage->lossValue();
             }), 2);
 
-        $overallBalance = round($cashAvailable + $mobileAvailable + $outstandingDebts - $damagesLoss, 2);
+        $expensesTotal = round((float) Expense::query()
+            ->where('business_id', $business->id)
+            ->whereBetween('expense_date', [$range->start->toDateString(), $range->end->toDateString()])
+            ->sum('amount'), 2);
+
+        $overallBalance = round($cashAvailable + $mobileAvailable + $outstandingDebts - $damagesLoss - $expensesTotal, 2);
 
         return [
             'cash_available' => round($cashAvailable, 2),
@@ -105,6 +111,7 @@ class DashboardService
             'credit_sales' => round($creditSales, 2),
             'outstanding_debts' => round($outstandingDebts, 2),
             'damages_loss' => $damagesLoss,
+            'expenses_total' => $expensesTotal,
             'overall_balance' => $overallBalance,
         ];
     }

@@ -1,96 +1,113 @@
 @extends('layouts.superadmin')
 
-@section('title', 'Tenant Overview')
+@section('title', 'Master Dashboard')
 
 @section('content')
-<div class="mb-8">
-    <h1 class="text-2xl font-bold tracking-tight">Tenant Overview</h1>
-    <p class="mt-1 text-sm text-gray-500">All registered businesses across the platform</p>
+<div class="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div>
+        <h1 class="text-2xl font-bold tracking-tight">Master Dashboard</h1>
+        <p class="mt-1 text-sm text-gray-500">Global visibility across all businesses and platform data</p>
+        @if(auth()->user()->isSubAdmin())
+            <p class="mt-2 inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800">SubAdmin — view &amp; create only</p>
+        @endif
+    </div>
+    <form method="GET" action="{{ route('superadmin.search') }}" class="w-full max-w-xl">
+        <div class="flex gap-2">
+            <input type="search" name="q" value="{{ request('q') }}" placeholder="Global search businesses, users, products…"
+                   class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-violet-500 focus:outline-none">
+            <button type="submit" class="shrink-0 rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-500">Search</button>
+        </div>
+    </form>
 </div>
 
-<div class="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
-    <div class="rounded-xl border border-gray-200 bg-white p-5">
+<div class="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4 xl:grid-cols-6">
+    <div class="rounded-xl border border-gray-200 bg-white p-4">
         <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Businesses</p>
-        <p class="mt-2 text-3xl font-bold">{{ $stats['businesses'] }}</p>
+        <p class="mt-2 text-2xl font-bold">{{ number_format($stats['businesses']) }}</p>
     </div>
-    <div class="rounded-xl border border-gray-200 bg-white p-5">
-        <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Active</p>
-        <p class="mt-2 text-3xl font-bold text-emerald-400">{{ $stats['active_subscriptions'] }}</p>
-    </div>
-    <div class="rounded-xl border border-gray-200 bg-white p-5">
-        <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Expired / Inactive</p>
-        <p class="mt-2 text-3xl font-bold text-red-400">{{ $stats['expired_or_inactive'] }}</p>
-    </div>
-    <div class="rounded-xl border border-gray-200 bg-white p-5">
+    <div class="rounded-xl border border-gray-200 bg-white p-4">
         <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Tenant Users</p>
-        <p class="mt-2 text-3xl font-bold">{{ $stats['users'] }}</p>
+        <p class="mt-2 text-2xl font-bold">{{ number_format($stats['users']) }}</p>
+    </div>
+    <div class="rounded-xl border border-gray-200 bg-white p-4">
+        <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Products</p>
+        <p class="mt-2 text-2xl font-bold">{{ number_format($stats['products']) }}</p>
+    </div>
+    <div class="rounded-xl border border-gray-200 bg-white p-4">
+        <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Sales</p>
+        <p class="mt-2 text-2xl font-bold text-emerald-600">{{ number_format($stats['sales']) }}</p>
+    </div>
+    <div class="rounded-xl border border-gray-200 bg-white p-4">
+        <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Expenses</p>
+        <p class="mt-2 text-2xl font-bold text-amber-600">{{ number_format($stats['expenses']) }}</p>
+    </div>
+    <div class="rounded-xl border border-gray-200 bg-white p-4">
+        <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Active Subs</p>
+        <p class="mt-2 text-2xl font-bold text-violet-600">{{ number_format($stats['active_subscriptions']) }}</p>
+    </div>
+</div>
+
+<div class="mb-8 grid gap-4 lg:grid-cols-2">
+    <div class="rounded-xl border border-gray-200 bg-white p-5">
+        <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Platform sales volume</p>
+        <p class="mt-2 text-3xl font-bold">UGX {{ number_format($stats['sales_volume'], 0) }}</p>
+    </div>
+    <div class="rounded-xl border border-gray-200 bg-white p-5">
+        <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Platform expense volume</p>
+        <p class="mt-2 text-3xl font-bold text-red-600">UGX {{ number_format($stats['expense_volume'], 0) }}</p>
+    </div>
+</div>
+
+<div class="mb-8">
+    <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">Global entity management</h2>
+    <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        @foreach(\App\Support\SuperAdmin\EntityRegistry::all() as $key => $entity)
+            <a href="{{ route('superadmin.entities.index', $key) }}"
+               class="rounded-xl border border-gray-200 bg-white p-4 text-center transition hover:border-violet-300 hover:shadow-sm">
+                <p class="text-sm font-semibold text-gray-900">{{ $entity['label'] }}</p>
+                <p class="mt-1 text-xs text-violet-600">Manage →</p>
+            </a>
+        @endforeach
     </div>
 </div>
 
 <div class="overflow-hidden rounded-xl border border-gray-200 bg-white">
     <div class="border-b border-gray-200 px-6 py-4">
-        <h2 class="font-semibold">All Businesses</h2>
+        <h2 class="font-semibold">Recent Businesses</h2>
     </div>
     <div class="overflow-x-auto">
         <table class="w-full text-left text-sm">
             <thead class="border-b border-gray-200 text-xs uppercase tracking-wide text-gray-500">
                 <tr>
                     <th class="px-6 py-3">Business</th>
-                    <th class="px-6 py-3">Login URL</th>
-                    <th class="px-6 py-3">Email</th>
                     <th class="px-6 py-3">Users</th>
                     <th class="px-6 py-3">Status</th>
-                    <th class="px-6 py-3">Plan</th>
-                    <th class="px-6 py-3">Trial Ends</th>
-                    <th class="px-6 py-3">Registered</th>
+                    <th class="px-6 py-3"></th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
                 @forelse($businesses as $business)
-                    <tr class="hover:bg-gray-100/50">
+                    <tr class="hover:bg-gray-50">
                         <td class="px-6 py-4 font-medium">{{ $business->name }}</td>
-                        <td class="px-6 py-4">
-                            @if($business->portal_slug)
-                                <a href="{{ $business->portalLoginUrl() }}" target="_blank" rel="noopener"
-                                   class="font-medium text-violet-600 hover:text-violet-800">Open portal</a>
-                                <p class="mt-1 max-w-xs break-all text-xs text-gray-500">{{ $business->portalLoginUrl() }}</p>
-                            @else
-                                <span class="text-xs text-gray-400">Not set</span>
-                            @endif
-                        </td>
-                        <td class="px-6 py-4 text-gray-500">{{ $business->email }}</td>
                         <td class="px-6 py-4">{{ $business->users_count }}</td>
-                        <td class="px-6 py-4">
-                            @if($business->isSubscriptionExpired())
-                                <span class="inline-flex rounded-md bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">Expired</span>
-                            @else
-                                <span class="inline-flex rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">Active</span>
-                            @endif
+                        <td class="px-6 py-4 capitalize">{{ $business->subscription_status }}</td>
+                        <td class="px-6 py-4 text-right">
+                            <a href="{{ route('superadmin.entities.show', ['businesses', $business->id]) }}" class="text-violet-600 hover:text-violet-800">View</a>
                         </td>
-                        <td class="px-6 py-4 capitalize text-gray-500">{{ $business->subscription_status }}</td>
-                        <td class="px-6 py-4 text-gray-500">
-                            {{ $business->trial_ends_at ? $business->trial_ends_at->format('M d, Y') : '—' }}
-                        </td>
-                        <td class="px-6 py-4 text-gray-500">{{ $business->created_at->format('M d, Y') }}</td>
                     </tr>
                 @empty
-                    <tr>
-                        <td colspan="8" class="px-6 py-8 text-center text-gray-500">No businesses registered yet.</td>
-                    </tr>
+                    <tr><td colspan="4" class="px-6 py-8 text-center text-gray-500">No businesses yet.</td></tr>
                 @endforelse
             </tbody>
         </table>
     </div>
-    @if($businesses->hasPages())
-        <div class="border-t border-gray-200 px-6 py-4">{{ $businesses->links() }}</div>
-    @endif
 </div>
 
 @if($stats['recent_activity']->isNotEmpty())
 <div class="mt-8 overflow-hidden rounded-xl border border-gray-200 bg-white">
     <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
         <h2 class="font-semibold">Recent Platform Activity</h2>
-        <a href="{{ route('superadmin.activity') }}" class="text-xs text-violet-400 hover:text-violet-700">View all →</a>
+        <a href="{{ route('superadmin.activity') }}" class="text-xs text-violet-600 hover:text-violet-800">View all →</a>
     </div>
     <ul class="divide-y divide-gray-200">
         @foreach($stats['recent_activity'] as $log)

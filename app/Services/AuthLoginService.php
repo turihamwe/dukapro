@@ -23,7 +23,9 @@ class AuthLoginService
         if ($business) {
             $query->where('business_id', $business->id);
         } else {
-            $query->where('is_super_admin', false)->whereNotNull('business_id');
+            $query->where('is_super_admin', false)
+                ->where('is_sub_admin', false)
+                ->whereNotNull('business_id');
         }
 
         return $query->first();

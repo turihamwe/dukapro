@@ -21,6 +21,9 @@ class EndOfDayReconciliation extends Model
         'actual_mobile_money',
         'cash_variance',
         'mobile_variance',
+        'total_sales',
+        'total_expenses',
+        'net_income',
         'notes',
         'status',
     ];
@@ -33,6 +36,9 @@ class EndOfDayReconciliation extends Model
         'actual_mobile_money' => 'float',
         'cash_variance' => 'float',
         'mobile_variance' => 'float',
+        'total_sales' => 'float',
+        'total_expenses' => 'float',
+        'net_income' => 'float',
     ];
 
     public function business(): BelongsTo

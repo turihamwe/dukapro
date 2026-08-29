@@ -27,6 +27,45 @@
             <p class="mt-3 text-xs text-gray-500">{{ $expected['sale_count'] }} sales recorded</p>
         </div>
 
+        <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
+            <h2 class="text-sm font-semibold text-emerald-900">Daily Balancing Summary</h2>
+            <p class="mt-1 text-xs text-emerald-800/80">Business-wide totals for this date</p>
+            <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div>
+                    <p class="text-xs text-emerald-800/70">Total sales</p>
+                    <p class="text-lg font-semibold text-emerald-900">@money($expected['total_sales'])</p>
+                </div>
+                <div>
+                    <p class="text-xs text-emerald-800/70">Total expenses</p>
+                    <p class="text-lg font-semibold text-red-700">@money($expected['total_expenses'])</p>
+                </div>
+                <div>
+                    <p class="text-xs text-emerald-800/70">Net income</p>
+                    <p class="text-lg font-semibold {{ $expected['net_income'] >= 0 ? 'text-emerald-900' : 'text-red-700' }}">@money($expected['net_income'])</p>
+                </div>
+            </div>
+
+            @if($expected['expenses']->isNotEmpty())
+                <div class="mt-4 divide-y divide-emerald-200/60">
+                    @foreach($expected['expenses'] as $expense)
+                        <div class="flex items-start justify-between gap-3 py-2 text-sm">
+                            <div>
+                                <p class="font-medium text-emerald-950">{{ $expense->title }}</p>
+                                <p class="text-xs text-emerald-800/70">{{ ucfirst($expense->category) }} · {{ optional($expense->user)->name ?? 'Staff' }}</p>
+                            </div>
+                            <p class="shrink-0 font-medium text-red-700">@money($expense->amount)</p>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <p class="mt-3 text-xs text-emerald-800/70">No expenses recorded for this date.</p>
+            @endif
+
+            @can('create', App\Models\Expense::class)
+                <a href="{{ tenant_route('tenant.expenses.create') }}" class="mt-3 inline-block text-xs font-medium text-emerald-900 underline">Record an expense →</a>
+            @endcan
+        </div>
+
         <div class="rounded-xl border border-amber-200 bg-amber-50 p-5">
             <h2 class="text-sm font-semibold text-amber-900">Damages &amp; Stock Write-offs</h2>
             <div class="mt-4 grid grid-cols-2 gap-4">

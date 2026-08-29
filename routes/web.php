@@ -11,7 +11,10 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SalesReportController;
 use App\Http\Controllers\SuperAdmin\ActivityLogController;
 use App\Http\Controllers\SuperAdmin\DashboardController as SuperAdminDashboardController;
+use App\Http\Controllers\SuperAdmin\EntityController as SuperAdminEntityController;
+use App\Http\Controllers\SuperAdmin\GlobalSearchController as SuperAdminGlobalSearchController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\PosController;
 use App\Http\Controllers\ReconciliationController;
@@ -41,7 +44,7 @@ Route::middleware(['maintenance'])->group(function () {
     Route::middleware(['auth'])->group(function () {
         Route::get('/dashboard', function () {
             $user = auth()->user();
-            if ($user->isSuperAdmin()) {
+            if ($user->isPlatformAdmin()) {
                 return redirect()->route('superadmin.dashboard');
             }
             abort_unless($user->business, 403);
@@ -88,6 +91,15 @@ Route::middleware(['maintenance'])->group(function () {
 
                     Route::middleware(['can:view-sales-reports'])->prefix('reports/sales')->name('reports.sales.')->group(function () {
                         Route::get('/', [SalesReportController::class, 'index'])->name('index');
+                    });
+
+                    Route::middleware(['can:view-expenses'])->prefix('expenses')->name('expenses.')->group(function () {
+                        Route::get('/', [ExpenseController::class, 'index'])->name('index');
+                        Route::get('/create', [ExpenseController::class, 'create'])->name('create');
+                        Route::post('/', [ExpenseController::class, 'store'])->name('store');
+                        Route::get('/{expense}/edit', [ExpenseController::class, 'edit'])->name('edit');
+                        Route::put('/{expense}', [ExpenseController::class, 'update'])->name('update');
+                        Route::delete('/{expense}', [ExpenseController::class, 'destroy'])->name('destroy');
                     });
 
                     Route::middleware(['can:manage-employees'])->prefix('staff')->name('staff.')->group(function () {
@@ -170,7 +182,23 @@ Route::prefix('superadmin')
     ->name('superadmin.')
     ->group(function () {
         Route::get('/', [SuperAdminDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/search', [SuperAdminGlobalSearchController::class, 'index'])->name('search');
         Route::get('/activity', [ActivityLogController::class, 'index'])->name('activity');
-        Route::get('/settings', [SuperAdminSettingsController::class, 'edit'])->name('settings');
-        Route::put('/settings', [SuperAdminSettingsController::class, 'update'])->name('settings.update');
+
+        Route::prefix('entities/{entity}')->where(['entity' => 'businesses|users|products|customers|sales|expenses'])->name('entities.')->group(function () {
+            Route::get('/', [SuperAdminEntityController::class, 'index'])->name('index');
+            Route::get('/create', [SuperAdminEntityController::class, 'create'])->name('create');
+            Route::post('/', [SuperAdminEntityController::class, 'store'])->name('store');
+            Route::get('/{record}', [SuperAdminEntityController::class, 'show'])->whereNumber('record')->name('show');
+            Route::middleware('platform.full')->group(function () {
+                Route::get('/{record}/edit', [SuperAdminEntityController::class, 'edit'])->whereNumber('record')->name('edit');
+                Route::put('/{record}', [SuperAdminEntityController::class, 'update'])->whereNumber('record')->name('update');
+                Route::delete('/{record}', [SuperAdminEntityController::class, 'destroy'])->whereNumber('record')->name('destroy');
+            });
+        });
+
+        Route::middleware('platform.full')->group(function () {
+            Route::get('/settings', [SuperAdminSettingsController::class, 'edit'])->name('settings');
+            Route::put('/settings', [SuperAdminSettingsController::class, 'update'])->name('settings.update');
+        });
     });

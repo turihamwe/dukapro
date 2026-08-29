@@ -6,23 +6,35 @@
         <div class="flex h-16 items-center gap-3 border-b border-gray-200 px-6">
             <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-600 text-sm font-bold text-white">SA</div>
             <div>
-                <p class="text-sm font-semibold">SuperAdmin</p>
-                <p class="text-xs text-gray-500">DukaPro Platform</p>
+                <p class="text-sm font-semibold">DukaPro Platform</p>
+                <p class="text-xs text-gray-500">{{ auth()->user()->isSubAdmin() ? 'SubAdmin' : 'SuperAdmin' }}</p>
             </div>
         </div>
         <nav class="space-y-1 p-4">
             <a href="{{ route('superadmin.dashboard') }}"
-               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition {{ request()->routeIs('superadmin.dashboard') ? 'bg-violet-50 text-violet-700' : 'text-gray-700 hover:bg-gray-100' }}">
-                <span>📊</span> Tenant Overview
+               class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition {{ request()->routeIs('superadmin.dashboard') ? 'bg-violet-50 text-violet-700' : 'text-gray-700 hover:bg-gray-100' }}">
+                Master Dashboard
             </a>
+            <a href="{{ route('superadmin.search') }}"
+               class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition {{ request()->routeIs('superadmin.search') ? 'bg-violet-50 text-violet-700' : 'text-gray-700 hover:bg-gray-100' }}">
+                Global Search
+            </a>
+            @foreach(\App\Support\SuperAdmin\EntityRegistry::all() as $key => $entity)
+                <a href="{{ route('superadmin.entities.index', $key) }}"
+                   class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition {{ request()->is('superadmin/entities/' . $key . '*') ? 'bg-violet-50 text-violet-700' : 'text-gray-700 hover:bg-gray-100' }}">
+                    {{ $entity['label'] }}
+                </a>
+            @endforeach
             <a href="{{ route('superadmin.activity') }}"
-               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition {{ request()->routeIs('superadmin.activity') ? 'bg-violet-50 text-violet-700' : 'text-gray-700 hover:bg-gray-100' }}">
-                <span>📋</span> Activity Log
+               class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition {{ request()->routeIs('superadmin.activity') ? 'bg-violet-50 text-violet-700' : 'text-gray-700 hover:bg-gray-100' }}">
+                Activity Log
             </a>
-            <a href="{{ route('superadmin.settings') }}"
-               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition {{ request()->routeIs('superadmin.settings') ? 'bg-violet-50 text-violet-700' : 'text-gray-700 hover:bg-gray-100' }}">
-                <span>⚙️</span> Settings
-            </a>
+            @can('platform-full-access')
+                <a href="{{ route('superadmin.settings') }}"
+                   class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition {{ request()->routeIs('superadmin.settings*') ? 'bg-violet-50 text-violet-700' : 'text-gray-700 hover:bg-gray-100' }}">
+                    Settings &amp; API Keys
+                </a>
+            @endcan
         </nav>
         <div class="absolute bottom-0 w-64 border-t border-gray-200 bg-white p-4">
             <p class="truncate text-xs text-gray-500">{{ auth()->user()->email }}</p>
@@ -31,8 +43,8 @@
     </aside>
 
     <div class="flex flex-1 flex-col">
-        <header class="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4 lg:hidden">
-            <p class="font-semibold">SuperAdmin</p>
+        <header class="sticky top-0 z-30 flex min-h-16 items-center justify-between border-b border-gray-200 bg-white px-4 lg:hidden">
+            <p class="font-semibold">Platform Admin</p>
             <a href="{{ route('logout.get') }}" class="text-sm text-gray-500">Sign out</a>
         </header>
 

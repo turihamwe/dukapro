@@ -26,6 +26,7 @@
                 <div class="text-right text-sm">
                     <p>Cash: <span class="{{ $recon->cash_variance >= 0 ? 'text-emerald-600' : 'text-red-600' }} font-medium">@money($recon->cash_variance)</span></p>
                     <p>M-Pesa: <span class="{{ $recon->mobile_variance >= 0 ? 'text-emerald-600' : 'text-red-600' }} font-medium">@money($recon->mobile_variance)</span></p>
+                    <p class="mt-1 text-xs text-gray-600">Net: <span class="font-semibold {{ ($recon->net_income ?? 0) >= 0 ? 'text-emerald-700' : 'text-red-600' }}">@money($recon->net_income ?? 0)</span></p>
                 </div>
             </div>
         </x-card>
@@ -45,6 +46,7 @@
                     <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Expected Cash</th>
                     <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Cash Var.</th>
                     <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">M-Pesa Var.</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Net Income</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
@@ -55,9 +57,10 @@
                         <td class="px-6 py-4 text-right text-sm text-gray-900">@money($recon->expected_cash)</td>
                         <td class="px-6 py-4 text-right text-sm font-medium {{ $recon->cash_variance >= 0 ? 'text-emerald-600' : 'text-red-600' }}">@money($recon->cash_variance)</td>
                         <td class="px-6 py-4 text-right text-sm font-medium {{ $recon->mobile_variance >= 0 ? 'text-emerald-600' : 'text-red-600' }}">@money($recon->mobile_variance)</td>
+                        <td class="px-6 py-4 text-right text-sm font-semibold {{ ($recon->net_income ?? 0) >= 0 ? 'text-emerald-700' : 'text-red-600' }}">@money($recon->net_income ?? 0)</td>
                     </tr>
                 @empty
-                    <tr><td colspan="5" class="px-6 py-12 text-center text-sm text-gray-500">No reconciliations yet.</td></tr>
+                    <tr><td colspan="6" class="px-6 py-12 text-center text-sm text-gray-500">No reconciliations yet.</td></tr>
                 @endforelse
             </tbody>
         </table>
