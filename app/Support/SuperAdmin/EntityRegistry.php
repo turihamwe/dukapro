@@ -23,7 +23,7 @@ class EntityRegistry
                 'deletable' => true,
             ],
             'users' => [
-                'label' => 'Tenant Users',
+                'label' => 'Staff',
                 'model' => User::class,
                 'scope' => function ($query) {
                     return $query->whereNotNull('business_id')
