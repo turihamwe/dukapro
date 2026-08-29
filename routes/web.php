@@ -94,6 +94,7 @@ Route::middleware(['maintenance'])->group(function () {
 
                     Route::middleware(['can:view-sales-reports'])->prefix('reports/sales')->name('reports.sales.')->group(function () {
                         Route::get('/', [SalesReportController::class, 'index'])->name('index');
+                        Route::get('/print', [SalesReportController::class, 'print'])->name('print');
                     });
 
                     Route::middleware(['can:view-expenses', 'management.access'])->prefix('expenses')->name('expenses.')->group(function () {
@@ -177,6 +178,11 @@ Route::middleware(['maintenance'])->group(function () {
                     Route::middleware(['can:submit-reconciliation'])->group(function () {
                         Route::get('/create', [ReconciliationController::class, 'create'])->name('create');
                         Route::post('/', [ReconciliationController::class, 'store'])->name('store');
+                    });
+
+                    Route::middleware(['can:view-reconciliation-history'])->group(function () {
+                        Route::get('/{reconciliation}/print', [ReconciliationController::class, 'print'])->name('print');
+                        Route::get('/{reconciliation}', [ReconciliationController::class, 'show'])->name('show');
                     });
                 });
             });

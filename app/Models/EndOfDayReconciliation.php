@@ -23,6 +23,7 @@ class EndOfDayReconciliation extends Model
         'mobile_variance',
         'total_sales',
         'total_expenses',
+        'total_damages',
         'net_income',
         'notes',
         'status',
@@ -38,6 +39,7 @@ class EndOfDayReconciliation extends Model
         'mobile_variance' => 'float',
         'total_sales' => 'float',
         'total_expenses' => 'float',
+        'total_damages' => 'float',
         'net_income' => 'float',
     ];
 

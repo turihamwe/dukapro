@@ -1,9 +1,9 @@
 @extends('layouts.admin')
 
-@section('title', 'Daily Expenses')
+@section('title', 'Expense Reports')
 
 @section('content')
-<x-page-header title="Daily Expenses" subtitle="Track operating costs and daily spending">
+<x-page-header title="Expense Reports" subtitle="{{ $label }}">
     <x-slot name="actions">
         @can('create', App\Models\Expense::class)
             <x-button variant="primary" size="sm" href="{{ tenant_route('tenant.expenses.create') }}">+ Record Expense</x-button>
@@ -11,15 +11,17 @@
     </x-slot>
 </x-page-header>
 
+<x-report-period-tabs :period="$period" route-name="tenant.expenses.index" />
+
 <div class="mb-4 grid gap-4 sm:grid-cols-3">
-    <x-stat-card label="Today's expenses" :value="format_money($todayTotal)" accent="amber" />
+    <x-stat-card label="Period total" :value="format_money($periodTotal, $business)" accent="amber" />
     <x-stat-card label="Entries shown" :value="number_format($expenses->total())" accent="indigo" />
 </div>
 
 <form method="GET" class="mb-4 flex flex-col gap-3 sm:flex-row">
+    <input type="hidden" name="period" value="{{ $period }}">
     <x-input type="search" name="search" value="{{ $search ?? '' }}" placeholder="Search title, category, notes..." class="flex-1" />
-    <x-input type="date" name="date" value="{{ $date ?? '' }}" class="sm:w-48" />
-    <x-button type="submit" variant="secondary">Filter</x-button>
+    <x-button type="submit" variant="secondary">Search</x-button>
 </form>
 
 <div class="space-y-3 md:hidden">
@@ -42,7 +44,7 @@
             </div>
         </x-card>
     @empty
-        <x-card class="text-center text-sm text-gray-500">No expenses recorded yet.</x-card>
+        <x-card class="text-center text-sm text-gray-500">No expenses recorded for this period.</x-card>
     @endforelse
 </div>
 
@@ -80,7 +82,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="px-6 py-12 text-center text-sm text-gray-500">No expenses recorded yet.</td>
+                        <td colspan="5" class="px-6 py-12 text-center text-sm text-gray-500">No expenses recorded for this period.</td>
                     </tr>
                 @endforelse
             </tbody>

@@ -167,6 +167,16 @@
     drawer?.querySelectorAll('a').forEach(function (link) {
         link.addEventListener('click', closeNav);
     });
+
+    function bindReportsToggle(toggleId, menuId) {
+        document.getElementById(toggleId)?.addEventListener('click', function () {
+            document.getElementById(menuId)?.classList.toggle('hidden');
+            this.querySelector('svg:last-child')?.classList.toggle('rotate-180');
+        });
+    }
+
+    bindReportsToggle('modern-reports-toggle', 'modern-reports-menu');
+    bindReportsToggle('mobile-modern-reports-toggle', 'mobile-modern-reports-menu');
 })();
 </script>
 @endpush

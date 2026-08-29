@@ -12,8 +12,9 @@ class SettingsController extends Controller
     public function edit()
     {
         $settings = SystemSetting::allCached();
+        $yoPaymentsConfigured = app(\App\Services\YoPaymentsService::class)->isConfigured();
 
-        return view('superadmin.settings', compact('settings'));
+        return view('superadmin.settings', compact('settings', 'yoPaymentsConfigured'));
     }
 
     public function update(Request $request)
@@ -27,6 +28,11 @@ class SettingsController extends Controller
             'mpesa_api_key' => 'nullable|string|max:255',
             'airtel_api_key' => 'nullable|string|max:255',
             'mtn_api_key' => 'nullable|string|max:255',
+            'yopayments_enabled' => 'nullable|boolean',
+            'yopayments_environment' => 'nullable|in:sandbox,live',
+            'yopayments_api_username' => 'nullable|string|max:255',
+            'yopayments_api_password' => 'nullable|string|max:255',
+            'yopayments_account_id' => 'nullable|string|max:255',
             'maintenance_mode' => 'nullable|boolean',
         ]);
 
@@ -38,6 +44,13 @@ class SettingsController extends Controller
         SystemSetting::set('mpesa_api_key', $data['mpesa_api_key'] ?? '');
         SystemSetting::set('airtel_api_key', $data['airtel_api_key'] ?? '');
         SystemSetting::set('mtn_api_key', $data['mtn_api_key'] ?? '');
+        SystemSetting::set('yopayments_enabled', $request->boolean('yopayments_enabled') ? '1' : '0');
+        SystemSetting::set('yopayments_environment', $data['yopayments_environment'] ?? 'sandbox');
+        SystemSetting::set('yopayments_api_username', $data['yopayments_api_username'] ?? '');
+        if ($request->filled('yopayments_api_password')) {
+            SystemSetting::set('yopayments_api_password', $data['yopayments_api_password']);
+        }
+        SystemSetting::set('yopayments_account_id', $data['yopayments_account_id'] ?? '');
         SystemSetting::set('maintenance_mode', $request->boolean('maintenance_mode') ? '1' : '0');
 
         SystemAuditLogger::record(

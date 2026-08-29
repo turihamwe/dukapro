@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\Business;
 use App\Models\Customer;
+use App\Models\EndOfDayReconciliation;
 use App\Models\Expense;
 use App\Models\Product;
 use App\Models\User;
@@ -37,6 +38,10 @@ class RouteServiceProvider extends ServiceProvider
 
         Route::bind('expense', function ($value, $route) {
             return $this->resolveTenantRecord(Expense::class, $value, $route);
+        });
+
+        Route::bind('reconciliation', function ($value, $route) {
+            return $this->resolveTenantRecord(EndOfDayReconciliation::class, $value, $route);
         });
 
         $this->configureRateLimiting();

@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Sale;
 use App\Support\AnalyticsDateRange;
-use Carbon\Carbon;
+use App\Support\ReportPeriodResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -17,10 +17,20 @@ class SalesReportController extends Controller
 
     public function index(Request $request)
     {
+        return view('reports.sales', $this->reportData($request));
+    }
+
+    public function print(Request $request)
+    {
+        return view('reports.sales-print', $this->reportData($request));
+    }
+
+    protected function reportData(Request $request): array
+    {
         $period = $request->input('period', 'daily');
         $business = $request->user()->business;
 
-        [$start, $end, $label] = $this->resolvePeriod($period, $request);
+        [$start, $end, $label] = ReportPeriodResolver::resolve($period, $request);
         $range = new AnalyticsDateRange($period, $label, $start, $end);
 
         $salesQuery = Sale::query()
@@ -49,35 +59,6 @@ class SalesReportController extends Controller
             'bank' => (float) ($summary['bank']->total ?? 0),
         ];
 
-        return view('reports.sales', compact('period', 'label', 'dailyBreakdown', 'totals', 'range'));
-    }
-
-    protected function resolvePeriod(string $period, Request $request): array
-    {
-        switch ($period) {
-            case 'yesterday':
-                return [Carbon::yesterday()->startOfDay(), Carbon::yesterday()->endOfDay(), 'Yesterday'];
-
-            case 'weekly':
-                return [Carbon::today()->subDays(6)->startOfDay(), Carbon::today()->endOfDay(), 'Last 7 Days'];
-
-            case 'monthly':
-                return [Carbon::today()->subDays(29)->startOfDay(), Carbon::today()->endOfDay(), 'Last 30 Days'];
-
-            case 'yearly':
-                return [Carbon::today()->startOfYear()->startOfDay(), Carbon::today()->endOfDay(), 'This Year'];
-
-            case 'custom':
-                $from = Carbon::parse($request->input('from', Carbon::today()->toDateString()));
-                $to = Carbon::parse($request->input('to', Carbon::today()->toDateString()));
-                if ($from->gt($to)) {
-                    [$from, $to] = [$to, $from];
-                }
-
-                return [$from, $to, $from->format('M j') . ' – ' . $to->format('M j, Y')];
-
-            default:
-                return [Carbon::today()->startOfDay(), Carbon::today()->endOfDay(), 'Today'];
-        }
+        return compact('period', 'label', 'dailyBreakdown', 'totals', 'range');
     }
 }

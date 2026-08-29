@@ -30,7 +30,7 @@
         <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
             <h2 class="text-sm font-semibold text-emerald-900">Daily Balancing Summary</h2>
             <p class="mt-1 text-xs text-emerald-800/80">Business-wide totals for this date</p>
-            <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div>
                     <p class="text-xs text-emerald-800/70">Total sales</p>
                     <p class="text-lg font-semibold text-emerald-900">@money($expected['total_sales'])</p>
@@ -40,8 +40,13 @@
                     <p class="text-lg font-semibold text-red-700">@money($expected['total_expenses'])</p>
                 </div>
                 <div>
+                    <p class="text-xs text-emerald-800/70">Damages (cost)</p>
+                    <p class="text-lg font-semibold text-amber-800">@money($expected['total_damages'])</p>
+                </div>
+                <div>
                     <p class="text-xs text-emerald-800/70">Net income</p>
                     <p class="text-lg font-semibold {{ $expected['net_income'] >= 0 ? 'text-emerald-900' : 'text-red-700' }}">@money($expected['net_income'])</p>
+                    <p class="text-[10px] text-emerald-800/60">Sales − expenses − damages</p>
                 </div>
             </div>
 

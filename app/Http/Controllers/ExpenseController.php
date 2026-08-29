@@ -20,9 +20,15 @@ class ExpenseController extends Controller
     public function index(Request $request)
     {
         $search = trim((string) $request->input('search', ''));
-        $date = $request->input('date');
+        $period = $request->input('period', 'daily');
+        $business = $request->user()->business;
 
-        $query = Expense::with('user')->latest('expense_date')->latest('id');
+        [$start, $end, $label] = \App\Support\ReportPeriodResolver::resolve($period, $request);
+
+        $query = Expense::with('user')
+            ->whereBetween('expense_date', [$start->toDateString(), $end->toDateString()])
+            ->latest('expense_date')
+            ->latest('id');
 
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
@@ -32,15 +38,23 @@ class ExpenseController extends Controller
             });
         }
 
-        if ($date) {
-            $query->whereDate('expense_date', $date);
+        $expenses = $query->paginate(20)->appends($request->only(['search', 'period']));
+
+        $totalQuery = Expense::query()
+            ->whereBetween('expense_date', [$start->toDateString(), $end->toDateString()]);
+
+        if ($search !== '') {
+            $totalQuery->where(function ($q) use ($search) {
+                $q->where('title', 'like', '%' . $search . '%')
+                    ->orWhere('category', 'like', '%' . $search . '%')
+                    ->orWhere('description', 'like', '%' . $search . '%');
+            });
         }
 
-        $expenses = $query->paginate(20)->appends($request->only(['search', 'date']));
+        $periodTotal = (float) $totalQuery->sum('amount');
         $categories = ExpenseService::CATEGORIES;
-        $todayTotal = $this->expenseService->totalForDate($request->user()->business, now());
 
-        return view('expenses.index', compact('expenses', 'categories', 'search', 'date', 'todayTotal'));
+        return view('expenses.index', compact('expenses', 'categories', 'search', 'period', 'label', 'periodTotal', 'business'));
     }
 
     public function create()

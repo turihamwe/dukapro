@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Business;
 use App\Models\EndOfDayReconciliation;
 use App\Services\ReconciliationService;
 use Carbon\Carbon;
@@ -15,7 +16,7 @@ class ReconciliationController extends Controller
     public function __construct(ReconciliationService $reconciliationService)
     {
         $this->reconciliationService = $reconciliationService;
-        $this->middleware('can:view-reconciliation-history')->only('index');
+        $this->middleware('can:view-reconciliation-history')->only(['index', 'show', 'print']);
         $this->middleware('can:submit-reconciliation')->only(['create', 'store']);
     }
 
@@ -30,6 +31,28 @@ class ReconciliationController extends Controller
         $reconciliations = $query->paginate(15);
 
         return view('reconciliation.index', compact('reconciliations'));
+    }
+
+    public function show(Request $request, Business $business, EndOfDayReconciliation $reconciliation)
+    {
+        $this->authorizeReconciliation($request, $reconciliation);
+
+        $reconciliation->load('user', 'business');
+        $report = $this->reconciliationService->buildReportDetails($reconciliation);
+        $bossPhone = $this->resolveBossPhone($business);
+        $whatsAppUrl = $this->reconciliationService->whatsAppShareUrl($reconciliation, $bossPhone);
+
+        return view('reconciliation.show', compact('reconciliation', 'report', 'whatsAppUrl', 'bossPhone'));
+    }
+
+    public function print(Business $business, EndOfDayReconciliation $reconciliation)
+    {
+        $this->authorizeReconciliation(request(), $reconciliation);
+
+        $reconciliation->load('user', 'business');
+        $report = $this->reconciliationService->buildReportDetails($reconciliation);
+
+        return view('reconciliation.print', compact('reconciliation', 'report'));
     }
 
     public function create(Request $request)
@@ -55,7 +78,25 @@ class ReconciliationController extends Controller
 
         $reconciliation = $this->reconciliationService->submit($request->user(), $data);
 
-        return redirect()->to(tenant_route('tenant.reconciliation.index'))
+        return redirect()->to(tenant_route('tenant.reconciliation.show', ['reconciliation' => $reconciliation]))
             ->with('success', 'End-of-day reconciliation submitted. Cash variance: ' . format_money($reconciliation->cash_variance));
+    }
+
+    protected function authorizeReconciliation(Request $request, EndOfDayReconciliation $reconciliation): void
+    {
+        if (! Gate::allows('view-all-reconciliations') && (int) $reconciliation->user_id !== (int) $request->user()->id) {
+            abort(403);
+        }
+    }
+
+    protected function resolveBossPhone(Business $business): ?string
+    {
+        if ($business->phone) {
+            return $business->phone;
+        }
+
+        $owner = $business->users()->where('role', 'owner')->first();
+
+        return $owner->phone ?? null;
     }
 }

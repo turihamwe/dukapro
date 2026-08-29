@@ -38,11 +38,12 @@ class ReconciliationService
             'expected_cash' => round($expectedCash, 2),
             'expected_mobile_money' => round($expectedMobileMoney, 2),
             'sale_count' => $sales->count(),
-            'damages' => $this->damageService->summarizeForDate($businessId, $date),
             'total_sales' => $dailySummary['total_sales'],
             'total_expenses' => $dailySummary['total_expenses'],
+            'total_damages' => $dailySummary['total_damages'],
             'net_income' => $dailySummary['net_income'],
             'expenses' => $dailySummary['expenses'],
+            'damages' => $dailySummary['damages'],
         ];
     }
 
@@ -59,6 +60,9 @@ class ReconciliationService
             ->whereDate('expense_date', $date)
             ->sum('amount');
 
+        $damagesSummary = $this->damageService->summarizeForDate($businessId, $date);
+        $totalDamages = (float) $damagesSummary['total_loss'];
+
         $expenses = Expense::query()
             ->with('user')
             ->where('business_id', $businessId)
@@ -66,13 +70,15 @@ class ReconciliationService
             ->orderBy('title')
             ->get();
 
-        $netIncome = round($totalSales - $totalExpenses, 2);
+        $netIncome = round($totalSales - $totalExpenses - $totalDamages, 2);
 
         return [
             'total_sales' => round($totalSales, 2),
             'total_expenses' => round($totalExpenses, 2),
+            'total_damages' => round($totalDamages, 2),
             'net_income' => $netIncome,
             'expenses' => $expenses,
+            'damages' => $damagesSummary,
         ];
     }
 
@@ -100,10 +106,64 @@ class ReconciliationService
                 'mobile_variance' => round($actualMobile - $expected['expected_mobile_money'], 2),
                 'total_sales' => $dailySummary['total_sales'],
                 'total_expenses' => $dailySummary['total_expenses'],
+                'total_damages' => $dailySummary['total_damages'],
                 'net_income' => $dailySummary['net_income'],
                 'notes' => $data['notes'] ?? null,
                 'status' => 'submitted',
             ]
         );
+    }
+
+    public function buildReportDetails(EndOfDayReconciliation $reconciliation): array
+    {
+        $date = Carbon::parse($reconciliation->reconciliation_date);
+        $summary = $this->calculateDailySummary($reconciliation->business_id, $date);
+
+        return array_merge($summary, [
+            'reconciliation' => $reconciliation,
+            'date' => $date,
+        ]);
+    }
+
+    public function whatsAppShareUrl(EndOfDayReconciliation $reconciliation, ?string $recipientPhone = null): ?string
+    {
+        if (! $recipientPhone) {
+            return null;
+        }
+
+        $digits = preg_replace('/\D+/', '', $recipientPhone);
+        if ($digits === '') {
+            return null;
+        }
+
+        if (strlen($digits) === 9 && $digits[0] === '0') {
+            $digits = '256' . substr($digits, 1);
+        } elseif (strlen($digits) === 10 && $digits[0] === '0') {
+            $digits = '256' . substr($digits, 1);
+        }
+
+        $business = $reconciliation->business;
+        $dateLabel = $reconciliation->reconciliation_date->format('M j, Y');
+        $damages = $reconciliation->total_damages ?? 0;
+
+        $message = implode("\n", array_filter([
+            "EOD Report — {$business->name}",
+            "Date: {$dateLabel}",
+            "Cashier: {$reconciliation->user->name}",
+            '',
+            'Daily balancing:',
+            '• Total sales: ' . format_money($reconciliation->total_sales ?? 0, $business),
+            '• Expenses: ' . format_money($reconciliation->total_expenses ?? 0, $business),
+            '• Damages: ' . format_money($damages, $business),
+            '• Net income: ' . format_money($reconciliation->net_income ?? 0, $business),
+            '',
+            'Cash drawer:',
+            '• Expected cash: ' . format_money($reconciliation->expected_cash, $business),
+            '• Actual cash: ' . format_money($reconciliation->actual_cash, $business),
+            '• Cash variance: ' . format_money($reconciliation->cash_variance, $business),
+            '• Mobile variance: ' . format_money($reconciliation->mobile_variance, $business),
+        ]));
+
+        return 'https://wa.me/' . $digits . '?text=' . rawurlencode($message);
     }
 }

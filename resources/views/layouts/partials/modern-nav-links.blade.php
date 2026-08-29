@@ -12,34 +12,39 @@
         Inventory
     </a>
 @endcan
-@can('view-customers')
-    <a href="{{ tenant_route('tenant.contacts.index') }}"
-       class="modern-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] {{ request()->routeIs('tenant.contacts.*') ? $navActive : $navIdle }}">
-        <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-        Contacts
-    </a>
-@endcan
-@can('view-sales-reports')
-    <a href="{{ tenant_route('tenant.reports.sales.index') }}"
-       class="modern-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] {{ request()->routeIs('tenant.reports.sales.*') ? $navActive : $navIdle }}">
-        <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        Sales
-    </a>
-@endcan
-@can('view-expenses')
-    <a href="{{ tenant_route('tenant.expenses.index') }}"
-       class="modern-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] {{ request()->routeIs('tenant.expenses.*') ? $navActive : $navIdle }}">
-        <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-        Expenses
-    </a>
-@endcan
-@can('view-all-reconciliations')
-    <a href="{{ tenant_route('tenant.reconciliation.index') }}"
-       class="modern-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] {{ request()->routeIs('tenant.reconciliation.*') ? $navActive : $navIdle }}">
-        <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-        EOD
-    </a>
-@endcan
+@if(auth()->user()->can('view-sales-reports') || auth()->user()->can('view-all-reconciliations') || auth()->user()->can('view-expenses'))
+    @php
+        $reportsOpen = request()->routeIs('tenant.reports.*')
+            || request()->routeIs('tenant.reconciliation.*')
+            || request()->routeIs('tenant.expenses.index');
+        $reportsToggleId = isset($mobile) && $mobile ? 'mobile-modern-reports-toggle' : 'modern-reports-toggle';
+        $reportsMenuId = isset($mobile) && $mobile ? 'mobile-modern-reports-menu' : 'modern-reports-menu';
+    @endphp
+    <div class="modern-reports-nav">
+        <button type="button" id="{{ $reportsToggleId }}"
+                class="modern-nav-link flex w-full items-center justify-between gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] {{ $reportsOpen ? $navActive : $navIdle }}">
+            <span class="flex items-center gap-3">
+                <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                Reports
+            </span>
+            <svg class="h-4 w-4 shrink-0 transition {{ $reportsOpen ? 'rotate-180' : '' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div id="{{ $reportsMenuId }}" class="ml-4 mt-1 space-y-1 {{ $reportsOpen ? '' : 'hidden' }}">
+            @can('view-sales-reports')
+                <a href="{{ tenant_route('tenant.reports.sales.index') }}"
+                   class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('tenant.reports.sales.*') ? 'font-medium text-emerald-400 bg-white/10' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">Sales reports</a>
+            @endcan
+            @can('view-all-reconciliations')
+                <a href="{{ tenant_route('tenant.reconciliation.index') }}"
+                   class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('tenant.reconciliation.*') ? 'font-medium text-emerald-400 bg-white/10' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">EOD reports</a>
+            @endcan
+            @can('view-expenses')
+                <a href="{{ tenant_route('tenant.expenses.index') }}"
+                   class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('tenant.expenses.index') ? 'font-medium text-emerald-400 bg-white/10' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">Expenses reports</a>
+            @endcan
+        </div>
+    </div>
+@endif
 @can('manage-employees')
     <a href="{{ tenant_route('tenant.staff.index') }}"
        class="modern-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] {{ request()->routeIs('tenant.staff.*') ? $navActive : $navIdle }}">
@@ -57,6 +62,13 @@
         @if($lowStockCount > 0)
             <span class="rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white">{{ $lowStockCount > 99 ? '99+' : $lowStockCount }}</span>
         @endif
+    </a>
+@endcan
+@can('view-customers')
+    <a href="{{ tenant_route('tenant.contacts.index') }}"
+       class="modern-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] {{ request()->routeIs('tenant.contacts.*') ? $navActive : $navIdle }}">
+        <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        Contacts
     </a>
 @endcan
 @can('manage-settings')

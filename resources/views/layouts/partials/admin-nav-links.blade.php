@@ -16,8 +16,8 @@
         <span>👥</span> Contacts
     </a>
 @endcan
-@if(auth()->user()->can('view-sales-reports') || auth()->user()->can('view-all-reconciliations'))
-    @php $reportsOpen = request()->routeIs('tenant.reports.*') || request()->routeIs('tenant.reconciliation.index'); @endphp
+@if(auth()->user()->can('view-sales-reports') || auth()->user()->can('view-all-reconciliations') || auth()->user()->can('view-expenses'))
+    @php $reportsOpen = request()->routeIs('tenant.reports.*') || request()->routeIs('tenant.reconciliation.*') || request()->routeIs('tenant.expenses.index'); @endphp
     <div class="reports-nav">
         <button type="button" id="{{ isset($mobile) && $mobile ? 'mobile-reports-toggle' : 'reports-toggle' }}"
                 class="{{ $navLink }} w-full justify-between {{ $reportsOpen ? $navActive : $navIdle }}">
@@ -31,11 +31,11 @@
             @endcan
             @can('view-all-reconciliations')
                 <a href="{{ tenant_route('tenant.reconciliation.index') }}"
-                   class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('tenant.reconciliation.index') ? 'font-medium text-indigo-700 bg-indigo-50' : 'text-gray-600 hover:bg-gray-100' }}">EOD reports</a>
+                   class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('tenant.reconciliation.*') ? 'font-medium text-indigo-700 bg-indigo-50' : 'text-gray-600 hover:bg-gray-100' }}">EOD reports</a>
             @endcan
             @can('view-expenses')
                 <a href="{{ tenant_route('tenant.expenses.index') }}"
-                   class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('tenant.expenses.*') ? 'font-medium text-indigo-700 bg-indigo-50' : 'text-gray-600 hover:bg-gray-100' }}">Expenses</a>
+                   class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('tenant.expenses.index') ? 'font-medium text-indigo-700 bg-indigo-50' : 'text-gray-600 hover:bg-gray-100' }}">Expenses reports</a>
             @endcan
         </div>
     </div>
