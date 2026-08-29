@@ -19,6 +19,8 @@
 @if($summaryCards)
 <div class="mb-6 grid grid-cols-2 gap-4 xl:grid-cols-4">
     <x-stat-card label="Total stock value" :value="format_money($summaryCards['inventory_value'])" accent="indigo" />
+    <x-stat-card label="Total sales value" :value="format_money($summaryCards['retail_stock_value'] ?? 0)" accent="emerald" />
+    <x-stat-card label="Potential profit" :value="format_money($summaryCards['potential_profit'] ?? 0)" accent="emerald" />
     <x-stat-card label="Today's sales" :value="format_money($summaryCards['todays_sales'])" accent="emerald" />
     <x-stat-card label="Low stock items" :value="number_format($summaryCards['low_stock_count'])" accent="amber" />
     <x-stat-card label="Total products" :value="number_format($summaryCards['product_count'])" accent="indigo" />

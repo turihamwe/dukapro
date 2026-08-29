@@ -1,17 +1,17 @@
 @extends('layouts.base')
 
 @section('body')
+@include('layouts.partials.impersonation-banner')
 @if(auth()->user()->canSwitchToCashierMode() && \App\Support\CashierMode::isActive())
-    <div class="sticky top-0 z-[60] border-b border-indigo-700 bg-indigo-600 px-4 py-3 text-center text-sm text-white shadow-md">
-        <div class="mx-auto flex max-w-6xl flex-col items-center justify-center gap-2 sm:flex-row sm:gap-4">
-            <span class="font-semibold">Cashier Mode active</span>
-            <form method="POST" action="{{ tenant_route('tenant.cashier-mode.disable') }}" class="inline">
-                @csrf
-                <button type="submit" class="min-h-[44px] rounded-lg bg-white px-4 py-2 text-xs font-bold uppercase tracking-wide text-indigo-700 shadow hover:bg-indigo-50">
-                    Exit Cashier Mode
-                </button>
-            </form>
-        </div>
+    <div class="sticky top-0 z-[60] border-b border-indigo-200 bg-indigo-50 px-4 py-2 text-center text-xs text-indigo-800">
+        <span>Cashier Mode active</span>
+        <span class="mx-2 text-indigo-300">·</span>
+        <form method="POST" action="{{ tenant_route('tenant.cashier-mode.disable') }}" class="inline">
+            @csrf
+            <button type="submit" class="font-medium text-indigo-700 underline decoration-indigo-300/70 underline-offset-2 hover:text-indigo-900">
+                Exit cashier mode
+            </button>
+        </form>
     </div>
 @endif
 
@@ -41,7 +41,7 @@
     </main>
 
     <nav class="cashier-bottom-nav fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white/95 backdrop-blur-md" style="padding-bottom: env(safe-area-inset-bottom);">
-        <div class="mx-auto grid max-w-lg grid-cols-3 gap-1 px-2 py-2">
+        <div class="mx-auto grid max-w-lg grid-cols-4 gap-1 px-2 py-2">
             @can('access-pos')
                 <a href="{{ tenant_route('tenant.pos.index') }}"
                    class="flex min-h-[56px] flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-semibold {{ request()->routeIs('tenant.pos.*') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600' }}">
@@ -56,6 +56,12 @@
                     </a>
                 @endcan
             @endif
+            @can('record-expenses')
+                <a href="{{ tenant_route('tenant.expenses.create') }}"
+                   class="flex min-h-[56px] flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-semibold {{ request()->routeIs('tenant.expenses.create') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600' }}">
+                    <span class="mb-0.5 text-xl leading-none">📝</span> Expense
+                </a>
+            @endcan
             @can('submit-reconciliation')
                 <a href="{{ tenant_route('tenant.reconciliation.create') }}"
                    class="flex min-h-[56px] flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-semibold {{ request()->routeIs('tenant.reconciliation.create') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600' }}">

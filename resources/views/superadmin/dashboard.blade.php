@@ -91,8 +91,14 @@
                         <td class="px-6 py-4 font-medium">{{ $business->name }}</td>
                         <td class="px-6 py-4">{{ $business->users_count }}</td>
                         <td class="px-6 py-4 capitalize">{{ $business->subscription_status }}</td>
-                        <td class="px-6 py-4 text-right">
-                            <a href="{{ route('superadmin.entities.show', ['businesses', $business->id]) }}" class="text-violet-600 hover:text-violet-800">View</a>
+                        <td class="px-6 py-4 text-right whitespace-nowrap">
+                            @can('platform-full-access')
+                                <form method="POST" action="{{ route('superadmin.impersonate.start', $business->id) }}" class="inline">
+                                    @csrf
+                                    <button type="submit" class="text-violet-600 hover:text-violet-800">Impersonate</button>
+                                </form>
+                            @endcan
+                            <a href="{{ route('superadmin.entities.show', ['businesses', $business->id]) }}" class="ml-3 text-gray-600 hover:text-gray-900">View</a>
                         </td>
                     </tr>
                 @empty

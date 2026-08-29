@@ -27,53 +27,61 @@
 </div>
 
 {{-- Metric cards --}}
-<div class="modern-metric-grid mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-    <div class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-        <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Total Stock Value</p>
-        <p class="mt-2 text-2xl font-bold text-gray-900">{{ format_money_compact($s['inventory_value'], $business) }}</p>
-        @if($m['inventory_change_pct'] > 0)
-            <p class="mt-2 flex items-center gap-1 text-xs font-medium text-emerald-600">
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
-                +{{ $m['inventory_change_pct'] }}% this week
-            </p>
-        @endif
-    </div>
+<div class="modern-metric-grid mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    <x-dashboard-metric-card
+        label="Total Stock Value"
+        :value="format_money_compact($s['inventory_value'], $business)"
+        modal-id="drill-inventory-value"
+        modal-title="Stock value by product (cost)"
+        :footer="$m['inventory_change_pct'] > 0 ? '+'. $m['inventory_change_pct'] . '% this week' : 'At cost price × units on hand'"
+        :footer-class="$m['inventory_change_pct'] > 0 ? 'text-emerald-600' : 'text-gray-500'"
+    />
 
-    <div class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-        <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Today's Sales</p>
-        <p class="mt-2 text-2xl font-bold text-gray-900">{{ format_money_compact($s['todays_sales'], $business) }}</p>
-        <p class="mt-2 flex items-center gap-1 text-xs font-medium {{ $m['sales_change_pct'] >= 0 ? 'text-emerald-600' : 'text-red-500' }}">
-            @if($m['sales_change_pct'] >= 0)
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
-                +{{ $m['sales_change_pct'] }}% vs yesterday
-            @else
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
-                {{ $m['sales_change_pct'] }}% vs yesterday
-            @endif
-        </p>
-    </div>
+    <x-dashboard-metric-card
+        label="Total Sales Value"
+        :value="format_money_compact($s['retail_stock_value'], $business)"
+        modal-id="drill-retail-value"
+        modal-title="Retail stock value by product"
+        footer="Selling price × units on hand"
+    />
 
-    <div class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-        <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Low Stock Items</p>
-        <div class="mt-2 flex items-center gap-2">
-            <p class="text-2xl font-bold text-gray-900">{{ number_format($s['low_stock_count']) }}</p>
-            @if($s['low_stock_count'] > 0)
-                <svg class="h-5 w-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-            @endif
-        </div>
-        @if($s['low_stock_count'] > 0)
-            <p class="mt-2 text-xs font-medium text-red-500">Needs restock attention</p>
-        @else
-            <p class="mt-2 text-xs text-gray-500">All items above threshold</p>
-        @endif
-    </div>
+    <x-dashboard-metric-card
+        label="Potential Profit"
+        :value="format_money_compact($s['potential_profit'], $business)"
+        modal-id="drill-potential-profit"
+        modal-title="Potential profit by product"
+        footer="Margin per unit × units on hand"
+        footer-class="text-emerald-600"
+    />
 
-    <div class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-        <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Total Products</p>
-        <p class="mt-2 text-2xl font-bold text-gray-900">{{ number_format($s['product_count']) }}</p>
-        <p class="mt-2 text-xs text-gray-500">Active in inventory</p>
-    </div>
+    <x-dashboard-metric-card
+        label="Today's Sales"
+        :value="format_money_compact($s['todays_sales'], $business)"
+        modal-id="drill-todays-sales"
+        modal-title="Today's completed sales"
+        :footer="($m['sales_change_pct'] >= 0 ? '+' : '') . $m['sales_change_pct'] . '% vs yesterday'"
+        :footer-class="$m['sales_change_pct'] >= 0 ? 'text-emerald-600' : 'text-red-500'"
+    />
+
+    <x-dashboard-metric-card
+        label="Low Stock Items"
+        :value="number_format($s['low_stock_count'])"
+        modal-id="drill-low-stock"
+        modal-title="Low stock products"
+        :footer="$s['low_stock_count'] > 0 ? 'Needs restock attention' : 'All items above threshold'"
+        :footer-class="$s['low_stock_count'] > 0 ? 'text-red-500' : 'text-gray-500'"
+    />
+
+    <x-dashboard-metric-card
+        label="Total Products"
+        :value="number_format($s['product_count'])"
+        modal-id="drill-products"
+        modal-title="Active products"
+        footer="Active in inventory"
+    />
 </div>
+
+@include('dashboard.partials.drilldown-modals', ['drilldown' => $m['drilldown']])
 
 {{-- Stock levels chart --}}
 @php

@@ -146,7 +146,14 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('view-expenses', function (User $user) {
-            return $user->isOwner() || $user->isManager();
+            return $user->isOwner() || $user->isManager() || $user->isSupervisor();
+        });
+
+        Gate::define('record-expenses', function (User $user) {
+            return $user->isOwner()
+                || $user->isManager()
+                || $user->isSupervisor()
+                || $user->isCashier();
         });
 
         Gate::define('access-superadmin', function (User $user) {

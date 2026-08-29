@@ -44,7 +44,10 @@
                     @endif
                 </div>
                 <div class="text-right shrink-0">
-                    <p class="font-semibold text-gray-900">@money($product->price)</p>
+                    <p class="text-xs text-gray-500">Sell: <span class="font-semibold text-gray-900">@money($product->price)</span></p>
+                    @can('view-cost-prices')
+                        <p class="text-xs text-gray-500">Cost: <span class="font-medium text-gray-700">@money($product->cost_price ?? 0)</span></p>
+                    @endcan
                     <p class="text-xs {{ $product->stock_quantity <= 5 ? 'text-red-600 font-medium' : 'text-gray-500' }}">Stock: {{ $product->stock_quantity }}</p>
                     @can('update', $product)
                         <a href="{{ tenant_route('tenant.inventory.edit', ['product' => $product]) }}" class="mt-1 inline-block text-xs font-medium text-indigo-600 hover:text-indigo-700">Edit</a>
@@ -65,7 +68,8 @@
                 <tr>
                     <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Product</th>
                     <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">SKU / Category</th>
-                    <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Price (UGX)</th>
+                    <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Cost (UGX)</th>
+                    <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Sell (UGX)</th>
                     <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">In Stock</th>
                     <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500"></th>
                 </tr>
@@ -77,6 +81,13 @@
                             <p class="text-sm font-medium text-gray-900">{{ $product->name }}</p>
                         </td>
                         <td class="px-6 py-4 text-sm text-gray-500">{{ $product->sku ?? '—' }} · {{ $product->measurement_unit }}</td>
+                        <td class="px-6 py-4 text-center text-sm text-gray-600">
+                            @can('view-cost-prices')
+                                @money($product->cost_price ?? 0)
+                            @else
+                                —
+                            @endcan
+                        </td>
                         <td class="px-6 py-4 text-center text-sm font-medium text-gray-900">@money($product->price)</td>
                         <td class="px-6 py-4 text-center text-sm {{ $product->stock_quantity <= 5 ? 'font-medium text-red-600' : 'text-gray-500' }}">{{ $product->stock_quantity }}</td>
                         <td class="px-6 py-4 text-right">
@@ -94,7 +105,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="px-6 py-12 text-center text-sm text-gray-500">No products match your search.</td>
+                        <td colspan="6" class="px-6 py-12 text-center text-sm text-gray-500">No products match your search.</td>
                     </tr>
                 @endforelse
             </tbody>

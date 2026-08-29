@@ -307,7 +307,7 @@ class EntityController extends Controller
 
         return redirect()
             ->route('superadmin.entities.index', $entity)
-            ->with('success', 'Record deleted.');
+            ->with('success', 'Record soft-deleted successfully.');
     }
 
     protected function uniqueBusinessSlug(string $base): string

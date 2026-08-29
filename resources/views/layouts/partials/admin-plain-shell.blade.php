@@ -43,6 +43,7 @@
 
     <div class="flex min-w-0 flex-1 flex-col">
         @include('layouts.partials.trial-banner')
+        @include('layouts.partials.impersonation-banner')
 
         <header class="sticky top-0 z-30 border-b border-gray-200 bg-white">
             <div class="flex h-14 items-center justify-between gap-4 px-4 lg:px-8">

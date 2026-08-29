@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends(auth()->user()->isCashier() ? 'layouts.cashier' : 'layouts.admin')
 
 @section('title', 'Record Expense')
 

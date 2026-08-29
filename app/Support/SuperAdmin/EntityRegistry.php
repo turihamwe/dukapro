@@ -20,6 +20,7 @@ class EntityRegistry
                 'search' => ['name', 'email', 'slug', 'portal_slug', 'phone'],
                 'list' => ['name', 'email', 'subscription_status', 'created_at'],
                 'creatable' => true,
+                'deletable' => true,
             ],
             'users' => [
                 'label' => 'Tenant Users',
@@ -32,6 +33,7 @@ class EntityRegistry
                 'search' => ['name', 'email', 'username', 'role'],
                 'list' => ['name', 'email', 'role', 'business_id'],
                 'creatable' => true,
+                'deletable' => true,
             ],
             'products' => [
                 'label' => 'Products',
@@ -39,6 +41,7 @@ class EntityRegistry
                 'search' => ['name', 'sku', 'measurement_unit'],
                 'list' => ['name', 'sku', 'price', 'stock_quantity', 'business_id'],
                 'creatable' => true,
+                'deletable' => true,
             ],
             'customers' => [
                 'label' => 'Customers',
@@ -46,6 +49,7 @@ class EntityRegistry
                 'search' => ['name', 'phone', 'email', 'company_name'],
                 'list' => ['name', 'phone', 'email', 'business_id'],
                 'creatable' => true,
+                'deletable' => true,
             ],
             'sales' => [
                 'label' => 'Sales',
@@ -53,6 +57,7 @@ class EntityRegistry
                 'search' => ['sale_number', 'payment_method', 'status'],
                 'list' => ['sale_number', 'total', 'payment_method', 'status', 'business_id', 'completed_at'],
                 'creatable' => false,
+                'deletable' => true,
             ],
             'expenses' => [
                 'label' => 'Expenses',
@@ -60,6 +65,7 @@ class EntityRegistry
                 'search' => ['title', 'category', 'description'],
                 'list' => ['title', 'category', 'amount', 'expense_date', 'business_id'],
                 'creatable' => true,
+                'deletable' => true,
             ],
         ];
     }

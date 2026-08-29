@@ -13,6 +13,7 @@ use App\Http\Controllers\SuperAdmin\ActivityLogController;
 use App\Http\Controllers\SuperAdmin\DashboardController as SuperAdminDashboardController;
 use App\Http\Controllers\SuperAdmin\EntityController as SuperAdminEntityController;
 use App\Http\Controllers\SuperAdmin\GlobalSearchController as SuperAdminGlobalSearchController;
+use App\Http\Controllers\SuperAdmin\ImpersonationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\InventoryController;
@@ -42,6 +43,8 @@ Route::middleware(['maintenance'])->group(function () {
     });
 
     Route::middleware(['auth'])->group(function () {
+        Route::post('/leave-impersonation', [ImpersonationController::class, 'leave'])->name('impersonation.leave');
+
         Route::get('/dashboard', function () {
             $user = auth()->user();
             if ($user->isPlatformAdmin()) {
@@ -93,10 +96,8 @@ Route::middleware(['maintenance'])->group(function () {
                         Route::get('/', [SalesReportController::class, 'index'])->name('index');
                     });
 
-                    Route::middleware(['can:view-expenses'])->prefix('expenses')->name('expenses.')->group(function () {
+                    Route::middleware(['can:view-expenses', 'management.access'])->prefix('expenses')->name('expenses.')->group(function () {
                         Route::get('/', [ExpenseController::class, 'index'])->name('index');
-                        Route::get('/create', [ExpenseController::class, 'create'])->name('create');
-                        Route::post('/', [ExpenseController::class, 'store'])->name('store');
                         Route::get('/{expense}/edit', [ExpenseController::class, 'edit'])->name('edit');
                         Route::put('/{expense}', [ExpenseController::class, 'update'])->name('update');
                         Route::delete('/{expense}', [ExpenseController::class, 'destroy'])->name('destroy');
@@ -152,6 +153,11 @@ Route::middleware(['maintenance'])->group(function () {
                     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
                 });
 
+                Route::middleware(['can:record-expenses'])->group(function () {
+                    Route::get('/expenses/create', [ExpenseController::class, 'create'])->name('expenses.create');
+                    Route::post('/expenses', [ExpenseController::class, 'store'])->name('expenses.store');
+                });
+
                 Route::middleware(['can:switch-cashier-mode'])->prefix('cashier-mode')->name('cashier-mode.')->group(function () {
                     Route::post('/enable', [CashierModeController::class, 'enable'])->name('enable');
                     Route::post('/disable', [CashierModeController::class, 'disable'])->name('disable');
@@ -198,6 +204,7 @@ Route::prefix('superadmin')
         });
 
         Route::middleware('platform.full')->group(function () {
+            Route::post('/businesses/{businessId}/impersonate', [ImpersonationController::class, 'start'])->whereNumber('businessId')->name('impersonate.start');
             Route::get('/settings', [SuperAdminSettingsController::class, 'edit'])->name('settings');
             Route::put('/settings', [SuperAdminSettingsController::class, 'update'])->name('settings.update');
         });

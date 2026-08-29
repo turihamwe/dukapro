@@ -39,10 +39,20 @@ class DashboardService
         $products = Product::query()
             ->where('business_id', $business->id)
             ->where('is_active', true)
-            ->get(['id', 'name', 'sku', 'stock_quantity', 'critical_threshold', 'cost_price', 'measurement_unit']);
+            ->get(['id', 'name', 'sku', 'stock_quantity', 'critical_threshold', 'cost_price', 'price', 'measurement_unit']);
 
         $inventoryValue = round($products->sum(function (Product $product) {
             return $product->stock_quantity * (float) ($product->cost_price ?? 0);
+        }), 2);
+
+        $retailStockValue = round($products->sum(function (Product $product) {
+            return $product->stock_quantity * (float) $product->price;
+        }), 2);
+
+        $potentialProfit = round($products->sum(function (Product $product) {
+            $margin = (float) $product->price - (float) ($product->cost_price ?? 0);
+
+            return $product->stock_quantity * max(0, $margin);
         }), 2);
 
         $lowStockItems = $products->filter(function (Product $product) {
@@ -69,9 +79,13 @@ class DashboardService
             'gross_profit' => $grossProfit,
             'gross_margin' => $grossMargin,
             'inventory_value' => $inventoryValue,
+            'retail_stock_value' => $retailStockValue,
+            'potential_profit' => $potentialProfit,
             'product_count' => $products->count(),
             'low_stock_count' => $lowStockItems->count(),
             'low_stock' => $lowStock,
+            'products' => $products,
+            'todays_sales_list' => $this->todaysSalesList($business),
             'eod_reports' => $eodReports,
             'sale_count' => (clone $salesQuery)->count(),
             'executive' => $this->executiveSummary($business, $range, $salesQuery),
@@ -122,15 +136,70 @@ class DashboardService
 
         return [
             'inventory_value' => $overview['inventory_value'],
+            'retail_stock_value' => $overview['retail_stock_value'],
+            'potential_profit' => $overview['potential_profit'],
             'todays_sales' => $overview['period_sales'],
             'low_stock_count' => $overview['low_stock_count'],
             'product_count' => $overview['product_count'],
         ];
     }
 
+    protected function todaysSalesList(Business $business): Collection
+    {
+        return Sale::query()
+            ->with(['user:id,name', 'items.product:id,name'])
+            ->where('business_id', $business->id)
+            ->where('status', 'completed')
+            ->whereDate('completed_at', Carbon::today())
+            ->orderByDesc('completed_at')
+            ->limit(25)
+            ->get();
+    }
+
+    protected function productDrilldownRows(Collection $products, Business $business, string $valueKey = 'cost'): array
+    {
+        return $products->sortByDesc(function (Product $product) use ($valueKey) {
+            if ($valueKey === 'retail') {
+                return $product->stock_quantity * (float) $product->price;
+            }
+            if ($valueKey === 'profit') {
+                $margin = (float) $product->price - (float) ($product->cost_price ?? 0);
+
+                return $product->stock_quantity * max(0, $margin);
+            }
+
+            return $product->stock_quantity * (float) ($product->cost_price ?? 0);
+        })->take(20)->map(function (Product $product) use ($business, $valueKey) {
+            if ($valueKey === 'retail') {
+                $lineValue = $product->stock_quantity * (float) $product->price;
+            } elseif ($valueKey === 'profit') {
+                $margin = (float) $product->price - (float) ($product->cost_price ?? 0);
+                $lineValue = $product->stock_quantity * max(0, $margin);
+            } else {
+                $lineValue = $product->stock_quantity * (float) ($product->cost_price ?? 0);
+            }
+
+            return [
+                'title' => $product->name,
+                'meta' => number_format((float) $product->stock_quantity, 0) . ' ' . $product->measurement_unit,
+                'value' => format_money($lineValue, $business),
+            ];
+        })->values()->all();
+    }
+
     public function modernPayload(Business $business): array
     {
-        $summary = $this->ownerSummaryCards($business);
+        $overview = $this->ownerOverview($business, AnalyticsDateRange::today());
+        $summary = [
+            'inventory_value' => $overview['inventory_value'],
+            'retail_stock_value' => $overview['retail_stock_value'],
+            'potential_profit' => $overview['potential_profit'],
+            'todays_sales' => $overview['period_sales'],
+            'low_stock_count' => $overview['low_stock_count'],
+            'product_count' => $overview['product_count'],
+        ];
+
+        $products = $overview['products'];
 
         $last7Days = [];
         for ($i = 6; $i >= 0; $i--) {
@@ -176,6 +245,12 @@ class DashboardService
         $stockDistribution = $this->stockLevelDistribution($business);
         $stockByCategory = $this->stockByCategory($business);
 
+        $lowStockItems = $products->filter(function (Product $product) {
+            $threshold = $product->critical_threshold ?? AnalyticsDateRange::LOW_STOCK_THRESHOLD;
+
+            return $product->stock_quantity <= $threshold;
+        });
+
         return [
             'summary' => $summary,
             'last_7_days' => $last7Days,
@@ -191,6 +266,35 @@ class DashboardService
             'stock_by_category' => $stockByCategory,
             'recent_sales' => $recentSales,
             'notification_count' => max($notificationCount, $lowStock > 0 ? 1 : 0),
+            'drilldown' => [
+                'inventory_value' => $this->productDrilldownRows($products, $business, 'cost'),
+                'retail_stock_value' => $this->productDrilldownRows($products, $business, 'retail'),
+                'potential_profit' => $this->productDrilldownRows($products, $business, 'profit'),
+                'products' => $products->sortBy('name')->take(25)->map(function (Product $product) use ($business) {
+                    return [
+                        'title' => $product->name,
+                        'meta' => number_format((float) $product->stock_quantity, 0) . ' in stock',
+                        'value' => format_money($product->price, $business),
+                    ];
+                })->values()->all(),
+                'low_stock' => $lowStockItems->sortBy('stock_quantity')->take(25)->map(function (Product $product) use ($business) {
+                    return [
+                        'title' => $product->name,
+                        'meta' => number_format((float) $product->stock_quantity, 0) . ' left',
+                        'value' => format_money($product->price, $business),
+                    ];
+                })->values()->all(),
+                'todays_sales' => $overview['todays_sales_list']->map(function (Sale $sale) use ($business) {
+                    $firstItem = $sale->items->first();
+                    $label = $firstItem && $firstItem->product ? $firstItem->product->name : ('Sale #' . $sale->sale_number);
+
+                    return [
+                        'title' => $label,
+                        'meta' => optional($sale->completed_at)->format('g:i A') . ' · ' . optional($sale->user)->name,
+                        'value' => format_money($sale->total, $business),
+                    ];
+                })->values()->all(),
+            ],
         ];
     }
 

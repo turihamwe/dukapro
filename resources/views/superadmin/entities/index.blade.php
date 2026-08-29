@@ -55,9 +55,24 @@
                             </td>
                         @endforeach
                         <td class="px-4 py-3 text-right whitespace-nowrap">
-                            <a href="{{ route('superadmin.entities.show', [$entity, $record->id]) }}" class="text-violet-600 hover:text-violet-800">View</a>
+                            @if($entity === 'businesses')
+                                @can('platform-full-access')
+                                    <form method="POST" action="{{ route('superadmin.impersonate.start', $record->id) }}" class="inline">
+                                        @csrf
+                                        <button type="submit" class="text-violet-600 hover:text-violet-800">Impersonate</button>
+                                    </form>
+                                @endcan
+                            @endif
+                            <a href="{{ route('superadmin.entities.show', [$entity, $record->id]) }}" class="ml-3 text-violet-600 hover:text-violet-800">View</a>
                             @can('platform-full-access')
                                 <a href="{{ route('superadmin.entities.edit', [$entity, $record->id]) }}" class="ml-3 text-gray-600 hover:text-gray-900">Edit</a>
+                                @if($config['deletable'] ?? true)
+                                    <form method="POST" action="{{ route('superadmin.entities.destroy', [$entity, $record->id]) }}" class="ml-3 inline" onsubmit="return confirm('Soft-delete this record? It can be restored from the database if needed.')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="text-red-600 hover:text-red-800">Delete</button>
+                                    </form>
+                                @endif
                             @endcan
                         </td>
                     </tr>

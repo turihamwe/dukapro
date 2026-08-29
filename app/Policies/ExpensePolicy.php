@@ -12,18 +12,24 @@ class ExpensePolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->isOwner() || $user->isManager();
+        return $user->isOwner() || $user->isManager() || $user->isSupervisor();
     }
 
     public function view(User $user, Expense $expense): bool
     {
-        return $user->isOwner()
-            && (int) $user->business_id === (int) $expense->business_id;
+        if ((int) $user->business_id !== (int) $expense->business_id) {
+            return false;
+        }
+
+        return $user->isOwner() || $user->isManager() || $user->isSupervisor();
     }
 
     public function create(User $user): bool
     {
-        return $user->isOwner() || $user->isManager();
+        return $user->isOwner()
+            || $user->isManager()
+            || $user->isSupervisor()
+            || $user->isCashier();
     }
 
     public function update(User $user, Expense $expense): bool
