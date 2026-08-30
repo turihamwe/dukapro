@@ -6,15 +6,19 @@ use App\Models\Business;
 use App\Models\SubscriptionPayment;
 use App\Scopes\TenantScope;
 use App\Services\MobileMoneyService;
+use App\Services\YoPaymentsService;
 use Illuminate\Http\Request;
 
 class SubscriptionController extends Controller
 {
     protected MobileMoneyService $mobileMoneyService;
 
-    public function __construct(MobileMoneyService $mobileMoneyService)
+    protected YoPaymentsService $yoPaymentsService;
+
+    public function __construct(MobileMoneyService $mobileMoneyService, YoPaymentsService $yoPaymentsService)
     {
         $this->mobileMoneyService = $mobileMoneyService;
+        $this->yoPaymentsService = $yoPaymentsService;
     }
 
     public function payment(Request $request)
@@ -48,6 +52,10 @@ class SubscriptionController extends Controller
 
     public function simulate(Request $request, string $reference)
     {
+        if (! $this->yoPaymentsService->shouldSimulate()) {
+            abort(404);
+        }
+
         $payment = SubscriptionPayment::withoutGlobalScope(\App\Scopes\TenantScope::class)
             ->where('reference', $reference)
             ->where('business_id', $request->user()->business_id)
@@ -58,6 +66,10 @@ class SubscriptionController extends Controller
 
     public function simulateComplete(Request $request, string $reference)
     {
+        if (! $this->yoPaymentsService->shouldSimulate()) {
+            abort(404);
+        }
+
         SubscriptionPayment::withoutGlobalScope(\App\Scopes\TenantScope::class)
             ->where('reference', $reference)
             ->where('business_id', $request->user()->business_id)

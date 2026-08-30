@@ -12,7 +12,15 @@ return [
 
     'environment' => env('YOPAYMENTS_ENVIRONMENT', 'sandbox'),
 
-    'api_url' => env('YOPAYMENTS_API_URL', 'https://payments.yo.co.ug/ybs/task.php'),
+    'sandbox_api_url' => env(
+        'YOPAYMENTS_SANDBOX_API_URL',
+        'https://sandbox.yo.co.ug/services/yopaymentsdev/task.php'
+    ),
+
+    'live_api_url' => env(
+        'YOPAYMENTS_LIVE_API_URL',
+        'https://paymentsapi1.yo.co.ug/ybs/task.php'
+    ),
 
     'api_username' => env('YOPAYMENTS_API_USERNAME'),
 

@@ -5,15 +5,24 @@ namespace App\Services;
 use App\Helpers\AuditLogger;
 use App\Models\Business;
 use App\Models\SubscriptionPayment;
+use App\Scopes\TenantScope;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
 
 class MobileMoneyService
 {
+    protected YoPaymentsService $yoPaymentsService;
+
+    public function __construct(YoPaymentsService $yoPaymentsService)
+    {
+        $this->yoPaymentsService = $yoPaymentsService;
+    }
+
     public function initiatePayment(Business $business, string $phoneNumber, string $provider = 'mtn'): array
     {
         $providerKey = $provider === 'airtel' ? 'airtel_money' : 'mtn_momo';
         $reference = 'DUKA-' . strtoupper(Str::random(10));
+        $narrative = 'DukaPro subscription renewal';
 
         $payment = SubscriptionPayment::create([
             'business_id' => $business->id,
@@ -26,15 +35,82 @@ class MobileMoneyService
                 'phone_number' => $phoneNumber,
                 'provider' => $provider,
                 'initiated_at' => Carbon::now()->toIso8601String(),
-                'pin_prompt_sent' => true,
+                'environment' => $this->yoPaymentsService->config()['environment'],
             ],
+        ]);
+
+        if ($this->yoPaymentsService->shouldSimulate()) {
+            $payment->update([
+                'metadata' => array_merge($payment->metadata ?? [], [
+                    'simulated' => true,
+                    'pin_prompt_sent' => false,
+                ]),
+            ]);
+
+            AuditLogger::record(
+                'subscription_payment_initiated',
+                $payment,
+                null,
+                $payment->toArray(),
+                $business->id
+            );
+
+            return [
+                'success' => true,
+                'reference' => $reference,
+                'amount' => $payment->amount,
+                'provider' => $provider,
+                'simulated' => true,
+                'message' => 'Sandbox mode: complete the simulated payment to activate your subscription.',
+                'simulated_checkout_url' => url('/subscription/simulate/' . $reference),
+            ];
+        }
+
+        $result = $this->yoPaymentsService->initiateCollection(
+            $phoneNumber,
+            (float) $payment->amount,
+            $reference,
+            $narrative
+        );
+
+        if (! $result['success']) {
+            $payment->update([
+                'status' => 'failed',
+                'metadata' => array_merge($payment->metadata ?? [], [
+                    'yo_response' => $result['yo_response'] ?? null,
+                    'error' => $result['message'] ?? 'YoPayments request failed',
+                ]),
+            ]);
+
+            AuditLogger::record(
+                'subscription_payment_failed',
+                $payment,
+                null,
+                $payment->fresh()->toArray(),
+                $business->id
+            );
+
+            return [
+                'success' => false,
+                'reference' => $reference,
+                'message' => $result['message'] ?? 'Payment request failed.',
+            ];
+        }
+
+        $payment->update([
+            'metadata' => array_merge($payment->metadata ?? [], [
+                'simulated' => false,
+                'pin_prompt_sent' => true,
+                'yo_transaction_reference' => $result['transaction_reference'] ?? null,
+                'yo_response' => $result['yo_response'] ?? null,
+            ]),
         ]);
 
         AuditLogger::record(
             'subscription_payment_initiated',
             $payment,
             null,
-            $payment->toArray(),
+            $payment->fresh()->toArray(),
             $business->id
         );
 
@@ -43,22 +119,26 @@ class MobileMoneyService
             'reference' => $reference,
             'amount' => $payment->amount,
             'provider' => $provider,
-            'message' => 'PIN prompt sent to ' . $phoneNumber . '. Complete payment on your phone.',
-            'simulated_checkout_url' => url('/subscription/simulate/' . $reference),
+            'simulated' => false,
+            'message' => $result['message'] ?? 'PIN prompt sent. Complete payment on your phone.',
         ];
     }
 
     public function handleWebhook(array $payload): array
     {
-        $reference = $payload['reference'] ?? $payload['CheckoutRequestID'] ?? null;
-        $status = strtolower($payload['status'] ?? $payload['ResultCode'] ?? '');
+        $reference = $payload['reference']
+            ?? $payload['external_ref']
+            ?? $payload['ExternalReference']
+            ?? $payload['CheckoutRequestID']
+            ?? null;
 
         if (! $reference) {
             return ['success' => false, 'message' => 'Missing payment reference'];
         }
 
         $payment = SubscriptionPayment::withoutGlobalScope(TenantScope::class)
-            ->where('reference', $reference)->first();
+            ->where('reference', $reference)
+            ->first();
 
         if (! $payment) {
             return ['success' => false, 'message' => 'Payment not found'];
@@ -68,7 +148,19 @@ class MobileMoneyService
             return ['success' => true, 'message' => 'Payment already processed'];
         }
 
-        $isSuccess = in_array($status, ['completed', 'success', '0', 'paid'], true);
+        $status = strtolower((string) ($payload['status'] ?? $payload['ResultCode'] ?? $payload['transaction_status'] ?? ''));
+
+        if (! empty($payload['failed_transaction_reference'])) {
+            $payment->update([
+                'status' => 'failed',
+                'metadata' => array_merge($payment->metadata ?? [], ['webhook' => $payload]),
+            ]);
+
+            return ['success' => false, 'message' => 'Payment failed'];
+        }
+
+        $isYoSuccessIpn = ! empty($payload['external_ref']) || ! empty($payload['network_ref']);
+        $isSuccess = $isYoSuccessIpn || in_array($status, ['completed', 'success', '0', 'paid', 'succeeded'], true);
 
         if (! $isSuccess) {
             $payment->update([
