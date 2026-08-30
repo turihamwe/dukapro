@@ -4,11 +4,9 @@
 <div class="flex min-h-full">
     <aside class="relative hidden w-64 shrink-0 border-r border-gray-200 bg-white lg:block">
         <div class="flex h-16 items-center gap-3 border-b border-gray-200 px-6">
-            <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-600 text-sm font-bold text-white">SA</div>
-            <div>
-                <p class="text-sm font-semibold">DukaPro Platform</p>
-                <p class="text-xs text-gray-500">{{ auth()->user()->isSubAdmin() ? 'SubAdmin' : 'SuperAdmin' }}</p>
-            </div>
+            @include('layouts.partials.dukapro-sidebar-brand', [
+                'subtitle' => 'Platform · ' . (auth()->user()->isSubAdmin() ? 'SubAdmin' : 'SuperAdmin'),
+            ])
         </div>
         <nav class="space-y-1 p-4">
             <a href="{{ route('superadmin.dashboard') }}"
@@ -44,7 +42,7 @@
 
     <div class="flex flex-1 flex-col">
         <header class="sticky top-0 z-30 flex min-h-16 items-center justify-between border-b border-gray-200 bg-white px-4 lg:hidden">
-            <p class="font-semibold">Platform Admin</p>
+            <x-dukapro-logo size="header" />
             <a href="{{ route('logout.get') }}" class="text-sm text-gray-500">Sign out</a>
         </header>
 

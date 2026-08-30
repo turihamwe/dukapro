@@ -7,11 +7,9 @@
     {{-- Desktop sidebar --}}
     <aside class="theme-sidebar hidden w-64 shrink-0 border-r border-gray-200 bg-white lg:flex lg:flex-col">
         <div class="flex h-16 items-center gap-3 border-b border-gray-200 px-6">
-            <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white">D</div>
-            <div class="min-w-0">
-                <p class="truncate text-sm font-semibold">{{ auth()->user()->business->name ?? 'DukaPro' }}</p>
-                <p class="text-xs capitalize text-gray-500">{{ auth()->user()->role ?? 'Admin' }}</p>
-            </div>
+            @include('layouts.partials.dukapro-sidebar-brand', [
+                'subtitle' => (auth()->user()->business->name ?? 'Store') . ' · ' . ucfirst(auth()->user()->role ?? 'staff'),
+            ])
         </div>
         <nav class="flex-1 space-y-1 overflow-y-auto p-4">
             @include('layouts.partials.admin-nav-links', ['navLink' => $navLink, 'navActive' => $navActive, 'navIdle' => $navIdle])
@@ -27,8 +25,11 @@
     {{-- Mobile drawer --}}
     <div id="mobile-nav-backdrop" class="fixed inset-0 z-40 hidden bg-gray-900/50 lg:hidden" aria-hidden="true"></div>
     <aside id="mobile-nav-drawer" class="fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] -translate-x-full transform border-r border-gray-200 bg-white transition-transform duration-200 ease-out lg:hidden">
-        <div class="flex h-14 items-center justify-between border-b border-gray-200 px-4">
-            <p class="truncate font-semibold">{{ auth()->user()->business->name ?? 'DukaPro' }}</p>
+        <div class="flex h-14 items-center justify-between gap-3 border-b border-gray-200 px-4">
+            <div class="min-w-0 flex-1">
+                <x-dukapro-logo size="header" />
+                <p class="truncate text-xs text-gray-500">{{ auth()->user()->business->name ?? '' }}</p>
+            </div>
             <button type="button" id="mobile-nav-close" class="rounded-lg p-2 text-gray-500 hover:bg-gray-100" aria-label="Close menu">
                 <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
@@ -47,12 +48,12 @@
 
         <header class="sticky top-0 z-30 border-b border-gray-200 bg-white">
             <div class="flex h-14 items-center justify-between gap-4 px-4 lg:px-8">
-                <div class="flex items-center gap-3">
+                <div class="flex min-w-0 items-center gap-3">
                     <button type="button" id="mobile-nav-open" class="rounded-lg p-2 text-gray-600 hover:bg-gray-100 lg:hidden" aria-label="Open menu">
                         <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
                     </button>
                     <div class="min-w-0 lg:hidden">
-                        <p class="truncate font-semibold">{{ auth()->user()->business->name ?? 'DukaPro' }}</p>
+                        <x-dukapro-logo size="header" />
                     </div>
                 </div>
                 <div class="hidden text-sm text-gray-600 lg:block">

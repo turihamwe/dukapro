@@ -1,20 +1,11 @@
-@extends('layouts.app')
+@extends('layouts.auth')
 
 @section('title', 'Register — ' . platform_brand('name'))
-@section('container_class', 'max-w-md')
-@section('body_class', 'register-page')
 
 @section('content')
-<div class="flex min-h-[calc(100vh-4rem)] flex-col justify-center py-4 sm:py-6">
-    <div class="mb-4 text-center sm:mb-5">
-        @if(platform_brand('logo_url'))
-            <img src="{{ platform_brand('logo_url') }}" alt="{{ platform_brand('name') }}" class="mx-auto mb-3 h-12 w-auto max-w-[180px] object-contain sm:h-14">
-        @else
-            <div class="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-600 text-base font-bold text-white shadow-lg shadow-indigo-600/30 sm:h-12 sm:w-12 sm:text-lg">D</div>
-        @endif
-        <h1 class="text-xl font-semibold tracking-tight text-gray-900 sm:text-2xl">{{ platform_brand('name') }}</h1>
-        <p class="mt-1 text-sm text-gray-500">{{ platform_brand('tagline') }}</p>
-    </div>
+    @include('layouts.partials.auth-brand', [
+        'subtitle' => 'Create your business account',
+    ])
 
     <x-card class="shadow-sm">
         <form method="POST" action="{{ route('register') }}" class="space-y-3 sm:space-y-4" id="register-form">
@@ -40,7 +31,6 @@
         </p>
         <p class="mb-4 mt-4 text-center text-sm font-medium text-gray-400">Got issues? Contact 0758-582681</p>
     </x-card>
-</div>
 @endsection
 
 @push('scripts')

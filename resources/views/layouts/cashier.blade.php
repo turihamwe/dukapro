@@ -23,9 +23,9 @@
     <header class="sticky top-0 z-40 border-b border-gray-200 bg-white shadow-sm">
         <div class="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
             <div class="flex min-w-0 items-center gap-3">
-                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-sm font-bold text-white shadow-md">POS</div>
+                <x-dukapro-logo size="cashier" />
                 <div class="min-w-0">
-                    <p class="truncate text-sm font-bold text-gray-900">{{ auth()->user()->business->name ?? 'DukaPro' }}</p>
+                    <p class="truncate text-sm font-bold text-gray-900">{{ auth()->user()->business->name ?? platform_brand('name') }}</p>
                     <p class="truncate text-xs text-gray-500">{{ auth()->user()->name }} · {{ ucfirst(auth()->user()->role) }}</p>
                 </div>
             </div>

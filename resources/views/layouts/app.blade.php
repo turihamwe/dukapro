@@ -31,12 +31,14 @@
     @auth
     <header class="sticky top-0 z-40 border-b border-gray-200/80 bg-white/80 backdrop-blur-lg">
         <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-            <div class="flex items-center gap-3">
-                <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white">D</div>
-                <div>
-                    <p class="text-sm font-semibold leading-tight">{{ auth()->user()->business->name ?? 'DukaPro' }}</p>
+            <div class="flex min-w-0 items-center gap-3">
+                <x-dukapro-logo size="header" />
+                @auth
+                <div class="min-w-0 hidden sm:block">
+                    <p class="truncate text-sm font-semibold leading-tight">{{ auth()->user()->business->name ?? platform_brand('name') }}</p>
                     <p class="text-xs text-gray-500">{{ ucfirst(auth()->user()->role) }}</p>
                 </div>
+                @endauth
             </div>
             <a href="{{ route('logout.get') }}" class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm transition hover:bg-gray-50">
                 Sign out

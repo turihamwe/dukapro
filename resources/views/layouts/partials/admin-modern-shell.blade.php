@@ -24,12 +24,11 @@
     {{-- Desktop sidebar --}}
     <aside class="modern-sidebar hidden w-64 shrink-0 flex-col p-4 lg:flex">
         <div class="flex flex-1 flex-col rounded-2xl bg-[#0A192F] px-3 py-5 shadow-xl">
-            <div class="mb-8 flex items-center gap-3 px-3">
-                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500 text-sm font-bold text-white shadow-lg shadow-emerald-500/30">D</div>
-                <div>
-                    <p class="text-sm font-bold text-white">DukaPro</p>
-                    <p class="text-xs text-slate-400">{{ $business->name ?? 'Store' }}</p>
-                </div>
+            <div class="mb-8 px-3">
+                @include('layouts.partials.dukapro-sidebar-brand', [
+                    'subtitle' => $business->name ?? 'Store',
+                    'dark' => true,
+                ])
             </div>
 
             <nav class="flex-1 space-y-1">
@@ -52,8 +51,13 @@
     {{-- Mobile drawer --}}
     <div id="modern-nav-backdrop" class="fixed inset-0 z-40 hidden bg-black/60 lg:hidden"></div>
     <aside id="modern-nav-drawer" class="fixed inset-y-0 left-0 z-50 w-72 -translate-x-full transform bg-[#0A192F] p-4 transition-transform duration-200 lg:hidden">
-        <div class="mb-6 flex items-center justify-between">
-            <p class="font-bold text-white">DukaPro</p>
+        <div class="mb-6 flex items-center justify-between gap-3">
+            <div class="min-w-0 flex-1">
+                @include('layouts.partials.dukapro-sidebar-brand', [
+                    'subtitle' => $business->name ?? 'Store',
+                    'dark' => true,
+                ])
+            </div>
             <button type="button" id="modern-nav-close" class="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-slate-400 hover:bg-white/10" aria-label="Close menu">
                 <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
@@ -83,9 +87,8 @@
                     <button type="button" id="modern-nav-open" class="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 lg:hidden" aria-label="Open menu">
                         <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
                     </button>
-                    <div class="flex items-center gap-2 lg:hidden">
-                        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500 text-xs font-bold text-white">D</div>
-                        <span class="font-bold text-gray-900">DukaPro</span>
+                    <div class="flex min-w-0 items-center gap-2 lg:hidden">
+                        <x-dukapro-logo size="header" />
                     </div>
                 </div>
 

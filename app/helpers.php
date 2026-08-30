@@ -17,6 +17,48 @@ if (! function_exists('platform_brand')) {
     }
 }
 
+if (! function_exists('dukapro_logo_url')) {
+    /**
+     * Official DukaPro logo from public/assets, then SuperAdmin upload, else null.
+     */
+    function dukapro_logo_url(): ?string
+    {
+        static $cached = null;
+
+        if ($cached !== null) {
+            return $cached ?: null;
+        }
+
+        $candidates = [
+            'assets/dukapro-logo.png',
+            'assets/dukapro-logo.jpg',
+            'assets/dukapro-logo.jpeg',
+            'assets/dukapro-logo.webp',
+            'assets/dukapro-logo.svg',
+            'assets/logo.png',
+            'assets/logo.svg',
+        ];
+
+        foreach ($candidates as $path) {
+            if (is_file(public_path($path))) {
+                $cached = asset($path) . '?v=' . filemtime(public_path($path));
+
+                return $cached;
+            }
+        }
+
+        if ($uploaded = platform_brand('logo_url')) {
+            $cached = $uploaded;
+
+            return $cached;
+        }
+
+        $cached = false;
+
+        return null;
+    }
+}
+
 if (! function_exists('user_ui_theme')) {
     function user_ui_theme(): string
     {

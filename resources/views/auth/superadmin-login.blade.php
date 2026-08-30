@@ -1,15 +1,11 @@
-@extends('layouts.app')
+@extends('layouts.auth')
 
 @section('title', 'Platform Admin Login')
-@section('container_class', 'max-w-md')
 
 @section('content')
-<div class="py-8 sm:py-12">
-    <div class="mb-8 text-center">
-        <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gray-900 text-lg font-bold text-white">SA</div>
-        <h1 class="text-2xl font-semibold tracking-tight text-gray-900">DukaPro Platform Admin</h1>
-        <p class="mt-1 text-sm text-gray-500">Super administrator sign in</p>
-    </div>
+    @include('layouts.partials.auth-brand', [
+        'subtitle' => 'Super administrator sign in',
+    ])
 
     <x-card>
         <form method="POST" action="{{ route('superadmin.login') }}" class="space-y-5">
@@ -26,5 +22,4 @@
             <a href="{{ route('portal') }}" class="text-indigo-600 hover:text-indigo-700">Business portal sign in</a>
         </p>
     </x-card>
-</div>
 @endsection
