@@ -5,9 +5,15 @@ namespace App\Services;
 use App\Models\SystemSetting;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class YoPaymentsService
 {
+    protected function log(string $level, string $message, array $context = []): void
+    {
+        Log::channel('yopayments')->{$level}($message, $context);
+    }
+
     public function isConfigured(): bool
     {
         $config = $this->config();
@@ -79,6 +85,14 @@ class YoPaymentsService
             $ipnUrl
         );
 
+        $this->log('info', 'YoPayments collection request', [
+            'reference' => $reference,
+            'msisdn' => $msisdn,
+            'amount' => $amount,
+            'environment' => $config['environment'],
+            'api_url' => $config['api_url'],
+        ]);
+
         try {
             $response = Http::withHeaders([
                 'Content-Type' => 'text/xml',
@@ -89,7 +103,7 @@ class YoPaymentsService
                 ->post($config['api_url']);
 
             if (! $response->successful()) {
-                Log::warning('YoPayments HTTP error', [
+                $this->log('warning', 'YoPayments HTTP error', [
                     'status' => $response->status(),
                     'body' => $response->body(),
                     'reference' => $reference,
@@ -102,6 +116,11 @@ class YoPaymentsService
             }
 
             $parsed = $this->parseResponse($response->body());
+
+            $this->log('info', 'YoPayments collection response', [
+                'reference' => $reference,
+                'parsed' => $parsed,
+            ]);
 
             if (($parsed['Status'] ?? '') !== 'OK') {
                 $message = $parsed['StatusMessage'] ?? $parsed['ErrorMessage'] ?? 'YoPayments rejected the payment request.';
@@ -133,9 +152,10 @@ class YoPaymentsService
                 'yo_response' => $parsed,
             ];
         } catch (\Throwable $e) {
-            Log::error('YoPayments request failed', [
+            $this->log('error', 'YoPayments request failed', [
                 'reference' => $reference,
                 'error' => $e->getMessage(),
+                'exception' => get_class($e),
             ]);
 
             return [
@@ -149,9 +169,9 @@ class YoPaymentsService
     {
         $digits = preg_replace('/\D/', '', $phone) ?? '';
 
-        if (str_starts_with($digits, '0')) {
+        if (Str::startsWith($digits, '0')) {
             $digits = '256' . substr($digits, 1);
-        } elseif (strlen($digits) === 9 && str_starts_with($digits, '7')) {
+        } elseif (strlen($digits) === 9 && Str::startsWith($digits, '7')) {
             $digits = '256' . $digits;
         }
 
