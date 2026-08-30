@@ -15,6 +15,10 @@
                 <dd><code class="rounded bg-gray-200 px-1.5 py-0.5 text-xs">{{ $payment->reference }}</code></dd>
             </div>
             <div class="flex justify-between">
+                <dt class="text-gray-500">Plan</dt>
+                <dd class="font-medium text-gray-900">{{ $payment->metadata['plan_label'] ?? 'Subscription' }}</dd>
+            </div>
+            <div class="flex justify-between">
                 <dt class="text-gray-500">Amount</dt>
                 <dd class="font-medium text-gray-900">{{ format_money($payment->amount, auth()->user()->business) }}</dd>
             </div>

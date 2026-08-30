@@ -251,6 +251,10 @@ class AuthController extends Controller
         );
 
         if ($business->isSubscriptionExpired()) {
+            if ($user->can('manage-billing')) {
+                return redirect()->route('tenant.dashboard', ['business' => $business->slug]);
+            }
+
             return redirect()->route('subscription.payment');
         }
 

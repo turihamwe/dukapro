@@ -48,7 +48,7 @@
                     <span class="mb-0.5 text-xl leading-none">🛒</span> POS
                 </a>
             @endcan
-            @if(auth()->user()->isCashier())
+            @if(auth()->user()->usesCashierExperience())
                 @can('view-inventory')
                     <a href="{{ tenant_route('tenant.inventory.index') }}"
                        class="flex min-h-[56px] flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-semibold {{ request()->routeIs('tenant.inventory.*') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600' }}">

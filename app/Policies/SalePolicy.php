@@ -23,6 +23,6 @@ class SalePolicy
 
     public function create(User $user): bool
     {
-        return in_array($user->role, ['owner', 'manager', 'cashier'], true);
+        return in_array($user->role, ['owner', 'manager', 'supervisor', 'cashier'], true);
     }
 }

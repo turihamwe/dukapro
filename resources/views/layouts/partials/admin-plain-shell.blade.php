@@ -62,7 +62,7 @@
                 </div>
                 <div class="flex items-center gap-2">
                     @can('switch-cashier-mode')
-                        @if(!\App\Support\CashierMode::isActive())
+                        @if(!\App\Support\CashierMode::isActive() && !show_subscription_expired_overlay())
                             <form method="POST" action="{{ tenant_route('tenant.cashier-mode.enable') }}">
                                 @csrf
                                 <button type="submit" class="hidden rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 sm:inline-flex">
@@ -76,9 +76,10 @@
             </div>
         </header>
 
-        <main class="theme-main flex-1 overflow-auto p-4 sm:p-8">
+        <main class="theme-main relative flex-1 overflow-auto p-4 sm:p-8">
             @include('layouts.partials.flash')
             @yield('content')
+            @include('layouts.partials.subscription-expired-overlay')
         </main>
     </div>
 </div>

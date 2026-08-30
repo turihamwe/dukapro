@@ -233,3 +233,16 @@ if (! function_exists('format_variant_attributes')) {
         return implode(' · ', $parts);
     }
 }
+
+if (! function_exists('show_subscription_expired_overlay')) {
+    function show_subscription_expired_overlay(): bool
+    {
+        $user = auth()->user();
+
+        if (! $user || ! $user->business || ! $user->can('manage-billing')) {
+            return false;
+        }
+
+        return $user->business->isSubscriptionExpired();
+    }
+}

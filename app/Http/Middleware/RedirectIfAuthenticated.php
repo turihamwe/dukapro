@@ -22,6 +22,10 @@ class RedirectIfAuthenticated
 
                 if ($user->business) {
                     if ($user->business->isSubscriptionExpired()) {
+                        if ($user->can('manage-billing')) {
+                            return redirect()->route('tenant.dashboard', ['business' => $user->business->slug]);
+                        }
+
                         return redirect()->route('subscription.payment');
                     }
 

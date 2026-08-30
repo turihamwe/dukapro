@@ -13,6 +13,10 @@ class EnsureManagementAccess
         $user = $request->user();
 
         if ($user && $user->canSwitchToCashierMode() && CashierMode::isActive()) {
+            if ($this->isCashierOperationalRoute($request)) {
+                return $next($request);
+            }
+
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Exit Cashier Mode to access management features.'], 403);
             }
@@ -23,5 +27,15 @@ class EnsureManagementAccess
         }
 
         return $next($request);
+    }
+
+    protected function isCashierOperationalRoute(Request $request): bool
+    {
+        return $request->routeIs(
+            'tenant.inventory.index',
+            'tenant.reconciliation.index',
+            'tenant.reconciliation.show',
+            'tenant.reconciliation.print'
+        );
     }
 }

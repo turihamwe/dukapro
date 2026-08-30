@@ -7,7 +7,9 @@ use App\Models\SubscriptionPayment;
 use App\Scopes\TenantScope;
 use App\Services\MobileMoneyService;
 use App\Services\YoPaymentsService;
+use App\Support\SubscriptionPlan;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class SubscriptionController extends Controller
 {
@@ -24,8 +26,9 @@ class SubscriptionController extends Controller
     public function payment(Request $request)
     {
         $business = $request->user()->business;
+        $plans = SubscriptionPlan::all();
 
-        return view('subscription.payment', compact('business'));
+        return view('subscription.payment', compact('business', 'plans'));
     }
 
     public function initiate(Request $request)
@@ -35,12 +38,14 @@ class SubscriptionController extends Controller
         $data = $request->validate([
             'phone_number' => 'required|string|min:9|max:15',
             'provider' => 'required|in:mtn,airtel',
+            'plan' => ['required', Rule::in(SubscriptionPlan::keys())],
         ]);
 
         $result = $this->mobileMoneyService->initiatePayment(
             $request->user()->business,
             $data['phone_number'],
-            $data['provider']
+            $data['provider'],
+            $data['plan']
         );
 
         if ($request->expectsJson()) {
@@ -82,8 +87,10 @@ class SubscriptionController extends Controller
         ]);
 
         if ($result['success']) {
+            $days = (int) ($result['subscription_days'] ?? 30);
+
             return redirect()->route('tenant.dashboard', ['business' => $request->user()->business->slug])
-                ->with('success', 'Subscription activated for 30 days.');
+                ->with('success', $result['message'] ?? ('Subscription activated for ' . $days . ' days.'));
         }
 
         return back()->withErrors(['payment' => $result['message']]);

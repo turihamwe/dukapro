@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends(auth()->user()->usesCashierExperience() ? 'layouts.cashier' : 'layouts.admin')
 
 @section('title', 'EOD Report — ' . $reconciliation->reconciliation_date->format('M j, Y'))
 

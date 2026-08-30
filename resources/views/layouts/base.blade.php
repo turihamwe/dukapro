@@ -124,6 +124,29 @@
             if (e.target === modal) closeModal();
         });
 
+        var planSummaryEl = document.getElementById('payment-plan-summary');
+        var planInputs = form ? form.querySelectorAll('input[name="plan"]') : [];
+
+        function formatPlanAmount(amount) {
+            var n = Number(amount);
+            if (isNaN(n)) return amount;
+            return 'UGX ' + n.toLocaleString('en-UG');
+        }
+
+        function updatePlanSummary() {
+            if (!planSummaryEl) return;
+            var selected = form.querySelector('input[name="plan"]:checked');
+            if (!selected) return;
+            var amount = selected.getAttribute('data-plan-amount');
+            var label = selected.getAttribute('data-plan-label');
+            planSummaryEl.textContent = 'Amount: ' + formatPlanAmount(amount) + ' (' + label + ') · You will receive a PIN prompt on your phone.';
+        }
+
+        planInputs.forEach(function (input) {
+            input.addEventListener('change', updatePlanSummary);
+        });
+        updatePlanSummary();
+
         form?.addEventListener('submit', function (e) {
             e.preventDefault();
             var submitBtn = document.getElementById('payment-submit');

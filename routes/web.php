@@ -68,7 +68,7 @@ Route::middleware(['maintenance'])->group(function () {
         Route::get('/inventory', function () {
             $user = auth()->user();
             abort_unless($user->business, 403);
-            abort_unless($user->can('view-inventory') && ! ($user->canSwitchToCashierMode() && \App\Support\CashierMode::isActive()), 403);
+            abort_unless($user->can('view-inventory'), 403);
             return redirect()->route('tenant.inventory.index', ['business' => $user->business->slug]);
         });
 

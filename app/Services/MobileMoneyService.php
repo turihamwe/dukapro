@@ -6,6 +6,7 @@ use App\Helpers\AuditLogger;
 use App\Models\Business;
 use App\Models\SubscriptionPayment;
 use App\Scopes\TenantScope;
+use App\Support\SubscriptionPlan;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
 
@@ -18,15 +19,16 @@ class MobileMoneyService
         $this->yoPaymentsService = $yoPaymentsService;
     }
 
-    public function initiatePayment(Business $business, string $phoneNumber, string $provider = 'mtn'): array
+    public function initiatePayment(Business $business, string $phoneNumber, string $provider = 'mtn', string $planKey = 'monthly'): array
     {
+        $plan = SubscriptionPlan::find($planKey);
         $providerKey = $provider === 'airtel' ? 'airtel_money' : 'mtn_momo';
         $reference = 'DUKA-' . strtoupper(Str::random(10));
-        $narrative = 'DukaPro subscription renewal';
+        $narrative = 'DukaPro subscription — ' . $plan['label'];
 
         $payment = SubscriptionPayment::create([
             'business_id' => $business->id,
-            'amount' => $business->subscription_amount,
+            'amount' => $plan['amount'],
             'payment_method' => 'mobile_money',
             'reference' => $reference,
             'provider' => $providerKey,
@@ -34,6 +36,9 @@ class MobileMoneyService
             'metadata' => [
                 'phone_number' => $phoneNumber,
                 'provider' => $provider,
+                'plan' => $plan['key'],
+                'plan_label' => $plan['label'],
+                'subscription_days' => $plan['days'],
                 'initiated_at' => Carbon::now()->toIso8601String(),
                 'environment' => $this->yoPaymentsService->config()['environment'],
             ],
@@ -59,9 +64,10 @@ class MobileMoneyService
                 'success' => true,
                 'reference' => $reference,
                 'amount' => $payment->amount,
+                'plan' => $plan['label'],
                 'provider' => $provider,
                 'simulated' => true,
-                'message' => 'Sandbox mode: complete the simulated payment to activate your subscription.',
+                'message' => 'Sandbox mode: complete the simulated payment to activate your ' . strtolower($plan['label']) . ' plan.',
                 'simulated_checkout_url' => url('/subscription/simulate/' . $reference),
             ];
         }
@@ -118,6 +124,7 @@ class MobileMoneyService
             'success' => true,
             'reference' => $reference,
             'amount' => $payment->amount,
+            'plan' => $plan['label'],
             'provider' => $provider,
             'simulated' => false,
             'message' => $result['message'] ?? 'PIN prompt sent. Complete payment on your phone.',
@@ -180,8 +187,10 @@ class MobileMoneyService
         $business = $payment->business;
         $oldStatus = $business->subscription_status;
         $oldEndsAt = optional($business->subscription_ends_at)->toDateTimeString();
+        $subscriptionDays = (int) ($payment->metadata['subscription_days'] ?? 30);
+        $planLabel = $payment->metadata['plan_label'] ?? ($subscriptionDays >= 365 ? '1 Year' : '1 Month');
 
-        $business->activateSubscription(30);
+        $business->activateSubscription($subscriptionDays);
 
         AuditLogger::record(
             'subscription_activated',
@@ -194,15 +203,17 @@ class MobileMoneyService
                 'subscription_status' => $business->fresh()->subscription_status,
                 'subscription_ends_at' => $business->fresh()->subscription_ends_at,
                 'payment_reference' => $reference,
+                'plan' => $payment->metadata['plan'] ?? null,
             ],
             $business->id
         );
 
         return [
             'success' => true,
-            'message' => 'Subscription activated for 30 days',
+            'message' => 'Subscription activated (' . $planLabel . ')',
             'business_id' => $business->id,
             'subscription_ends_at' => $business->fresh()->subscription_ends_at,
+            'subscription_days' => $subscriptionDays,
         ];
     }
 }

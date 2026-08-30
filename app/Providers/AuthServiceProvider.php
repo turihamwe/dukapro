@@ -62,6 +62,10 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('view-cost-prices', function (User $user) {
+            if ($user->canSwitchToCashierMode() && CashierMode::isActive()) {
+                return false;
+            }
+
             return $user->isOwner() || $user->isManager();
         });
 
@@ -70,14 +74,26 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('create-inventory', function (User $user) {
+            if ($user->canSwitchToCashierMode() && CashierMode::isActive()) {
+                return false;
+            }
+
             return $user->isOwner() || $user->isManager() || $user->isSupervisor();
         });
 
         Gate::define('update-inventory', function (User $user) {
+            if ($user->canSwitchToCashierMode() && CashierMode::isActive()) {
+                return false;
+            }
+
             return $user->isOwner() || $user->isManager();
         });
 
         Gate::define('delete-inventory', function (User $user) {
+            if ($user->canSwitchToCashierMode() && CashierMode::isActive()) {
+                return false;
+            }
+
             return $user->isOwner();
         });
 
@@ -98,6 +114,10 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('view-all-reconciliations', function (User $user) {
+            if ($user->canSwitchToCashierMode() && CashierMode::isActive()) {
+                return false;
+            }
+
             return $user->isOwner() || $user->isManager() || $user->isSupervisor();
         });
 
@@ -122,10 +142,6 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('view-reconciliation-history', function (User $user) {
-            if ($user->canSwitchToCashierMode() && CashierMode::isActive()) {
-                return false;
-            }
-
             return in_array($user->role, UserRole::all(), true);
         });
 

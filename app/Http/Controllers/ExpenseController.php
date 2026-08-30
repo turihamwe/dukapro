@@ -78,7 +78,7 @@ class ExpenseController extends Controller
 
         $this->expenseService->create($request->user(), $data);
 
-        if ($request->user()->isCashier()) {
+        if ($request->user()->usesCashierExperience()) {
             return redirect()
                 ->to(tenant_route('tenant.pos.index'))
                 ->with('success', 'Expense recorded.');

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\UserRole;
+use App\Support\CashierMode;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -81,6 +82,15 @@ class User extends Authenticatable
     public function canSwitchToCashierMode(): bool
     {
         return $this->isOwner() || $this->isManager() || $this->isSupervisor();
+    }
+
+    public function usesCashierExperience(): bool
+    {
+        if ($this->isCashier()) {
+            return true;
+        }
+
+        return $this->canSwitchToCashierMode() && CashierMode::isActive();
     }
 
     public function isStaff(): bool

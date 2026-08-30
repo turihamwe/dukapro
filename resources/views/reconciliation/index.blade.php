@@ -1,12 +1,12 @@
-@extends(auth()->user()->can('view-dashboard') ? 'layouts.admin' : 'layouts.cashier')
+@extends(auth()->user()->usesCashierExperience() ? 'layouts.cashier' : 'layouts.admin')
 
 @section('title', 'End-of-Day Reconciliation')
 @section('container_class', 'max-w-4xl')
 
 @section('content')
 <x-page-header
-    title="{{ auth()->user()->can('view-dashboard') ? 'Cashier EOD Reports' : 'My Shift History' }}"
-    subtitle="{{ auth()->user()->can('view-dashboard') ? 'Submitted shift reconciliations from all cashiers' : 'Your submitted shift reconciliations' }}">
+    title="{{ auth()->user()->usesCashierExperience() ? 'My Shift History' : 'Cashier EOD Reports' }}"
+    subtitle="{{ auth()->user()->usesCashierExperience() ? 'Your submitted shift reconciliations' : 'Submitted shift reconciliations from all cashiers' }}">
     @can('submit-reconciliation')
         <x-slot name="actions">
             <x-button variant="primary" size="sm" href="{{ tenant_route('tenant.reconciliation.create') }}">Close Shift</x-button>

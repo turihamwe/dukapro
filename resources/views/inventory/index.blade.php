@@ -1,4 +1,4 @@
-@extends(auth()->user()->isCashier() ? 'layouts.cashier' : 'layouts.admin')
+@extends(auth()->user()->usesCashierExperience() ? 'layouts.cashier' : 'layouts.admin')
 
 @section('title', 'Inventory')
 @section('container_class', 'max-w-4xl')
