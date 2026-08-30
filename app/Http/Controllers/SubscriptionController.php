@@ -35,24 +35,40 @@ class SubscriptionController extends Controller
     {
         $this->authorize('manage-billing');
 
-        $data = $request->validate([
-            'phone_number' => 'required|string|min:9|max:15',
-            'provider' => 'required|in:mtn,airtel',
-            'plan' => ['required', Rule::in(SubscriptionPlan::keys())],
-        ]);
+        try {
+            $data = $request->validate([
+                'phone_number' => 'required|string|min:9|max:15',
+                'provider' => 'required|in:mtn,airtel',
+                'plan' => ['required', Rule::in(SubscriptionPlan::keys())],
+            ]);
 
-        $result = $this->mobileMoneyService->initiatePayment(
-            $request->user()->business,
-            $data['phone_number'],
-            $data['provider'],
-            $data['plan']
-        );
+            $result = $this->mobileMoneyService->initiatePayment(
+                $request->user()->business,
+                $data['phone_number'],
+                $data['provider'],
+                $data['plan']
+            );
 
-        if ($request->expectsJson()) {
-            return response()->json($result);
+            if ($request->expectsJson()) {
+                return response()->json($result, ($result['success'] ?? false) ? 200 : 422);
+            }
+
+            return back()->with('payment', $result);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            report($e);
+
+            $message = config('app.debug')
+                ? $e->getMessage()
+                : 'Payment could not be started. Please try again.';
+
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 500);
+            }
+
+            return back()->withErrors(['payment' => $message]);
         }
-
-        return back()->with('payment', $result);
     }
 
     public function simulate(Request $request, string $reference)

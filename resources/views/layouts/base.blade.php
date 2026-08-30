@@ -164,7 +164,17 @@
                 },
                 body: new FormData(form),
             })
-            .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+            .then(function (r) {
+                return r.text().then(function (text) {
+                    var data = {};
+                    try {
+                        data = text ? JSON.parse(text) : {};
+                    } catch (err) {
+                        data = { message: r.status >= 500 ? 'Server error (' + r.status + '). Check storage/logs/laravel.log.' : 'Unexpected response from server.' };
+                    }
+                    return { ok: r.ok, status: r.status, data: data };
+                });
+            })
             .then(function (res) {
                 submitBtn.disabled = false;
                 if (res.ok && res.data.success) {
@@ -175,7 +185,12 @@
                     }
                 } else {
                     statusEl.className = 'rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800';
-                    statusEl.textContent = res.data.message || 'Payment request failed.';
+                    var failMsg = res.data.message;
+                    if (!failMsg && res.data.errors) {
+                        var firstKey = Object.keys(res.data.errors)[0];
+                        failMsg = firstKey ? res.data.errors[firstKey][0] : null;
+                    }
+                    statusEl.textContent = failMsg || 'Payment request failed.';
                 }
             })
             .catch(function () {

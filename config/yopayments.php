@@ -29,6 +29,16 @@ return [
     'account_id' => env('YOPAYMENTS_ACCOUNT_ID'),
 
     /*
+    | WAMP/local PHP often lacks a CA bundle; Yo's official SDK disables verify by default.
+    | Set true in production once curl/openssl CA certs are configured on the server.
+    */
+    'verify_ssl' => env('YOPAYMENTS_VERIFY_SSL', false),
+
+    'timeout' => (int) env('YOPAYMENTS_TIMEOUT', 45),
+
+    'send_ipn' => env('YOPAYMENTS_SEND_IPN', true),
+
+    /*
     | SystemSetting keys (preferred when configured in SuperAdmin UI)
     */
     'settings_keys' => [

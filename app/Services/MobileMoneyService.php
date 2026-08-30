@@ -24,7 +24,7 @@ class MobileMoneyService
         $plan = SubscriptionPlan::find($planKey);
         $providerKey = $provider === 'airtel' ? 'airtel_money' : 'mtn_momo';
         $reference = 'DUKA-' . strtoupper(Str::random(10));
-        $narrative = 'DukaPro subscription — ' . $plan['label'];
+        $narrative = 'DukaPro subscription - ' . $plan['label'];
 
         $payment = SubscriptionPayment::create([
             'business_id' => $business->id,

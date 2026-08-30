@@ -12,6 +12,7 @@ class YoPaymentsService
     protected function log(string $level, string $message, array $context = []): void
     {
         Log::channel('yopayments')->{$level}($message, $context);
+        Log::{$level}('[YoPayments] ' . $message, $context);
     }
 
     public function isConfigured(): bool
@@ -70,9 +71,11 @@ class YoPaymentsService
             ];
         }
 
+        @set_time_limit(max(90, (int) config('yopayments.timeout', 45) + 15));
+
         $config = $this->config();
         $msisdn = $this->normalizeMsisdn($phoneNumber);
-        $ipnUrl = url('/api/mobile-money/webhook');
+        $ipnUrl = $this->ipnUrl();
 
         $xml = $this->buildDepositXml(
             $config['api_username'],
@@ -91,14 +94,19 @@ class YoPaymentsService
             'amount' => $amount,
             'environment' => $config['environment'],
             'api_url' => $config['api_url'],
+            'ipn_url' => $ipnUrl,
         ]);
 
         try {
-            $response = Http::withHeaders([
-                'Content-Type' => 'text/xml',
-                'Content-transfer-encoding' => 'text',
+            $response = Http::withOptions([
+                'verify' => (bool) config('yopayments.verify_ssl', false),
+                'connect_timeout' => 10,
+                'timeout' => (int) config('yopayments.timeout', 45),
             ])
-                ->timeout(120)
+                ->withHeaders([
+                    'Content-Type' => 'text/xml',
+                    'Content-transfer-encoding' => 'text',
+                ])
                 ->withBody($xml, 'text/xml')
                 ->post($config['api_url']);
 
@@ -111,7 +119,7 @@ class YoPaymentsService
 
                 return [
                     'success' => false,
-                    'message' => 'YoPayments gateway returned an error. Please try again.',
+                    'message' => 'YoPayments gateway returned HTTP ' . $response->status() . '. Please try again.',
                 ];
             }
 
@@ -120,6 +128,7 @@ class YoPaymentsService
             $this->log('info', 'YoPayments collection response', [
                 'reference' => $reference,
                 'parsed' => $parsed,
+                'raw_body' => $response->body(),
             ]);
 
             if (($parsed['Status'] ?? '') !== 'OK') {
@@ -158,9 +167,16 @@ class YoPaymentsService
                 'exception' => get_class($e),
             ]);
 
+            $message = 'Could not reach YoPayments. Please try again shortly.';
+            if (Str::contains($e->getMessage(), ['SSL certificate', 'cURL error 60'])) {
+                $message = 'Could not connect to YoPayments (SSL certificate issue on this server). Contact support or set YOPAYMENTS_VERIFY_SSL=false.';
+            } elseif (Str::contains($e->getMessage(), ['timed out', 'Timeout'])) {
+                $message = 'YoPayments took too long to respond. Please try again.';
+            }
+
             return [
                 'success' => false,
-                'message' => 'Could not reach YoPayments. Please try again shortly.',
+                'message' => $message,
             ];
         }
     }
@@ -178,6 +194,22 @@ class YoPaymentsService
         return $digits;
     }
 
+    protected function ipnUrl(): ?string
+    {
+        if (! config('yopayments.send_ipn', true)) {
+            return null;
+        }
+
+        $url = url('/api/mobile-money/webhook');
+        $host = parse_url($url, PHP_URL_HOST);
+
+        if (in_array($host, ['127.0.0.1', 'localhost', '::1'], true)) {
+            return null;
+        }
+
+        return $url;
+    }
+
     protected function buildDepositXml(
         string $username,
         string $password,
@@ -186,7 +218,7 @@ class YoPaymentsService
         string $narrative,
         string $externalReference,
         ?string $providerReferenceText,
-        string $ipnUrl
+        ?string $ipnUrl
     ): string {
         $xml = '<?xml version="1.0" encoding="UTF-8"?>';
         $xml .= '<AutoCreate><Request>';
@@ -195,7 +227,7 @@ class YoPaymentsService
         $xml .= '<Method>acdepositfunds</Method>';
         $xml .= '<NonBlocking>TRUE</NonBlocking>';
         $xml .= '<Account>' . $this->escapeXml($msisdn) . '</Account>';
-        $xml .= '<Amount>' . $this->escapeXml((string) $amount) . '</Amount>';
+        $xml .= '<Amount>' . $this->escapeXml((string) (int) round($amount)) . '</Amount>';
         $xml .= '<Narrative>' . $this->escapeXml($narrative) . '</Narrative>';
         $xml .= '<ExternalReference>' . $this->escapeXml($externalReference) . '</ExternalReference>';
 
@@ -203,8 +235,11 @@ class YoPaymentsService
             $xml .= '<ProviderReferenceText>' . $this->escapeXml($providerReferenceText) . '</ProviderReferenceText>';
         }
 
-        $xml .= '<InstantNotificationUrl>' . $this->escapeXml($ipnUrl) . '</InstantNotificationUrl>';
-        $xml .= '<FailureNotificationUrl>' . $this->escapeXml($ipnUrl) . '</FailureNotificationUrl>';
+        if ($ipnUrl) {
+            $xml .= '<InstantNotificationUrl>' . $this->escapeXml($ipnUrl) . '</InstantNotificationUrl>';
+            $xml .= '<FailureNotificationUrl>' . $this->escapeXml($ipnUrl) . '</FailureNotificationUrl>';
+        }
+
         $xml .= '</Request></AutoCreate>';
 
         return $xml;
