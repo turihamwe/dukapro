@@ -63,6 +63,23 @@
             });
         });
 
+        document.addEventListener('click', function (event) {
+            var toggle = event.target.closest('[data-reports-toggle]');
+            if (!toggle) return;
+            event.preventDefault();
+            event.stopPropagation();
+            var container = toggle.closest('.reports-nav, .modern-reports-nav');
+            var menu = container ? container.querySelector('[data-reports-menu]') : null;
+            if (!menu) return;
+            menu.classList.toggle('hidden');
+            var expanded = !menu.classList.contains('hidden');
+            toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+            var chevron = toggle.querySelector('[data-reports-chevron]');
+            if (chevron) {
+                chevron.classList.toggle('rotate-180', expanded);
+            }
+        }, { passive: false });
+
         var countdownEl = document.getElementById('trial-countdown');
         if (countdownEl && countdownEl.dataset.ends) {
             var end = new Date(countdownEl.dataset.ends).getTime();

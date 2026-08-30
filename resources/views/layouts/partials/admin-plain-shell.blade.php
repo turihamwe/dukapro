@@ -113,15 +113,6 @@
     drawer?.querySelectorAll('a').forEach(function (link) {
         link.addEventListener('click', closeNav);
     });
-
-    document.getElementById('reports-toggle')?.addEventListener('click', function () {
-        document.getElementById('reports-menu')?.classList.toggle('hidden');
-        this.querySelector('svg')?.classList.toggle('rotate-180');
-    });
-    document.getElementById('mobile-reports-toggle')?.addEventListener('click', function () {
-        document.getElementById('mobile-reports-menu')?.classList.toggle('hidden');
-        this.querySelector('svg')?.classList.toggle('rotate-180');
-    });
 })();
 </script>
 @endpush

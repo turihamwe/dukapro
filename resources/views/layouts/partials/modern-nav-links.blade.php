@@ -17,19 +17,19 @@
         $reportsOpen = request()->routeIs('tenant.reports.*')
             || request()->routeIs('tenant.reconciliation.*')
             || request()->routeIs('tenant.expenses.index');
-        $reportsToggleId = isset($mobile) && $mobile ? 'mobile-modern-reports-toggle' : 'modern-reports-toggle';
-        $reportsMenuId = isset($mobile) && $mobile ? 'mobile-modern-reports-menu' : 'modern-reports-menu';
     @endphp
     <div class="modern-reports-nav">
-        <button type="button" id="{{ $reportsToggleId }}"
+        <button type="button"
+                data-reports-toggle
+                aria-expanded="{{ $reportsOpen ? 'true' : 'false' }}"
                 class="modern-nav-link flex w-full items-center justify-between gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] {{ $reportsOpen ? $navActive : $navIdle }}">
             <span class="flex items-center gap-3">
                 <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                 Reports
             </span>
-            <svg class="h-4 w-4 shrink-0 transition {{ $reportsOpen ? 'rotate-180' : '' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            <svg data-reports-chevron class="h-4 w-4 shrink-0 transition {{ $reportsOpen ? 'rotate-180' : '' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
         </button>
-        <div id="{{ $reportsMenuId }}" class="ml-4 mt-1 space-y-1 {{ $reportsOpen ? '' : 'hidden' }}">
+        <div data-reports-menu class="ml-4 mt-1 space-y-1 {{ $reportsOpen ? '' : 'hidden' }}">
             @can('view-sales-reports')
                 <a href="{{ tenant_route('tenant.reports.sales.index') }}"
                    class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('tenant.reports.sales.*') ? 'font-medium text-emerald-400 bg-white/10' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">Sales reports</a>

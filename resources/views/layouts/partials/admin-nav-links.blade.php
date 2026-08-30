@@ -19,12 +19,14 @@
 @if(auth()->user()->can('view-sales-reports') || auth()->user()->can('view-all-reconciliations') || auth()->user()->can('view-expenses'))
     @php $reportsOpen = request()->routeIs('tenant.reports.*') || request()->routeIs('tenant.reconciliation.*') || request()->routeIs('tenant.expenses.index'); @endphp
     <div class="reports-nav">
-        <button type="button" id="{{ isset($mobile) && $mobile ? 'mobile-reports-toggle' : 'reports-toggle' }}"
+        <button type="button"
+                data-reports-toggle
+                aria-expanded="{{ $reportsOpen ? 'true' : 'false' }}"
                 class="{{ $navLink }} w-full justify-between {{ $reportsOpen ? $navActive : $navIdle }}">
             <span class="flex items-center gap-3"><span>📈</span> Reports</span>
-            <svg class="h-4 w-4 shrink-0 transition {{ $reportsOpen ? 'rotate-180' : '' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            <svg data-reports-chevron class="h-4 w-4 shrink-0 transition {{ $reportsOpen ? 'rotate-180' : '' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
         </button>
-        <div id="{{ isset($mobile) && $mobile ? 'mobile-reports-menu' : 'reports-menu' }}" class="ml-4 mt-1 space-y-1 {{ $reportsOpen ? '' : 'hidden' }}">
+        <div data-reports-menu class="ml-4 mt-1 space-y-1 {{ $reportsOpen ? '' : 'hidden' }}">
             @can('view-sales-reports')
                 <a href="{{ tenant_route('tenant.reports.sales.index') }}"
                    class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('tenant.reports.sales.*') ? 'font-medium text-indigo-700 bg-indigo-50' : 'text-gray-600 hover:bg-gray-100' }}">Sales reports</a>

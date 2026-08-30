@@ -58,8 +58,13 @@
                 <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>
-        <nav class="space-y-1">
-            @include('layouts.partials.modern-nav-links', compact('navActive', 'navIdle', 'lowStockCount'))
+        <nav class="space-y-1 overflow-y-auto pb-28" style="max-height: calc(100dvh - 5rem);">
+            @include('layouts.partials.modern-nav-links', [
+                'navActive' => $navActive,
+                'navIdle' => $navIdle,
+                'lowStockCount' => $lowStockCount,
+                'mobile' => true,
+            ])
         </nav>
         <div class="absolute bottom-0 left-0 right-0 border-t border-white/10 p-4">
             <p class="mb-3 text-xs text-emerald-400">Cloud-Based · Online</p>
@@ -167,16 +172,6 @@
     drawer?.querySelectorAll('a').forEach(function (link) {
         link.addEventListener('click', closeNav);
     });
-
-    function bindReportsToggle(toggleId, menuId) {
-        document.getElementById(toggleId)?.addEventListener('click', function () {
-            document.getElementById(menuId)?.classList.toggle('hidden');
-            this.querySelector('svg:last-child')?.classList.toggle('rotate-180');
-        });
-    }
-
-    bindReportsToggle('modern-reports-toggle', 'modern-reports-menu');
-    bindReportsToggle('mobile-modern-reports-toggle', 'mobile-modern-reports-menu');
 })();
 </script>
 @endpush
