@@ -33,6 +33,8 @@ class EnsureManagementAccess
     {
         return $request->routeIs(
             'tenant.inventory.index',
+            'tenant.inventory.create',
+            'tenant.inventory.store',
             'tenant.reconciliation.index',
             'tenant.reconciliation.show',
             'tenant.reconciliation.print'

@@ -10,7 +10,7 @@
         'md' => 'max-h-10 w-auto max-w-[140px]',
         'sidebar' => 'max-h-12 w-auto max-w-[180px] sm:max-w-[196px]',
         'header' => 'max-h-9 w-auto max-w-[132px] sm:max-w-[148px]',
-        'auth' => 'max-h-16 w-auto max-w-[280px] sm:max-h-[4.5rem] sm:max-w-[320px]',
+        'auth' => 'h-auto w-full max-w-[min(100%,300px)] sm:max-h-[4.5rem] sm:w-auto sm:max-w-[320px]',
         'cashier' => 'max-h-10 w-auto max-w-[150px] sm:max-w-[168px]',
     ];
     $objectPosition = $centered ? 'object-center' : 'object-left';

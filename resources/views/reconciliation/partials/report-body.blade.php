@@ -5,7 +5,7 @@
 <div class="mb-8 border-b border-gray-200 pb-6">
     <div class="flex items-start justify-between gap-4">
         <div>
-            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">DukaPro EOD Report</p>
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ platform_brand('name') }} EOD Report</p>
             <h1 class="mt-1 text-2xl font-bold text-gray-900">{{ $business->name }}</h1>
             <p class="mt-1 text-sm text-gray-600">{{ $reconciliation->reconciliation_date->format('l, F j, Y') }} · Cashier: {{ $reconciliation->user->name }}</p>
         </div>

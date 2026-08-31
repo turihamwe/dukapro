@@ -5,8 +5,18 @@ use App\Models\Business;
 if (! function_exists('platform_brand')) {
     function platform_brand(?string $key = null)
     {
+        $appName = config('app.name', 'Duka Pro');
+        if (trim((string) $appName) === '' || strcasecmp(trim((string) $appName), 'Laravel') === 0) {
+            $appName = 'Duka Pro';
+        }
+
+        $storedName = \App\Models\SystemSetting::get('company_name', $appName);
+        if (trim((string) $storedName) === '' || strcasecmp(trim((string) $storedName), 'Laravel') === 0) {
+            $storedName = 'Duka Pro';
+        }
+
         $brand = [
-            'name' => \App\Models\SystemSetting::get('company_name', config('app.name', 'Duka Pro')),
+            'name' => $storedName,
             'tagline' => \App\Models\SystemSetting::get('company_tagline', 'Manage your Business From Anywhere'),
             'logo_url' => ($path = \App\Models\SystemSetting::get('company_logo_path'))
                 ? asset('storage/' . ltrim($path, '/'))
@@ -83,8 +93,8 @@ if (! function_exists('ui_theme_label')) {
     {
         return [
             'plain' => 'Plain Theme',
-            'modern' => 'DukaPro Modern',
-            'custom' => 'DukaPro Modern',
+            'modern' => platform_brand('name') . ' Modern',
+            'custom' => platform_brand('name') . ' Modern',
         ][$theme] ?? 'Plain Theme';
     }
 }

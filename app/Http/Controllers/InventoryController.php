@@ -6,6 +6,7 @@ use App\Helpers\AuditLogger;
 use App\Models\Business;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class InventoryController extends Controller
 {
@@ -24,6 +25,7 @@ class InventoryController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', '%' . $search . '%')
                     ->orWhere('sku', 'like', '%' . $search . '%')
+                    ->orWhere('description', 'like', '%' . $search . '%')
                     ->orWhere('measurement_unit', 'like', '%' . $search . '%');
             });
         }
@@ -40,16 +42,21 @@ class InventoryController extends Controller
 
     public function store(Request $request)
     {
+        $businessId = (int) $request->user()->business_id;
+
         $rules = [
             'name' => 'required|string|max:255',
-            'sku' => 'nullable|string|max:100',
+            'sku' => [
+                'nullable',
+                'string',
+                'max:100',
+                Rule::unique('products', 'sku')->where(fn ($query) => $query->where('business_id', $businessId)),
+            ],
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
             'measurement_unit' => 'required|string|max:50',
             'stock_quantity' => 'required|numeric|min:0',
             'critical_threshold' => 'nullable|integer|min:0',
-            'variant_attribute_name' => 'nullable|string|max:100',
-            'variant_attribute_values' => 'nullable|string|max:500',
         ];
 
         if ($request->user()->can('view-cost-prices')) {
@@ -58,12 +65,6 @@ class InventoryController extends Controller
 
         $data = $request->validate($rules);
 
-        $data['variant_attributes'] = variant_attributes_from_form(
-            $data['variant_attribute_name'] ?? null,
-            $data['variant_attribute_values'] ?? null
-        );
-        unset($data['variant_attribute_name'], $data['variant_attribute_values']);
-
         if (! $request->user()->can('view-cost-prices')) {
             unset($data['cost_price']);
         }
@@ -71,6 +72,12 @@ class InventoryController extends Controller
         $product = Product::create(array_merge($data, ['is_active' => true]));
 
         AuditLogger::record('product_created', $product, null, $product->toArray());
+
+        if ($request->boolean('add_another')) {
+            return redirect()
+                ->to(tenant_route('tenant.inventory.create'))
+                ->with('success', 'Product added. Add the next item below.');
+        }
 
         return redirect()->to(tenant_route('tenant.inventory.index'))->with('success', 'Product added.');
     }
@@ -84,14 +91,19 @@ class InventoryController extends Controller
     {
         $rules = [
             'name' => 'required|string|max:255',
-            'sku' => 'nullable|string|max:100',
+            'sku' => [
+                'nullable',
+                'string',
+                'max:100',
+                Rule::unique('products', 'sku')
+                    ->where(fn ($query) => $query->where('business_id', $business->id))
+                    ->ignore($product->id),
+            ],
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
             'measurement_unit' => 'required|string|max:50',
             'stock_quantity' => 'required|numeric|min:0',
             'critical_threshold' => 'nullable|integer|min:0',
-            'variant_attribute_name' => 'nullable|string|max:100',
-            'variant_attribute_values' => 'nullable|string|max:500',
             'is_active' => 'nullable|boolean',
         ];
 
@@ -100,12 +112,6 @@ class InventoryController extends Controller
         }
 
         $data = $request->validate($rules);
-
-        $data['variant_attributes'] = variant_attributes_from_form(
-            $data['variant_attribute_name'] ?? null,
-            $data['variant_attribute_values'] ?? null
-        );
-        unset($data['variant_attribute_name'], $data['variant_attribute_values']);
         $data['is_active'] = $request->boolean('is_active');
 
         if (! $request->user()->can('view-cost-prices')) {

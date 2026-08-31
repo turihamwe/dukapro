@@ -24,7 +24,7 @@ class WelcomeOwnerMail extends Mailable
 
     public function build()
     {
-        return $this->subject('Welcome to DukaPro — ' . $this->business->name)
+        return $this->subject('Welcome to ' . platform_brand('name') . ' — ' . $this->business->name)
             ->view('emails.welcome-owner');
     }
 }

@@ -124,8 +124,8 @@
     </div>
 
     <div class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
-        <h2 class="text-lg font-semibold text-gray-900">Stock by Category</h2>
-        <p class="text-sm text-gray-500">Units on hand across product types</p>
+        <h2 class="text-lg font-semibold text-gray-900">Stock by Unit</h2>
+        <p class="text-sm text-gray-500">Total units on hand grouped by how items are sold (piece, pack, kg, etc.)</p>
         <div class="mt-6 space-y-3">
             @foreach($m['stock_by_category']['labels'] as $index => $label)
                 @php

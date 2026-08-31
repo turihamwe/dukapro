@@ -57,7 +57,7 @@
                     </div>
                 </div>
                 <div class="hidden text-sm text-gray-600 lg:block">
-                    <span class="font-medium text-gray-900">{{ auth()->user()->business->name ?? 'DukaPro' }}</span>
+                    <span class="font-medium text-gray-900">{{ auth()->user()->business->name ?? platform_brand('name') }}</span>
                     <span class="mx-2 text-gray-300">·</span>
                     <span class="capitalize">{{ auth()->user()->role }}</span>
                 </div>

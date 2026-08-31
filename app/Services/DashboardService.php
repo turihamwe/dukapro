@@ -410,7 +410,7 @@ class DashboardService
                 if ((float) $revenue <= 0) {
                     continue;
                 }
-                $labels[] = ucfirst((string) $unit) . ' Category';
+                $labels[] = ucfirst((string) $unit) . ' unit sales';
                 $values[] = round((float) $revenue, 2);
             }
         }

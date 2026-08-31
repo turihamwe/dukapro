@@ -22,6 +22,8 @@ class CreateSystemSettingsTable extends Migration
             ['key' => 'default_currency_position', 'value' => 'prefix', 'created_at' => $now, 'updated_at' => $now],
             ['key' => 'support_email', 'value' => 'support@dukapro.test', 'created_at' => $now, 'updated_at' => $now],
             ['key' => 'maintenance_mode', 'value' => '0', 'created_at' => $now, 'updated_at' => $now],
+            ['key' => 'company_name', 'value' => 'Duka Pro', 'created_at' => $now, 'updated_at' => $now],
+            ['key' => 'company_tagline', 'value' => "LET'S GO DIGITAL", 'created_at' => $now, 'updated_at' => $now],
         ]);
     }
 

@@ -198,7 +198,7 @@ class AuthController extends Controller
         );
 
         return redirect()->route('tenant.dashboard', ['business' => $user->business->slug])
-            ->with('success', 'Welcome to DukaPro store, ' . $user->business->name . '! Your portal URL is ' . $user->business->portalLoginUrl());
+            ->with('success', 'Welcome to ' . platform_brand('name') . ' store, ' . $user->business->name . '! Your portal URL is ' . $user->business->portalLoginUrl());
     }
 
     public function logout(Request $request)
@@ -258,7 +258,7 @@ class AuthController extends Controller
             return redirect()->route('subscription.payment');
         }
 
-        session()->flash('welcome_message', 'Welcome to DukaPro store, ' . $business->name);
+        session()->flash('welcome_message', 'Welcome to ' . platform_brand('name') . ' store, ' . $business->name);
 
         return $this->redirectHome($user);
     }

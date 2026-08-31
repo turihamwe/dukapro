@@ -4,7 +4,7 @@
 @section('container_class', 'max-w-4xl')
 
 @section('content')
-<x-page-header title="Inventory" subtitle="{{ $products->total() }} products in stock">
+<x-page-header title="Inventory" subtitle="Each product is tracked individually with its own price and stock">
     <x-slot name="actions">
         @can('create', App\Models\Product::class)
             <x-button variant="primary" size="sm" href="{{ tenant_route('tenant.inventory.create') }}">+ Add Product</x-button>
@@ -19,7 +19,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
         </svg>
         <input type="search" id="inventory-search" name="search" value="{{ $search ?? '' }}"
-               placeholder="Search by name, SKU, or category…"
+               placeholder="Search by name, SKU, or notes…"
                autocomplete="off"
                class="w-full rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-4 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
     </div>
@@ -34,13 +34,13 @@
 {{-- Mobile: stacked cards --}}
 <div id="inventory-mobile-list" class="space-y-3 md:hidden">
     @forelse($products as $product)
-        <x-card :padding="false" class="inventory-item p-4" data-search="{{ strtolower($product->name . ' ' . ($product->sku ?? '') . ' ' . $product->measurement_unit) }}">
+        <x-card :padding="false" class="inventory-item p-4" data-search="{{ strtolower($product->name . ' ' . ($product->sku ?? '') . ' ' . $product->measurement_unit . ' ' . ($product->description ?? '')) }}">
             <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0">
                     <p class="font-medium text-gray-900">{{ $product->name }}</p>
                     <p class="text-xs text-gray-500">{{ $product->sku ?? 'No SKU' }} · {{ $product->measurement_unit }}</p>
-                    @if($product->variant_attributes)
-                        <x-badge color="gray" class="mt-2">{{ format_variant_attributes($product->variant_attributes) }}</x-badge>
+                    @if($product->description)
+                        <p class="mt-1 line-clamp-2 text-xs text-gray-500">{{ $product->description }}</p>
                     @endif
                 </div>
                 <div class="text-right shrink-0">
@@ -67,7 +67,7 @@
             <thead class="bg-gray-50">
                 <tr>
                     <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Product</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">SKU / Category</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">SKU / Unit</th>
                     <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Cost (UGX)</th>
                     <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Sell (UGX)</th>
                     <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">In Stock</th>
@@ -76,9 +76,12 @@
             </thead>
             <tbody id="inventory-desktop-body" class="divide-y divide-gray-100 bg-white">
                 @forelse($products as $product)
-                    <tr class="inventory-item transition hover:bg-gray-50" data-search="{{ strtolower($product->name . ' ' . ($product->sku ?? '') . ' ' . $product->measurement_unit) }}">
+                    <tr class="inventory-item transition hover:bg-gray-50" data-search="{{ strtolower($product->name . ' ' . ($product->sku ?? '') . ' ' . $product->measurement_unit . ' ' . ($product->description ?? '')) }}">
                         <td class="px-6 py-4 text-left">
                             <p class="text-sm font-medium text-gray-900">{{ $product->name }}</p>
+                            @if($product->description)
+                                <p class="mt-0.5 line-clamp-1 text-xs text-gray-500">{{ $product->description }}</p>
+                            @endif
                         </td>
                         <td class="px-6 py-4 text-sm text-gray-500">{{ $product->sku ?? '—' }} · {{ $product->measurement_unit }}</td>
                         <td class="px-6 py-4 text-center text-sm text-gray-600">

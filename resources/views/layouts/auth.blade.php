@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="en" class="h-full scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
@@ -23,10 +23,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     @stack('styles')
 </head>
-<body class="flex min-h-full flex-col bg-gray-50 text-gray-900 antialiased">
+<body class="min-h-[100dvh] bg-gray-50 text-gray-900 antialiased">
 
-    <main class="flex flex-1 flex-col items-center justify-center px-4 py-8 sm:px-6">
-        <div class="@yield('container_class', 'w-full max-w-md')">
+    <main class="mx-auto flex w-full max-w-lg flex-col items-stretch px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] sm:px-6 sm:py-8 md:min-h-[100dvh] md:justify-center md:py-10">
+        <div class="@yield('container_class', 'w-full')">
             @if(session('success'))
                 <x-alert type="success" class="mb-6">{{ session('success') }}</x-alert>
             @endif

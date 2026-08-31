@@ -78,7 +78,7 @@ class AuthServiceProvider extends ServiceProvider
                 return false;
             }
 
-            return $user->isOwner() || $user->isManager() || $user->isSupervisor();
+            return in_array($user->role, [UserRole::OWNER, UserRole::MANAGER, UserRole::SUPERVISOR, UserRole::CASHIER], true);
         });
 
         Gate::define('update-inventory', function (User $user) {
