@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\AffiliateStatus;
 use App\Enums\UserRole;
 use App\Support\CashierMode;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -141,6 +142,35 @@ class User extends Authenticatable
     public function isAffiliate(): bool
     {
         return (bool) $this->is_affiliate;
+    }
+
+    public function isDedicatedAffiliateAccount(): bool
+    {
+        return $this->is_affiliate && ! $this->business_id;
+    }
+
+    public function isDedicatedShareholderAccount(): bool
+    {
+        return $this->is_shareholder && ! $this->business_id;
+    }
+
+    public function hasAffiliatePortalAccess(): bool
+    {
+        if ($this->isPlatformAdmin()) {
+            return false;
+        }
+
+        if ($this->isDedicatedAffiliateAccount()) {
+            return true;
+        }
+
+        $profile = $this->relationLoaded('affiliateProfile')
+            ? $this->affiliateProfile
+            : $this->affiliateProfile()->first();
+
+        return $profile
+            && $profile->is_active
+            && in_array($profile->status, [AffiliateStatus::APPROVED], true);
     }
 
     public function isShareholder(): bool

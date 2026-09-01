@@ -29,7 +29,7 @@ class UserPromotionService
 
     public function canPromoteToAffiliate(User $user): bool
     {
-        if ($user->isPlatformAdmin() || $user->isAffiliate()) {
+        if ($user->isPlatformAdmin() || $user->isDedicatedAffiliateAccount()) {
             return false;
         }
 
@@ -73,11 +73,7 @@ class UserPromotionService
                 'is_active' => false,
             ]);
 
-            $user->update([
-                'role' => UserRole::AFFILIATE,
-                'is_affiliate' => true,
-            ]);
-
+            // Keep the user's business role intact — separation lives on affiliates table.
             return $this->affiliateRegistration->approve($affiliate->fresh(), $approver);
         });
     }
@@ -109,11 +105,7 @@ class UserPromotionService
                 'registered_at' => now(),
             ]);
 
-            $user->update([
-                'role' => UserRole::SHAREHOLDER,
-                'is_shareholder' => true,
-            ]);
-
+            // Keep the user's business role intact — separation lives on shareholders table.
             return $this->shareholderRegistration->approve($shareholder->fresh(), $approver);
         });
     }

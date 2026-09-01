@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\AuthLoginService;
+use App\Support\LoginPortal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -18,7 +19,7 @@ class AffiliateAuthController extends Controller
     public function showLogin()
     {
         $user = auth()->user();
-        if ($user && $user->isAffiliate()) {
+        if ($user && $user->hasAffiliatePortalAccess()) {
             return redirect()->route('affiliate.dashboard');
         }
 
@@ -46,6 +47,7 @@ class AffiliateAuthController extends Controller
         }
 
         $request->session()->regenerate();
+        LoginPortal::set($request, LoginPortal::AFFILIATE);
 
         return redirect()->route('affiliate.dashboard');
     }
@@ -53,6 +55,7 @@ class AffiliateAuthController extends Controller
     public function logout(Request $request)
     {
         Auth::logout();
+        LoginPortal::clear($request);
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 

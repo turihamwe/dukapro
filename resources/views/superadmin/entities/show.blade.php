@@ -136,7 +136,7 @@
                                 Promote to Affiliate
                             </button>
                         </form>
-                    @elseif($promotionUser->isAffiliate() && $promotionUser->affiliateProfile)
+                    @elseif($promotionUser->affiliateProfile)
                         <a href="{{ route('superadmin.entities.show', ['affiliates', $promotionUser->affiliateProfile->id]) }}"
                            class="rounded-lg border border-indigo-200 px-4 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-50">
                             View affiliate profile →

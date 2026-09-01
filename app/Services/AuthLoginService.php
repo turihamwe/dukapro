@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\AffiliateStatus;
 use App\Models\Business;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -41,9 +42,16 @@ class AuthLoginService
 
         $user = User::query()
             ->where($field, $login)
-            ->where('is_affiliate', true)
             ->where('is_super_admin', false)
             ->where('is_sub_admin', false)
+            ->where(function ($q) {
+                $q->where(function ($dedicated) {
+                    $dedicated->where('is_affiliate', true)->whereNull('business_id');
+                })->orWhereHas('affiliateProfile', function ($profile) {
+                    $profile->where('is_active', true)
+                        ->where('status', AffiliateStatus::APPROVED);
+                });
+            })
             ->first();
 
         if (! $user || ! Hash::check($password, $user->password)) {

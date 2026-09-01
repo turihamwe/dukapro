@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\LoginPortal;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,11 +21,13 @@ class RedirectIfAuthenticated
                     return redirect()->route('superadmin.dashboard');
                 }
 
-                if ($user->isAffiliate()) {
+                $portal = LoginPortal::get($request);
+
+                if ($portal === LoginPortal::AFFILIATE && $user->hasAffiliatePortalAccess()) {
                     return redirect()->route('affiliate.dashboard');
                 }
 
-                if ($user->isShareholder()) {
+                if ($portal === LoginPortal::SHAREHOLDER && $user->isDedicatedShareholderAccount()) {
                     return redirect()->route('shareholder.dashboard');
                 }
 
@@ -46,6 +49,14 @@ class RedirectIfAuthenticated
                     }
 
                     return redirect()->route('tenant.pos.index', ['business' => $user->business->slug]);
+                }
+
+                if ($user->hasAffiliatePortalAccess()) {
+                    return redirect()->route('affiliate.dashboard');
+                }
+
+                if ($user->isShareholder()) {
+                    return redirect()->route('shareholder.dashboard');
                 }
 
                 return redirect('/');

@@ -11,7 +11,7 @@ class EnsureAffiliate
     {
         $user = $request->user();
 
-        if (! $user || ! $user->isAffiliate()) {
+        if (! $user || ! $user->hasAffiliatePortalAccess()) {
             abort(403, 'Affiliate access only.');
         }
 

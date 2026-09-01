@@ -32,9 +32,7 @@ class EntityRegistry
                 'scope' => function ($query) {
                     return $query->whereNotNull('business_id')
                         ->where('is_super_admin', false)
-                        ->where('is_sub_admin', false)
-                        ->where('is_affiliate', false)
-                        ->where('is_shareholder', false);
+                        ->where('is_sub_admin', false);
                 },
                 'search' => ['name', 'email', 'username', 'role'],
                 'list' => ['name', 'email', 'role', 'business_id'],

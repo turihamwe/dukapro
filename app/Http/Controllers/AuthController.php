@@ -8,6 +8,7 @@ use App\Services\AuthLoginService;
 use App\Services\AffiliateReferralService;
 use App\Services\TenantRegistrationService;
 use App\Support\CashierMode;
+use App\Support\LoginPortal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -59,15 +60,31 @@ class AuthController extends Controller
                 ->onlyInput('login');
         }
 
-        if ($user->isAffiliate()) {
+        if ($user->isDedicatedAffiliateAccount()) {
+            LoginPortal::set($request, LoginPortal::AFFILIATE);
+
             return redirect()->route('affiliate.dashboard');
         }
 
-        if ($user->isShareholder()) {
+        if ($user->isDedicatedShareholderAccount()) {
+            LoginPortal::set($request, LoginPortal::SHAREHOLDER);
+
             return redirect()->route('shareholder.dashboard');
         }
 
-        return $this->completeTenantLogin($request, $user, $user->business);
+        if ($user->business_id && $user->business) {
+            return $this->completeTenantLogin($request, $user, $user->business);
+        }
+
+        if ($user->isDedicatedShareholderAccount()) {
+            LoginPortal::set($request, LoginPortal::SHAREHOLDER);
+
+            return redirect()->route('shareholder.dashboard');
+        }
+
+        return back()
+            ->withErrors(['login' => 'Invalid username, email, or password.'])
+            ->onlyInput('login');
     }
 
     public function showSuperAdminLogin()
@@ -215,6 +232,7 @@ class AuthController extends Controller
 
         Auth::login($user);
         $request->session()->regenerate();
+        LoginPortal::set($request, LoginPortal::BUSINESS);
 
         SystemAuditLogger::record(
             'tenant_registered',
@@ -231,9 +249,9 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         $user = $request->user();
-        $portalUrl = $user && $user->isShareholder()
+        $portalUrl = $user && $user->isShareholder() && ! $user->business_id
             ? route('shareholder.login')
-            : ($user && $user->isAffiliate()
+            : ($user && $user->isDedicatedAffiliateAccount()
             ? route('affiliate.login')
             : ($user && $user->business ? $user->business->portalLoginUrl() : route('login')));
 
@@ -247,6 +265,7 @@ class AuthController extends Controller
         }
 
         Auth::logout();
+        LoginPortal::clear($request);
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
@@ -256,19 +275,23 @@ class AuthController extends Controller
     protected function completeTenantLogin(Request $request, $user, Business $business)
     {
         $request->session()->regenerate();
+        LoginPortal::set($request, LoginPortal::BUSINESS);
 
         if ($user->isPlatformAdmin()) {
             Auth::logout();
             return back()->withErrors(['login' => 'Use the platform admin login instead.']);
         }
 
-        if ($user->isAffiliate()) {
+        if ($user->isDedicatedAffiliateAccount()) {
             Auth::logout();
+            LoginPortal::clear($request);
+
             return back()->withErrors(['login' => 'Use the affiliate partner login instead.']);
         }
 
-        if ($user->isShareholder()) {
+        if ($user->isShareholder() && ! $user->business_id) {
             Auth::logout();
+            LoginPortal::clear($request);
             return back()->withErrors(['login' => 'Use the shareholder login instead.']);
         }
 

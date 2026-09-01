@@ -17,7 +17,7 @@ class AffiliateApplicationController extends Controller
     public function showApply()
     {
         $user = auth()->user();
-        if ($user && $user->isAffiliate()) {
+        if ($user && $user->hasAffiliatePortalAccess()) {
             return redirect()->route('affiliate.dashboard');
         }
 

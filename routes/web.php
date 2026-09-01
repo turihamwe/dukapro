@@ -28,6 +28,7 @@ use App\Http\Controllers\SuperAdmin\GlobalSearchController as SuperAdminGlobalSe
 use App\Http\Controllers\SuperAdmin\ImpersonationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\HomeRedirectController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\PosController;
 use App\Http\Controllers\ReconciliationController;
@@ -67,26 +68,7 @@ Route::middleware(['maintenance'])->group(function () {
     Route::middleware(['auth'])->group(function () {
         Route::post('/leave-impersonation', [ImpersonationController::class, 'leave'])->name('impersonation.leave');
 
-        Route::get('/dashboard', function () {
-            $user = auth()->user();
-            if ($user->isPlatformAdmin()) {
-                return redirect()->route('superadmin.dashboard');
-            }
-            if ($user->isAffiliate()) {
-                return redirect()->route('affiliate.dashboard');
-            }
-            if ($user->isShareholder()) {
-                return redirect()->route('shareholder.dashboard');
-            }
-            abort_unless($user->business, 403);
-            if ($user->isCashier()) {
-                return redirect()->route('tenant.pos.index', ['business' => $user->business->slug]);
-            }
-            if ($user->can('view-dashboard')) {
-                return redirect()->route('tenant.dashboard', ['business' => $user->business->slug]);
-            }
-            return redirect()->route('tenant.pos.index', ['business' => $user->business->slug]);
-        });
+        Route::get('/dashboard', [HomeRedirectController::class, 'dashboard'])->name('home.dashboard');
         Route::get('/pos', function () {
             $user = auth()->user();
             abort_unless($user->business, 403);
