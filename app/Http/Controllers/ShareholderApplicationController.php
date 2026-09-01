@@ -23,7 +23,7 @@ class ShareholderApplicationController extends Controller
     public function showApply()
     {
         $user = auth()->user();
-        if ($user && $user->isShareholder()) {
+        if ($user && $user->hasShareholderPortalAccess()) {
             return redirect()->route('shareholder.dashboard');
         }
 
@@ -46,8 +46,13 @@ class ShareholderApplicationController extends Controller
             return back()->withErrors(['email' => 'Shareholder subscription is currently closed.']);
         }
 
+        if ($request->filled('username')) {
+            $request->merge(['username' => strtolower(trim($request->input('username')))]);
+        }
+
         $data = $request->validate([
             'name' => 'required|string|max:255',
+            'username' => 'required|string|max:50|alpha_dash|unique:users,username',
             'email' => 'required|email|max:255|unique:shareholders,email|unique:users,email',
             'phone' => 'required|string|max:30',
             'national_id' => 'nullable|string|max:50',

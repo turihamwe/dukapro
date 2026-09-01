@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Models\Affiliate;
 use App\Models\Shareholder;
 use App\Models\User;
+use App\Services\AffiliateReferralCodeGenerator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -17,14 +18,18 @@ class UserPromotionService
 
     protected ShareAllocationService $allocationService;
 
+    protected AffiliateReferralCodeGenerator $referralCodeGenerator;
+
     public function __construct(
         AffiliateRegistrationService $affiliateRegistration,
         ShareholderRegistrationService $shareholderRegistration,
-        ShareAllocationService $allocationService
+        ShareAllocationService $allocationService,
+        AffiliateReferralCodeGenerator $referralCodeGenerator
     ) {
         $this->affiliateRegistration = $affiliateRegistration;
         $this->shareholderRegistration = $shareholderRegistration;
         $this->allocationService = $allocationService;
+        $this->referralCodeGenerator = $referralCodeGenerator;
     }
 
     public function canPromoteToAffiliate(User $user): bool
@@ -67,7 +72,7 @@ class UserPromotionService
                 'name' => $user->name,
                 'email' => strtolower($user->email),
                 'phone' => $user->phone,
-                'code' => $this->uniqueAffiliateCode($user->name),
+                'code' => $this->referralCodeGenerator->generateUnique(),
                 'commission_rate' => config('affiliates.default_commission_rate', 0.10),
                 'status' => \App\Enums\AffiliateStatus::PENDING,
                 'is_active' => false,
@@ -108,20 +113,5 @@ class UserPromotionService
             // Keep the user's business role intact — separation lives on shareholders table.
             return $this->shareholderRegistration->approve($shareholder->fresh(), $approver);
         });
-    }
-
-    protected function uniqueAffiliateCode(string $name): string
-    {
-        $base = \Illuminate\Support\Str::slug($name) ?: 'partner';
-        $base = \Illuminate\Support\Str::limit($base, 20, '');
-        $code = $base . '-' . \Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(6));
-        $counter = 1;
-
-        while (Affiliate::where('code', $code)->exists()) {
-            $code = $base . '-' . \Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(6)) . $counter;
-            $counter++;
-        }
-
-        return $code;
     }
 }

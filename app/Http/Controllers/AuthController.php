@@ -177,11 +177,7 @@ class AuthController extends Controller
     {
         $this->affiliateReferralService->captureFromRequest($request);
 
-        $sponsor = $this->affiliateReferralService->resolveFromSession($request);
-
-        return view('auth.register', [
-            'sponsor' => $sponsor,
-        ]);
+        return view('auth.register');
     }
 
     public function checkUsername(Request $request)

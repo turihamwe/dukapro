@@ -64,7 +64,7 @@ class Affiliate extends Model
 
     public function referralUrl(): string
     {
-        return route('register', ['ref' => $this->code]);
+        return url('/ref/' . $this->code);
     }
 
     public function totalCommissionEarned(): float

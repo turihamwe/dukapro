@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\AffiliateStatus;
+use App\Enums\ShareholderStatus;
 use App\Enums\UserRole;
 use App\Support\CashierMode;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -176,5 +177,24 @@ class User extends Authenticatable
     public function isShareholder(): bool
     {
         return (bool) $this->is_shareholder;
+    }
+
+    public function hasShareholderPortalAccess(): bool
+    {
+        if ($this->isPlatformAdmin()) {
+            return false;
+        }
+
+        if ($this->isDedicatedShareholderAccount()) {
+            return true;
+        }
+
+        $profile = $this->relationLoaded('shareholderProfile')
+            ? $this->shareholderProfile
+            : $this->shareholderProfile()->first();
+
+        return $profile
+            && $profile->is_active
+            && in_array($profile->status, ShareholderStatus::allocated(), true);
     }
 }

@@ -16,6 +16,7 @@ use App\Models\Product;
 use App\Models\Shareholder;
 use App\Models\ShareholderEarning;
 use App\Models\User;
+use App\Services\AffiliateReferralCodeGenerator;
 use App\Services\ShareAllocationService;
 use App\Services\ShareholderEarningsService;
 use App\Services\ShareholderRegistrationService;
@@ -35,16 +36,20 @@ class EntityController extends Controller
 
     protected UserPromotionService $userPromotionService;
 
+    protected AffiliateReferralCodeGenerator $referralCodeGenerator;
+
     public function __construct(
         ShareAllocationService $allocationService,
         ShareholderRegistrationService $shareholderRegistrationService,
         ShareholderEarningsService $shareholderEarningsService,
-        UserPromotionService $userPromotionService
+        UserPromotionService $userPromotionService,
+        AffiliateReferralCodeGenerator $referralCodeGenerator
     ) {
         $this->allocationService = $allocationService;
         $this->shareholderRegistrationService = $shareholderRegistrationService;
         $this->shareholderEarningsService = $shareholderEarningsService;
         $this->userPromotionService = $userPromotionService;
+        $this->referralCodeGenerator = $referralCodeGenerator;
     }
 
     public function index(Request $request, string $entity)
@@ -234,9 +239,11 @@ class EntityController extends Controller
                     'status' => 'required|in:' . implode(',', AffiliateStatus::all()),
                     'is_active' => 'nullable|boolean',
                 ]);
-                $code = $data['code'] ?? Str::slug($data['name']) . '-' . Str::lower(Str::random(6));
+                $code = ! empty($data['code'])
+                    ? strtolower(trim($data['code']))
+                    : $this->referralCodeGenerator->generateUnique();
                 while (Affiliate::where('code', $code)->exists()) {
-                    $code = Str::slug($data['name']) . '-' . Str::lower(Str::random(6));
+                    $code = $this->referralCodeGenerator->generateUnique();
                 }
                 $record = Affiliate::create([
                     'name' => $data['name'],

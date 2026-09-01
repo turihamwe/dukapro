@@ -19,7 +19,7 @@ class ShareholderAuthController extends Controller
     public function showLogin()
     {
         $user = auth()->user();
-        if ($user && $user->isDedicatedShareholderAccount()) {
+        if ($user && $user->hasShareholderPortalAccess()) {
             return redirect()->route('shareholder.dashboard');
         }
 

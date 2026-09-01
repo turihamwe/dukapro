@@ -28,6 +28,8 @@ class CheckMaintenanceMode
             'logout',
             'logout.get',
             'register',
+            'register.check-username',
+            'affiliate.referral',
             'affiliate.apply',
             'affiliate.apply.store',
             'affiliate.login',

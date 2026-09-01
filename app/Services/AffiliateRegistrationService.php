@@ -9,10 +9,16 @@ use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class AffiliateRegistrationService
 {
+    protected AffiliateReferralCodeGenerator $codeGenerator;
+
+    public function __construct(AffiliateReferralCodeGenerator $codeGenerator)
+    {
+        $this->codeGenerator = $codeGenerator;
+    }
+
     public function isRecruitmentOpen(): bool
     {
         if (! config('affiliates.recruitment_open', true)) {
@@ -31,8 +37,8 @@ class AffiliateRegistrationService
     public function apply(array $data): Affiliate
     {
         return DB::transaction(function () use ($data) {
-            $username = $this->uniqueUsername($data['email'], $data['name']);
-            $code = $this->uniqueCode($data['name']);
+            $username = strtolower(trim($data['username']));
+            $code = $this->codeGenerator->generateUnique();
 
             $affiliate = Affiliate::create([
                 'name' => $data['name'],
@@ -118,32 +124,8 @@ class AffiliateRegistrationService
         return $affiliate->fresh();
     }
 
-    protected function uniqueCode(string $name): string
+    public function generateReferralCode(): string
     {
-        $base = Str::slug($name) ?: 'partner';
-        $base = Str::limit($base, 20, '');
-        $code = $base . '-' . Str::lower(Str::random(6));
-        $counter = 1;
-
-        while (Affiliate::where('code', $code)->exists()) {
-            $code = $base . '-' . Str::lower(Str::random(6)) . $counter;
-            $counter++;
-        }
-
-        return $code;
-    }
-
-    protected function uniqueUsername(string $email, string $name): string
-    {
-        $base = Str::slug(Str::before($email, '@')) ?: Str::slug($name) ?: 'affiliate';
-        $username = Str::limit($base, 40, '');
-        $counter = 1;
-
-        while (User::where('username', $username)->exists()) {
-            $username = Str::limit($base, 35, '') . $counter;
-            $counter++;
-        }
-
-        return strtolower($username);
+        return $this->codeGenerator->generateUnique();
     }
 }

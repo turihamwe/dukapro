@@ -8,11 +8,6 @@
     ])
 
     <x-card class="shadow-sm">
-        @if(! empty($sponsor))
-            <div class="mb-4 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-sm text-violet-900">
-                Referred by affiliate partner: <strong>{{ $sponsor->name }}</strong>
-            </div>
-        @endif
         <form method="POST" action="{{ route('register') }}" class="space-y-3 sm:space-y-4" id="register-form">
             @csrf
             <x-input type="text" name="business_name" label="Business name" value="{{ old('business_name') }}" required autofocus />

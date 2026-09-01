@@ -12,9 +12,14 @@
             Apply to become a {{ platform_brand('name') }} affiliate. Earn <strong>10% commission</strong> on every subscription payment from businesses you refer.
         </p>
 
-        <form method="POST" action="{{ route('affiliate.apply.store') }}" class="space-y-3 sm:space-y-4">
+        <form method="POST" action="{{ route('affiliate.apply.store') }}" class="space-y-3 sm:space-y-4" id="affiliate-apply-form">
             @csrf
             <x-input type="text" name="name" label="Full name" value="{{ old('name') }}" required autofocus />
+            <div>
+                <x-input type="text" name="username" id="username" label="Username" value="{{ old('username') }}" required
+                         hint="Choose a simple, memorable login name (letters, numbers, dashes)." pattern="[A-Za-z0-9_-]+" />
+                <p id="username-status" class="mt-1 hidden text-xs"></p>
+            </div>
             <x-input type="email" name="email" label="Email" value="{{ old('email') }}" required />
             <x-input type="tel" name="phone" label="Phone number" value="{{ old('phone') }}" required />
             <div>
@@ -36,3 +41,40 @@
         </p>
     </x-card>
 @endsection
+
+@push('scripts')
+<script>
+(function () {
+    var input = document.getElementById('username');
+    var status = document.getElementById('username-status');
+    var timer = null;
+    if (!input || !status) return;
+
+    input.addEventListener('input', function () {
+        clearTimeout(timer);
+        var value = input.value.trim();
+        if (value.length < 3) {
+            status.classList.add('hidden');
+            return;
+        }
+        timer = setTimeout(function () {
+            fetch(@json(route('register.check-username')) + '?username=' + encodeURIComponent(value), {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                status.classList.remove('hidden');
+                if (data.available) {
+                    status.textContent = 'Username is available';
+                    status.className = 'mt-1 text-xs text-emerald-600';
+                } else {
+                    status.textContent = data.message || 'Username is already taken';
+                    status.className = 'mt-1 text-xs text-red-600';
+                }
+            })
+            .catch(function () { status.classList.add('hidden'); });
+        }, 350);
+    });
+})();
+</script>
+@endpush

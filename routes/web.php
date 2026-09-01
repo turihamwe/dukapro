@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AffiliateApplicationController;
+use App\Http\Controllers\AffiliateReferralController;
 use App\Http\Controllers\AffiliateAuthController;
 use App\Http\Controllers\Affiliate\DashboardController as AffiliateDashboardController;
 use App\Http\Controllers\ShareholderApplicationController;
@@ -41,6 +42,10 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->n
 Route::get('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout.get');
 
 Route::middleware(['maintenance'])->group(function () {
+    Route::get('/ref/{code}', [AffiliateReferralController::class, 'redirect'])
+        ->where('code', '[A-Za-z0-9]+')
+        ->name('affiliate.referral');
+
     Route::middleware('guest')->group(function () {
         Route::get('/', [AuthController::class, 'showRegister'])->name('home');
         Route::get('/login', [AuthController::class, 'showLogin'])->name('login');

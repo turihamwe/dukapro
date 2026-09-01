@@ -15,11 +15,24 @@ class AffiliateReferralService
             return;
         }
 
+        $this->captureCode($request, $code);
+    }
+
+    public function captureCode(Request $request, string $code): ?Affiliate
+    {
+        $code = strtolower(trim($code));
+
+        if ($code === '') {
+            return null;
+        }
+
         $affiliate = $this->findActiveByCode($code);
 
         if ($affiliate) {
             $request->session()->put(config('affiliates.referral_session_key'), $affiliate->code);
         }
+
+        return $affiliate;
     }
 
     public function resolveFromSession(Request $request): ?Affiliate
@@ -41,7 +54,7 @@ class AffiliateReferralService
     public function findActiveByCode(string $code): ?Affiliate
     {
         $affiliate = Affiliate::query()
-            ->where('code', $code)
+            ->where('code', strtolower(trim($code)))
             ->first();
 
         if (! $affiliate || ! $affiliate->canRefer()) {

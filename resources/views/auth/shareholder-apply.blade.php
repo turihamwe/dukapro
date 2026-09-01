@@ -13,9 +13,14 @@
             <p class="mt-1 text-xs text-violet-700">Price: UGX {{ number_format($pricePerShare, 0) }} per share · Max {{ $maxShareholders }} shareholders · 3× earnings cap</p>
         </div>
 
-        <form method="POST" action="{{ route('shareholder.apply.store') }}" class="space-y-3 sm:space-y-4">
+        <form method="POST" action="{{ route('shareholder.apply.store') }}" class="space-y-3 sm:space-y-4" id="shareholder-apply-form">
             @csrf
             <x-input type="text" name="name" label="Full name" value="{{ old('name') }}" required autofocus />
+            <div>
+                <x-input type="text" name="username" id="username" label="Username" value="{{ old('username') }}" required
+                         hint="Choose a simple, memorable login name (letters, numbers, dashes)." pattern="[A-Za-z0-9_-]+" />
+                <p id="username-status" class="mt-1 hidden text-xs"></p>
+            </div>
             <x-input type="email" name="email" label="Email" value="{{ old('email') }}" required />
             <x-input type="tel" name="phone" label="Phone number" value="{{ old('phone') }}" required />
             <x-input type="text" name="national_id" label="National ID (optional)" value="{{ old('national_id') }}" />
@@ -48,10 +53,42 @@
     var sharesInput = document.querySelector('input[name="shares"]');
     var preview = document.getElementById('investment-preview');
     var price = {{ (int) $pricePerShare }};
-    if (!sharesInput || !preview) return;
-    sharesInput.addEventListener('input', function () {
-        var shares = parseFloat(sharesInput.value) || 0;
-        preview.textContent = (shares * price).toLocaleString('en-UG');
+    if (sharesInput && preview) {
+        sharesInput.addEventListener('input', function () {
+            var shares = parseFloat(sharesInput.value) || 0;
+            preview.textContent = (shares * price).toLocaleString('en-UG');
+        });
+    }
+
+    var input = document.getElementById('username');
+    var status = document.getElementById('username-status');
+    var timer = null;
+    if (!input || !status) return;
+
+    input.addEventListener('input', function () {
+        clearTimeout(timer);
+        var value = input.value.trim();
+        if (value.length < 3) {
+            status.classList.add('hidden');
+            return;
+        }
+        timer = setTimeout(function () {
+            fetch(@json(route('register.check-username')) + '?username=' + encodeURIComponent(value), {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                status.classList.remove('hidden');
+                if (data.available) {
+                    status.textContent = 'Username is available';
+                    status.className = 'mt-1 text-xs text-emerald-600';
+                } else {
+                    status.textContent = data.message || 'Username is already taken';
+                    status.className = 'mt-1 text-xs text-red-600';
+                }
+            })
+            .catch(function () { status.classList.add('hidden'); });
+        }, 350);
     });
 })();
 </script>

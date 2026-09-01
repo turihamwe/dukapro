@@ -11,7 +11,7 @@ class EnsureShareholder
     {
         $user = $request->user();
 
-        if (! $user || ! $user->isShareholder()) {
+        if (! $user || ! $user->hasShareholderPortalAccess()) {
             abort(403, 'Shareholder access only.');
         }
 

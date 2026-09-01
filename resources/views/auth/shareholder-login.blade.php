@@ -10,7 +10,8 @@
     <x-card class="shadow-sm">
         <form method="POST" action="{{ route('shareholder.login.store') }}" class="space-y-4">
             @csrf
-            <x-input type="text" name="login" label="Email or username" value="{{ old('login') }}" required autofocus />
+            <x-input type="text" name="login" label="Username or email" value="{{ old('login') }}" required autofocus
+                     hint="Use your username or email address." />
             <x-input type="password" name="password" label="Password" required />
             <label class="flex items-center gap-2 text-sm text-gray-600">
                 <input type="checkbox" name="remember" value="1" class="rounded border-gray-300">

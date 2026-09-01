@@ -10,7 +10,6 @@ use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class ShareholderRegistrationService
@@ -43,7 +42,7 @@ class ShareholderRegistrationService
         $this->allocationService->validateAllocation($shares);
 
         return DB::transaction(function () use ($data, $shares) {
-            $username = $this->uniqueUsername($data['email'], $data['name']);
+            $username = strtolower(trim($data['username']));
             $capital = $this->allocationService->capitalForShares($shares);
 
             $shareholder = Shareholder::create([
@@ -173,19 +172,5 @@ class ShareholderRegistrationService
         }
 
         return $this->allocationService->activeShareholderCount();
-    }
-
-    protected function uniqueUsername(string $email, string $name): string
-    {
-        $base = Str::slug(Str::before($email, '@')) ?: Str::slug($name) ?: 'shareholder';
-        $username = Str::limit($base, 40, '');
-        $counter = 1;
-
-        while (User::where('username', $username)->exists()) {
-            $username = Str::limit($base, 35, '') . $counter;
-            $counter++;
-        }
-
-        return strtolower($username);
     }
 }

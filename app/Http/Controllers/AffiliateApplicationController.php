@@ -34,8 +34,13 @@ class AffiliateApplicationController extends Controller
             return back()->withErrors(['email' => 'Affiliate recruitment is currently closed.']);
         }
 
+        if ($request->filled('username')) {
+            $request->merge(['username' => strtolower(trim($request->input('username')))]);
+        }
+
         $data = $request->validate([
             'name' => 'required|string|max:255',
+            'username' => 'required|string|max:50|alpha_dash|unique:users,username',
             'email' => 'required|email|max:255|unique:affiliates,email|unique:users,email',
             'phone' => 'required|string|max:30',
             'password' => 'required|string|min:8|confirmed',
