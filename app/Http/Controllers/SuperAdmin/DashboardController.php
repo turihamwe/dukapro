@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\SuperAdmin;
 
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\Business;
 use App\Models\Customer;
@@ -18,7 +19,13 @@ class DashboardController extends Controller
     {
         $stats = [
             'businesses' => Business::count(),
-            'users' => User::whereNotNull('business_id')->where('is_super_admin', false)->where('is_sub_admin', false)->count(),
+            'users' => User::count(),
+            'staff' => User::query()
+                ->whereNotNull('business_id')
+                ->where('is_super_admin', false)
+                ->where('is_sub_admin', false)
+                ->whereIn('role', UserRole::staffRoles())
+                ->count(),
             'products' => Product::count(),
             'customers' => Customer::count(),
             'sales' => Sale::where('status', 'completed')->count(),

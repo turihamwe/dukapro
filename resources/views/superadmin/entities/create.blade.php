@@ -11,7 +11,7 @@
     <form method="POST" action="{{ route('superadmin.entities.store', $entity) }}" class="space-y-4">
         @csrf
 
-        @if(in_array($entity, ['users', 'products', 'customers', 'expenses'], true))
+        @if(in_array($entity, ['staff', 'products', 'customers', 'expenses'], true))
             <div>
                 <label class="mb-1 block text-sm font-medium">Business</label>
                 <select name="business_id" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
@@ -26,7 +26,7 @@
             <input type="text" name="name" value="{{ old('name') }}" required placeholder="Business name" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <input type="email" name="email" value="{{ old('email') }}" placeholder="Email" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <input type="text" name="phone" value="{{ old('phone') }}" placeholder="Phone" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
-        @elseif($entity === 'users')
+        @elseif($entity === 'staff')
             <input type="text" name="name" value="{{ old('name') }}" required placeholder="Full name" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <input type="text" name="username" value="{{ old('username') }}" required placeholder="Username" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <input type="email" name="email" value="{{ old('email') }}" required placeholder="Email" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">

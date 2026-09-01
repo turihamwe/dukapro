@@ -113,4 +113,37 @@ class AuthLoginService
 
         return $user;
     }
+
+    public function findPlatformAdmin(string $login): ?User
+    {
+        $login = trim($login);
+        if ($login === '') {
+            return null;
+        }
+
+        $normalized = strtolower($login);
+        $platformQuery = User::query()->where(function ($q) {
+            $q->where('is_super_admin', true)->orWhere('is_sub_admin', true);
+        });
+
+        $user = (clone $platformQuery)->where('username', $normalized)->first();
+        if ($user) {
+            return $user;
+        }
+
+        return (clone $platformQuery)->where('email', $normalized)->first();
+    }
+
+    public function attemptPlatformAdmin(string $login, string $password, bool $remember = false): ?User
+    {
+        $user = $this->findPlatformAdmin($login);
+
+        if (! $user || ! Hash::check($password, $user->password)) {
+            return null;
+        }
+
+        Auth::login($user, $remember);
+
+        return $user;
+    }
 }

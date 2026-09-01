@@ -18,6 +18,15 @@
             <input type="text" name="phone" value="{{ old('phone', $item->phone) }}" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <input type="text" name="subscription_status" value="{{ old('subscription_status', $item->subscription_status) }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_active" value="1" @checked(old('is_active', $item->is_active))> Active</label>
+        @elseif($entity === 'staff')
+            <input type="text" name="name" value="{{ old('name', $item->name) }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <input type="email" name="email" value="{{ old('email', $item->email) }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <select name="role" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                @foreach($roles as $role)
+                    <option value="{{ $role }}" @selected(old('role', $item->role) === $role)>{{ ucfirst($role) }}</option>
+                @endforeach
+            </select>
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_active" value="1" @checked(old('is_active', $item->is_active))> Active</label>
         @elseif($entity === 'users')
             <input type="text" name="name" value="{{ old('name', $item->name) }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <input type="email" name="email" value="{{ old('email', $item->email) }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">

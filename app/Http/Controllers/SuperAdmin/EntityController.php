@@ -74,7 +74,7 @@ class EntityController extends Controller
             });
         }
 
-        if ($entity === 'users' || $entity === 'products' || $entity === 'customers' || $entity === 'expenses') {
+        if (in_array($entity, ['users', 'staff', 'products', 'customers', 'expenses'], true)) {
             $query->with('business');
         }
 
@@ -134,7 +134,7 @@ class EntityController extends Controller
             'entity' => $entity,
             'config' => $config,
             'businesses' => Business::orderBy('name')->get(['id', 'name']),
-            'roles' => UserRole::all(),
+            'roles' => $entity === 'staff' ? UserRole::staffRoles() : UserRole::all(),
             'categories' => \App\Services\ExpenseService::CATEGORIES,
             'affiliateStatuses' => AffiliateStatus::all(),
             'shareholderStatuses' => ShareholderStatus::all(),
@@ -172,14 +172,14 @@ class EntityController extends Controller
                 ]));
                 break;
 
-            case 'users':
+            case 'staff':
                 $data = $request->validate([
                     'business_id' => 'required|exists:businesses,id',
                     'name' => 'required|string|max:255',
                     'username' => 'required|string|max:50|alpha_dash|unique:users,username',
                     'email' => 'required|email|unique:users,email',
                     'password' => 'required|string|min:8',
-                    'role' => 'required|in:' . implode(',', UserRole::all()),
+                    'role' => 'required|in:' . implode(',', UserRole::staffRoles()),
                 ]);
                 $record = User::create([
                     'business_id' => $data['business_id'],
@@ -191,6 +191,10 @@ class EntityController extends Controller
                     'is_active' => true,
                     'ui_theme' => 'modern',
                 ]);
+                break;
+
+            case 'users':
+                abort(403, 'Create users from the Staff entity or promote existing accounts.');
                 break;
 
             case 'products':
@@ -346,7 +350,7 @@ class EntityController extends Controller
             $item->load('shareholder', 'recorder');
         }
 
-        if ($entity === 'users') {
+        if (in_array($entity, ['users', 'staff'], true)) {
             $item->load('business', 'affiliateProfile', 'shareholderProfile');
         }
 
@@ -387,7 +391,7 @@ class EntityController extends Controller
             'config' => $config,
             'item' => $item,
             'businesses' => Business::orderBy('name')->get(['id', 'name']),
-            'roles' => UserRole::all(),
+            'roles' => $entity === 'staff' ? UserRole::staffRoles() : UserRole::all(),
             'categories' => \App\Services\ExpenseService::CATEGORIES,
             'affiliateStatuses' => AffiliateStatus::all(),
             'shareholderStatuses' => ShareholderStatus::all(),
@@ -415,6 +419,17 @@ class EntityController extends Controller
                     'phone' => 'nullable|string|max:30',
                     'is_active' => 'nullable|boolean',
                     'subscription_status' => 'required|string|max:50',
+                ]);
+                $data['is_active'] = $request->boolean('is_active', true);
+                $item->update($data);
+                break;
+
+            case 'staff':
+                $data = $request->validate([
+                    'name' => 'required|string|max:255',
+                    'email' => 'required|email|unique:users,email,' . $item->id,
+                    'role' => 'required|in:' . implode(',', UserRole::staffRoles()),
+                    'is_active' => 'nullable|boolean',
                 ]);
                 $data['is_active'] = $request->boolean('is_active', true);
                 $item->update($data);

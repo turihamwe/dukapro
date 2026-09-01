@@ -266,10 +266,13 @@ Route::prefix('superadmin')
     ->name('superadmin.')
     ->group(function () {
         Route::get('/', [SuperAdminDashboardController::class, 'index'])->name('dashboard');
-        Route::get('/search', [SuperAdminGlobalSearchController::class, 'index'])->name('search');
-        Route::get('/activity', [ActivityLogController::class, 'index'])->name('activity');
 
-        Route::prefix('entities/{entity}')->where(['entity' => 'businesses|users|products|customers|sales|expenses|affiliates|affiliate_commissions|shareholders|shareholder_earnings'])->name('entities.')->group(function () {
+        Route::middleware('platform.full')->group(function () {
+            Route::get('/search', [SuperAdminGlobalSearchController::class, 'index'])->name('search');
+            Route::get('/activity', [ActivityLogController::class, 'index'])->name('activity');
+        });
+
+        Route::prefix('entities/{entity}')->where(['entity' => 'businesses|users|staff|products|customers|sales|expenses|affiliates|affiliate_commissions|shareholders|shareholder_earnings'])->name('entities.')->group(function () {
             Route::get('/', [SuperAdminEntityController::class, 'index'])->name('index');
             Route::get('/create', [SuperAdminEntityController::class, 'create'])->name('create');
             Route::post('/', [SuperAdminEntityController::class, 'store'])->name('store');

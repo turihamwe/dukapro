@@ -5,7 +5,7 @@
     <aside class="relative hidden w-64 shrink-0 border-r border-gray-200 bg-white lg:block">
         <div class="flex h-16 items-center gap-3 border-b border-gray-200 px-6">
             @include('layouts.partials.dukapro-sidebar-brand', [
-                'subtitle' => 'Platform · ' . (auth()->user()->isSubAdmin() ? 'SubAdmin' : 'SuperAdmin'),
+                'subtitle' => 'Platform',
             ])
         </div>
         <nav class="space-y-1 p-4">
@@ -13,20 +13,24 @@
                class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition {{ request()->routeIs('superadmin.dashboard') ? 'bg-violet-50 text-violet-700' : 'text-gray-700 hover:bg-gray-100' }}">
                 Master Dashboard
             </a>
+            @can('platform-full-access')
             <a href="{{ route('superadmin.search') }}"
                class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition {{ request()->routeIs('superadmin.search') ? 'bg-violet-50 text-violet-700' : 'text-gray-700 hover:bg-gray-100' }}">
                 Global Search
             </a>
+            @endcan
             @foreach(\App\Support\SuperAdmin\EntityRegistry::all() as $key => $entity)
                 <a href="{{ route('superadmin.entities.index', $key) }}"
                    class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition {{ request()->is('superadmin/entities/' . $key . '*') ? 'bg-violet-50 text-violet-700' : 'text-gray-700 hover:bg-gray-100' }}">
                     {{ $entity['label'] }}
                 </a>
             @endforeach
+            @can('platform-full-access')
             <a href="{{ route('superadmin.activity') }}"
                class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition {{ request()->routeIs('superadmin.activity') ? 'bg-violet-50 text-violet-700' : 'text-gray-700 hover:bg-gray-100' }}">
                 Activity Log
             </a>
+            @endcan
             @can('platform-full-access')
                 <a href="{{ route('superadmin.settings') }}"
                    class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition {{ request()->routeIs('superadmin.settings*') ? 'bg-violet-50 text-violet-700' : 'text-gray-700 hover:bg-gray-100' }}">

@@ -12,6 +12,7 @@ use App\Models\Sale;
 use App\Models\Shareholder;
 use App\Models\ShareholderEarning;
 use App\Models\User;
+use App\Enums\UserRole;
 
 class EntityRegistry
 {
@@ -27,15 +28,24 @@ class EntityRegistry
                 'deletable' => true,
             ],
             'users' => [
+                'label' => 'Users',
+                'model' => User::class,
+                'search' => ['name', 'email', 'username', 'role'],
+                'list' => ['name', 'username', 'email', 'role', 'business_id', 'is_super_admin', 'is_sub_admin'],
+                'creatable' => false,
+                'deletable' => true,
+            ],
+            'staff' => [
                 'label' => 'Staff',
                 'model' => User::class,
                 'scope' => function ($query) {
                     return $query->whereNotNull('business_id')
                         ->where('is_super_admin', false)
-                        ->where('is_sub_admin', false);
+                        ->where('is_sub_admin', false)
+                        ->whereIn('role', UserRole::staffRoles());
                 },
                 'search' => ['name', 'email', 'username', 'role'],
-                'list' => ['name', 'email', 'role', 'business_id'],
+                'list' => ['name', 'username', 'email', 'role', 'business_id'],
                 'creatable' => true,
                 'deletable' => true,
             ],

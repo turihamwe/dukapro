@@ -94,26 +94,28 @@ class AuthController extends Controller
 
     public function superAdminLogin(Request $request)
     {
-        $credentials = $request->validate([
-            'email' => 'required|email',
+        $data = $request->validate([
+            'login' => 'required|string|max:255',
             'password' => 'required',
         ]);
 
-        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
-            return back()->withErrors(['email' => 'Invalid credentials.'])->onlyInput('email');
+        $user = $this->authLoginService->attemptPlatformAdmin(
+            $data['login'],
+            $data['password'],
+            $request->boolean('remember')
+        );
+
+        if (! $user) {
+            return back()
+                ->withErrors(['login' => 'Invalid username, email, or password.'])
+                ->onlyInput('login');
         }
 
-        $user = Auth::user();
         $request->session()->regenerate();
-
-        if (! $user->isPlatformAdmin()) {
-            Auth::logout();
-            return back()->withErrors(['email' => 'This portal is for platform administrators only.']);
-        }
 
         SystemAuditLogger::record(
             'login',
-            ($user->isSubAdmin() ? 'SubAdmin' : 'SuperAdmin') . ' login: ' . $user->email,
+            'Platform admin login: ' . $user->email,
             null,
             $user->id
         );

@@ -7,10 +7,8 @@
     <div>
         <h1 class="text-2xl font-bold tracking-tight">Master Dashboard</h1>
         <p class="mt-1 text-sm text-gray-500">Global visibility across all businesses and platform data</p>
-        @if(auth()->user()->isSubAdmin())
-            <p class="mt-2 inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800">SubAdmin — view &amp; create only</p>
-        @endif
     </div>
+    @can('platform-full-access')
     <form method="GET" action="{{ route('superadmin.search') }}" class="w-full max-w-xl">
         <div class="flex gap-2">
             <input type="search" name="q" value="{{ request('q') }}" placeholder="Global search businesses, users, products…"
@@ -18,6 +16,7 @@
             <button type="submit" class="shrink-0 rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-500">Search</button>
         </div>
     </form>
+    @endcan
 </div>
 
 <div class="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4 xl:grid-cols-6">
@@ -26,8 +25,12 @@
         <p class="mt-2 text-2xl font-bold">{{ number_format($stats['businesses']) }}</p>
     </div>
     <div class="rounded-xl border border-gray-200 bg-white p-4">
-        <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Tenant Users</p>
+        <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Users</p>
         <p class="mt-2 text-2xl font-bold">{{ number_format($stats['users']) }}</p>
+    </div>
+    <div class="rounded-xl border border-gray-200 bg-white p-4">
+        <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Staff</p>
+        <p class="mt-2 text-2xl font-bold">{{ number_format($stats['staff']) }}</p>
     </div>
     <div class="rounded-xl border border-gray-200 bg-white p-4">
         <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Products</p>
@@ -110,6 +113,7 @@
 </div>
 
 @if($stats['recent_activity']->isNotEmpty())
+@can('platform-full-access')
 <div class="mt-8 overflow-hidden rounded-xl border border-gray-200 bg-white">
     <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
         <h2 class="font-semibold">Recent Platform Activity</h2>
@@ -127,5 +131,6 @@
         @endforeach
     </ul>
 </div>
+@endcan
 @endif
 @endsection
