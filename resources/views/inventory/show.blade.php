@@ -48,7 +48,7 @@
         @if(! $isVariable)
             <div>
                 <dt class="text-xs font-medium uppercase tracking-wide text-gray-500">Legacy stock</dt>
-                <dd class="mt-1 text-sm text-gray-900">{{ $product->stock_quantity }} {{ $product->measurement_unit }}</dd>
+                <dd class="mt-1 text-sm text-gray-900">{{ format_unit_quantity($product->stock_quantity, $product->measurement_unit, $product->business_id) }}</dd>
             </div>
             <div>
                 <dt class="text-xs font-medium uppercase tracking-wide text-gray-500">Default sell price</dt>
@@ -62,7 +62,7 @@
             @endcan
             <div>
                 <dt class="text-xs font-medium uppercase tracking-wide text-gray-500">Total available</dt>
-                <dd class="mt-1 text-sm font-semibold text-indigo-700">{{ $product->totalStockQuantity() }} {{ $product->measurement_unit }}</dd>
+                <dd class="mt-1 text-sm font-semibold text-indigo-700">{{ format_unit_quantity($product->totalStockQuantity(), $product->measurement_unit, $product->business_id) }}</dd>
             </div>
         @endif
     </dl>

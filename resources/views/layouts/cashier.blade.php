@@ -41,7 +41,7 @@
     </main>
 
     <nav class="cashier-bottom-nav fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white/95 backdrop-blur-md" style="padding-bottom: env(safe-area-inset-bottom);">
-        <div class="mx-auto grid max-w-lg grid-cols-4 gap-1 px-2 py-2">
+        <div class="mx-auto grid max-w-lg grid-cols-5 gap-1 px-2 py-2">
             @can('access-pos')
                 <a href="{{ tenant_route('tenant.pos.index') }}"
                    class="flex min-h-[56px] flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-semibold {{ request()->routeIs('tenant.pos.*') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600' }}">
@@ -58,8 +58,14 @@
             @endif
             @can('record-expenses')
                 <a href="{{ tenant_route('tenant.expenses.create') }}"
-                   class="flex min-h-[56px] flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-semibold {{ request()->routeIs('tenant.expenses.create') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600' }}">
+                   class="flex min-h-[56px] flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-semibold {{ request()->routeIs('tenant.expenses.*') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600' }}">
                     <span class="mb-0.5 text-xl leading-none">📝</span> Expense
+                </a>
+            @endcan
+            @can('log-damages')
+                <a href="{{ tenant_route('tenant.damages.index') }}"
+                   class="flex min-h-[56px] flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-semibold {{ request()->routeIs('tenant.damages.*') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600' }}">
+                    <span class="mb-0.5 text-xl leading-none">💥</span> Damage
                 </a>
             @endcan
             @can('submit-reconciliation')

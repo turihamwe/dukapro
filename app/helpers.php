@@ -298,3 +298,69 @@ if (! function_exists('show_subscription_expired_overlay')) {
         return $user->business->isSubscriptionExpired();
     }
 }
+
+if (! function_exists('format_unit_quantity')) {
+    function format_unit_quantity(float $quantity, string $unit, ?int $businessId = null): string
+    {
+        return \App\Support\MeasurementUnitLabel::formatQuantity($quantity, $unit, $businessId);
+    }
+}
+
+if (! function_exists('whatsapp_support_digits')) {
+    function whatsapp_support_digits(): ?string
+    {
+        $phone = trim((string) \App\Models\SystemSetting::get('support_phone', ''));
+        $digits = preg_replace('/\D+/', '', $phone);
+
+        if ($digits === '') {
+            return null;
+        }
+
+        if (strlen($digits) === 9) {
+            return '256' . $digits;
+        }
+
+        if (strlen($digits) === 10 && $digits[0] === '0') {
+            return '256' . substr($digits, 1);
+        }
+
+        return $digits;
+    }
+}
+
+if (! function_exists('whatsapp_support_url')) {
+    function whatsapp_support_url(?string $message = null): string
+    {
+        $digits = whatsapp_support_digits() ?: '256755825974';
+        $url = 'https://wa.me/' . $digits;
+
+        if ($message) {
+            $url .= '?text=' . rawurlencode($message);
+        }
+
+        return $url;
+    }
+}
+
+if (! function_exists('whatsapp_float_enabled')) {
+    function whatsapp_float_enabled(): bool
+    {
+        return \App\Models\SystemSetting::get('whatsapp_float_enabled', '1') === '1'
+            && whatsapp_support_digits() !== null;
+    }
+}
+
+if (! function_exists('should_show_whatsapp_float')) {
+    function should_show_whatsapp_float(): bool
+    {
+        if (! whatsapp_float_enabled()) {
+            return false;
+        }
+
+        if (request()->routeIs('superadmin.*')) {
+            return false;
+        }
+
+        return auth()->check() || request()->routeIs('login', 'register', 'login.*', 'register.*');
+    }
+}

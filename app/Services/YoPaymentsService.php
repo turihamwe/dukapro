@@ -26,7 +26,9 @@ class YoPaymentsService
 
     public function isSandbox(): bool
     {
-        return $this->config()['environment'] !== 'live';
+        $keys = config('yopayments.settings_keys');
+
+        return SystemSetting::get($keys['environment'], config('yopayments.environment')) !== 'live';
     }
 
     public function shouldSimulate(): bool
@@ -37,11 +39,15 @@ class YoPaymentsService
     public function config(): array
     {
         $keys = config('yopayments.settings_keys');
+        $environment = SystemSetting::get($keys['environment'], config('yopayments.environment'));
+        $sandbox = $environment !== 'live';
 
         return [
             'enabled' => $this->boolSetting($keys['enabled'], config('yopayments.enabled')),
-            'environment' => SystemSetting::get($keys['environment'], config('yopayments.environment')),
-            'api_url' => $this->apiUrl(),
+            'environment' => $environment,
+            'api_url' => $sandbox
+                ? config('yopayments.sandbox_api_url')
+                : config('yopayments.live_api_url'),
             'api_username' => SystemSetting::get($keys['api_username'], config('yopayments.api_username')),
             'api_password' => SystemSetting::get($keys['api_password'], config('yopayments.api_password')),
             'account_id' => SystemSetting::get($keys['account_id'], config('yopayments.account_id')),

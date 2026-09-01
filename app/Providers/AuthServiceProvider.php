@@ -8,6 +8,7 @@ use App\Models\Brand;
 use App\Models\Customer;
 use App\Models\Damage;
 use App\Models\Expense;
+use App\Models\ExpenseCategory;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SoldByUnit;
@@ -17,6 +18,7 @@ use App\Policies\AuditLogPolicy;
 use App\Policies\CustomerPolicy;
 use App\Policies\DamagePolicy;
 use App\Policies\ExpensePolicy;
+use App\Policies\ExpenseCategoryPolicy;
 use App\Policies\ProductPolicy;
 use App\Policies\SalePolicy;
 use App\Policies\SoldByUnitPolicy;
@@ -36,6 +38,7 @@ class AuthServiceProvider extends ServiceProvider
         User::class => UserPolicy::class,
         AuditLog::class => AuditLogPolicy::class,
         Expense::class => ExpensePolicy::class,
+        ExpenseCategory::class => ExpenseCategoryPolicy::class,
         Damage::class => DamagePolicy::class,
     ];
 
@@ -81,14 +84,14 @@ class AuthServiceProvider extends ServiceProvider
 
         Gate::define('create-inventory', function (User $user) {
             if ($user->isCashier()) {
-                return true;
+                return false;
             }
 
             if ($user->canSwitchToCashierMode() && CashierMode::isActive()) {
-                return true;
+                return false;
             }
 
-            return in_array($user->role, [UserRole::OWNER, UserRole::MANAGER, UserRole::SUPERVISOR, UserRole::CASHIER], true);
+            return in_array($user->role, [UserRole::OWNER, UserRole::MANAGER, UserRole::SUPERVISOR], true);
         });
 
         Gate::define('update-inventory', function (User $user) {
@@ -156,6 +159,14 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('log-damages', function (User $user) {
+            if ($user->isCashier()) {
+                return true;
+            }
+
+            if ($user->canSwitchToCashierMode() && CashierMode::isActive()) {
+                return true;
+            }
+
             return $user->isOwner() || $user->isManager();
         });
 

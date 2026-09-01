@@ -39,6 +39,8 @@ class TenantRegistrationService
                 'employees_onboarding_complete' => false,
             ]);
 
+            app(ExpenseService::class)->seedDefaultCategories((int) $business->id);
+
             return User::create([
                 'business_id' => $business->id,
                 'name' => $data['name'],

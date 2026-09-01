@@ -40,6 +40,7 @@
 </head>
 <body class="h-full bg-gray-50 text-gray-900 antialiased">
     @yield('body')
+    @include('layouts.partials.whatsapp-float')
     @stack('scripts')
     <script>
     (function () {

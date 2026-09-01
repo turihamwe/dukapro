@@ -13,9 +13,6 @@
             ->count();
     }
     $notificationCount = min(99, max($lowStockCount, 0));
-    $supportPhone = \App\Models\SystemSetting::get('support_phone', '0755-825974');
-    $supportEmail = \App\Models\SystemSetting::get('support_email', 'support@dukapro.net');
-    $supportWebsite = \App\Models\SystemSetting::get('support_website', 'www.dukapro.net');
     $navActive = 'bg-emerald-500/15 text-emerald-400 border-l-[3px] border-emerald-500';
     $navIdle = 'text-slate-300 hover:bg-white/5 hover:text-white border-l-[3px] border-transparent';
 @endphp
@@ -134,13 +131,11 @@
 
         {{-- Footer --}}
         <footer class="border-t border-gray-200 bg-white px-4 py-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col gap-3 text-xs text-gray-500 sm:flex-row sm:items-center sm:justify-between">
-                <div class="flex flex-wrap gap-x-4 gap-y-1">
-                    <span>Phone: {{ $supportPhone }}</span>
-                    <span>Email: {{ $supportEmail }}</span>
-                    <span>Website: {{ $supportWebsite }}</span>
-                </div>
-                <p class="text-gray-400">Trusted by 5,000+ Small Businesses · Secure · Cloud-Based · 24/7 Support</p>
+            <div class="flex flex-col gap-2 text-xs text-gray-500 sm:flex-row sm:items-center sm:justify-between">
+                <p>
+                    For any inquiries, contact us on
+                    <a href="{{ whatsapp_support_url() }}" target="_blank" rel="noopener noreferrer" class="font-medium text-emerald-600 hover:text-emerald-700">WhatsApp</a>
+                </p>
             </div>
         </footer>
     </div>

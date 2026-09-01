@@ -74,6 +74,7 @@ class ReconciliationController extends Controller
             'reconciliation_date' => 'required|date',
             'actual_cash' => 'required|numeric|min:0',
             'actual_mobile_money' => 'required|numeric|min:0',
+            'actual_bank_other' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
         ]);
 
@@ -82,7 +83,7 @@ class ReconciliationController extends Controller
         AuditLogger::record('reconciliation_submitted', $reconciliation, null, $reconciliation->toArray());
 
         return redirect()->to(tenant_route('tenant.reconciliation.show', ['reconciliation' => $reconciliation]))
-            ->with('success', 'End-of-day reconciliation submitted. Cash variance: ' . format_money($reconciliation->cash_variance));
+            ->with('success', 'End-of-day reconciliation submitted. Missing money: ' . format_money($reconciliation->missing_money ?? 0));
     }
 
     protected function authorizeReconciliation(Request $request, EndOfDayReconciliation $reconciliation): void

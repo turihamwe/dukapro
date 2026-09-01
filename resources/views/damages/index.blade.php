@@ -1,22 +1,24 @@
-@extends('layouts.admin')
+@extends(auth()->user()->usesCashierExperience() ? 'layouts.cashier' : 'layouts.admin')
 
 @section('title', 'Damages & Write-offs')
 @section('container_class', 'max-w-4xl')
 
 @section('content')
-<x-page-header title="Damages & Write-offs" subtitle="Log broken, expired, or spilled stock">
+<x-page-header title="Damages & Write-offs" subtitle="Log broken, expired, or spilled stock for today">
     <x-slot name="actions">
         <x-button variant="primary" size="sm" type="button" id="open-damage-modal">+ Log Damage</x-button>
     </x-slot>
 </x-page-header>
 
-<form method="GET" class="mb-6 flex flex-wrap items-end gap-3">
-    <x-input type="date" name="date" label="Filter by date" value="{{ $date }}" class="w-auto" />
-    <x-button variant="secondary" size="sm" type="submit">Apply</x-button>
-    @if(request('date'))
-        <a href="{{ tenant_route('tenant.damages.index') }}" class="text-sm text-gray-500 hover:text-gray-700">Today</a>
-    @endif
-</form>
+@if(! auth()->user()->usesCashierExperience())
+    <form method="GET" class="mb-6 flex flex-wrap items-end gap-3">
+        <x-input type="date" name="date" label="Filter by date" value="{{ $date }}" class="w-auto" />
+        <x-button variant="secondary" size="sm" type="submit">Apply</x-button>
+        @if(request('date'))
+            <a href="{{ tenant_route('tenant.damages.index') }}" class="text-sm text-gray-500 hover:text-gray-700">Today</a>
+        @endif
+    </form>
+@endif
 
 <div class="mb-6 grid grid-cols-2 gap-4">
     <x-stat-card label="Items Written Off" :value="$summary['total_items']" accent="amber" />
@@ -30,7 +32,7 @@
                 <div class="min-w-0">
                     <p class="font-medium text-gray-900">{{ $damage->product->name }}</p>
                     <p class="text-xs text-gray-500">
-                        {{ ucfirst($damage->reason) }} · {{ $damage->quantity }} {{ $damage->product->measurement_unit }}
+                        {{ ucfirst($damage->reason) }} · {{ format_unit_quantity($damage->quantity, $damage->product->measurement_unit, $businessId) }}
                         · by {{ $damage->user->name }}
                     </p>
                 </div>
@@ -41,13 +43,14 @@
             </div>
         </x-card>
     @empty
-        <x-card class="text-center text-sm text-gray-500">No damages recorded for this date.</x-card>
+        <x-card class="text-center text-sm text-gray-500">No damages recorded for {{ \Carbon\Carbon::parse($date)->isToday() ? 'today' : \Carbon\Carbon::parse($date)->format('M j, Y') }}.</x-card>
     @endforelse
 </div>
 
-<div class="mt-6">{{ $damages->links() }}</div>
+@if(! auth()->user()->usesCashierExperience())
+    <div class="mt-6">{{ $damages->links() }}</div>
+@endif
 
-{{-- Log damage modal --}}
 <div id="damage-modal" class="fixed inset-0 z-50 hidden" aria-hidden="true">
     <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" id="damage-modal-backdrop"></div>
     <div class="flex min-h-full items-end justify-center p-4 sm:items-center">
@@ -64,12 +67,12 @@
                     <option value="">Select product…</option>
                     @foreach($products as $product)
                         <option value="{{ $product->id }}" {{ old('product_id') == $product->id ? 'selected' : '' }}>
-                            {{ $product->name }} ({{ $product->stock_quantity }} {{ $product->measurement_unit }} in stock)
+                            {{ $product->displayName() }} ({{ format_unit_quantity($product->available_stock, $product->measurement_unit, $businessId) }} in stock)
                         </option>
                     @endforeach
                 </x-select>
 
-                <x-input type="number" step="0.001" min="0.001" name="quantity" label="Quantity Damaged" value="{{ old('quantity') }}" required />
+                <x-input type="number" step="1" min="1" name="quantity" label="Quantity Damaged" value="{{ old('quantity', 1) }}" required />
 
                 <x-select name="reason" label="Reason" required>
                     @foreach($reasons as $value => $label)
@@ -77,9 +80,9 @@
                     @endforeach
                 </x-select>
 
-                <x-input type="date" name="damage_date" label="Date" value="{{ old('damage_date', $date) }}" required />
+                <input type="hidden" name="damage_date" value="{{ $date }}">
 
-                <p class="text-xs text-gray-500">Stock will be reduced automatically. Loss is calculated from the product cost price.</p>
+                <p class="text-xs text-gray-500">Stock will be reduced automatically using FIFO costing.</p>
 
                 <div class="flex gap-3 pt-2">
                     <x-button variant="primary" type="submit" class="flex-1">Record Damage</x-button>

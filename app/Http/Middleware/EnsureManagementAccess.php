@@ -33,16 +33,7 @@ class EnsureManagementAccess
     {
         return $request->routeIs(
             'tenant.inventory.index',
-            'tenant.inventory.create',
-            'tenant.inventory.store',
             'tenant.inventory.catalog',
-            'tenant.inventory.units.quick-store',
-            'tenant.inventory.attributes.quick-store',
-            'tenant.inventory.attributes.quick-value',
-            'tenant.brands.index',
-            'tenant.brands.create',
-            'tenant.brands.store',
-            'tenant.brands.quick-store',
             'tenant.reconciliation.index',
             'tenant.reconciliation.create',
             'tenant.reconciliation.store',
@@ -50,6 +41,9 @@ class EnsureManagementAccess
             'tenant.reconciliation.print',
             'tenant.expenses.create',
             'tenant.expenses.store',
+            'tenant.expenses.categories.quick-store',
+            'tenant.damages.index',
+            'tenant.damages.store',
             'tenant.pos.index',
             'tenant.pos.search',
             'tenant.pos.checkout'

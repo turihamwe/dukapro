@@ -53,15 +53,18 @@ class ExpenseController extends Controller
         }
 
         $periodTotal = (float) $totalQuery->sum('amount');
-        $categories = ExpenseService::CATEGORIES;
+        $categories = $this->expenseService->categoriesForBusiness((int) $business->id);
 
         return view('expenses.index', compact('expenses', 'categories', 'search', 'period', 'label', 'periodTotal', 'business'));
     }
 
     public function create()
     {
+        $businessId = (int) auth()->user()->business_id;
+
         return view('expenses.create', [
-            'categories' => ExpenseService::CATEGORIES,
+            'categories' => $this->expenseService->categoriesForBusiness($businessId),
+            'quickCategoryUrl' => tenant_route('tenant.expenses.categories.quick-store'),
         ]);
     }
 
@@ -83,7 +86,7 @@ class ExpenseController extends Controller
 
         if ($request->user()->usesCashierExperience()) {
             return redirect()
-                ->to(tenant_route('tenant.pos.index'))
+                ->to(tenant_route('tenant.expenses.create'))
                 ->with('success', 'Expense recorded.');
         }
 
@@ -96,7 +99,7 @@ class ExpenseController extends Controller
     {
         return view('expenses.edit', [
             'expense' => $expense,
-            'categories' => ExpenseService::CATEGORIES,
+            'categories' => $this->expenseService->categoriesForBusiness((int) $business->id),
         ]);
     }
 

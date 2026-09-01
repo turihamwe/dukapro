@@ -31,12 +31,14 @@ class ReconciliationService
 
         $expectedCash = $sales->where('payment_method', 'cash')->sum('total');
         $expectedMobileMoney = $sales->where('payment_method', 'mobile_money')->sum('total');
+        $expectedBankOther = $sales->where('payment_method', 'bank')->sum('total');
 
         $dailySummary = $this->calculateDailySummary($businessId, $date);
 
         return [
             'expected_cash' => round($expectedCash, 2),
             'expected_mobile_money' => round($expectedMobileMoney, 2),
+            'expected_bank_other' => round($expectedBankOther, 2),
             'sale_count' => $sales->count(),
             'total_sales' => $dailySummary['total_sales'],
             'total_expenses' => $dailySummary['total_expenses'],
@@ -82,6 +84,20 @@ class ReconciliationService
         ];
     }
 
+    public function calculateMissingMoney(
+        float $expectedCash,
+        float $actualCash,
+        float $actualMobile,
+        float $actualBankOther,
+        float $totalExpenses,
+        float $totalDamages
+    ): float {
+        return round(
+            $expectedCash - $actualCash - $actualMobile - $actualBankOther - $totalExpenses - $totalDamages,
+            2
+        );
+    }
+
     public function submit(User $user, array $data): EndOfDayReconciliation
     {
         $date = Carbon::parse($data['reconciliation_date']);
@@ -90,6 +106,16 @@ class ReconciliationService
 
         $actualCash = (float) $data['actual_cash'];
         $actualMobile = (float) $data['actual_mobile_money'];
+        $actualBankOther = (float) ($data['actual_bank_other'] ?? 0);
+
+        $missingMoney = $this->calculateMissingMoney(
+            $expected['expected_cash'],
+            $actualCash,
+            $actualMobile,
+            $actualBankOther,
+            $dailySummary['total_expenses'],
+            $dailySummary['total_damages']
+        );
 
         return EndOfDayReconciliation::updateOrCreate(
             [
@@ -100,10 +126,13 @@ class ReconciliationService
             [
                 'expected_cash' => $expected['expected_cash'],
                 'expected_mobile_money' => $expected['expected_mobile_money'],
+                'expected_bank_other' => $expected['expected_bank_other'],
                 'actual_cash' => $actualCash,
                 'actual_mobile_money' => $actualMobile,
+                'actual_bank_other' => $actualBankOther,
                 'cash_variance' => round($actualCash - $expected['expected_cash'], 2),
                 'mobile_variance' => round($actualMobile - $expected['expected_mobile_money'], 2),
+                'missing_money' => $missingMoney,
                 'total_sales' => $dailySummary['total_sales'],
                 'total_expenses' => $dailySummary['total_expenses'],
                 'total_damages' => $dailySummary['total_damages'],
@@ -144,24 +173,20 @@ class ReconciliationService
 
         $business = $reconciliation->business;
         $dateLabel = $reconciliation->reconciliation_date->format('M j, Y');
-        $damages = $reconciliation->total_damages ?? 0;
 
         $message = implode("\n", array_filter([
             "EOD Report — {$business->name}",
             "Date: {$dateLabel}",
             "Cashier: {$reconciliation->user->name}",
             '',
-            'Daily balancing:',
-            '• Total sales: ' . format_money($reconciliation->total_sales ?? 0, $business),
-            '• Expenses: ' . format_money($reconciliation->total_expenses ?? 0, $business),
-            '• Damages: ' . format_money($damages, $business),
-            '• Net income: ' . format_money($reconciliation->net_income ?? 0, $business),
-            '',
-            'Cash drawer:',
+            'Balancing:',
             '• Expected cash: ' . format_money($reconciliation->expected_cash, $business),
             '• Actual cash: ' . format_money($reconciliation->actual_cash, $business),
-            '• Cash variance: ' . format_money($reconciliation->cash_variance, $business),
-            '• Mobile variance: ' . format_money($reconciliation->mobile_variance, $business),
+            '• Mobile money: ' . format_money($reconciliation->actual_mobile_money, $business),
+            '• Bank & other: ' . format_money($reconciliation->actual_bank_other ?? 0, $business),
+            '• Expenses: ' . format_money($reconciliation->total_expenses ?? 0, $business),
+            '• Damages: ' . format_money($reconciliation->total_damages ?? 0, $business),
+            '• Missing money: ' . format_money($reconciliation->missing_money ?? 0, $business),
         ]));
 
         return 'https://wa.me/' . $digits . '?text=' . rawurlencode($message);

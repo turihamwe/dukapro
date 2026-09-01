@@ -162,8 +162,7 @@
                             <p class="text-xs text-gray-500">{{ $report->reconciliation_date->format('M d, Y') }}</p>
                         </div>
                         <div class="text-right text-xs">
-                            <p>Cash <span class="{{ $report->cash_variance >= 0 ? 'text-emerald-600' : 'text-red-600' }} font-medium">@money($report->cash_variance)</span></p>
-                            <p>M-Pesa <span class="{{ $report->mobile_variance >= 0 ? 'text-emerald-600' : 'text-red-600' }} font-medium">@money($report->mobile_variance)</span></p>
+                            <p>Missing <span class="{{ ($report->missing_money ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600' }} font-medium">@money($report->missing_money ?? 0)</span></p>
                         </div>
                     </li>
                 @endforeach

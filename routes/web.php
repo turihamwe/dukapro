@@ -28,6 +28,7 @@ use App\Http\Controllers\SuperAdmin\EntityController as SuperAdminEntityControll
 use App\Http\Controllers\SuperAdmin\GlobalSearchController as SuperAdminGlobalSearchController;
 use App\Http\Controllers\SuperAdmin\ImpersonationController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\HomeRedirectController;
 use App\Http\Controllers\InventoryController;
@@ -114,14 +115,9 @@ Route::middleware(['maintenance'])->group(function () {
         ->name('tenant.')
         ->group(function () {
             Route::middleware(['subscription.active'])->group(function () {
-                Route::middleware(['can:view-dashboard', 'management.access'])->group(function () {
+                    Route::middleware(['can:view-dashboard', 'management.access'])->group(function () {
                     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
                     Route::get('/dashboard/analytics', [DashboardController::class, 'analytics'])->name('dashboard.analytics');
-
-                    Route::middleware(['can:log-damages'])->prefix('damages')->name('damages.')->group(function () {
-                        Route::get('/', [DamageController::class, 'index'])->name('index');
-                        Route::post('/', [DamageController::class, 'store'])->name('store');
-                    });
 
                     Route::middleware(['can:view-sales-reports'])->prefix('reports/sales')->name('reports.sales.')->group(function () {
                         Route::get('/', [SalesReportController::class, 'index'])->name('index');
@@ -227,6 +223,12 @@ Route::middleware(['maintenance'])->group(function () {
                 Route::middleware(['can:record-expenses'])->group(function () {
                     Route::get('/expenses/create', [ExpenseController::class, 'create'])->name('expenses.create');
                     Route::post('/expenses', [ExpenseController::class, 'store'])->name('expenses.store');
+                    Route::post('/expenses/categories/quick', [ExpenseCategoryController::class, 'quickStore'])->name('expenses.categories.quick-store');
+                });
+
+                Route::middleware(['can:log-damages'])->prefix('damages')->name('damages.')->group(function () {
+                    Route::get('/', [DamageController::class, 'index'])->name('index');
+                    Route::post('/', [DamageController::class, 'store'])->name('store');
                 });
 
                 Route::middleware(['can:switch-cashier-mode'])->prefix('cashier-mode')->name('cashier-mode.')->group(function () {

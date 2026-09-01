@@ -25,6 +25,7 @@ class SettingsController extends Controller
             'support_email' => 'required|email|max:255',
             'support_phone' => 'nullable|string|max:30',
             'support_website' => 'nullable|string|max:255',
+            'whatsapp_float_enabled' => 'nullable|boolean',
             'mpesa_api_key' => 'nullable|string|max:255',
             'airtel_api_key' => 'nullable|string|max:255',
             'mtn_api_key' => 'nullable|string|max:255',
@@ -41,6 +42,7 @@ class SettingsController extends Controller
         SystemSetting::set('support_email', $data['support_email']);
         SystemSetting::set('support_phone', $data['support_phone'] ?? '');
         SystemSetting::set('support_website', $data['support_website'] ?? '');
+        SystemSetting::set('whatsapp_float_enabled', $request->boolean('whatsapp_float_enabled') ? '1' : '0');
         SystemSetting::set('mpesa_api_key', $data['mpesa_api_key'] ?? '');
         SystemSetting::set('airtel_api_key', $data['airtel_api_key'] ?? '');
         SystemSetting::set('mtn_api_key', $data['mtn_api_key'] ?? '');

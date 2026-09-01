@@ -52,6 +52,17 @@
             </div>
         </div>
 
+        <div class="flex items-start gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
+            <input type="hidden" name="whatsapp_float_enabled" value="0">
+            <input type="checkbox" name="whatsapp_float_enabled" id="whatsapp_float_enabled" value="1"
+                   {{ old('whatsapp_float_enabled', $settings['whatsapp_float_enabled'] ?? '1') === '1' ? 'checked' : '' }}
+                   class="mt-0.5 rounded border-gray-300 text-violet-600 focus:ring-violet-500">
+            <div>
+                <label for="whatsapp_float_enabled" class="block text-sm font-medium text-gray-900">Floating WhatsApp support button</label>
+                <p class="mt-0.5 text-xs text-gray-500">Shows a WhatsApp contact button on tenant and auth pages. Uses the support phone number above.</p>
+            </div>
+        </div>
+
         <div class="flex items-start gap-3 rounded-lg border border-amber-900/50 bg-amber-950/30 p-4">
             <input type="hidden" name="maintenance_mode" value="0">
             <input type="checkbox" name="maintenance_mode" id="maintenance_mode" value="1"

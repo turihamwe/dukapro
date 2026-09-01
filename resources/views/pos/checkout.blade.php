@@ -28,7 +28,7 @@
                             <p class="mt-0.5 truncate text-[10px] font-medium uppercase tracking-wide text-gray-400">{{ $product->sku }}</p>
                         @endif
                         <p class="mt-1 text-base font-bold text-indigo-600 sm:text-lg">@money($product->fifo_price)</p>
-                        <p class="mt-1 text-[11px] text-gray-500">Stock: {{ (int) $product->available_stock }} {{ $product->measurement_unit }}</p>
+                        <p class="mt-1 text-[11px] text-gray-500">Stock: {{ format_unit_quantity($product->available_stock, $product->measurement_unit, auth()->user()->business_id) }}</p>
                     </button>
                 </div>
             @empty

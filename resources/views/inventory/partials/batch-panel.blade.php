@@ -19,7 +19,7 @@
         </div>
         <div class="text-right">
             <p class="text-xs text-gray-500">Total stock</p>
-            <p class="text-lg font-bold text-indigo-700">{{ $totalStock }} {{ $sellable->measurement_unit }}</p>
+            <p class="text-lg font-bold text-indigo-700">{{ format_unit_quantity($totalStock, $sellable->measurement_unit, $sellable->business_id) }}</p>
             @if($hasBatches)
                 <span class="mt-1 inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-700">
                     {{ $activeBatches->count() }} active {{ Str::plural('batch', $activeBatches->count()) }}
