@@ -15,7 +15,7 @@ class EnsureTenantAccess
         /** @var Business|null $business */
         $business = $request->route('business');
 
-        if (! $user || ! $user->business_id || $user->isPlatformAdmin()) {
+        if (! $user || ! $user->business_id || $user->isPlatformAdmin() || $user->isAffiliate() || $user->isShareholder()) {
             abort(403, 'You must belong to a business to access this area.');
         }
 

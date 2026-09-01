@@ -35,9 +35,24 @@ class EnsureManagementAccess
             'tenant.inventory.index',
             'tenant.inventory.create',
             'tenant.inventory.store',
+            'tenant.inventory.catalog',
+            'tenant.inventory.units.quick-store',
+            'tenant.inventory.attributes.quick-store',
+            'tenant.inventory.attributes.quick-value',
+            'tenant.brands.index',
+            'tenant.brands.create',
+            'tenant.brands.store',
+            'tenant.brands.quick-store',
             'tenant.reconciliation.index',
+            'tenant.reconciliation.create',
+            'tenant.reconciliation.store',
             'tenant.reconciliation.show',
-            'tenant.reconciliation.print'
+            'tenant.reconciliation.print',
+            'tenant.expenses.create',
+            'tenant.expenses.store',
+            'tenant.pos.index',
+            'tenant.pos.search',
+            'tenant.pos.checkout'
         );
     }
 }

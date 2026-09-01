@@ -16,6 +16,27 @@
     @endif
 </div>
 
+@if($entity === 'shareholders' && ! empty($shareStats))
+    <div class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="rounded-xl border border-gray-200 bg-white p-4">
+            <p class="text-xs uppercase text-gray-500">Shares allocated</p>
+            <p class="mt-2 text-2xl font-bold">{{ number_format($shareStats['allocated_shares'], 2) }} / {{ number_format($shareStats['total_shares'], 0) }}</p>
+        </div>
+        <div class="rounded-xl border border-gray-200 bg-white p-4">
+            <p class="text-xs uppercase text-gray-500">Shares remaining</p>
+            <p class="mt-2 text-2xl font-bold text-violet-600">{{ number_format($shareStats['remaining_shares'], 2) }}</p>
+        </div>
+        <div class="rounded-xl border border-gray-200 bg-white p-4">
+            <p class="text-xs uppercase text-gray-500">Shareholders</p>
+            <p class="mt-2 text-2xl font-bold">{{ $shareStats['shareholder_count'] }} / {{ $shareStats['max_shareholders'] }}</p>
+        </div>
+        <div class="rounded-xl border border-gray-200 bg-white p-4">
+            <p class="text-xs uppercase text-gray-500">Price per share</p>
+            <p class="mt-2 text-2xl font-bold">UGX {{ number_format($shareStats['price_per_share'], 0) }}</p>
+        </div>
+    </div>
+@endif
+
 <form method="GET" class="mb-4 flex gap-2">
     <input type="search" name="q" value="{{ request('q') }}" placeholder="Search {{ strtolower($config['label']) }}…"
            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
@@ -43,6 +64,20 @@
                                 @php $value = data_get($record, $column); @endphp
                                 @if($column === 'business_id' && $record->relationLoaded('business') && $record->business)
                                     {{ $record->business->name }}
+                                @elseif($column === 'affiliate_id' && $record->relationLoaded('affiliate') && $record->affiliate)
+                                    {{ $record->affiliate->name }}
+                                @elseif($column === 'business_type' && $value)
+                                    {{ \App\Enums\BusinessType::label($value) }}
+                                @elseif($column === 'shareholder_id' && $record->relationLoaded('shareholder') && $record->shareholder)
+                                    {{ $record->shareholder->name }}
+                                @elseif(in_array($column, ['capital_invested', 'total_earnings', 'amount', 'payment_amount', 'commission_amount'], true))
+                                    {{ is_numeric($value) ? 'UGX ' . number_format((float) $value, 0) : $value }}
+                                @elseif($column === 'shares_owned')
+                                    {{ is_numeric($value) ? number_format((float) $value, 2) : $value }}
+                                @elseif($column === 'contract_completed')
+                                    {{ $value ? 'Yes' : 'No' }}
+                                @elseif($column === 'commission_rate')
+                                    {{ is_numeric($value) ? number_format((float) $value * 100, 1) . '%' : $value }}
                                 @elseif($value instanceof \Carbon\Carbon)
                                     {{ $value->format('M j, Y') }}
                                 @elseif(is_bool($value))
@@ -55,6 +90,25 @@
                             </td>
                         @endforeach
                         <td class="px-4 py-3 text-right whitespace-nowrap">
+                            @if($entity === 'users')
+                                @can('platform-full-access')
+                                    @if(app(\App\Services\UserPromotionService::class)->canPromoteToAffiliate($record))
+                                        <form method="POST" action="{{ route('superadmin.users.promote-affiliate', $record) }}" class="inline"
+                                              onsubmit="return confirm('Promote {{ $record->name }} to Affiliate?')">
+                                            @csrf
+                                            <button type="submit" class="text-indigo-600 hover:text-indigo-800" title="Promote to Affiliate">Affiliate</button>
+                                        </form>
+                                    @endif
+                                    @if(app(\App\Services\UserPromotionService::class)->canPromoteToShareholder($record))
+                                        <form method="POST" action="{{ route('superadmin.users.promote-shareholder', $record) }}" class="inline ml-2"
+                                              onsubmit="return confirm('Promote {{ $record->name }} to Shareholder with {{ $defaultPromotionShares }} share(s)?')">
+                                            @csrf
+                                            <input type="hidden" name="shares" value="{{ $defaultPromotionShares }}">
+                                            <button type="submit" class="text-emerald-600 hover:text-emerald-800" title="Promote to Shareholder">Shareholder</button>
+                                        </form>
+                                    @endif
+                                @endcan
+                            @endif
                             @if($entity === 'businesses')
                                 @can('platform-full-access')
                                     <form method="POST" action="{{ route('superadmin.impersonate.start', $record->id) }}" class="inline">

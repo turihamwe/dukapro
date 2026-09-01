@@ -20,6 +20,14 @@ class RedirectIfAuthenticated
                     return redirect()->route('superadmin.dashboard');
                 }
 
+                if ($user->isAffiliate()) {
+                    return redirect()->route('affiliate.dashboard');
+                }
+
+                if ($user->isShareholder()) {
+                    return redirect()->route('shareholder.dashboard');
+                }
+
                 if ($user->business) {
                     if ($user->business->isSubscriptionExpired()) {
                         if ($user->can('manage-billing')) {

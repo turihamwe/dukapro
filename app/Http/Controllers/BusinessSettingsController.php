@@ -34,9 +34,13 @@ class BusinessSettingsController extends Controller
             'currency_symbol' => 'required|string|max:20',
             'currency_position' => 'required|in:prefix,suffix',
             'brand_color' => 'nullable|string|max:7',
+            'use_product_variants' => 'nullable|boolean',
         ]);
 
         $old = $business->toArray();
+
+        $settings = $business->settings ?? [];
+        $settings['use_product_variants'] = $request->boolean('use_product_variants');
 
         $slug = $business->slug;
         if ($business->name !== $data['name']) {
@@ -59,6 +63,7 @@ class BusinessSettingsController extends Controller
             'currency_position' => $data['currency_position'],
             'currency' => $data['currency_symbol'],
             'brand_color' => $data['brand_color'] ?? $business->brand_color,
+            'settings' => $settings,
         ]);
 
         AuditLogger::record('business_updated', $business, $old, $business->fresh()->toArray());

@@ -8,9 +8,27 @@
     ])
 
     <x-card class="shadow-sm">
+        @if(! empty($sponsor))
+            <div class="mb-4 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-sm text-violet-900">
+                Referred by affiliate partner: <strong>{{ $sponsor->name }}</strong>
+            </div>
+        @endif
         <form method="POST" action="{{ route('register') }}" class="space-y-3 sm:space-y-4" id="register-form">
             @csrf
             <x-input type="text" name="business_name" label="Business name" value="{{ old('business_name') }}" required autofocus />
+            <div>
+                <label for="business_type" class="mb-1.5 block text-sm font-medium text-gray-700">Business type <span class="text-red-500">*</span></label>
+                <select name="business_type" id="business_type" required
+                        class="block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    <option value="">Select your business type…</option>
+                    @foreach(\App\Enums\BusinessType::labels() as $value => $label)
+                        <option value="{{ $value }}" @selected(old('business_type') === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+                @error('business_type')
+                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
             <x-input type="text" name="name" label="Your name" value="{{ old('name') }}" required />
             <div>
                 <x-input type="text" name="username" id="username" label="Username" value="{{ old('username') }}" required

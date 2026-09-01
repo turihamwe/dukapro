@@ -16,6 +16,7 @@ class Kernel extends HttpKernel
     protected $middleware = [
         // \App\Http\Middleware\TrustHosts::class,
         \App\Http\Middleware\TrustProxies::class,
+        \App\Http\Middleware\NormalizeRequestUri::class,
         \Fruitcake\Cors\HandleCors::class,
         \App\Http\Middleware\PreventRequestsDuringMaintenance::class,
         \Illuminate\Foundation\Http\Middleware\ValidatePostSize::class,
@@ -71,5 +72,7 @@ class Kernel extends HttpKernel
         'maintenance' => \App\Http\Middleware\CheckMaintenanceMode::class,
         'management.access' => \App\Http\Middleware\EnsureManagementAccess::class,
         'cashier.isolation' => \App\Http\Middleware\EnsureCashierModeRoutes::class,
+        'affiliate' => \App\Http\Middleware\EnsureAffiliate::class,
+        'shareholder' => \App\Http\Middleware\EnsureShareholder::class,
     ];
 }

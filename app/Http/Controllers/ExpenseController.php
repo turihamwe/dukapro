@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\AuditLogger;
 use App\Models\Business;
 use App\Models\Expense;
 use App\Services\ExpenseService;
@@ -76,7 +77,9 @@ class ExpenseController extends Controller
             'receipt_reference' => 'nullable|string|max:255',
         ]);
 
-        $this->expenseService->create($request->user(), $data);
+        $expense = $this->expenseService->create($request->user(), $data);
+
+        AuditLogger::record('expense_created', $expense, null, $expense->toArray());
 
         if ($request->user()->usesCashierExperience()) {
             return redirect()

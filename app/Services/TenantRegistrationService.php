@@ -23,10 +23,12 @@ class TenantRegistrationService
 
             $business = Business::create([
                 'name' => $data['business_name'],
+                'business_type' => $data['business_type'],
                 'slug' => $slug,
                 'portal_slug' => $this->uniquePortalSlug($data['business_name']),
                 'email' => $data['email'],
                 'phone' => $data['phone'] ?? null,
+                'sponsor_id' => $data['sponsor_id'] ?? null,
                 'currency' => 'UGX',
                 'currency_symbol' => 'UGX',
                 'currency_position' => 'prefix',

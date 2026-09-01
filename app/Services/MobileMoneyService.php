@@ -14,9 +14,14 @@ class MobileMoneyService
 {
     protected YoPaymentsService $yoPaymentsService;
 
-    public function __construct(YoPaymentsService $yoPaymentsService)
-    {
+    protected AffiliateCommissionService $affiliateCommissionService;
+
+    public function __construct(
+        YoPaymentsService $yoPaymentsService,
+        AffiliateCommissionService $affiliateCommissionService
+    ) {
         $this->yoPaymentsService = $yoPaymentsService;
+        $this->affiliateCommissionService = $affiliateCommissionService;
     }
 
     public function initiatePayment(Business $business, string $phoneNumber, string $provider = 'mtn', string $planKey = 'monthly'): array
@@ -207,6 +212,8 @@ class MobileMoneyService
             ],
             $business->id
         );
+
+        $this->affiliateCommissionService->recordForPayment($payment->fresh());
 
         return [
             'success' => true,

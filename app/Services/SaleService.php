@@ -108,9 +108,9 @@ class SaleService
                 SaleItem::create([
                     'sale_id' => $sale->id,
                     'product_id' => $product->id,
-                    'product_name' => $product->name,
+                    'product_name' => $product->displayName(),
                     'sku' => $product->sku,
-                    'variant_attributes' => $product->variant_attributes,
+                    'variant_attributes' => $product->attribute_values ?? $product->variant_attributes,
                     'measurement_unit' => $product->measurement_unit,
                     'quantity' => $line['quantity'],
                     'unit_price' => $line['unit_price'],

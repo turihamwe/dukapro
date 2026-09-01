@@ -2,11 +2,13 @@
 
 namespace App\Providers;
 
+use App\Models\Brand;
 use App\Models\Business;
 use App\Models\Customer;
 use App\Models\EndOfDayReconciliation;
 use App\Models\Expense;
 use App\Models\Product;
+use App\Models\ProductAttribute;
 use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
@@ -26,6 +28,14 @@ class RouteServiceProvider extends ServiceProvider
 
         Route::bind('employee', function ($value, $route) {
             return $this->resolveTenantRecord(User::class, $value, $route);
+        });
+
+        Route::bind('brand', function ($value, $route) {
+            return $this->resolveTenantRecord(Brand::class, $value, $route);
+        });
+
+        Route::bind('attribute', function ($value, $route) {
+            return $this->resolveTenantRecord(ProductAttribute::class, $value, $route);
         });
 
         Route::bind('product', function ($value, $route) {

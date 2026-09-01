@@ -2,11 +2,15 @@
 
 namespace App\Support\SuperAdmin;
 
+use App\Models\Affiliate;
+use App\Models\AffiliateCommission;
 use App\Models\Business;
 use App\Models\Customer;
 use App\Models\Expense;
 use App\Models\Product;
 use App\Models\Sale;
+use App\Models\Shareholder;
+use App\Models\ShareholderEarning;
 use App\Models\User;
 
 class EntityRegistry
@@ -17,8 +21,8 @@ class EntityRegistry
             'businesses' => [
                 'label' => 'Businesses',
                 'model' => Business::class,
-                'search' => ['name', 'email', 'slug', 'portal_slug', 'phone'],
-                'list' => ['name', 'email', 'subscription_status', 'created_at'],
+                'search' => ['name', 'email', 'slug', 'portal_slug', 'phone', 'business_type'],
+                'list' => ['name', 'business_type', 'email', 'subscription_status', 'created_at'],
                 'creatable' => true,
                 'deletable' => true,
             ],
@@ -28,7 +32,9 @@ class EntityRegistry
                 'scope' => function ($query) {
                     return $query->whereNotNull('business_id')
                         ->where('is_super_admin', false)
-                        ->where('is_sub_admin', false);
+                        ->where('is_sub_admin', false)
+                        ->where('is_affiliate', false)
+                        ->where('is_shareholder', false);
                 },
                 'search' => ['name', 'email', 'username', 'role'],
                 'list' => ['name', 'email', 'role', 'business_id'],
@@ -66,6 +72,38 @@ class EntityRegistry
                 'list' => ['title', 'category', 'amount', 'expense_date', 'business_id'],
                 'creatable' => true,
                 'deletable' => true,
+            ],
+            'affiliates' => [
+                'label' => 'Affiliates',
+                'model' => Affiliate::class,
+                'search' => ['name', 'email', 'phone', 'code', 'status'],
+                'list' => ['name', 'email', 'code', 'status', 'is_active', 'commission_rate'],
+                'creatable' => true,
+                'deletable' => true,
+            ],
+            'affiliate_commissions' => [
+                'label' => 'Affiliate Commissions',
+                'model' => AffiliateCommission::class,
+                'search' => ['status'],
+                'list' => ['affiliate_id', 'business_id', 'payment_amount', 'commission_amount', 'status', 'created_at'],
+                'creatable' => false,
+                'deletable' => false,
+            ],
+            'shareholders' => [
+                'label' => 'Shareholders',
+                'model' => Shareholder::class,
+                'search' => ['name', 'email', 'phone', 'national_id', 'status'],
+                'list' => ['name', 'email', 'shares_owned', 'capital_invested', 'total_earnings', 'status', 'contract_completed'],
+                'creatable' => true,
+                'deletable' => true,
+            ],
+            'shareholder_earnings' => [
+                'label' => 'Shareholder Earnings',
+                'model' => ShareholderEarning::class,
+                'search' => ['description', 'reference'],
+                'list' => ['shareholder_id', 'amount', 'description', 'paid_at', 'created_at'],
+                'creatable' => true,
+                'deletable' => false,
             ],
         ];
     }

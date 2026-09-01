@@ -39,6 +39,17 @@
 
         <x-input type="color" name="brand_color" label="Brand color" value="{{ old('brand_color', $business->brand_color ?? '#4f46e5') }}" />
 
+        <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+            <label class="flex items-start gap-3">
+                <input type="checkbox" name="use_product_variants" value="1" class="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    {{ old('use_product_variants', $settings['use_product_variants'] ?? false) ? 'checked' : '' }}>
+                <span>
+                    <span class="block text-sm font-semibold text-gray-900">Default new products to variant mode</span>
+                    <span class="mt-1 block text-xs text-gray-500">Optional shortcut — you can still toggle variants on/off for each product individually on the add/edit form.</span>
+                </span>
+            </label>
+        </div>
+
         <x-button type="submit" variant="primary">Save business profile</x-button>
     </form>
 </x-card>

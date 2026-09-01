@@ -6,8 +6,12 @@
 @endcan
 @can('view-inventory')
     <a href="{{ tenant_route('tenant.inventory.index') }}"
-       class="{{ $navLink }} {{ request()->routeIs('tenant.inventory.*') ? $navActive : $navIdle }}">
+       class="{{ $navLink }} {{ request()->routeIs('tenant.inventory.*') && ! request()->routeIs('tenant.brands.*') ? $navActive : $navIdle }}">
         <span>📦</span> Inventory
+    </a>
+    <a href="{{ tenant_route('tenant.brands.index') }}"
+       class="{{ $navLink }} {{ request()->routeIs('tenant.brands.*') ? $navActive : $navIdle }}">
+        <span>🏷</span> Brands
     </a>
 @endcan
 @can('view-customers')

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\AuditLogger;
 use App\Models\Business;
 use App\Models\EndOfDayReconciliation;
 use App\Services\ReconciliationService;
@@ -77,6 +78,8 @@ class ReconciliationController extends Controller
         ]);
 
         $reconciliation = $this->reconciliationService->submit($request->user(), $data);
+
+        AuditLogger::record('reconciliation_submitted', $reconciliation, null, $reconciliation->toArray());
 
         return redirect()->to(tenant_route('tenant.reconciliation.show', ['reconciliation' => $reconciliation]))
             ->with('success', 'End-of-day reconciliation submitted. Cash variance: ' . format_money($reconciliation->cash_variance));

@@ -1,14 +1,26 @@
 <?php
 
+use App\Http\Controllers\AffiliateApplicationController;
+use App\Http\Controllers\AffiliateAuthController;
+use App\Http\Controllers\Affiliate\DashboardController as AffiliateDashboardController;
+use App\Http\Controllers\ShareholderApplicationController;
+use App\Http\Controllers\ShareholderAuthController;
+use App\Http\Controllers\Shareholder\DashboardController as ShareholderDashboardController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BrandController;
 use App\Http\Controllers\BusinessSettingsController;
 use App\Http\Controllers\CashierModeController;
 use App\Http\Controllers\ContactImportController;
 use App\Http\Controllers\CustomerDebtController;
 use App\Http\Controllers\DamageController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\ProductAttributeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SalesReportController;
+use App\Http\Controllers\SoldByUnitController;
+use App\Http\Controllers\SuperAdmin\UserActionController;
+use App\Http\Controllers\SuperAdmin\AffiliateActionController;
+use App\Http\Controllers\SuperAdmin\ShareholderActionController;
 use App\Http\Controllers\SuperAdmin\ActivityLogController;
 use App\Http\Controllers\SuperAdmin\DashboardController as SuperAdminDashboardController;
 use App\Http\Controllers\SuperAdmin\EntityController as SuperAdminEntityController;
@@ -42,6 +54,16 @@ Route::middleware(['maintenance'])->group(function () {
         Route::post('/register', [AuthController::class, 'register']);
     });
 
+    Route::get('/affiliate/apply', [AffiliateApplicationController::class, 'showApply'])->name('affiliate.apply');
+    Route::post('/affiliate/apply', [AffiliateApplicationController::class, 'apply'])->name('affiliate.apply.store');
+    Route::get('/affiliate/login', [AffiliateAuthController::class, 'showLogin'])->name('affiliate.login');
+    Route::post('/affiliate/login', [AffiliateAuthController::class, 'login'])->name('affiliate.login.store');
+
+    Route::get('/shareholder/apply', [ShareholderApplicationController::class, 'showApply'])->name('shareholder.apply');
+    Route::post('/shareholder/apply', [ShareholderApplicationController::class, 'apply'])->name('shareholder.apply.store');
+    Route::get('/shareholder/login', [ShareholderAuthController::class, 'showLogin'])->name('shareholder.login');
+    Route::post('/shareholder/login', [ShareholderAuthController::class, 'login'])->name('shareholder.login.store');
+
     Route::middleware(['auth'])->group(function () {
         Route::post('/leave-impersonation', [ImpersonationController::class, 'leave'])->name('impersonation.leave');
 
@@ -49,6 +71,12 @@ Route::middleware(['maintenance'])->group(function () {
             $user = auth()->user();
             if ($user->isPlatformAdmin()) {
                 return redirect()->route('superadmin.dashboard');
+            }
+            if ($user->isAffiliate()) {
+                return redirect()->route('affiliate.dashboard');
+            }
+            if ($user->isShareholder()) {
+                return redirect()->route('shareholder.dashboard');
             }
             abort_unless($user->business, 403);
             if ($user->isCashier()) {
@@ -77,6 +105,22 @@ Route::middleware(['maintenance'])->group(function () {
         Route::get('/subscription/simulate/{reference}', [SubscriptionController::class, 'simulate'])->name('subscription.simulate');
         Route::post('/subscription/simulate/{reference}/complete', [SubscriptionController::class, 'simulateComplete'])->name('subscription.simulate.complete');
     });
+
+    Route::prefix('affiliate')
+        ->middleware(['auth', 'affiliate'])
+        ->name('affiliate.')
+        ->group(function () {
+            Route::get('/dashboard', [AffiliateDashboardController::class, 'index'])->name('dashboard');
+            Route::post('/logout', [AffiliateAuthController::class, 'logout'])->name('logout');
+        });
+
+    Route::prefix('shareholder')
+        ->middleware(['auth', 'shareholder'])
+        ->name('shareholder.')
+        ->group(function () {
+            Route::get('/dashboard', [ShareholderDashboardController::class, 'index'])->name('dashboard');
+            Route::post('/logout', [ShareholderAuthController::class, 'logout'])->name('logout');
+        });
 
     Route::prefix('app/{business}')
         ->middleware(['auth', 'tenant.access', 'cashier.isolation'])
@@ -134,7 +178,44 @@ Route::middleware(['maintenance'])->group(function () {
                     Route::post('/{customer}/payment', [CustomerDebtController::class, 'recordPayment'])->middleware('can:manage-debts')->name('payment');
                 });
 
+                Route::middleware(['can:view-inventory', 'management.access'])->prefix('brands')->name('brands.')->group(function () {
+                    Route::get('/', [BrandController::class, 'index'])->name('index');
+                    Route::middleware(['can:create-inventory'])->group(function () {
+                        Route::get('/create', [BrandController::class, 'create'])->name('create');
+                        Route::post('/', [BrandController::class, 'store'])->name('store');
+                        Route::post('/quick', [BrandController::class, 'quickStore'])->name('quick-store');
+                    });
+                    Route::middleware(['can:update-inventory'])->group(function () {
+                        Route::get('/{brand}/edit', [BrandController::class, 'edit'])->name('edit');
+                        Route::put('/{brand}', [BrandController::class, 'update'])->name('update');
+                    });
+                    Route::delete('/{brand}', [BrandController::class, 'destroy'])
+                        ->middleware('can:delete-inventory')
+                        ->name('destroy');
+                });
+
                 Route::middleware(['can:view-inventory', 'management.access'])->prefix('inventory')->name('inventory.')->group(function () {
+                    Route::get('/catalog', [InventoryController::class, 'catalog'])->name('catalog');
+                    Route::get('/attributes', [ProductAttributeController::class, 'index'])->name('attributes.index');
+                    Route::post('/attributes/quick', [ProductAttributeController::class, 'quickStore'])
+                        ->middleware('can:create-inventory')
+                        ->name('attributes.quick-store');
+                    Route::post('/attributes/quick-value', [ProductAttributeController::class, 'quickValue'])
+                        ->middleware('can:create-inventory')
+                        ->name('attributes.quick-value');
+                    Route::post('/units/quick', [SoldByUnitController::class, 'quickStore'])
+                        ->middleware('can:create-inventory')
+                        ->name('units.quick-store');
+                    Route::post('/attributes', [ProductAttributeController::class, 'store'])
+                        ->middleware('can:create-inventory')
+                        ->name('attributes.store');
+                    Route::put('/attributes/{attribute}', [ProductAttributeController::class, 'update'])
+                        ->middleware('can:update-inventory')
+                        ->name('attributes.update');
+                    Route::delete('/attributes/{attribute}', [ProductAttributeController::class, 'destroy'])
+                        ->middleware('can:delete-inventory')
+                        ->name('attributes.destroy');
+
                     Route::get('/', [InventoryController::class, 'index'])->name('index');
                     Route::middleware(['can:create-inventory'])->group(function () {
                         Route::get('/create', [InventoryController::class, 'create'])->name('create');
@@ -197,7 +278,7 @@ Route::prefix('superadmin')
         Route::get('/search', [SuperAdminGlobalSearchController::class, 'index'])->name('search');
         Route::get('/activity', [ActivityLogController::class, 'index'])->name('activity');
 
-        Route::prefix('entities/{entity}')->where(['entity' => 'businesses|users|products|customers|sales|expenses'])->name('entities.')->group(function () {
+        Route::prefix('entities/{entity}')->where(['entity' => 'businesses|users|products|customers|sales|expenses|affiliates|affiliate_commissions|shareholders|shareholder_earnings'])->name('entities.')->group(function () {
             Route::get('/', [SuperAdminEntityController::class, 'index'])->name('index');
             Route::get('/create', [SuperAdminEntityController::class, 'create'])->name('create');
             Route::post('/', [SuperAdminEntityController::class, 'store'])->name('store');
@@ -210,6 +291,15 @@ Route::prefix('superadmin')
         });
 
         Route::middleware('platform.full')->group(function () {
+            Route::post('/affiliates/{affiliate}/approve', [AffiliateActionController::class, 'approve'])->whereNumber('affiliate')->name('affiliates.approve');
+            Route::post('/affiliates/{affiliate}/reject', [AffiliateActionController::class, 'reject'])->whereNumber('affiliate')->name('affiliates.reject');
+            Route::post('/affiliates/{affiliate}/toggle-active', [AffiliateActionController::class, 'toggleActive'])->whereNumber('affiliate')->name('affiliates.toggle-active');
+            Route::post('/shareholders/{shareholder}/approve', [ShareholderActionController::class, 'approve'])->whereNumber('shareholder')->name('shareholders.approve');
+            Route::post('/shareholders/{shareholder}/reject', [ShareholderActionController::class, 'reject'])->whereNumber('shareholder')->name('shareholders.reject');
+            Route::post('/shareholders/{shareholder}/toggle-active', [ShareholderActionController::class, 'toggleActive'])->whereNumber('shareholder')->name('shareholders.toggle-active');
+            Route::post('/shareholders/{shareholder}/record-earning', [ShareholderActionController::class, 'recordEarning'])->whereNumber('shareholder')->name('shareholders.record-earning');
+            Route::post('/users/{user}/promote-affiliate', [UserActionController::class, 'promoteAffiliate'])->whereNumber('user')->name('users.promote-affiliate');
+            Route::post('/users/{user}/promote-shareholder', [UserActionController::class, 'promoteShareholder'])->whereNumber('user')->name('users.promote-shareholder');
             Route::post('/businesses/{businessId}/impersonate', [ImpersonationController::class, 'start'])->whereNumber('businessId')->name('impersonate.start');
             Route::get('/settings', [SuperAdminSettingsController::class, 'edit'])->name('settings');
             Route::put('/settings', [SuperAdminSettingsController::class, 'update'])->name('settings.update');

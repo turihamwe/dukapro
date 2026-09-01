@@ -8,6 +8,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -30,6 +31,8 @@ class User extends Authenticatable
         'is_active',
         'is_super_admin',
         'is_sub_admin',
+        'is_affiliate',
+        'is_shareholder',
     ];
 
     protected $hidden = [
@@ -42,11 +45,23 @@ class User extends Authenticatable
         'is_active' => 'boolean',
         'is_super_admin' => 'boolean',
         'is_sub_admin' => 'boolean',
+        'is_affiliate' => 'boolean',
+        'is_shareholder' => 'boolean',
     ];
 
     public function business(): BelongsTo
     {
         return $this->belongsTo(Business::class);
+    }
+
+    public function affiliateProfile(): HasOne
+    {
+        return $this->hasOne(Affiliate::class);
+    }
+
+    public function shareholderProfile(): HasOne
+    {
+        return $this->hasOne(Shareholder::class);
     }
 
     public function sales(): HasMany
@@ -121,5 +136,15 @@ class User extends Authenticatable
     public function isBusinessUser(): bool
     {
         return (bool) $this->business_id && ! $this->isPlatformAdmin();
+    }
+
+    public function isAffiliate(): bool
+    {
+        return (bool) $this->is_affiliate;
+    }
+
+    public function isShareholder(): bool
+    {
+        return (bool) $this->is_shareholder;
     }
 }

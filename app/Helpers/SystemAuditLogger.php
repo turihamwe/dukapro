@@ -5,6 +5,7 @@ namespace App\Helpers;
 use App\Jobs\LogSystemAudit;
 use App\Models\Business;
 use App\Models\User;
+use App\Support\CashierMode;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Request;
@@ -45,11 +46,17 @@ class SystemAuditLogger
 
         $summary = self::buildSummary($action, $user, $business, $auditable);
 
-        self::record($action, $summary, $businessId ?? optional($business)->id, $userId ?? optional($user)->id, [
+        $metadata = [
             'auditable_type' => $auditable ? class_basename($auditable) : null,
             'auditable_id' => $auditable ? $auditable->getKey() : null,
             'changed_fields' => self::changedFieldNames($oldValues, $newValues),
-        ]);
+        ];
+
+        if ($cashierContext = self::cashierContextFromValues($newValues)) {
+            $metadata['cashier_context'] = $cashierContext;
+        }
+
+        self::record($action, $summary, $businessId ?? optional($business)->id, $userId ?? optional($user)->id, $metadata);
     }
 
     protected static function buildSummary(
@@ -59,10 +66,24 @@ class SystemAuditLogger
         ?Model $auditable
     ): string {
         $who = $user ? $user->email : 'system';
+
+        if ($user && $user->isOwner() && CashierMode::isActive()) {
+            $who .= ' (owner acting as cashier)';
+        }
+
         $tenant = $business ? $business->name : 'platform';
         $target = $auditable ? class_basename($auditable) . ' #' . $auditable->getKey() : '';
 
         return trim("{$action} by {$who} @ {$tenant} {$target}");
+    }
+
+    protected static function cashierContextFromValues(?array $newValues): ?array
+    {
+        if (! is_array($newValues) || empty($newValues['_audit']['acting_as_cashier'])) {
+            return null;
+        }
+
+        return $newValues['_audit'];
     }
 
     protected static function changedFieldNames(?array $old, ?array $new): array

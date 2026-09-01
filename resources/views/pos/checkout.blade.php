@@ -10,10 +10,15 @@
 
         <div id="productGrid" class="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3">
             @foreach($products as $product)
-                <div class="product-card" data-name="{{ strtolower($product->name) }}" data-sku="{{ strtolower($product->sku ?? '') }}">
-                    <button type="button" onclick="addToCart({{ json_encode($product) }})"
+                @php
+                    $posProduct = array_merge($product->only(['id', 'name', 'sku', 'price', 'stock_quantity', 'measurement_unit', 'attribute_values']), [
+                        'display_name' => $product->displayName(),
+                    ]);
+                @endphp
+                <div class="product-card" data-name="{{ strtolower($product->displayName() . ' ' . $product->name) }}" data-sku="{{ strtolower($product->sku ?? '') }}">
+                    <button type="button" onclick="addToCart(@json($posProduct))"
                             class="pos-product group w-full rounded-xl border border-gray-100 bg-white p-3 text-left shadow-sm transition active:scale-[0.98] sm:p-4 hover:border-indigo-200 hover:shadow-md">
-                        <p class="line-clamp-2 text-sm font-semibold text-gray-900 group-hover:text-indigo-600">{{ $product->name }}</p>
+                        <p class="line-clamp-2 text-sm font-semibold text-gray-900 group-hover:text-indigo-600">{{ $product->displayName() }}</p>
                         @if($product->sku)
                             <p class="mt-0.5 truncate text-[10px] font-medium uppercase tracking-wide text-gray-400">{{ $product->sku }}</p>
                         @endif
@@ -89,7 +94,7 @@ function addToCart(product) {
         if (existing.quantity >= parseFloat(product.stock_quantity)) return alert('Max stock reached');
         existing.quantity += 1;
     } else {
-        cart.push({ product_id: product.id, name: product.name, unit_price: parseFloat(product.price), quantity: 1, max_stock: parseFloat(product.stock_quantity) });
+        cart.push({ product_id: product.id, name: product.display_name || product.name, unit_price: parseFloat(product.price), quantity: 1, max_stock: parseFloat(product.stock_quantity) });
     }
     renderCart();
 }

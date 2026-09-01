@@ -3,13 +3,23 @@
 namespace App\Http\Controllers\SuperAdmin;
 
 use App\Enums\UserRole;
+use App\Enums\AffiliateStatus;
+use App\Enums\ShareholderStatus;
 use App\Helpers\SystemAuditLogger;
 use App\Http\Controllers\Controller;
+use App\Models\Affiliate;
+use App\Models\AffiliateCommission;
 use App\Models\Business;
 use App\Models\Customer;
 use App\Models\Expense;
 use App\Models\Product;
+use App\Models\Shareholder;
+use App\Models\ShareholderEarning;
 use App\Models\User;
+use App\Services\ShareAllocationService;
+use App\Services\ShareholderEarningsService;
+use App\Services\ShareholderRegistrationService;
+use App\Services\UserPromotionService;
 use App\Support\SuperAdmin\EntityRegistry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -17,6 +27,26 @@ use Illuminate\Support\Str;
 
 class EntityController extends Controller
 {
+    protected ShareAllocationService $allocationService;
+
+    protected ShareholderRegistrationService $shareholderRegistrationService;
+
+    protected ShareholderEarningsService $shareholderEarningsService;
+
+    protected UserPromotionService $userPromotionService;
+
+    public function __construct(
+        ShareAllocationService $allocationService,
+        ShareholderRegistrationService $shareholderRegistrationService,
+        ShareholderEarningsService $shareholderEarningsService,
+        UserPromotionService $userPromotionService
+    ) {
+        $this->allocationService = $allocationService;
+        $this->shareholderRegistrationService = $shareholderRegistrationService;
+        $this->shareholderEarningsService = $shareholderEarningsService;
+        $this->userPromotionService = $userPromotionService;
+    }
+
     public function index(Request $request, string $entity)
     {
         $config = EntityRegistry::get($entity);
@@ -43,6 +73,22 @@ class EntityController extends Controller
             $query->with('business');
         }
 
+        if ($entity === 'affiliates') {
+            $query->withCount('referredBusinesses', 'commissions');
+        }
+
+        if ($entity === 'affiliate_commissions') {
+            $query->with('affiliate', 'business');
+        }
+
+        if ($entity === 'shareholders') {
+            $query->latest('id');
+        }
+
+        if ($entity === 'shareholder_earnings') {
+            $query->with('shareholder')->latest('id');
+        }
+
         if ($entity === 'sales') {
             $query->with('business', 'user')->latest('completed_at');
         } else {
@@ -51,11 +97,26 @@ class EntityController extends Controller
 
         $records = $query->paginate(20)->appends($request->only('q'));
 
+        $shareStats = null;
+        if ($entity === 'shareholders') {
+            $shareStats = [
+                'total_shares' => $this->allocationService->totalShares(),
+                'allocated_shares' => $this->allocationService->allocatedShares(),
+                'remaining_shares' => $this->allocationService->remainingShares(),
+                'shareholder_count' => $this->allocationService->activeShareholderCount(),
+                'max_shareholders' => $this->allocationService->maxShareholders(),
+                'price_per_share' => $this->allocationService->pricePerShare(),
+            ];
+        }
+
         return view('superadmin.entities.index', [
             'entity' => $entity,
             'config' => $config,
             'records' => $records,
             'businesses' => Business::orderBy('name')->get(['id', 'name']),
+            'shareStats' => $shareStats,
+            'defaultPromotionShares' => config('shareholders.default_promotion_shares', 1),
+            'remainingShares' => $this->allocationService->remainingShares(),
         ]);
     }
 
@@ -70,6 +131,11 @@ class EntityController extends Controller
             'businesses' => Business::orderBy('name')->get(['id', 'name']),
             'roles' => UserRole::all(),
             'categories' => \App\Services\ExpenseService::CATEGORIES,
+            'affiliateStatuses' => AffiliateStatus::all(),
+            'shareholderStatuses' => ShareholderStatus::all(),
+            'remainingShares' => $entity === 'shareholders' ? $this->allocationService->remainingShares() : null,
+            'pricePerShare' => $this->allocationService->pricePerShare(),
+            'shareholders' => Shareholder::orderBy('name')->get(['id', 'name', 'email']),
         ]);
     }
 
@@ -157,6 +223,80 @@ class EntityController extends Controller
                     'description' => $data['description'] ?? '',
                 ]));
                 break;
+
+            case 'affiliates':
+                $data = $request->validate([
+                    'name' => 'required|string|max:255',
+                    'email' => 'required|email|unique:affiliates,email',
+                    'phone' => 'nullable|string|max:30',
+                    'code' => 'nullable|string|max:32|unique:affiliates,code',
+                    'commission_rate' => 'nullable|numeric|min:0|max:1',
+                    'status' => 'required|in:' . implode(',', AffiliateStatus::all()),
+                    'is_active' => 'nullable|boolean',
+                ]);
+                $code = $data['code'] ?? Str::slug($data['name']) . '-' . Str::lower(Str::random(6));
+                while (Affiliate::where('code', $code)->exists()) {
+                    $code = Str::slug($data['name']) . '-' . Str::lower(Str::random(6));
+                }
+                $record = Affiliate::create([
+                    'name' => $data['name'],
+                    'email' => strtolower($data['email']),
+                    'phone' => $data['phone'] ?? null,
+                    'code' => $code,
+                    'commission_rate' => $data['commission_rate'] ?? config('affiliates.default_commission_rate', 0.10),
+                    'status' => $data['status'],
+                    'is_active' => $request->boolean('is_active'),
+                    'approved_at' => $data['status'] === AffiliateStatus::APPROVED ? now() : null,
+                    'approved_by' => $data['status'] === AffiliateStatus::APPROVED ? $request->user()->id : null,
+                ]);
+                break;
+
+            case 'shareholders':
+                $data = $request->validate([
+                    'name' => 'required|string|max:255',
+                    'email' => 'required|email|unique:shareholders,email',
+                    'phone' => 'nullable|string|max:30',
+                    'national_id' => 'nullable|string|max:50',
+                    'shares_owned' => 'required|numeric|min:0.01',
+                    'status' => 'required|in:' . implode(',', ShareholderStatus::all()),
+                    'is_active' => 'nullable|boolean',
+                ]);
+                $shares = (float) $data['shares_owned'];
+                if (in_array($data['status'], ShareholderStatus::allocated(), true)) {
+                    $this->allocationService->validateAllocation($shares);
+                }
+                $record = Shareholder::create([
+                    'name' => $data['name'],
+                    'email' => strtolower($data['email']),
+                    'phone' => $data['phone'] ?? null,
+                    'national_id' => $data['national_id'] ?? null,
+                    'shares_owned' => $shares,
+                    'capital_invested' => $this->allocationService->capitalForShares($shares),
+                    'total_earnings' => 0,
+                    'status' => $data['status'],
+                    'is_active' => $request->boolean('is_active'),
+                    'registered_at' => now(),
+                    'approved_at' => in_array($data['status'], ShareholderStatus::allocated(), true) ? now() : null,
+                    'approved_by' => in_array($data['status'], ShareholderStatus::allocated(), true) ? $request->user()->id : null,
+                ]);
+                break;
+
+            case 'shareholder_earnings':
+                $data = $request->validate([
+                    'shareholder_id' => 'required|exists:shareholders,id',
+                    'amount' => 'required|numeric|min:0.01',
+                    'description' => 'nullable|string|max:255',
+                    'reference' => 'nullable|string|max:100',
+                ]);
+                $shareholder = Shareholder::findOrFail($data['shareholder_id']);
+                $record = $this->shareholderEarningsService->record(
+                    $shareholder,
+                    (float) $data['amount'],
+                    $request->user(),
+                    $data['description'] ?? null,
+                    $data['reference'] ?? null
+                );
+                break;
         }
 
         abort_unless($record, 422);
@@ -180,8 +320,49 @@ class EntityController extends Controller
 
         $modelClass = $config['model'];
         $item = $modelClass::query()->findOrFail($record);
+        $owner = null;
 
-        return view('superadmin.entities.show', compact('entity', 'config', 'item'));
+        if ($entity === 'affiliates') {
+            $item->loadCount('referredBusinesses', 'commissions');
+            $item->load('user', 'approver');
+        }
+
+        if ($entity === 'affiliate_commissions') {
+            $item->load('affiliate', 'business', 'subscriptionPayment');
+        }
+
+        if ($entity === 'shareholders') {
+            $item->load('user', 'approver', 'earnings');
+        }
+
+        if ($entity === 'shareholder_earnings') {
+            $item->load('shareholder', 'recorder');
+        }
+
+        if ($entity === 'users') {
+            $item->load('business', 'affiliateProfile', 'shareholderProfile');
+        }
+
+        if ($entity === 'businesses') {
+            $owner = User::query()
+                ->where('business_id', $item->id)
+                ->where('role', UserRole::OWNER)
+                ->first();
+        }
+
+        return view('superadmin.entities.show', [
+            'entity' => $entity,
+            'config' => $config,
+            'item' => $item,
+            'owner' => $owner ?? null,
+            'canPromoteAffiliate' => ($entity === 'users' || $entity === 'businesses')
+                && isset($item) && ($entity === 'users' ? $this->userPromotionService->canPromoteToAffiliate($item) : ($owner && $this->userPromotionService->canPromoteToAffiliate($owner))),
+            'canPromoteShareholder' => ($entity === 'users' || $entity === 'businesses')
+                && isset($item) && ($entity === 'users' ? $this->userPromotionService->canPromoteToShareholder($item) : ($owner && $this->userPromotionService->canPromoteToShareholder($owner))),
+            'promotionUser' => $entity === 'users' ? $item : ($owner ?? null),
+            'defaultPromotionShares' => config('shareholders.default_promotion_shares', 1),
+            'remainingShares' => $this->allocationService->remainingShares(),
+        ]);
     }
 
     public function edit(string $entity, int $record)
@@ -201,6 +382,11 @@ class EntityController extends Controller
             'businesses' => Business::orderBy('name')->get(['id', 'name']),
             'roles' => UserRole::all(),
             'categories' => \App\Services\ExpenseService::CATEGORIES,
+            'affiliateStatuses' => AffiliateStatus::all(),
+            'shareholderStatuses' => ShareholderStatus::all(),
+            'remainingShares' => $entity === 'shareholders' ? $this->allocationService->remainingShares($item->id) : null,
+            'pricePerShare' => $this->allocationService->pricePerShare(),
+            'shareholders' => Shareholder::orderBy('name')->get(['id', 'name', 'email']),
         ]);
     }
 
@@ -271,6 +457,60 @@ class EntityController extends Controller
                 $item->update(array_merge($data, [
                     'description' => $data['description'] ?? '',
                 ]));
+                break;
+
+            case 'affiliates':
+                $data = $request->validate([
+                    'name' => 'required|string|max:255',
+                    'email' => 'required|email|unique:affiliates,email,' . $item->id,
+                    'phone' => 'nullable|string|max:30',
+                    'code' => 'required|string|max:32|unique:affiliates,code,' . $item->id,
+                    'commission_rate' => 'required|numeric|min:0|max:1',
+                    'status' => 'required|in:' . implode(',', AffiliateStatus::all()),
+                    'is_active' => 'nullable|boolean',
+                ]);
+                $data['is_active'] = $request->boolean('is_active');
+                if ($data['status'] === AffiliateStatus::APPROVED && ! $item->approved_at) {
+                    $data['approved_at'] = now();
+                    $data['approved_by'] = $request->user()->id;
+                }
+                $item->update($data);
+                break;
+
+            case 'affiliate_commissions':
+                $data = $request->validate([
+                    'status' => 'required|in:pending,paid,cancelled',
+                ]);
+                $data['paid_at'] = $data['status'] === 'paid' ? now() : null;
+                $item->update($data);
+                break;
+
+            case 'shareholders':
+                $data = $request->validate([
+                    'name' => 'required|string|max:255',
+                    'email' => 'required|email|unique:shareholders,email,' . $item->id,
+                    'phone' => 'nullable|string|max:30',
+                    'national_id' => 'nullable|string|max:50',
+                    'shares_owned' => 'required|numeric|min:0.01',
+                    'status' => 'required|in:' . implode(',', ShareholderStatus::all()),
+                    'is_active' => 'nullable|boolean',
+                ]);
+                $data['is_active'] = $request->boolean('is_active');
+                $shares = (float) $data['shares_owned'];
+                if (in_array($data['status'], ShareholderStatus::allocated(), true)) {
+                    $this->allocationService->validateAllocation($shares, $item->id, false);
+                }
+                $data['capital_invested'] = $this->allocationService->capitalForShares($shares);
+                if (in_array($data['status'], ShareholderStatus::allocated(), true) && ! $item->approved_at) {
+                    $data['approved_at'] = now();
+                    $data['approved_by'] = $request->user()->id;
+                }
+                if ($item->total_earnings >= ($data['capital_invested'] * config('shareholders.earnings_cap_multiplier', 3))) {
+                    $data['contract_completed'] = true;
+                    $data['contract_completed_at'] = $item->contract_completed_at ?? now();
+                    $data['status'] = ShareholderStatus::COMPLETED;
+                }
+                $item->update($data);
                 break;
 
             default:

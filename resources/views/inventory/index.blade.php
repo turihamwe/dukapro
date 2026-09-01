@@ -38,7 +38,14 @@
             <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0">
                     <p class="font-medium text-gray-900">{{ $product->name }}</p>
-                    <p class="text-xs text-gray-500">{{ $product->sku ?? 'No SKU' }} · {{ $product->measurement_unit }}</p>
+                    <p class="text-xs text-gray-500">
+                        {{ $product->brand->name ?? 'No brand' }}
+                        · {{ $product->sku ?? 'No SKU' }}
+                        · {{ $product->measurement_unit }}
+                        @if($product->variants_count > 0)
+                            · {{ $product->variants_count }} variants
+                        @endif
+                    </p>
                     @if($product->description)
                         <p class="mt-1 line-clamp-2 text-xs text-gray-500">{{ $product->description }}</p>
                     @endif
@@ -67,7 +74,7 @@
             <thead class="bg-gray-50">
                 <tr>
                     <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Product</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">SKU / Unit</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Brand / SKU</th>
                     <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Cost (UGX)</th>
                     <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Sell (UGX)</th>
                     <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">In Stock</th>
@@ -82,8 +89,16 @@
                             @if($product->description)
                                 <p class="mt-0.5 line-clamp-1 text-xs text-gray-500">{{ $product->description }}</p>
                             @endif
+                            @if($product->variants_count > 0)
+                                <p class="mt-1 text-xs font-medium text-indigo-600">{{ $product->variants_count }} sellable variants</p>
+                            @endif
                         </td>
-                        <td class="px-6 py-4 text-sm text-gray-500">{{ $product->sku ?? '—' }} · {{ $product->measurement_unit }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">
+                            {{ $product->brand->name ?? '—' }}
+                            @if($product->variants_count === 0)
+                                <span class="block text-xs text-gray-400">{{ $product->sku ?? '—' }} · {{ $product->measurement_unit }}</span>
+                            @endif
+                        </td>
                         <td class="px-6 py-4 text-center text-sm text-gray-600">
                             @can('view-cost-prices')
                                 @money($product->cost_price ?? 0)
@@ -91,8 +106,20 @@
                                 —
                             @endcan
                         </td>
-                        <td class="px-6 py-4 text-center text-sm font-medium text-gray-900">@money($product->price)</td>
-                        <td class="px-6 py-4 text-center text-sm {{ $product->stock_quantity <= 5 ? 'font-medium text-red-600' : 'text-gray-500' }}">{{ $product->stock_quantity }}</td>
+                        <td class="px-6 py-4 text-center text-sm font-medium text-gray-900">
+                            @if($product->variants_count > 0)
+                                —
+                            @else
+                                @money($product->price)
+                            @endif
+                        </td>
+                        <td class="px-6 py-4 text-center text-sm {{ $product->variants_count > 0 ? 'text-gray-500' : ($product->stock_quantity <= 5 ? 'font-medium text-red-600' : 'text-gray-500') }}">
+                            @if($product->variants_count > 0)
+                                {{ $product->variants->sum('stock_quantity') }} total
+                            @else
+                                {{ $product->stock_quantity }}
+                            @endif
+                        </td>
                         <td class="px-6 py-4 text-right">
                             @can('update', $product)
                                 <a href="{{ tenant_route('tenant.inventory.edit', ['product' => $product]) }}" class="text-sm font-medium text-indigo-600 hover:text-indigo-700">Edit</a>

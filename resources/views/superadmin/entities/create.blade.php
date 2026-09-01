@@ -56,6 +56,40 @@
             <input type="number" step="0.01" name="amount" value="{{ old('amount') }}" required placeholder="Amount" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <input type="date" name="expense_date" value="{{ old('expense_date', now()->toDateString()) }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <textarea name="description" rows="3" placeholder="Notes" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">{{ old('description') }}</textarea>
+        @elseif($entity === 'affiliates')
+            <input type="text" name="name" value="{{ old('name') }}" required placeholder="Full name" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <input type="email" name="email" value="{{ old('email') }}" required placeholder="Email" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <input type="text" name="phone" value="{{ old('phone') }}" placeholder="Phone" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <input type="text" name="code" value="{{ old('code') }}" placeholder="Referral code (auto-generated if empty)" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <input type="number" step="0.0001" min="0" max="1" name="commission_rate" value="{{ old('commission_rate', config('affiliates.default_commission_rate')) }}" placeholder="Commission rate (0.10 = 10%)" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <select name="status" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                @foreach($affiliateStatuses as $status)
+                    <option value="{{ $status }}" @selected(old('status', 'pending') === $status)>{{ ucfirst($status) }}</option>
+                @endforeach
+            </select>
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_active" value="1" @checked(old('is_active'))> Active</label>
+        @elseif($entity === 'shareholders')
+            <input type="text" name="name" value="{{ old('name') }}" required placeholder="Full name" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <input type="email" name="email" value="{{ old('email') }}" required placeholder="Email" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <input type="text" name="phone" value="{{ old('phone') }}" placeholder="Phone" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <input type="text" name="national_id" value="{{ old('national_id') }}" placeholder="National ID" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <input type="number" step="0.01" min="0.01" max="{{ $remainingShares ?? 100 }}" name="shares_owned" value="{{ old('shares_owned', 1) }}" required placeholder="Shares owned" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <p class="text-xs text-gray-500">{{ number_format($remainingShares ?? 0, 2) }} shares remaining · UGX {{ number_format($pricePerShare ?? 1000000, 0) }} per share</p>
+            <select name="status" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                @foreach($shareholderStatuses as $status)
+                    <option value="{{ $status }}" @selected(old('status', 'pending') === $status)>{{ ucfirst($status) }}</option>
+                @endforeach
+            </select>
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_active" value="1" @checked(old('is_active'))> Active</label>
+        @elseif($entity === 'shareholder_earnings')
+            <select name="shareholder_id" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                @foreach($shareholders as $shareholder)
+                    <option value="{{ $shareholder->id }}" @selected(old('shareholder_id') == $shareholder->id)>{{ $shareholder->name }} ({{ $shareholder->email }})</option>
+                @endforeach
+            </select>
+            <input type="number" step="0.01" min="0.01" name="amount" value="{{ old('amount') }}" required placeholder="Amount (UGX)" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <input type="text" name="description" value="{{ old('description') }}" placeholder="Description" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <input type="text" name="reference" value="{{ old('reference') }}" placeholder="Reference" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
         @endif
 
         <button type="submit" class="rounded-lg bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-violet-500">Create</button>

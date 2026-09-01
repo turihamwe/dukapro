@@ -4,18 +4,22 @@ namespace App\Providers;
 
 use App\Enums\UserRole;
 use App\Models\AuditLog;
+use App\Models\Brand;
 use App\Models\Customer;
 use App\Models\Damage;
 use App\Models\Expense;
 use App\Models\Product;
 use App\Models\Sale;
+use App\Models\SoldByUnit;
 use App\Models\User;
+use App\Policies\BrandPolicy;
 use App\Policies\AuditLogPolicy;
 use App\Policies\CustomerPolicy;
 use App\Policies\DamagePolicy;
 use App\Policies\ExpensePolicy;
 use App\Policies\ProductPolicy;
 use App\Policies\SalePolicy;
+use App\Policies\SoldByUnitPolicy;
 use App\Policies\UserPolicy;
 use App\Support\CashierMode;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
@@ -25,6 +29,8 @@ class AuthServiceProvider extends ServiceProvider
 {
     protected $policies = [
         Product::class => ProductPolicy::class,
+        Brand::class => BrandPolicy::class,
+        SoldByUnit::class => SoldByUnitPolicy::class,
         Customer::class => CustomerPolicy::class,
         Sale::class => SalePolicy::class,
         User::class => UserPolicy::class,
@@ -74,8 +80,12 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('create-inventory', function (User $user) {
+            if ($user->isCashier()) {
+                return true;
+            }
+
             if ($user->canSwitchToCashierMode() && CashierMode::isActive()) {
-                return false;
+                return true;
             }
 
             return in_array($user->role, [UserRole::OWNER, UserRole::MANAGER, UserRole::SUPERVISOR, UserRole::CASHIER], true);

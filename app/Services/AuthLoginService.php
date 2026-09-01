@@ -25,10 +25,54 @@ class AuthLoginService
         } else {
             $query->where('is_super_admin', false)
                 ->where('is_sub_admin', false)
-                ->whereNotNull('business_id');
+                ->where(function ($q) {
+                    $q->whereNotNull('business_id')
+                        ->orWhere('is_affiliate', true)
+                        ->orWhere('is_shareholder', true);
+                });
         }
 
         return $query->first();
+    }
+
+    public function attemptAffiliate(string $login, string $password, bool $remember = false): ?User
+    {
+        $field = $this->resolveLoginField($login);
+
+        $user = User::query()
+            ->where($field, $login)
+            ->where('is_affiliate', true)
+            ->where('is_super_admin', false)
+            ->where('is_sub_admin', false)
+            ->first();
+
+        if (! $user || ! Hash::check($password, $user->password)) {
+            return null;
+        }
+
+        Auth::login($user, $remember);
+
+        return $user;
+    }
+
+    public function attemptShareholder(string $login, string $password, bool $remember = false): ?User
+    {
+        $field = $this->resolveLoginField($login);
+
+        $user = User::query()
+            ->where($field, $login)
+            ->where('is_shareholder', true)
+            ->where('is_super_admin', false)
+            ->where('is_sub_admin', false)
+            ->first();
+
+        if (! $user || ! Hash::check($password, $user->password)) {
+            return null;
+        }
+
+        Auth::login($user, $remember);
+
+        return $user;
     }
 
     public function attempt(string $login, string $password, bool $remember = false, ?Business $business = null): ?User

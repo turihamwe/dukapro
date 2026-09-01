@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\SystemAuditLogger;
 use App\Models\Business;
 use App\Services\AuthLoginService;
+use App\Services\AffiliateReferralService;
 use App\Services\TenantRegistrationService;
 use App\Support\CashierMode;
 use Illuminate\Http\Request;
@@ -16,12 +17,16 @@ class AuthController extends Controller
 
     protected AuthLoginService $authLoginService;
 
+    protected AffiliateReferralService $affiliateReferralService;
+
     public function __construct(
         TenantRegistrationService $registrationService,
-        AuthLoginService $authLoginService
+        AuthLoginService $authLoginService,
+        AffiliateReferralService $affiliateReferralService
     ) {
         $this->registrationService = $registrationService;
         $this->authLoginService = $authLoginService;
+        $this->affiliateReferralService = $affiliateReferralService;
     }
 
     public function showPortal()
@@ -52,6 +57,14 @@ class AuthController extends Controller
             return back()
                 ->withErrors(['login' => 'Invalid username, email, or password.'])
                 ->onlyInput('login');
+        }
+
+        if ($user->isAffiliate()) {
+            return redirect()->route('affiliate.dashboard');
+        }
+
+        if ($user->isShareholder()) {
+            return redirect()->route('shareholder.dashboard');
         }
 
         return $this->completeTenantLogin($request, $user, $user->business);
@@ -143,9 +156,15 @@ class AuthController extends Controller
         return $this->completeTenantLogin($request, $user, $business);
     }
 
-    public function showRegister()
+    public function showRegister(Request $request)
     {
-        return view('auth.register');
+        $this->affiliateReferralService->captureFromRequest($request);
+
+        $sponsor = $this->affiliateReferralService->resolveFromSession($request);
+
+        return view('auth.register', [
+            'sponsor' => $sponsor,
+        ]);
     }
 
     public function checkUsername(Request $request)
@@ -176,6 +195,7 @@ class AuthController extends Controller
 
         $data = $request->validate([
             'business_name' => 'required|string|max:255',
+            'business_type' => 'required|string|in:' . implode(',', \App\Enums\BusinessType::all()),
             'name' => 'required|string|max:255',
             'username' => 'required|string|max:50|alpha_dash|unique:users,username',
             'email' => 'required|email|unique:users,email',
@@ -183,7 +203,14 @@ class AuthController extends Controller
             'phone' => 'nullable|string|max:30',
         ]);
 
+        $sponsor = $this->affiliateReferralService->resolveFromSession($request);
+
+        if ($sponsor) {
+            $data['sponsor_id'] = $sponsor->id;
+        }
+
         $user = $this->registrationService->register($data);
+        $this->affiliateReferralService->clearSession($request);
         $user->load('business');
 
         Auth::login($user);
@@ -204,7 +231,11 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         $user = $request->user();
-        $portalUrl = $user && $user->business ? $user->business->portalLoginUrl() : route('login');
+        $portalUrl = $user && $user->isShareholder()
+            ? route('shareholder.login')
+            : ($user && $user->isAffiliate()
+            ? route('affiliate.login')
+            : ($user && $user->business ? $user->business->portalLoginUrl() : route('login')));
 
         if ($user) {
             SystemAuditLogger::record(
@@ -229,6 +260,16 @@ class AuthController extends Controller
         if ($user->isPlatformAdmin()) {
             Auth::logout();
             return back()->withErrors(['login' => 'Use the platform admin login instead.']);
+        }
+
+        if ($user->isAffiliate()) {
+            Auth::logout();
+            return back()->withErrors(['login' => 'Use the affiliate partner login instead.']);
+        }
+
+        if ($user->isShareholder()) {
+            Auth::logout();
+            return back()->withErrors(['login' => 'Use the shareholder login instead.']);
         }
 
         if ((int) $user->business_id !== (int) $business->id) {

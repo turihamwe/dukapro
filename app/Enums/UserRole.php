@@ -8,6 +8,8 @@ class UserRole
     public const MANAGER = 'manager';
     public const SUPERVISOR = 'supervisor';
     public const CASHIER = 'cashier';
+    public const AFFILIATE = 'affiliate';
+    public const SHAREHOLDER = 'shareholder';
 
     public static function all(): array
     {
@@ -16,6 +18,8 @@ class UserRole
             self::MANAGER,
             self::SUPERVISOR,
             self::CASHIER,
+            self::AFFILIATE,
+            self::SHAREHOLDER,
         ];
     }
 

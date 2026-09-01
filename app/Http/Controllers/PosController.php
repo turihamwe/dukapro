@@ -19,10 +19,12 @@ class PosController extends Controller
 
     public function index(Request $request)
     {
-        $products = Product::where('is_active', true)
+        $products = Product::sellable()
+            ->where('is_active', true)
             ->where('stock_quantity', '>', 0)
+            ->with('brand')
             ->orderBy('name')
-            ->get(['id', 'name', 'sku', 'price', 'stock_quantity', 'measurement_unit', 'variant_attributes']);
+            ->get(['id', 'name', 'sku', 'price', 'stock_quantity', 'measurement_unit', 'attribute_values', 'brand_id', 'parent_id']);
 
         $customers = Customer::where('is_active', true)
             ->orderBy('name')
@@ -35,14 +37,15 @@ class PosController extends Controller
     {
         $query = $request->get('q', '');
 
-        $products = Product::where('is_active', true)
+        $products = Product::sellable()
+            ->where('is_active', true)
             ->where('stock_quantity', '>', 0)
             ->where(function ($q) use ($query) {
                 $q->where('name', 'like', "%{$query}%")
                     ->orWhere('sku', 'like', "%{$query}%");
             })
             ->limit(15)
-            ->get(['id', 'name', 'sku', 'price', 'stock_quantity', 'measurement_unit', 'variant_attributes']);
+            ->get(['id', 'name', 'sku', 'price', 'stock_quantity', 'measurement_unit', 'attribute_values']);
 
         return response()->json($products);
     }

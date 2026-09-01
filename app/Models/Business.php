@@ -6,6 +6,7 @@ use App\Enums\SubscriptionStatus;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -14,7 +15,9 @@ class Business extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'sponsor_id',
         'name',
+        'business_type',
         'slug',
         'portal_slug',
         'logo_path',
@@ -46,6 +49,11 @@ class Business extends Model
         'subscription_amount' => 'float',
     ];
 
+    public function sponsor(): BelongsTo
+    {
+        return $this->belongsTo(Affiliate::class, 'sponsor_id');
+    }
+
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
@@ -54,6 +62,26 @@ class Business extends Model
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);
+    }
+
+    public function brands(): HasMany
+    {
+        return $this->hasMany(Brand::class);
+    }
+
+    public function productAttributes(): HasMany
+    {
+        return $this->hasMany(ProductAttribute::class);
+    }
+
+    public function soldByUnits(): HasMany
+    {
+        return $this->hasMany(SoldByUnit::class);
+    }
+
+    public function usesProductVariants(): bool
+    {
+        return (bool) ($this->settings['use_product_variants'] ?? false);
     }
 
     public function sales(): HasMany
