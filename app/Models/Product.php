@@ -73,6 +73,20 @@ class Product extends Model
         return $this->hasMany(Damage::class);
     }
 
+    public function batches(): HasMany
+    {
+        return $this->hasMany(ProductBatch::class);
+    }
+
+    public function activeBatches(): HasMany
+    {
+        return $this->hasMany(ProductBatch::class)
+            ->where('status', ProductBatch::STATUS_ACTIVE)
+            ->where('remaining_quantity', '>', 0)
+            ->orderBy('received_at')
+            ->orderBy('id');
+    }
+
     public function auditLogs(): MorphMany
     {
         return $this->morphMany(AuditLog::class, 'auditable');
@@ -127,5 +141,28 @@ class Product extends Model
         }
 
         return implode(' · ', $parts);
+    }
+
+    public function batchStockQuantity(): float
+    {
+        if ($this->relationLoaded('activeBatches')) {
+            return round((float) $this->activeBatches->sum('remaining_quantity'), 3);
+        }
+
+        return round((float) $this->activeBatches()->sum('remaining_quantity'), 3);
+    }
+
+    public function totalStockQuantity(): float
+    {
+        return round((float) $this->stock_quantity + $this->batchStockQuantity(), 3);
+    }
+
+    public function hasActiveBatches(): bool
+    {
+        if ($this->relationLoaded('activeBatches')) {
+            return $this->activeBatches->isNotEmpty();
+        }
+
+        return $this->activeBatches()->exists();
     }
 }

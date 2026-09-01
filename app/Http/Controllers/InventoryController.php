@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\ProductAttribute;
 use App\Models\SoldByUnit;
 use App\Services\CatalogDiscoveryService;
+use App\Services\ProductBatchService;
 use App\Services\ProductInventoryService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -21,10 +22,16 @@ class InventoryController extends Controller
 
     protected CatalogDiscoveryService $catalogDiscovery;
 
-    public function __construct(ProductInventoryService $inventoryService, CatalogDiscoveryService $catalogDiscovery)
-    {
+    protected ProductBatchService $batchService;
+
+    public function __construct(
+        ProductInventoryService $inventoryService,
+        CatalogDiscoveryService $catalogDiscovery,
+        ProductBatchService $batchService
+    ) {
         $this->inventoryService = $inventoryService;
         $this->catalogDiscovery = $catalogDiscovery;
+        $this->batchService = $batchService;
         $this->authorizeResource(Product::class, 'product');
     }
 
@@ -34,8 +41,8 @@ class InventoryController extends Controller
 
         $query = Product::query()
             ->catalog()
-            ->with(['brand', 'variants'])
-            ->withCount('variants')
+            ->with(['brand', 'variants.activeBatches', 'activeBatches'])
+            ->withCount(['variants', 'activeBatches as active_batches_count'])
             ->orderBy('name');
 
         if ($search !== '') {
@@ -55,6 +62,65 @@ class InventoryController extends Controller
         $business = $request->user()->business;
 
         return view('inventory.index', compact('products', 'search', 'business'));
+    }
+
+    public function show(Business $business, Product $product)
+    {
+        if ($product->parent_id !== null) {
+            return redirect()->to(tenant_route('tenant.inventory.show', ['product' => $product->parent_id]))
+                ->with('info', 'Viewing parent product. Batches for this variant are listed below.');
+        }
+
+        $product->load(['brand', 'variants.activeBatches', 'activeBatches', 'batches' => fn ($q) => $q->orderByDesc('received_at')]);
+
+        $canViewCost = auth()->user()->can('view-cost-prices');
+
+        return view('inventory.show', compact('product', 'business', 'canViewCost'));
+    }
+
+    public function storeBatch(Request $request, Business $business, Product $product)
+    {
+        $this->authorize('update', $product);
+
+        $rules = [
+            'quantity' => 'required|numeric|min:0.001',
+            'selling_price' => 'required|numeric|min:0',
+            'received_at' => 'nullable|date',
+            'notes' => 'nullable|string|max:1000',
+            'variant_id' => 'nullable|integer',
+        ];
+
+        if ($request->user()->can('view-cost-prices')) {
+            $rules['cost_price'] = 'nullable|numeric|min:0';
+        }
+
+        $data = $request->validate($rules);
+
+        if (! $request->user()->can('view-cost-prices')) {
+            unset($data['cost_price']);
+        }
+
+        $target = $product;
+        if ($product->isVariableParent()) {
+            if (! $request->filled('variant_id')) {
+                throw ValidationException::withMessages([
+                    'variant_id' => 'Select a variant for this batch.',
+                ]);
+            }
+            $target = $product->variants()->whereKey($request->input('variant_id'))->firstOrFail();
+        } elseif ($product->parent_id !== null) {
+            return redirect()
+                ->to(tenant_route('tenant.inventory.show', ['product' => $product->parent_id]))
+                ->with('info', 'Add batches from the parent product page.');
+        }
+
+        $this->batchService->addBatch($target, $data, (int) $business->id, $request->user());
+
+        $redirectProduct = $product->parent_id ? $product->parent : $product;
+
+        return redirect()
+            ->to(tenant_route('tenant.inventory.show', ['product' => $redirectProduct]))
+            ->with('success', 'New batch added successfully.');
     }
 
     public function create(Request $request)

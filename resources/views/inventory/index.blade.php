@@ -1,7 +1,7 @@
 @extends(auth()->user()->usesCashierExperience() ? 'layouts.cashier' : 'layouts.admin')
 
 @section('title', 'Inventory')
-@section('container_class', 'max-w-4xl')
+@section('container_class', 'max-w-5xl')
 
 @section('content')
 <x-page-header title="Inventory" subtitle="Each product is tracked individually with its own price and stock">
@@ -31,13 +31,41 @@
     @endif
 </div>
 
-{{-- Mobile: stacked cards --}}
+@php
+    $resolveProductStock = function ($product) {
+        if ($product->variants_count > 0) {
+            return round($product->variants->sum(fn ($v) => $v->totalStockQuantity()), 3);
+        }
+        return $product->totalStockQuantity();
+    };
+    $productHasBatches = function ($product) {
+        if ($product->variants_count > 0) {
+            return $product->variants->contains(fn ($v) => $v->hasActiveBatches());
+        }
+        return $product->hasActiveBatches();
+    };
+@endphp
+
+{{-- Mobile --}}
 <div id="inventory-mobile-list" class="space-y-3 md:hidden">
     @forelse($products as $product)
+        @php
+            $totalStock = $resolveProductStock($product);
+            $hasBatches = $productHasBatches($product);
+            $batchKey = 'batch-mobile-' . $product->id;
+        @endphp
         <x-card :padding="false" class="inventory-item p-4" data-search="{{ strtolower($product->name . ' ' . ($product->sku ?? '') . ' ' . $product->measurement_unit . ' ' . ($product->description ?? '')) }}">
             <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0">
-                    <p class="font-medium text-gray-900">{{ $product->name }}</p>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <p class="font-medium text-gray-900">{{ $product->name }}</p>
+                        @if($hasBatches)
+                            <span class="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-700">
+                                <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                                Batched
+                            </span>
+                        @endif
+                    </div>
                     <p class="text-xs text-gray-500">
                         {{ $product->brand->name ?? 'No brand' }}
                         · {{ $product->sku ?? 'No SKU' }}
@@ -46,28 +74,31 @@
                             · {{ $product->variants_count }} variants
                         @endif
                     </p>
-                    @if($product->description)
-                        <p class="mt-1 line-clamp-2 text-xs text-gray-500">{{ $product->description }}</p>
-                    @endif
                 </div>
                 <div class="text-right shrink-0">
-                    <p class="text-xs text-gray-500">Sell: <span class="font-semibold text-gray-900">@money($product->price)</span></p>
-                    @can('view-cost-prices')
-                        <p class="text-xs text-gray-500">Cost: <span class="font-medium text-gray-700">@money($product->cost_price ?? 0)</span></p>
-                    @endcan
-                    <p class="text-xs {{ $product->stock_quantity <= 5 ? 'text-red-600 font-medium' : 'text-gray-500' }}">Stock: {{ $product->stock_quantity }}</p>
-                    @can('update', $product)
-                        <a href="{{ tenant_route('tenant.inventory.edit', ['product' => $product]) }}" class="mt-1 inline-block text-xs font-medium text-indigo-600 hover:text-indigo-700">Edit</a>
-                    @endcan
+                    @if($product->variants_count === 0)
+                        <p class="text-xs text-gray-500">Sell: <span class="font-semibold text-gray-900">@money($product->price)</span></p>
+                    @endif
+                    <p class="text-xs {{ $totalStock <= 5 ? 'text-red-600 font-medium' : 'text-gray-500' }}">Stock: {{ $totalStock }}</p>
+                    <a href="{{ tenant_route('tenant.inventory.show', ['product' => $product]) }}" class="mt-1 inline-block text-xs font-medium text-emerald-600 hover:text-emerald-700">View</a>
+                    @if($hasBatches)
+                        <button type="button" onclick="document.getElementById('{{ $batchKey }}').classList.toggle('hidden')"
+                                class="mt-1 block w-full text-xs font-medium text-indigo-600 hover:text-indigo-700">Batch breakdown</button>
+                    @endif
                 </div>
             </div>
+            @if($hasBatches)
+                <div id="{{ $batchKey }}" class="mt-3 hidden border-t border-gray-100 pt-3">
+                    @include('inventory.partials.batch-breakdown', ['product' => $product, 'canViewCost' => auth()->user()->can('view-cost-prices')])
+                </div>
+            @endif
         </x-card>
     @empty
         <x-card class="text-center text-sm text-gray-500">No products match your search.</x-card>
     @endforelse
 </div>
 
-{{-- Desktop: table --}}
+{{-- Desktop --}}
 <x-card :padding="false" class="hidden md:block overflow-hidden">
     <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
@@ -83,12 +114,22 @@
             </thead>
             <tbody id="inventory-desktop-body" class="divide-y divide-gray-100 bg-white">
                 @forelse($products as $product)
+                    @php
+                        $totalStock = $resolveProductStock($product);
+                        $hasBatches = $productHasBatches($product);
+                        $batchKey = 'batch-row-' . $product->id;
+                    @endphp
                     <tr class="inventory-item transition hover:bg-gray-50" data-search="{{ strtolower($product->name . ' ' . ($product->sku ?? '') . ' ' . $product->measurement_unit . ' ' . ($product->description ?? '')) }}">
                         <td class="px-6 py-4 text-left">
-                            <p class="text-sm font-medium text-gray-900">{{ $product->name }}</p>
-                            @if($product->description)
-                                <p class="mt-0.5 line-clamp-1 text-xs text-gray-500">{{ $product->description }}</p>
-                            @endif
+                            <div class="flex items-center gap-2">
+                                <p class="text-sm font-medium text-gray-900">{{ $product->name }}</p>
+                                @if($hasBatches)
+                                    <span class="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-700" title="Batch-tracked inventory">
+                                        <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                                        Batches
+                                    </span>
+                                @endif
+                            </div>
                             @if($product->variants_count > 0)
                                 <p class="mt-1 text-xs font-medium text-indigo-600">{{ $product->variants_count }} sellable variants</p>
                             @endif
@@ -101,7 +142,11 @@
                         </td>
                         <td class="px-6 py-4 text-center text-sm text-gray-600">
                             @can('view-cost-prices')
-                                @money($product->cost_price ?? 0)
+                                @if($product->variants_count === 0)
+                                    @money($product->cost_price ?? 0)
+                                @else
+                                    —
+                                @endif
                             @else
                                 —
                             @endcan
@@ -113,26 +158,27 @@
                                 @money($product->price)
                             @endif
                         </td>
-                        <td class="px-6 py-4 text-center text-sm {{ $product->variants_count > 0 ? 'text-gray-500' : ($product->stock_quantity <= 5 ? 'font-medium text-red-600' : 'text-gray-500') }}">
-                            @if($product->variants_count > 0)
-                                {{ $product->variants->sum('stock_quantity') }} total
-                            @else
-                                {{ $product->stock_quantity }}
+                        <td class="px-6 py-4 text-center text-sm {{ $totalStock <= 5 ? 'font-medium text-red-600' : 'text-gray-500' }}">
+                            {{ $totalStock }}
+                            @if($hasBatches)
+                                <button type="button" onclick="document.getElementById('{{ $batchKey }}').classList.toggle('hidden')"
+                                        class="mt-1 block w-full text-xs font-medium text-indigo-600 hover:text-indigo-700">Show batches</button>
                             @endif
                         </td>
-                        <td class="px-6 py-4 text-right">
+                        <td class="px-6 py-4 text-right whitespace-nowrap">
+                            <a href="{{ tenant_route('tenant.inventory.show', ['product' => $product]) }}" class="text-sm font-medium text-emerald-600 hover:text-emerald-700">View</a>
                             @can('update', $product)
-                                <a href="{{ tenant_route('tenant.inventory.edit', ['product' => $product]) }}" class="text-sm font-medium text-indigo-600 hover:text-indigo-700">Edit</a>
-                            @endcan
-                            @can('delete', $product)
-                                <form method="POST" action="{{ tenant_route('tenant.inventory.destroy', ['product' => $product]) }}" class="ml-3 inline" onsubmit="return confirm('Delete this product?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="text-sm font-medium text-red-600 hover:text-red-700">Delete</button>
-                                </form>
+                                <a href="{{ tenant_route('tenant.inventory.edit', ['product' => $product]) }}" class="ml-3 text-sm font-medium text-indigo-600 hover:text-indigo-700">Edit</a>
                             @endcan
                         </td>
                     </tr>
+                    @if($hasBatches)
+                        <tr id="{{ $batchKey }}" class="hidden bg-indigo-50/40">
+                            <td colspan="6" class="px-6 py-4">
+                                @include('inventory.partials.batch-breakdown', ['product' => $product, 'canViewCost' => auth()->user()->can('view-cost-prices')])
+                            </td>
+                        </tr>
+                    @endif
                 @empty
                     <tr>
                         <td colspan="6" class="px-6 py-12 text-center text-sm text-gray-500">No products match your search.</td>

@@ -13,6 +13,13 @@ use Illuminate\Validation\ValidationException;
 
 class DamageService
 {
+    protected ProductBatchService $batchService;
+
+    public function __construct(ProductBatchService $batchService)
+    {
+        $this->batchService = $batchService;
+    }
+
     public function record(User $user, array $data): Damage
     {
         return DB::transaction(function () use ($user, $data) {
@@ -30,14 +37,15 @@ class DamageService
                 ]);
             }
 
-            if ($product->stock_quantity < $quantity) {
+            $available = $this->batchService->availableStock($product);
+            if ($available < $quantity) {
                 throw ValidationException::withMessages([
-                    'quantity' => "Insufficient stock for {$product->name}. Available: {$product->stock_quantity}",
+                    'quantity' => "Insufficient stock for {$product->displayName()}. Available: {$available}",
                 ]);
             }
 
-            $oldStock = $product->stock_quantity;
-            $costPrice = (float) ($product->cost_price ?? 0);
+            $deduction = $this->batchService->applyFifoDeduction($product, $quantity);
+            $costPrice = $deduction['cost_price'] ?? (float) ($product->cost_price ?? 0);
             $damageDate = Carbon::parse($data['damage_date'] ?? today());
 
             $damage = Damage::create([
@@ -50,14 +58,13 @@ class DamageService
                 'damage_date' => $damageDate->toDateString(),
             ]);
 
-            $product->decrement('stock_quantity', $quantity);
-
             AuditLogger::record(
                 'stock_damaged',
                 $product->fresh(),
-                ['stock_quantity' => $oldStock],
+                null,
                 [
                     'stock_quantity' => $product->fresh()->stock_quantity,
+                    'batch_stock' => $product->fresh()->batchStockQuantity(),
                     'damage_id' => $damage->id,
                     'quantity' => $quantity,
                     'reason' => $data['reason'],

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\Product;
+use App\Services\ProductBatchService;
 use App\Services\SaleService;
 use Illuminate\Http\Request;
 
@@ -11,9 +12,12 @@ class PosController extends Controller
 {
     protected SaleService $saleService;
 
-    public function __construct(SaleService $saleService)
+    protected ProductBatchService $batchService;
+
+    public function __construct(SaleService $saleService, ProductBatchService $batchService)
     {
         $this->saleService = $saleService;
+        $this->batchService = $batchService;
         $this->middleware('can:access-pos');
     }
 
@@ -21,10 +25,18 @@ class PosController extends Controller
     {
         $products = Product::sellable()
             ->where('is_active', true)
-            ->where('stock_quantity', '>', 0)
-            ->with('brand')
+            ->with('activeBatches')
             ->orderBy('name')
             ->get(['id', 'name', 'sku', 'price', 'stock_quantity', 'measurement_unit', 'attribute_values', 'brand_id', 'parent_id']);
+
+        $products = $products->filter(function (Product $product) {
+            return $this->batchService->availableStock($product) > 0;
+        })->map(function (Product $product) {
+            $product->setAttribute('available_stock', $this->batchService->availableStock($product));
+            $product->setAttribute('fifo_price', $this->batchService->fifoSellingPrice($product));
+
+            return $product;
+        })->values();
 
         $customers = Customer::where('is_active', true)
             ->orderBy('name')
@@ -39,13 +51,22 @@ class PosController extends Controller
 
         $products = Product::sellable()
             ->where('is_active', true)
-            ->where('stock_quantity', '>', 0)
+            ->with('activeBatches')
             ->where(function ($q) use ($query) {
                 $q->where('name', 'like', "%{$query}%")
                     ->orWhere('sku', 'like', "%{$query}%");
             })
             ->limit(15)
             ->get(['id', 'name', 'sku', 'price', 'stock_quantity', 'measurement_unit', 'attribute_values']);
+
+        $products = $products->filter(function (Product $product) {
+            return $this->batchService->availableStock($product) > 0;
+        })->map(function (Product $product) {
+            $product->setAttribute('available_stock', $this->batchService->availableStock($product));
+            $product->setAttribute('fifo_price', $this->batchService->fifoSellingPrice($product));
+
+            return $product;
+        })->values();
 
         return response()->json($products);
     }

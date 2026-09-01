@@ -19,6 +19,7 @@ class SaleItem extends Model
         'measurement_unit',
         'quantity',
         'unit_price',
+        'cost_price',
         'discount_amount',
         'subtotal',
     ];
@@ -27,6 +28,7 @@ class SaleItem extends Model
         'variant_attributes' => 'array',
         'quantity' => 'float',
         'unit_price' => 'float',
+        'cost_price' => 'float',
         'discount_amount' => 'float',
         'subtotal' => 'float',
     ];
@@ -39,5 +41,10 @@ class SaleItem extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function batchAllocations(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(SaleItemBatchAllocation::class);
     }
 }

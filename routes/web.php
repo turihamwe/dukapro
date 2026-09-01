@@ -208,9 +208,11 @@ Route::middleware(['maintenance'])->group(function () {
                         Route::get('/create', [InventoryController::class, 'create'])->name('create');
                         Route::post('/', [InventoryController::class, 'store'])->name('store');
                     });
+                    Route::get('/{product}', [InventoryController::class, 'show'])->name('show');
                     Route::middleware(['can:update-inventory'])->group(function () {
                         Route::get('/{product}/edit', [InventoryController::class, 'edit'])->name('edit');
                         Route::put('/{product}', [InventoryController::class, 'update'])->name('update');
+                        Route::post('/{product}/batches', [InventoryController::class, 'storeBatch'])->name('batches.store');
                     });
                     Route::delete('/{product}', [InventoryController::class, 'destroy'])
                         ->middleware('can:delete-inventory')

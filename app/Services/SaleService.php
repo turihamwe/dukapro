@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Models\SaleItemBatchAllocation;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -17,9 +18,12 @@ class SaleService
 {
     protected DebtLedgerService $debtLedgerService;
 
-    public function __construct(DebtLedgerService $debtLedgerService)
+    protected ProductBatchService $batchService;
+
+    public function __construct(DebtLedgerService $debtLedgerService, ProductBatchService $batchService)
     {
         $this->debtLedgerService = $debtLedgerService;
+        $this->batchService = $batchService;
     }
 
     public function completeSale(User $user, array $payload): Sale
@@ -47,21 +51,25 @@ class SaleService
                     ->firstOrFail();
 
                 $quantity = (float) $item['quantity'];
-                $unitPrice = (float) ($item['unit_price'] ?? $product->price);
-                $lineSubtotal = round($quantity * $unitPrice, 2);
-                $subtotal += $lineSubtotal;
+                $available = $this->batchService->availableStock($product);
 
-                if ($product->stock_quantity < $quantity) {
+                if ($available < $quantity) {
                     throw ValidationException::withMessages([
-                        'items' => "Insufficient stock for {$product->name}. Available: {$product->stock_quantity}",
+                        'items' => "Insufficient stock for {$product->displayName()}. Available: {$available}",
                     ]);
                 }
 
+                $deduction = $this->batchService->applyFifoDeduction($product, $quantity);
+                $lineSubtotal = $deduction['subtotal'];
+                $subtotal += $lineSubtotal;
+
                 $lineItems[] = [
-                    'product' => $product,
+                    'product' => $product->fresh(),
                     'quantity' => $quantity,
-                    'unit_price' => $unitPrice,
+                    'unit_price' => $deduction['unit_price'],
+                    'cost_price' => $deduction['cost_price'],
                     'subtotal' => $lineSubtotal,
+                    'allocations' => $deduction['allocations'],
                 ];
             }
 
@@ -103,9 +111,8 @@ class SaleService
             foreach ($lineItems as $line) {
                 /** @var Product $product */
                 $product = $line['product'];
-                $oldStock = $product->stock_quantity;
 
-                SaleItem::create([
+                $saleItem = SaleItem::create([
                     'sale_id' => $sale->id,
                     'product_id' => $product->id,
                     'product_name' => $product->displayName(),
@@ -114,17 +121,33 @@ class SaleService
                     'measurement_unit' => $product->measurement_unit,
                     'quantity' => $line['quantity'],
                     'unit_price' => $line['unit_price'],
+                    'cost_price' => $line['cost_price'],
                     'discount_amount' => 0,
                     'subtotal' => $line['subtotal'],
                 ]);
 
-                $product->decrement('stock_quantity', $line['quantity']);
+                foreach ($line['allocations'] as $allocation) {
+                    SaleItemBatchAllocation::create([
+                        'sale_item_id' => $saleItem->id,
+                        'product_batch_id' => $allocation['product_batch_id'],
+                        'quantity' => $allocation['quantity'],
+                        'cost_price' => $allocation['cost_price'],
+                        'selling_price' => $allocation['selling_price'],
+                        'subtotal' => $allocation['subtotal'],
+                        'is_legacy_stock' => $allocation['is_legacy_stock'],
+                    ]);
+                }
 
                 AuditLogger::record(
                     'stock_decremented',
                     $product->fresh(),
-                    ['stock_quantity' => $oldStock],
-                    ['stock_quantity' => $product->fresh()->stock_quantity, 'sale_id' => $sale->id],
+                    null,
+                    [
+                        'stock_quantity' => $product->fresh()->stock_quantity,
+                        'batch_stock' => $product->fresh()->batchStockQuantity(),
+                        'sale_id' => $sale->id,
+                        'fifo_allocations' => count($line['allocations']),
+                    ],
                     $businessId,
                     $user->id
                 );

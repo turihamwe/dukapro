@@ -13,6 +13,8 @@
                 @php
                     $posProduct = array_merge($product->only(['id', 'name', 'sku', 'price', 'stock_quantity', 'measurement_unit', 'attribute_values']), [
                         'display_name' => $product->displayName(),
+                        'stock_quantity' => $product->available_stock,
+                        'price' => $product->fifo_price,
                     ]);
                 @endphp
                 <div class="product-card" data-name="{{ strtolower($product->displayName() . ' ' . $product->name) }}" data-sku="{{ strtolower($product->sku ?? '') }}">
