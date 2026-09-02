@@ -37,72 +37,175 @@
         }
 
         /* Mobile-friendly modals & slide-overs */
+        :root {
+            --app-modal-max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+            --app-modal-bottom-offset: 0px;
+        }
+        body.has-cashier-bottom-nav {
+            --app-modal-bottom-offset: 4.5rem;
+            --app-modal-max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - var(--app-modal-bottom-offset));
+        }
         .app-modal-overlay {
             position: fixed;
             inset: 0;
-            z-index: 50;
+            z-index: 200;
             display: none;
-            align-items: flex-end;
-            justify-content: center;
-            padding: max(0.75rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom));
+            overflow: hidden;
             background: rgb(17 24 39 / 0.55);
-            overflow-y: auto;
             -webkit-overflow-scrolling: touch;
             overscroll-behavior: contain;
         }
-        .app-modal-overlay.is-open { display: flex; }
+        .app-modal-overlay.is-open {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: stretch;
+            padding-top: max(0.5rem, env(safe-area-inset-top, 0px));
+            padding-bottom: calc(var(--app-modal-bottom-offset) + max(0.5rem, env(safe-area-inset-bottom, 0px)));
+        }
         @media (min-width: 640px) {
-            .app-modal-overlay { align-items: center; }
+            .app-modal-overlay.is-open {
+                justify-content: center;
+                align-items: center;
+                padding: max(1rem, env(safe-area-inset-top, 0px)) 1rem max(1rem, env(safe-area-inset-bottom, 0px));
+            }
+            body.has-cashier-bottom-nav {
+                --app-modal-bottom-offset: 0px;
+                --app-modal-max-height: min(90dvh, calc(100dvh - 2rem));
+            }
         }
         .app-modal-panel {
             display: flex;
             flex-direction: column;
             width: 100%;
-            max-width: 28rem;
-            max-height: min(calc(100dvh - 1.5rem), 100%);
-            border-radius: 1rem;
+            max-width: 32rem;
+            min-height: 0;
+            max-height: var(--app-modal-max-height);
+            margin-left: auto;
+            margin-right: auto;
+            border-radius: 1rem 1rem 0 0;
             background: #fff;
             box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
             overflow: hidden;
         }
         @media (min-width: 640px) {
-            .app-modal-panel { max-width: 32rem; border-radius: 1rem; }
+            .app-modal-panel {
+                border-radius: 1rem;
+                width: 100%;
+            }
+        }
+        .app-modal-panel > form {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: hidden;
         }
         .app-modal-header {
-            flex-shrink: 0;
+            flex: 0 0 auto;
             display: flex;
             align-items: flex-start;
             justify-content: space-between;
             gap: 0.75rem;
-            padding: 1rem 1.25rem;
+            padding: 1rem 1.25rem 0.875rem;
             border-bottom: 1px solid #f3f4f6;
+            background: #fff;
         }
         .app-modal-body {
             flex: 1 1 auto;
             min-height: 0;
+            overflow-x: hidden;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
             overscroll-behavior: contain;
             padding: 1rem 1.25rem;
         }
         .app-modal-footer {
-            flex-shrink: 0;
+            flex: 0 0 auto;
             display: flex;
             flex-wrap: wrap;
             gap: 0.75rem;
             justify-content: flex-end;
-            padding: 1rem 1.25rem;
-            padding-bottom: max(1rem, env(safe-area-inset-bottom));
+            align-items: center;
+            padding: 0.875rem 1.25rem;
+            padding-bottom: max(0.875rem, env(safe-area-inset-bottom, 0px));
             border-top: 1px solid #f3f4f6;
             background: #fff;
+            box-shadow: 0 -4px 16px rgb(0 0 0 / 0.04);
         }
-        body.app-modal-open { overflow: hidden; touch-action: none; }
+        .app-modal-footer .w-full {
+            flex: 1 1 100%;
+        }
+        @media (max-width: 639px) {
+            .app-modal-footer {
+                flex-direction: column-reverse;
+            }
+            .app-modal-footer > * {
+                width: 100%;
+            }
+        }
+        body.app-modal-open {
+            overflow: hidden;
+            touch-action: none;
+        }
+        body.app-modal-open .cashier-bottom-nav,
+        body.app-modal-open .whatsapp-float-btn {
+            visibility: hidden;
+            pointer-events: none;
+        }
     </style>
     @stack('styles')
 </head>
-<body class="h-full bg-gray-50 text-gray-900 antialiased">
+<body class="h-full bg-gray-50 text-gray-900 antialiased @stack('body-class')">
     @yield('body')
+    @stack('modals')
     @include('layouts.partials.whatsapp-float')
+    <script>
+    (function () {
+        window.mountAppModal = function (modalEl) {
+            if (!modalEl || modalEl.dataset.appModalMounted === '1') return;
+            if (modalEl.parentElement !== document.body) {
+                document.body.appendChild(modalEl);
+            }
+            modalEl.dataset.appModalMounted = '1';
+            modalEl.addEventListener('click', function (e) {
+                if (e.target === modalEl) {
+                    window.closeAppModal(modalEl);
+                }
+            });
+            var panel = modalEl.querySelector('.app-modal-panel');
+            if (panel) {
+                panel.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                });
+            }
+        };
+
+        window.openAppModal = function (id) {
+            var el = typeof id === 'string' ? document.getElementById(id) : id;
+            if (!el) return;
+            window.mountAppModal(el);
+            el.classList.add('is-open');
+            document.body.classList.add('app-modal-open');
+        };
+
+        window.closeAppModal = function (target) {
+            var el = typeof target === 'string' ? document.getElementById(target) : target;
+            if (!el) return;
+            if (el.classList.contains('app-modal-overlay')) {
+                el.classList.remove('is-open');
+            } else {
+                var overlay = el.closest('.app-modal-overlay');
+                if (overlay) overlay.classList.remove('is-open');
+            }
+            if (!document.querySelector('.app-modal-overlay.is-open')) {
+                document.body.classList.remove('app-modal-open');
+            }
+        };
+
+        document.querySelectorAll('.app-modal-overlay').forEach(window.mountAppModal);
+    })();
+    </script>
     @stack('scripts')
     <script>
     (function () {
@@ -169,23 +272,14 @@
         var statusEl = document.getElementById('payment-status');
 
         function openModal() {
-            if (modal) {
-                modal.classList.add('is-open');
-                document.body.classList.add('app-modal-open');
-            }
+            if (modal) window.openAppModal(modal);
         }
         function closeModal() {
-            if (modal) {
-                modal.classList.remove('is-open');
-                document.body.classList.remove('app-modal-open');
-            }
+            if (modal) window.closeAppModal(modal);
         }
 
         openBtn?.addEventListener('click', openModal);
         closeBtn?.addEventListener('click', closeModal);
-        modal?.addEventListener('click', function (e) {
-            if (e.target === modal) closeModal();
-        });
 
         var planSummaryEl = document.getElementById('payment-plan-summary');
         var planInputs = form ? form.querySelectorAll('input[name="plan"]') : [];
@@ -209,27 +303,6 @@
             input.addEventListener('change', updatePlanSummary);
         });
         updatePlanSummary();
-
-        window.openAppModal = function (id) {
-            var el = typeof id === 'string' ? document.getElementById(id) : id;
-            if (!el) return;
-            el.classList.add('is-open');
-            document.body.classList.add('app-modal-open');
-        };
-
-        window.closeAppModal = function (target) {
-            var el = typeof target === 'string' ? document.getElementById(target) : target;
-            if (!el) return;
-            if (el.classList.contains('app-modal-overlay')) {
-                el.classList.remove('is-open');
-            } else {
-                var overlay = el.closest('.app-modal-overlay');
-                if (overlay) overlay.classList.remove('is-open');
-            }
-            if (!document.querySelector('.app-modal-overlay.is-open')) {
-                document.body.classList.remove('app-modal-open');
-            }
-        };
 
         form?.addEventListener('submit', function (e) {
             e.preventDefault();

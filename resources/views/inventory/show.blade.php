@@ -97,12 +97,12 @@
     @if(! $isVariable)
         <div id="add-batch-modal" class="app-modal-overlay" role="dialog" aria-modal="true">
             <div class="app-modal-panel">
-                <div class="app-modal-header">
-                    <h3 class="text-lg font-semibold text-gray-900">Add New Batch</h3>
-                    <button type="button" onclick="closeAppModal('add-batch-modal')" class="rounded-lg p-1 text-gray-400 hover:bg-gray-100">&times;</button>
-                </div>
                 <form method="POST" action="{{ tenant_route('tenant.inventory.batches.store', ['product' => $product]) }}" class="flex min-h-0 flex-1 flex-col">
                     @csrf
+                    <div class="app-modal-header">
+                        <h3 class="text-lg font-semibold text-gray-900">Add New Batch</h3>
+                        <button type="button" onclick="closeAppModal('add-batch-modal')" class="rounded-lg p-1 text-gray-400 hover:bg-gray-100">&times;</button>
+                    </div>
                     <div class="app-modal-body space-y-4">
                         <p class="text-sm text-gray-500">Log a new shipment without changing existing legacy stock.</p>
                         <div>

@@ -52,15 +52,15 @@
     <div class="mt-6">{{ $damages->links() }}</div>
 @endif
 
+@push('modals')
 <div id="damage-modal" class="app-modal-overlay" aria-hidden="true" role="dialog" aria-modal="true">
     <div class="app-modal-panel">
-        <div class="app-modal-header">
-            <h2 class="text-lg font-semibold text-gray-900">Log Damaged Stock</h2>
-            <button type="button" id="close-damage-modal" class="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600">&times;</button>
-        </div>
-
         <form method="POST" action="{{ tenant_route('tenant.damages.store') }}" class="flex min-h-0 flex-1 flex-col">
             @csrf
+            <div class="app-modal-header">
+                <h2 class="text-lg font-semibold text-gray-900">Log Damaged Stock</h2>
+                <button type="button" id="close-damage-modal" class="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600">&times;</button>
+            </div>
             <div class="app-modal-body space-y-4">
                 <x-select name="product_id" label="Product" required>
                     <option value="">Select product…</option>
@@ -90,6 +90,7 @@
         </form>
     </div>
 </div>
+@endpush
 @endsection
 
 @push('scripts')
@@ -100,25 +101,18 @@
     var closeBtn = document.getElementById('close-damage-modal');
     var cancelBtn = document.getElementById('cancel-damage-modal');
 
-    function openModal() {
-        modal.classList.add('is-open');
-        document.body.classList.add('app-modal-open');
-    }
-
-    function closeModal() {
-        modal.classList.remove('is-open');
-        document.body.classList.remove('app-modal-open');
-    }
-
-    if (openBtn) openBtn.addEventListener('click', openModal);
-    if (closeBtn) closeBtn.addEventListener('click', closeModal);
-    if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
-    modal?.addEventListener('click', function (e) {
-        if (e.target === modal) closeModal();
+    if (openBtn) openBtn.addEventListener('click', function () {
+        window.openAppModal(modal);
+    });
+    if (closeBtn) closeBtn.addEventListener('click', function () {
+        window.closeAppModal(modal);
+    });
+    if (cancelBtn) cancelBtn.addEventListener('click', function () {
+        window.closeAppModal(modal);
     });
 
     @if($errors->any() && old('product_id'))
-        openModal();
+        window.openAppModal(modal);
     @endif
 })();
 </script>

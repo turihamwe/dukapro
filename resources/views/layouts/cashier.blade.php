@@ -1,5 +1,9 @@
 @extends('layouts.base')
 
+@push('body-class')
+has-cashier-bottom-nav
+@endpush
+
 @section('body')
 @include('layouts.partials.impersonation-banner')
 @if(auth()->user()->canSwitchToCashierMode() && \App\Support\CashierMode::isActive())

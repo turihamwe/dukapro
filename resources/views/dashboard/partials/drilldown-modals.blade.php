@@ -9,6 +9,7 @@
     ];
 @endphp
 
+@push('modals')
 @foreach($modals as $id => $modal)
     <div id="{{ $id }}" class="dashboard-drilldown-modal app-modal-overlay" role="dialog" aria-modal="true">
         <div class="app-modal-panel max-w-lg">
@@ -38,39 +39,20 @@
         </div>
     </div>
 @endforeach
+@endpush
 
 @push('scripts')
 <script>
 (function () {
-    function openModal(id) {
-        var modal = document.getElementById(id);
-        if (!modal) return;
-        modal.classList.add('is-open');
-        document.body.classList.add('app-modal-open');
-    }
-
-    function closeModal(modal) {
-        modal.classList.remove('is-open');
-        if (!document.querySelector('.app-modal-overlay.is-open')) {
-            document.body.classList.remove('app-modal-open');
-        }
-    }
-
     document.querySelectorAll('.dashboard-drilldown-btn').forEach(function (btn) {
         btn.addEventListener('click', function () {
-            openModal(btn.getAttribute('data-modal'));
+            window.openAppModal(btn.getAttribute('data-modal'));
         });
     });
 
     document.querySelectorAll('.dashboard-drilldown-close').forEach(function (btn) {
         btn.addEventListener('click', function () {
-            closeModal(btn.closest('.dashboard-drilldown-modal'));
-        });
-    });
-
-    document.querySelectorAll('.dashboard-drilldown-modal').forEach(function (modal) {
-        modal.addEventListener('click', function (e) {
-            if (e.target === modal) closeModal(modal);
+            window.closeAppModal(btn.closest('.dashboard-drilldown-modal'));
         });
     });
 })();

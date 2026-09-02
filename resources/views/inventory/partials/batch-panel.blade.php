@@ -92,13 +92,13 @@
     @if($sellable->id !== $parentProduct->id)
         <div id="{{ $modalId }}" class="app-modal-overlay" role="dialog" aria-modal="true">
             <div class="app-modal-panel">
-                <div class="app-modal-header">
-                    <h3 class="text-lg font-semibold text-gray-900">Add Batch — {{ $sellable->displayName() }}</h3>
-                    <button type="button" onclick="closeAppModal('{{ $modalId }}')" class="rounded-lg p-1 text-gray-400 hover:bg-gray-100">&times;</button>
-                </div>
                 <form method="POST" action="{{ tenant_route('tenant.inventory.batches.store', ['product' => $parentProduct]) }}" class="flex min-h-0 flex-1 flex-col">
                     @csrf
                     <input type="hidden" name="variant_id" value="{{ $sellable->id }}">
+                    <div class="app-modal-header">
+                        <h3 class="text-lg font-semibold text-gray-900">Add Batch — {{ $sellable->displayName() }}</h3>
+                        <button type="button" onclick="closeAppModal('{{ $modalId }}')" class="rounded-lg p-1 text-gray-400 hover:bg-gray-100">&times;</button>
+                    </div>
                     <div class="app-modal-body space-y-4">
                         <div>
                             <label class="mb-1.5 block text-sm font-medium text-gray-700">Quantity received</label>

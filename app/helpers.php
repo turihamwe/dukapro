@@ -33,13 +33,13 @@ if (! function_exists('platform_footer_tagline')) {
         $tagline = trim((string) platform_brand('tagline'));
         $legacy = [
             "Trusted by 5000+ businesses",
-            "Trusted by 5000+ Businesses",
+            "Empowering African businesses with smart management",
             "Manage your Business From Anywhere",
             "LET'S GO DIGITAL",
         ];
 
         if ($tagline === '' || in_array($tagline, $legacy, true)) {
-            return 'Empowering African businesses with smart management';
+            return 'Trusted by 5000+ Businesses.';
         }
 
         return $tagline;

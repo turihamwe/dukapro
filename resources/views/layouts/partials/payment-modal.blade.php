@@ -4,18 +4,17 @@
 @endphp
 <div id="payment-modal" class="app-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="payment-modal-title">
     <div class="app-modal-panel">
-        <div class="app-modal-header">
-            <div>
-                <h2 id="payment-modal-title" class="text-lg font-semibold text-gray-900">Activate Subscription</h2>
-                <p class="mt-1 text-sm text-gray-500">Choose a plan and pay via mobile money.</p>
-            </div>
-            <button type="button" id="close-payment-modal" class="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600" aria-label="Close">&times;</button>
-        </div>
-
         <form id="payment-form" method="POST" action="{{ route('subscription.initiate') }}" class="flex min-h-0 flex-1 flex-col">
-            <div class="app-modal-body space-y-4">
-                @csrf
+            @csrf
+            <div class="app-modal-header">
+                <div>
+                    <h2 id="payment-modal-title" class="text-lg font-semibold text-gray-900">Activate Subscription</h2>
+                    <p class="mt-1 text-sm text-gray-500">Choose a plan and pay via mobile money.</p>
+                </div>
+                <button type="button" id="close-payment-modal" class="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600" aria-label="Close">&times;</button>
+            </div>
 
+            <div class="app-modal-body space-y-4">
                 @include('subscription.partials.plan-options', ['compact' => true])
 
                 <div>
