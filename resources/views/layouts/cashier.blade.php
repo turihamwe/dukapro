@@ -15,7 +15,19 @@
     </div>
 @endif
 
-<div class="cashier-shell flex min-h-[100dvh] flex-col bg-gray-100">
+@php
+    $waiterModeNav = auth()->user()->business && auth()->user()->business->usesShiftWaiterMode();
+    $showOperationsNav = auth()->user()->can('view-inventory')
+        || auth()->user()->can('record-expenses')
+        || auth()->user()->can('log-damages');
+    $operationsActive = request()->routeIs('tenant.operations.*')
+        || request()->routeIs('tenant.inventory.*')
+        || request()->routeIs('tenant.expenses.*')
+        || request()->routeIs('tenant.damages.*');
+    $navCols = 2 + ($waiterModeNav ? 1 : 0) + ($showOperationsNav ? 1 : 0);
+@endphp
+
+<div class="cashier-shell flex min-h-[100dvh] flex-col bg-gray-100 @yield('cashier_shell_class')">
     @if(!auth()->user()->canSwitchToCashierMode() || !\App\Support\CashierMode::isActive())
         @include('layouts.partials.trial-banner')
     @endif
@@ -35,42 +47,36 @@
         </div>
     </header>
 
-    <main class="mx-auto w-full max-w-6xl flex-1 px-3 py-4 pb-28 sm:px-4 sm:py-6">
+    <main class="mx-auto w-full max-w-6xl flex-1 px-3 py-4 pb-28 sm:px-4 sm:py-6 @yield('main_class')">
         @include('layouts.partials.flash')
         @yield('content')
     </main>
 
     <nav class="cashier-bottom-nav fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white/95 backdrop-blur-md" style="padding-bottom: env(safe-area-inset-bottom);">
-        <div class="mx-auto grid max-w-lg grid-cols-5 gap-1 px-2 py-2">
+        <div class="mx-auto grid max-w-lg gap-1 px-2 py-2" style="grid-template-columns: repeat({{ $navCols }}, minmax(0, 1fr));">
             @can('access-pos')
                 <a href="{{ tenant_route('tenant.pos.index') }}"
                    class="flex min-h-[56px] flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-semibold {{ request()->routeIs('tenant.pos.*') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600' }}">
                     <span class="mb-0.5 text-xl leading-none">🛒</span> POS
                 </a>
             @endcan
-            @if(auth()->user()->usesCashierExperience())
-                @can('view-inventory')
-                    <a href="{{ tenant_route('tenant.inventory.index') }}"
-                       class="flex min-h-[56px] flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-semibold {{ request()->routeIs('tenant.inventory.*') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600' }}">
-                        <span class="mb-0.5 text-xl leading-none">📦</span> Stock
+            @if($waiterModeNav)
+                @can('access-pos')
+                    <a href="{{ tenant_route('tenant.waiter-shift.index') }}"
+                       class="flex min-h-[56px] flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-semibold {{ request()->routeIs('tenant.waiter-shift.*') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600' }}">
+                        <span class="mb-0.5 text-xl leading-none">🍽</span> Waiters
                     </a>
                 @endcan
             @endif
-            @can('record-expenses')
-                <a href="{{ tenant_route('tenant.expenses.create') }}"
-                   class="flex min-h-[56px] flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-semibold {{ request()->routeIs('tenant.expenses.*') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600' }}">
-                    <span class="mb-0.5 text-xl leading-none">📝</span> Expense
+            @if($showOperationsNav)
+                <a href="{{ tenant_route('tenant.operations.index') }}"
+                   class="flex min-h-[56px] flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-semibold {{ $operationsActive ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600' }}">
+                    <span class="mb-0.5 text-xl leading-none">⚙</span> Operations
                 </a>
-            @endcan
-            @can('log-damages')
-                <a href="{{ tenant_route('tenant.damages.index') }}"
-                   class="flex min-h-[56px] flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-semibold {{ request()->routeIs('tenant.damages.*') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600' }}">
-                    <span class="mb-0.5 text-xl leading-none">💥</span> Damage
-                </a>
-            @endcan
+            @endif
             @can('submit-reconciliation')
                 <a href="{{ tenant_route('tenant.reconciliation.create') }}"
-                   class="flex min-h-[56px] flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-semibold {{ request()->routeIs('tenant.reconciliation.create') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600' }}">
+                   class="flex min-h-[56px] flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-semibold {{ request()->routeIs('tenant.reconciliation.*') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600' }}">
                     <span class="mb-0.5 text-xl leading-none">💰</span> Close Shift
                 </a>
             @endcan
@@ -82,6 +88,16 @@
 <style>
     .cashier-shell { min-height: 100dvh; }
     .cashier-bottom-nav a { touch-action: manipulation; }
+
+    @media (min-width: 1024px) {
+        .cashier-shell--operations-hub .cashier-main,
+        .cashier-shell--operations-hub main {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            max-height: calc(100dvh - 7rem);
+        }
+    }
 </style>
 @endpush
 @endsection

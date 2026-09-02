@@ -34,11 +34,35 @@ class SaleService
             $paymentMethod = $payload['payment_method'] ?? 'cash';
             $isCreditSale = (bool) ($payload['is_credit_sale'] ?? false);
             $customerId = $payload['customer_id'] ?? null;
+            $waiterId = $payload['waiter_id'] ?? null;
+            $mobileProvider = $payload['mobile_money_provider'] ?? null;
+            $business = $user->business;
+            $waiterMode = $business && $business->usesShiftWaiterMode();
 
-            if ($isCreditSale && ! $customerId) {
+            if ($waiterMode && ! $waiterId) {
+                throw ValidationException::withMessages([
+                    'waiter_id' => 'Select the waiter or floor staff for this order.',
+                ]);
+            }
+
+            if ($isCreditSale && ! $customerId && ! $waiterMode) {
                 throw ValidationException::withMessages([
                     'customer_id' => 'A customer is required for credit sales.',
                 ]);
+            }
+
+            if ($waiterId) {
+                $waiter = User::query()
+                    ->where('business_id', $businessId)
+                    ->where('id', $waiterId)
+                    ->where('is_active', true)
+                    ->first();
+
+                if (! $waiter) {
+                    throw ValidationException::withMessages([
+                        'waiter_id' => 'Selected staff member is invalid.',
+                    ]);
+                }
             }
 
             $subtotal = 0;
@@ -77,7 +101,7 @@ class SaleService
             $discountAmount = (float) ($payload['discount_amount'] ?? 0);
             $total = round($subtotal + $taxAmount - $discountAmount, 2);
 
-            if ($isCreditSale) {
+            if ($isCreditSale && $customerId) {
                 $customer = Customer::where('business_id', $businessId)
                     ->where('id', $customerId)
                     ->lockForUpdate()
@@ -95,6 +119,7 @@ class SaleService
             $sale = Sale::create([
                 'business_id' => $businessId,
                 'user_id' => $user->id,
+                'waiter_id' => $waiterId,
                 'customer_id' => $customerId,
                 'sale_number' => $saleNumber,
                 'subtotal' => $subtotal,
@@ -102,6 +127,7 @@ class SaleService
                 'discount_amount' => $discountAmount,
                 'total' => $total,
                 'payment_method' => $isCreditSale ? 'credit' : $paymentMethod,
+                'mobile_money_provider' => (! $isCreditSale && $paymentMethod === 'mobile_money') ? $mobileProvider : null,
                 'is_credit_sale' => $isCreditSale,
                 'status' => 'completed',
                 'notes' => $payload['notes'] ?? null,
@@ -153,13 +179,13 @@ class SaleService
                 );
             }
 
-            if ($isCreditSale) {
+            if ($isCreditSale && $customerId) {
                 $this->debtLedgerService->recordDebit(
                     Customer::find($customerId),
                     $total,
                     $user,
                     $sale,
-                    'Hardware credit sale #' . $saleNumber
+                    ($waiterMode ? 'Waiter tab' : 'Hardware credit sale') . ' #' . $saleNumber
                 );
             }
 

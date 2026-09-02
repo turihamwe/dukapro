@@ -3,8 +3,7 @@
 @section('title', 'POS Checkout')
 
 @section('content')
-@php
-    $posCatalog = $products->map(function ($product) {
+@php    $posCatalog = $products->map(function ($product) {
         return [
             'id' => $product->id,
             'name' => $product->displayName(),
@@ -52,18 +51,34 @@
                 <div class="flex items-center justify-between">
                     <span class="text-sm text-gray-500">Total</span>
                     <span id="cartTotal" class="text-xl font-bold text-gray-900">0.00</span>
-                </div>
+                </div>                @if($waiterMode ?? false)
+                    <x-select id="waiterId" label="Waiter / Floor Staff" required>
+                        <option value="">Select staff member</option>
+                        @foreach($floorStaff as $staff)
+                            <option value="{{ $staff->id }}">{{ $staff->name }} ({{ ucfirst($staff->role) }})</option>
+                        @endforeach
+                    </x-select>
+                @endif
 
                 <x-select id="paymentMethod" label="Payment">
                     <option value="cash">Cash</option>
                     <option value="mobile_money">Mobile Money</option>
-                    <option value="bank">Bank Transfer</option>
-                    <option value="credit">Credit (Hardware)</option>
+                    <option value="bank">{{ ($waiterMode ?? false) ? 'Merchant Code / Bank' : 'Bank Transfer' }}</option>
+                    <option value="credit">{{ ($waiterMode ?? false) ? 'Credit Tab (unpaid)' : 'Credit (Hardware)' }}</option>
                 </x-select>
 
+                @if($waiterMode ?? false)
+                <div id="mobileProviderWrap" class="hidden">
+                    <x-select id="mobileMoneyProvider" label="Mobile provider">
+                        <option value="mtn">MTN MoMo</option>
+                        <option value="airtel">Airtel Money</option>
+                    </x-select>
+                </div>
+                @endif
+
                 <div id="customerSelectWrap" class="hidden">
-                    <x-select id="customerId" label="Credit Customer">
-                        <option value="">Select customer</option>
+                    <x-select id="customerId" label="{{ ($waiterMode ?? false) ? 'Customer (optional for tabs)' : 'Credit Customer' }}">
+                        <option value="">{{ ($waiterMode ?? false) ? 'Walk-in / no customer' : 'Select customer' }}</option>
                         @foreach($customers as $c)
                             <option value="{{ $c->id }}">{{ $c->name }} (Bal: @money($c->outstanding_balance))</option>
                         @endforeach
@@ -76,13 +91,13 @@
     </div>
 </div>
 @endsection
-
 @push('scripts')
 <script id="pos-catalog-data" type="application/json">@json($posCatalog)</script>
 <script>
 (function () {
     var csrf = document.querySelector('meta[name="csrf-token"]').content;
     var checkoutUrl = @json(tenant_route('tenant.pos.checkout'));
+    var waiterMode = @json($waiterMode ?? false);
     var POS_CATALOG = JSON.parse(document.getElementById('pos-catalog-data').textContent);
     var productById = {};
     POS_CATALOG.forEach(function (p) { productById[String(p.id)] = p; });
@@ -225,14 +240,33 @@
     });
 
     document.getElementById('paymentMethod').addEventListener('change', function () {
-        document.getElementById('customerSelectWrap').classList.toggle('hidden', this.value !== 'credit');
+        var method = this.value;
+        document.getElementById('customerSelectWrap').classList.toggle('hidden', method !== 'credit');
+        if (waiterMode) {
+            var mobileWrap = document.getElementById('mobileProviderWrap');
+            if (mobileWrap) {
+                mobileWrap.classList.toggle('hidden', method !== 'mobile_money');
+            }
+        }
     });
 
     document.getElementById('checkoutBtn').addEventListener('click', async function () {
         var paymentMethod = document.getElementById('paymentMethod').value;
         var customerId = document.getElementById('customerId').value;
-        if (paymentMethod === 'credit' && !customerId) {
+        var waiterId = waiterMode ? document.getElementById('waiterId').value : null;
+        var mobileProviderEl = document.getElementById('mobileMoneyProvider');
+        var mobileProvider = mobileProviderEl ? mobileProviderEl.value : null;
+
+        if (waiterMode && !waiterId) {
+            alert('Select the waiter or floor staff for this order');
+            return;
+        }
+        if (paymentMethod === 'credit' && !waiterMode && !customerId) {
             alert('Select a customer for credit sale');
+            return;
+        }
+        if (waiterMode && paymentMethod === 'mobile_money' && !mobileProvider) {
+            alert('Select Airtel or MTN for mobile money');
             return;
         }
 
@@ -250,7 +284,9 @@
                         return { product_id: i.product_id, quantity: i.quantity, unit_price: i.unit_price };
                     }),
                     payment_method: paymentMethod,
+                    mobile_money_provider: paymentMethod === 'mobile_money' ? mobileProvider : null,
                     customer_id: customerId || null,
+                    waiter_id: waiterId || null,
                     is_credit_sale: paymentMethod === 'credit',
                 }),
             });

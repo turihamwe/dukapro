@@ -2,12 +2,13 @@
 
 @section('title', 'Close Shift')
 @section('container_class', 'max-w-2xl')
+@section('main_class', 'lg:!py-2')
 
 @section('content')
-<x-page-header title="Close Shift" subtitle="Count your drawer and submit end-of-day balancing." />
+<x-page-header title="Close Shift" subtitle="Count your drawer and submit end-of-day balancing." class="!mb-4 lg:!mb-3" />
 
 <x-card>
-    <form method="POST" action="{{ tenant_route('tenant.reconciliation.store') }}" class="space-y-6">
+    <form method="POST" action="{{ tenant_route('tenant.reconciliation.store') }}" class="space-y-4 lg:space-y-3">
         @csrf
         <input type="hidden" name="reconciliation_date" value="{{ $date }}">
 
@@ -51,10 +52,7 @@
             </div>
             <div class="mt-3 flex flex-wrap gap-3 text-xs">
                 @can('create', App\Models\Expense::class)
-                    <a href="{{ tenant_route('tenant.expenses.create') }}" class="font-medium text-indigo-600 hover:text-indigo-700">Record expense →</a>
-                @endcan
-                @can('log-damages')
-                    <a href="{{ tenant_route('tenant.damages.index') }}" class="font-medium text-indigo-600 hover:text-indigo-700">Log damage →</a>
+                    <a href="{{ tenant_route('tenant.operations.index') }}" class="font-medium text-indigo-600 hover:text-indigo-700">Operations hub →</a>
                 @endcan
             </div>
         </div>
@@ -64,9 +62,48 @@
         <x-input type="number" step="0.01" name="actual_bank_other" label="Bank &amp; other methods received" value="{{ old('actual_bank_other', 0) }}" large />
         <x-textarea name="notes" label="Notes" rows="2" placeholder="Explain any missing money...">{{ old('notes') }}</x-textarea>
 
-        <p class="text-xs text-gray-500">
-            Balancing: Expected cash = Actual cash + Mobile money + Bank &amp; other + Expenses + Damages + Missing money
-        </p>
+        @if($business->usesShiftWaiterMode())
+            <div class="rounded-xl border border-violet-200 bg-violet-50 p-4 text-sm">
+                <div class="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                        <p class="font-semibold text-violet-950">Waiter shift summaries</p>
+                        <p class="mt-1 text-xs text-violet-900/80">Balance waiters before closing shift, then bundle summaries into this EOD report.</p>
+                    </div>
+                    <a href="{{ tenant_route('tenant.waiter-shift.index', ['date' => $date]) }}" class="text-xs font-medium text-violet-700 hover:text-violet-900">Open waiter balancing →</a>
+                </div>
+
+                @if(isset($waiterBalances) && $waiterBalances->isNotEmpty())
+                    <div class="mt-4 overflow-x-auto">
+                        <table class="w-full min-w-[480px] text-left text-xs">
+                            <thead>
+                                <tr class="text-violet-900/70">
+                                    <th class="py-1 pr-3">Waiter</th>
+                                    <th class="py-1 pr-3">Expected</th>
+                                    <th class="py-1 pr-3">Submitted</th>
+                                    <th class="py-1">Shortage</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($waiterBalances as $balance)
+                                    <tr class="border-t border-violet-200/60">
+                                        <td class="py-2 pr-3 font-medium">{{ $balance->waiter->name ?? 'Staff' }}</td>
+                                        <td class="py-2 pr-3">@money($balance->expectedTotal())</td>
+                                        <td class="py-2 pr-3">@money($balance->actualTotal())</td>
+                                        <td class="py-2 font-semibold {{ $balance->shortage >= 0 ? 'text-emerald-700' : 'text-red-700' }}">@money($balance->shortage)</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    <label class="mt-4 flex items-start gap-2">
+                        <input type="checkbox" name="bundle_waiter_balances" value="1" class="mt-0.5 rounded border-violet-300 text-violet-600" checked>
+                        <span class="text-xs text-violet-950">Include balanced waiter summaries in this EOD submission</span>
+                    </label>
+                @elseif(isset($waiterShift) && $waiterShift['rows']->isNotEmpty())
+                    <p class="mt-3 text-xs text-amber-800">Waiters have orders today but are not balanced yet. Use “Balance All Waiters” first for accurate EOD.</p>
+                @endif
+            </div>
+        @endif
 
         <x-button variant="primary" size="lg" type="submit">Submit Reconciliation</x-button>
     </form>

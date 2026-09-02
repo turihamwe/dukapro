@@ -148,12 +148,13 @@
         </div>
 
         <div>
-            <label for="yopayments_account_id" class="mb-1 block text-sm font-medium">Account / provider code</label>
+            <label for="yopayments_account_id" class="mb-1 block text-sm font-medium">Account provider code (optional)</label>
             <input type="text" name="yopayments_account_id" id="yopayments_account_id" autocomplete="off"
                    value="{{ old('yopayments_account_id', $settings['yopayments_account_id'] ?? '') }}"
-                   placeholder="YoPayments account identifier"
-                   class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-violet-500 focus:outline-none">
-            <p class="mt-1 text-xs text-gray-500">Your YoPayments merchant account ID used for collections.</p>
+                   placeholder="MTN_UGANDA or AIRTEL_UGANDA"
+                   class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-mono focus:border-violet-500 focus:outline-none">
+            <p class="mt-1 text-xs text-gray-500">Yo! API <code class="text-[11px]">AccountProviderCode</code> override. Leave blank to derive from MTN/Airtel selection (<code class="text-[11px]">MTN_UGANDA</code>, <code class="text-[11px]">AIRTEL_UGANDA</code>).</p>
+            <p class="mt-1 text-xs text-gray-500">Sandbox API: <code class="text-[11px]">https://sandbox.yo.co.ug/services/yopaymentsdev/task.php</code> · Live: <code class="text-[11px]">https://paymentsapi1.yo.co.ug/ybs/task.php</code></p>
         </div>
     </div>
 

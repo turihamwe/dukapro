@@ -59,13 +59,21 @@ class ReconciliationController extends Controller
     public function create(Request $request)
     {
         $date = $request->get('date', Carbon::today()->toDateString());
+        $business = $request->user()->business;
         $expected = $this->reconciliationService->calculateExpectedTotals(
             $request->user()->business_id,
             $request->user()->id,
             Carbon::parse($date)
         );
 
-        return view('reconciliation.create', compact('expected', 'date'));
+        $waiterShift = null;
+        $waiterBalances = collect();
+        if ($business->usesShiftWaiterMode()) {
+            $waiterShift = app(\App\Services\WaiterShiftService::class)->summarizeShift($business, Carbon::parse($date));
+            $waiterBalances = app(\App\Services\WaiterShiftService::class)->balancesForDate($business->id, Carbon::parse($date));
+        }
+
+        return view('reconciliation.create', compact('expected', 'date', 'waiterShift', 'waiterBalances', 'business'));
     }
 
     public function store(Request $request)
@@ -76,9 +84,12 @@ class ReconciliationController extends Controller
             'actual_mobile_money' => 'required|numeric|min:0',
             'actual_bank_other' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
+            'bundle_waiter_balances' => 'nullable|boolean',
         ]);
 
-        $reconciliation = $this->reconciliationService->submit($request->user(), $data);
+        $reconciliation = $request->user()->business->usesShiftWaiterMode()
+            ? $this->reconciliationService->submitWithWaiterBalances($request->user(), $data)
+            : $this->reconciliationService->submit($request->user(), $data);
 
         AuditLogger::record('reconciliation_submitted', $reconciliation, null, $reconciliation->toArray());
 

@@ -33,6 +33,8 @@ use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\HomeRedirectController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\PosController;
+use App\Http\Controllers\OperationsController;
+use App\Http\Controllers\WaiterShiftController;
 use App\Http\Controllers\ReconciliationController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SuperAdmin\SettingsController as SuperAdminSettingsController;
@@ -241,6 +243,15 @@ Route::middleware(['maintenance'])->group(function () {
                     Route::get('/search', [PosController::class, 'search'])->name('search');
                     Route::post('/checkout', [PosController::class, 'checkout'])->name('checkout');
                 });
+
+                Route::middleware(['can:access-pos'])->prefix('waiter-shift')->name('waiter-shift.')->group(function () {
+                    Route::get('/', [WaiterShiftController::class, 'index'])->name('index');
+                    Route::post('/balance-all', [WaiterShiftController::class, 'balanceAll'])->name('balance-all');
+                    Route::get('/waiters/{waiter}', [WaiterShiftController::class, 'show'])->name('show');
+                    Route::post('/sales/{sale}/settle-credit', [WaiterShiftController::class, 'settleCredit'])->name('settle-credit');
+                });
+
+                Route::get('/operations', [OperationsController::class, 'index'])->name('operations.index');
 
                 Route::prefix('reconciliation')->name('reconciliation.')->group(function () {
                     Route::get('/', [ReconciliationController::class, 'index'])

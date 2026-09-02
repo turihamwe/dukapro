@@ -23,6 +23,9 @@ class PosController extends Controller
 
     public function index(Request $request)
     {
+        $business = $request->user()->business;
+        $waiterMode = $business->usesShiftWaiterMode();
+
         $products = Product::sellable()
             ->where('is_active', true)
             ->with('activeBatches')
@@ -42,7 +45,11 @@ class PosController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'phone', 'outstanding_balance', 'credit_limit']);
 
-        return view('pos.checkout', compact('products', 'customers'));
+        $floorStaff = $waiterMode
+            ? app(\App\Services\WaiterShiftService::class)->floorStaff($business)
+            : collect();
+
+        return view('pos.checkout', compact('products', 'customers', 'waiterMode', 'floorStaff'));
     }
 
     public function search(Request $request)
@@ -81,12 +88,22 @@ class PosController extends Controller
             'items.*.quantity' => 'required|numeric|min:0.001',
             'items.*.unit_price' => 'nullable|numeric|min:0',
             'payment_method' => 'required|in:cash,mobile_money,credit,bank',
+            'mobile_money_provider' => 'nullable|in:airtel,mtn',
             'is_credit_sale' => 'boolean',
             'customer_id' => 'nullable|exists:customers,id',
+            'waiter_id' => 'nullable|exists:users,id',
             'tax_amount' => 'nullable|numeric|min:0',
             'discount_amount' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
         ]);
+
+        $business = $request->user()->business;
+        if ($business->usesShiftWaiterMode()) {
+            $request->validate(['waiter_id' => 'required|exists:users,id']);
+            if (($data['payment_method'] ?? '') === 'mobile_money') {
+                $request->validate(['mobile_money_provider' => 'required|in:airtel,mtn']);
+            }
+        }
 
         $data['is_credit_sale'] = ($data['payment_method'] ?? '') === 'credit';
 

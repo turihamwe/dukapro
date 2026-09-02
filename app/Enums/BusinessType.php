@@ -54,4 +54,17 @@ class BusinessType
     {
         return self::labels()[$type] ?? ucfirst(str_replace('_', ' ', $type));
     }
+
+    public static function hospitalityTypes(): array
+    {
+        return [
+            self::BAR_PUB,
+            self::RESTAURANT,
+        ];
+    }
+
+    public static function isHospitality(?string $type): bool
+    {
+        return $type && in_array($type, self::hospitalityTypes(), true);
+    }
 }

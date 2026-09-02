@@ -14,10 +14,16 @@ class ReconciliationService
 
     protected ExpenseService $expenseService;
 
-    public function __construct(DamageService $damageService, ExpenseService $expenseService)
-    {
+    protected WaiterShiftService $waiterShiftService;
+
+    public function __construct(
+        DamageService $damageService,
+        ExpenseService $expenseService,
+        WaiterShiftService $waiterShiftService
+    ) {
         $this->damageService = $damageService;
         $this->expenseService = $expenseService;
+        $this->waiterShiftService = $waiterShiftService;
     }
 
     public function calculateExpectedTotals(int $businessId, int $userId, Carbon $date): array
@@ -143,6 +149,22 @@ class ReconciliationService
         );
     }
 
+    public function submitWithWaiterBalances(User $user, array $data): EndOfDayReconciliation
+    {
+        $reconciliation = $this->submit($user, $data);
+
+        if ($user->business->usesShiftWaiterMode() && ! empty($data['bundle_waiter_balances'])) {
+            $date = Carbon::parse($data['reconciliation_date']);
+            $this->waiterShiftService->attachBalancesToReconciliation(
+                $user->business_id,
+                $date,
+                $reconciliation->id
+            );
+        }
+
+        return $reconciliation->fresh();
+    }
+
     public function buildReportDetails(EndOfDayReconciliation $reconciliation): array
     {
         $date = Carbon::parse($reconciliation->reconciliation_date);
@@ -151,6 +173,9 @@ class ReconciliationService
         return array_merge($summary, [
             'reconciliation' => $reconciliation,
             'date' => $date,
+            'waiter_balances' => $reconciliation->business->usesShiftWaiterMode()
+                ? $this->waiterShiftService->balancesForDate($reconciliation->business_id, $date)
+                : collect(),
         ]);
     }
 

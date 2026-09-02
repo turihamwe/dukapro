@@ -50,6 +50,27 @@
             </label>
         </div>
 
+        @php
+            $shiftWaiterSuggested = $business->suggestsShiftWaiterMode();
+            $shiftWaiterEnabled = old('shift_waiter_mode', $settings['shift_waiter_mode'] ?? $shiftWaiterSuggested);
+        @endphp
+        <div class="rounded-xl border border-violet-200 bg-violet-50 p-4">
+            <label class="flex items-start gap-3">
+                <input type="checkbox" name="shift_waiter_mode" value="1" class="mt-1 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                    {{ $shiftWaiterEnabled ? 'checked' : '' }}>
+                <span>
+                    <span class="block text-sm font-semibold text-gray-900">Shift Waiter / Floor Staff Order Mode</span>
+                    <span class="mt-1 block text-xs text-gray-600">
+                        When enabled, cashiers assign orders to waiters/floor staff at POS and balance collections before closing shift.
+                        @if($shiftWaiterSuggested)
+                            <span class="font-medium text-violet-800">Suggested for {{ \App\Enums\BusinessType::label($business->business_type) }} businesses.</span>
+                        @endif
+                    </span>
+                    <span class="mt-1 block text-xs text-gray-500">When disabled, POS works as standard direct cashier checkout.</span>
+                </span>
+            </label>
+        </div>
+
         <x-button type="submit" variant="primary">Save business profile</x-button>
     </form>
 </x-card>

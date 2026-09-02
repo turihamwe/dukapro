@@ -58,4 +58,9 @@ class EndOfDayReconciliation extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function waiterBalances(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ShiftWaiterBalance::class, 'end_of_day_reconciliation_id');
+    }
 }

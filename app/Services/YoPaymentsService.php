@@ -9,6 +9,10 @@ use Illuminate\Support\Str;
 
 class YoPaymentsService
 {
+    public const PROVIDER_MTN = 'MTN_UGANDA';
+
+    public const PROVIDER_AIRTEL = 'AIRTEL_UGANDA';
+
     protected function log(string $level, string $message, array $context = []): void
     {
         Log::channel('yopayments')->{$level}($message, $context);
@@ -31,9 +35,17 @@ class YoPaymentsService
         return SystemSetting::get($keys['environment'], config('yopayments.environment')) !== 'live';
     }
 
+    /**
+     * Use built-in local simulation only when YoPayments is disabled or credentials are missing.
+     * Sandbox mode still calls Yo's sandbox API (per API spec section 24).
+     */
     public function shouldSimulate(): bool
     {
-        return $this->isSandbox() || ! $this->isConfigured();
+        if ((bool) config('yopayments.force_simulate', false)) {
+            return true;
+        }
+
+        return ! $this->isConfigured();
     }
 
     public function config(): array
@@ -50,7 +62,7 @@ class YoPaymentsService
                 : config('yopayments.live_api_url'),
             'api_username' => SystemSetting::get($keys['api_username'], config('yopayments.api_username')),
             'api_password' => SystemSetting::get($keys['api_password'], config('yopayments.api_password')),
-            'account_id' => SystemSetting::get($keys['account_id'], config('yopayments.account_id')),
+            'account_provider_code' => SystemSetting::get($keys['account_id'], config('yopayments.account_id')),
         ];
     }
 
@@ -61,8 +73,30 @@ class YoPaymentsService
             : config('yopayments.live_api_url');
     }
 
-    public function initiateCollection(string $phoneNumber, float $amount, string $reference, string $narrative): array
+    public function resolveProviderCode(?string $provider = null): ?string
     {
+        $override = trim((string) ($this->config()['account_provider_code'] ?? ''));
+
+        if ($override !== '') {
+            return strtoupper($override);
+        }
+
+        if (! $provider) {
+            return null;
+        }
+
+        $map = config('yopayments.provider_codes', []);
+
+        return $map[strtolower($provider)] ?? null;
+    }
+
+    public function initiateCollection(
+        string $phoneNumber,
+        float $amount,
+        string $reference,
+        string $narrative,
+        ?string $provider = null
+    ): array {
         if (! $this->isConfigured()) {
             return [
                 'success' => false,
@@ -73,7 +107,7 @@ class YoPaymentsService
         if ($this->shouldSimulate()) {
             return [
                 'success' => false,
-                'message' => 'YoPayments is in sandbox mode. Use simulation instead of the live API.',
+                'message' => 'YoPayments is disabled or missing credentials. Enable it in SuperAdmin settings.',
             ];
         }
 
@@ -81,6 +115,7 @@ class YoPaymentsService
 
         $config = $this->config();
         $msisdn = $this->normalizeMsisdn($phoneNumber);
+        $providerCode = $this->resolveProviderCode($provider);
         $ipnUrl = $this->ipnUrl();
 
         $xml = $this->buildDepositXml(
@@ -90,7 +125,7 @@ class YoPaymentsService
             $amount,
             $narrative,
             $reference,
-            $config['account_id'] ?: null,
+            $providerCode,
             $ipnUrl
         );
 
@@ -98,6 +133,7 @@ class YoPaymentsService
             'reference' => $reference,
             'msisdn' => $msisdn,
             'amount' => $amount,
+            'provider_code' => $providerCode,
             'environment' => $config['environment'],
             'api_url' => $config['api_url'],
             'ipn_url' => $ipnUrl,
@@ -137,8 +173,10 @@ class YoPaymentsService
                 'raw_body' => $response->body(),
             ]);
 
-            if (($parsed['Status'] ?? '') !== 'OK') {
-                $message = $parsed['StatusMessage'] ?? $parsed['ErrorMessage'] ?? 'YoPayments rejected the payment request.';
+            if (($parsed['Status'] ?? '') === 'ERROR') {
+                $message = $parsed['ErrorMessage']
+                    ?? $parsed['StatusMessage']
+                    ?? 'YoPayments rejected the payment request.';
 
                 return [
                     'success' => false,
@@ -147,9 +185,17 @@ class YoPaymentsService
                 ];
             }
 
+            if (($parsed['Status'] ?? '') !== 'OK') {
+                return [
+                    'success' => false,
+                    'message' => $parsed['StatusMessage'] ?? 'Unexpected YoPayments response.',
+                    'yo_response' => $parsed,
+                ];
+            }
+
             $transactionStatus = strtoupper((string) ($parsed['TransactionStatus'] ?? ''));
 
-            if (in_array($transactionStatus, ['FAILED'], true)) {
+            if (in_array($transactionStatus, ['FAILED', 'INDETERMINATE'], true)) {
                 return [
                     'success' => false,
                     'message' => $parsed['StatusMessage'] ?? 'Payment request failed.',
@@ -162,7 +208,7 @@ class YoPaymentsService
                 'message' => 'PIN prompt sent to ' . $phoneNumber . '. Approve the payment on your phone.',
                 'reference' => $reference,
                 'transaction_reference' => $parsed['TransactionReference'] ?? null,
-                'transaction_status' => $transactionStatus,
+                'transaction_status' => $transactionStatus ?: 'PENDING',
                 'environment' => $config['environment'],
                 'yo_response' => $parsed,
             ];
@@ -187,6 +233,63 @@ class YoPaymentsService
         }
     }
 
+    public function checkTransactionStatus(string $transactionReference, ?string $externalReference = null): array
+    {
+        if (! $this->isConfigured()) {
+            return ['success' => false, 'message' => 'YoPayments is not configured.'];
+        }
+
+        $config = $this->config();
+        $xml = '<?xml version="1.0" encoding="UTF-8"?><AutoCreate><Request>';
+        $xml .= '<APIUsername>' . $this->escapeXml($config['api_username']) . '</APIUsername>';
+        $xml .= '<APIPassword>' . $this->escapeXml($config['api_password']) . '</APIPassword>';
+        $xml .= '<Method>actransactioncheckstatus</Method>';
+        $xml .= '<TransactionReference>' . $this->escapeXml($transactionReference) . '</TransactionReference>';
+
+        if ($externalReference) {
+            $xml .= '<PrivateTransactionReference>' . $this->escapeXml($externalReference) . '</PrivateTransactionReference>';
+        }
+
+        $xml .= '</Request></AutoCreate>';
+
+        try {
+            $response = Http::withOptions([
+                'verify' => (bool) config('yopayments.verify_ssl', false),
+                'timeout' => (int) config('yopayments.timeout', 45),
+            ])
+                ->withHeaders([
+                    'Content-Type' => 'text/xml',
+                    'Content-transfer-encoding' => 'text',
+                ])
+                ->withBody($xml, 'text/xml')
+                ->post($config['api_url']);
+
+            return [
+                'success' => $response->successful(),
+                'parsed' => $this->parseResponse($response->body()),
+                'raw_body' => $response->body(),
+            ];
+        } catch (\Throwable $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    public function normalizeIpnPayload(array $payload): array
+    {
+        return [
+            'date_time' => $payload['date_time'] ?? null,
+            'amount' => $payload['amount'] ?? null,
+            'narrative' => $payload['narrative'] ?? null,
+            'network_ref' => $payload['network_ref'] ?? null,
+            'external_ref' => $payload['external_ref'] ?? $payload['ExternalReference'] ?? null,
+            'msisdn' => $payload['msisdn'] ?? $payload['Msisdn'] ?? null,
+            'signature' => $payload['signature'] ?? $payload['Signature'] ?? null,
+            'failed_transaction_reference' => $payload['failed_transaction_reference'] ?? null,
+            'transaction_init_date' => $payload['transaction_init_date'] ?? $payload['transaction_date'] ?? null,
+            'verification' => $payload['verification'] ?? null,
+        ];
+    }
+
     public function normalizeMsisdn(string $phone): string
     {
         $digits = preg_replace('/\D/', '', $phone) ?? '';
@@ -206,10 +309,15 @@ class YoPaymentsService
             return null;
         }
 
-        $url = url('/api/mobile-money/webhook');
+        $configured = trim((string) config('yopayments.ipn_url', ''));
+        $url = $configured !== '' ? $configured : url('/api/mobile-money/webhook');
         $host = parse_url($url, PHP_URL_HOST);
 
         if (in_array($host, ['127.0.0.1', 'localhost', '::1'], true)) {
+            $this->log('warning', 'YoPayments IPN URL is localhost — callbacks will not reach this server. Configure YOPAYMENTS_IPN_URL to a public HTTPS URL.', [
+                'url' => $url,
+            ]);
+
             return null;
         }
 
@@ -223,7 +331,7 @@ class YoPaymentsService
         float $amount,
         string $narrative,
         string $externalReference,
-        ?string $providerReferenceText,
+        ?string $accountProviderCode,
         ?string $ipnUrl
     ): string {
         $xml = '<?xml version="1.0" encoding="UTF-8"?>';
@@ -233,13 +341,14 @@ class YoPaymentsService
         $xml .= '<Method>acdepositfunds</Method>';
         $xml .= '<NonBlocking>TRUE</NonBlocking>';
         $xml .= '<Account>' . $this->escapeXml($msisdn) . '</Account>';
+
+        if ($accountProviderCode) {
+            $xml .= '<AccountProviderCode>' . $this->escapeXml($accountProviderCode) . '</AccountProviderCode>';
+        }
+
         $xml .= '<Amount>' . $this->escapeXml((string) (int) round($amount)) . '</Amount>';
         $xml .= '<Narrative>' . $this->escapeXml($narrative) . '</Narrative>';
         $xml .= '<ExternalReference>' . $this->escapeXml($externalReference) . '</ExternalReference>';
-
-        if ($providerReferenceText) {
-            $xml .= '<ProviderReferenceText>' . $this->escapeXml($providerReferenceText) . '</ProviderReferenceText>';
-        }
 
         if ($ipnUrl) {
             $xml .= '<InstantNotificationUrl>' . $this->escapeXml($ipnUrl) . '</InstantNotificationUrl>';

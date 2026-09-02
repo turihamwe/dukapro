@@ -38,8 +38,41 @@
             <dd class="font-bold {{ $missingMoney >= 0 ? 'text-emerald-700' : 'text-red-700' }}">@money($missingMoney)</dd>
         </div>
     </dl>
-    <p class="mt-3 text-[11px] text-indigo-900/60">Expected cash = Actual cash + Mobile money + Bank &amp; other + Expenses + Damages + Missing money</p>
 </div>
+
+@if(! empty($report['waiter_balances']) && $report['waiter_balances']->isNotEmpty())
+<div class="mb-6 overflow-hidden rounded-xl border border-violet-200 bg-violet-50">
+    <div class="border-b border-violet-200 px-5 py-3">
+        <h2 class="text-sm font-semibold text-violet-950">Waiter shift balancing</h2>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full min-w-[520px] text-left text-sm">
+            <thead class="bg-violet-100/60 text-xs uppercase tracking-wide text-violet-900/70">
+                <tr>
+                    <th class="px-5 py-2">Waiter</th>
+                    <th class="px-5 py-2">Cash</th>
+                    <th class="px-5 py-2">Mobile</th>
+                    <th class="px-5 py-2">Merchant</th>
+                    <th class="px-5 py-2">Credit</th>
+                    <th class="px-5 py-2">Shortage</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-violet-200/60">
+                @foreach($report['waiter_balances'] as $balance)
+                    <tr>
+                        <td class="px-5 py-3 font-medium text-violet-950">{{ $balance->waiter->name ?? 'Staff' }}</td>
+                        <td class="px-5 py-3">@money($balance->actual_cash)</td>
+                        <td class="px-5 py-3">@money($balance->actual_mobile_airtel + $balance->actual_mobile_mtn)</td>
+                        <td class="px-5 py-3">@money($balance->actual_bank_other)</td>
+                        <td class="px-5 py-3">@money($balance->actual_credit_collected)</td>
+                        <td class="px-5 py-3 font-semibold {{ $balance->shortage >= 0 ? 'text-emerald-700' : 'text-red-700' }}">@money($balance->shortage)</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+</div>
+@endif
 
 @if($reconciliation->notes)
     <div class="rounded-xl border border-gray-200 p-4 text-sm">

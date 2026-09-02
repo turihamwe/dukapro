@@ -17,6 +17,7 @@ class Sale extends Model
     protected $fillable = [
         'business_id',
         'user_id',
+        'waiter_id',
         'customer_id',
         'sale_number',
         'subtotal',
@@ -24,10 +25,14 @@ class Sale extends Model
         'discount_amount',
         'total',
         'payment_method',
+        'mobile_money_provider',
         'is_credit_sale',
         'status',
         'notes',
         'completed_at',
+        'credit_settled_at',
+        'credit_settlement_method',
+        'credit_settlement_notes',
     ];
 
     protected $casts = [
@@ -37,6 +42,7 @@ class Sale extends Model
         'total' => 'float',
         'is_credit_sale' => 'boolean',
         'completed_at' => 'datetime',
+        'credit_settled_at' => 'datetime',
     ];
 
     public function business(): BelongsTo
@@ -47,6 +53,11 @@ class Sale extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function waiter(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'waiter_id');
     }
 
     public function customer(): BelongsTo

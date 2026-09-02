@@ -84,6 +84,21 @@ class Business extends Model
         return (bool) ($this->settings['use_product_variants'] ?? false);
     }
 
+    public function usesShiftWaiterMode(): bool
+    {
+        return (bool) ($this->settings['shift_waiter_mode'] ?? false);
+    }
+
+    public function suggestsShiftWaiterMode(): bool
+    {
+        return \App\Enums\BusinessType::isHospitality($this->business_type);
+    }
+
+    public function shiftWaiterBalances(): HasMany
+    {
+        return $this->hasMany(ShiftWaiterBalance::class);
+    }
+
     public function sales(): HasMany
     {
         return $this->hasMany(Sale::class);

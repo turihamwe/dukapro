@@ -4,6 +4,7 @@
 @section('container_class', 'max-w-4xl')
 
 @section('content')
+@include('layouts.partials.cashier-operations-back')
 <x-page-header title="Damages & Write-offs" subtitle="Log broken, expired, or spilled stock for today">
     <x-slot name="actions">
         <x-button variant="primary" size="sm" type="button" id="open-damage-modal">+ Log Damage</x-button>

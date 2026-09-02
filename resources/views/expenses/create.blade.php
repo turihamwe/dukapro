@@ -3,6 +3,7 @@
 @section('title', 'Record Expense')
 
 @section('content')
+@include('layouts.partials.cashier-operations-back')
 <x-page-header title="Record Expense" subtitle="Log a daily operating cost" />
 
 <x-card class="max-w-2xl">

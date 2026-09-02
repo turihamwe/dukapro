@@ -81,7 +81,8 @@ class MobileMoneyService
             $phoneNumber,
             (float) $payment->amount,
             $reference,
-            $narrative
+            $narrative,
+            $provider
         );
 
         if (! $result['success']) {
@@ -138,7 +139,10 @@ class MobileMoneyService
 
     public function handleWebhook(array $payload): array
     {
+        $normalized = app(YoPaymentsService::class)->normalizeIpnPayload($payload);
+
         $reference = $payload['reference']
+            ?? $normalized['external_ref']
             ?? $payload['external_ref']
             ?? $payload['ExternalReference']
             ?? $payload['CheckoutRequestID']
@@ -160,18 +164,18 @@ class MobileMoneyService
             return ['success' => true, 'message' => 'Payment already processed'];
         }
 
-        $status = strtolower((string) ($payload['status'] ?? $payload['ResultCode'] ?? $payload['transaction_status'] ?? ''));
-
-        if (! empty($payload['failed_transaction_reference'])) {
+        if (! empty($normalized['failed_transaction_reference']) || ! empty($normalized['verification'])) {
             $payment->update([
                 'status' => 'failed',
-                'metadata' => array_merge($payment->metadata ?? [], ['webhook' => $payload]),
+                'metadata' => array_merge($payment->metadata ?? [], ['webhook' => $payload, 'yo_ipn' => $normalized]),
             ]);
 
             return ['success' => false, 'message' => 'Payment failed'];
         }
 
-        $isYoSuccessIpn = ! empty($payload['external_ref']) || ! empty($payload['network_ref']);
+        $status = strtolower((string) ($payload['status'] ?? $payload['ResultCode'] ?? $payload['transaction_status'] ?? ''));
+
+        $isYoSuccessIpn = ! empty($normalized['external_ref']) && ! empty($normalized['network_ref']);
         $isSuccess = $isYoSuccessIpn || in_array($status, ['completed', 'success', '0', 'paid', 'succeeded'], true);
 
         if (! $isSuccess) {

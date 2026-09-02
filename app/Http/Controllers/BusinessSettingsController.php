@@ -35,12 +35,14 @@ class BusinessSettingsController extends Controller
             'currency_position' => 'required|in:prefix,suffix',
             'brand_color' => 'nullable|string|max:7',
             'use_product_variants' => 'nullable|boolean',
+            'shift_waiter_mode' => 'nullable|boolean',
         ]);
 
         $old = $business->toArray();
 
         $settings = $business->settings ?? [];
         $settings['use_product_variants'] = $request->boolean('use_product_variants');
+        $settings['shift_waiter_mode'] = $request->boolean('shift_waiter_mode');
 
         $slug = $business->slug;
         if ($business->name !== $data['name']) {

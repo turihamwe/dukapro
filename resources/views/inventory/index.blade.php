@@ -4,6 +4,7 @@
 @section('container_class', 'max-w-5xl')
 
 @section('content')
+@include('layouts.partials.cashier-operations-back')
 <x-page-header title="Inventory" subtitle="Each product is tracked individually with its own price and stock">
     <x-slot name="actions">
         @can('create', App\Models\Product::class)
