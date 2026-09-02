@@ -33,6 +33,10 @@ class EnsureTenantAccess
 
         TenantContext::set($business->id);
 
+        if ($user->isBranchScoped() && ! $user->branch_id) {
+            abort(403, 'Your account is not assigned to a branch. Contact your business owner.');
+        }
+
         return $next($request);
     }
 }

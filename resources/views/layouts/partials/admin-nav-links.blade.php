@@ -52,6 +52,12 @@
         <span>🧑‍💼</span> Staff
     </a>
 @endcan
+@can('manage-branches')
+    <a href="{{ tenant_route('tenant.branches.index') }}"
+       class="{{ $navLink }} {{ request()->routeIs('tenant.branches.*') ? $navActive : $navIdle }}">
+        <span>🏪</span> Branches
+    </a>
+@endcan
 @can('manage-settings')
     <a href="{{ tenant_route('tenant.business.edit') }}"
        class="{{ $navLink }} {{ request()->routeIs('tenant.business.*') ? $navActive : $navIdle }}">

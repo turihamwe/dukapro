@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\AuditLogger;
+use App\Models\Branch;
 use App\Models\Business;
 use App\Models\User;
 use App\Services\EmployeeService;
@@ -26,11 +27,17 @@ class EmployeeController extends Controller
 
     public function index(Request $request)
     {
-        $staff = User::query()
+        $query = User::query()
             ->where('business_id', $request->user()->business_id)
             ->where('role', '!=', 'owner')
-            ->orderBy('name')
-            ->get();
+            ->with('branch')
+            ->orderBy('name');
+
+        if ($request->user()->isBranchScoped() && $request->user()->branch_id) {
+            $query->where('branch_id', $request->user()->branch_id);
+        }
+
+        $staff = $query->get();
 
         return view('staff.index', compact('staff'));
     }
@@ -40,8 +47,9 @@ class EmployeeController extends Controller
         $this->authorize('create', User::class);
 
         $roles = $this->employeeService->assignableRoles($request->user());
+        $branches = $this->employeeService->branchOptions($request->user()->business, $request->user());
 
-        return view('staff.create', compact('roles'));
+        return view('staff.create', compact('roles', 'branches'));
     }
 
     public function store(Request $request)
@@ -61,7 +69,12 @@ class EmployeeController extends Controller
             'phone' => 'nullable|string|max:30',
             'password' => 'required|string|min:8|confirmed',
             'role' => ['required', Rule::in($roles)],
-            'branch_name' => 'nullable|string|max:100',
+            'branch_id' => [
+                Rule::requiredIf(! $request->user()->isBranchScoped()),
+                'nullable',
+                'integer',
+                Rule::exists('branches', 'id')->where(fn ($q) => $q->where('business_id', $request->user()->business_id)),
+            ],
         ]);
 
         $staff = $this->employeeService->create($request->user()->business, $request->user(), $data);
@@ -78,8 +91,9 @@ class EmployeeController extends Controller
         $this->authorize('update', $employee);
 
         $roles = $this->employeeService->assignableRoles(auth()->user());
+        $branches = $this->employeeService->branchOptions($business, auth()->user());
 
-        return view('staff.edit', compact('employee', 'roles'));
+        return view('staff.edit', compact('employee', 'roles', 'branches'));
     }
 
     public function update(Request $request, Business $business, User $employee)
@@ -94,7 +108,12 @@ class EmployeeController extends Controller
             'phone' => 'nullable|string|max:30',
             'password' => 'nullable|string|min:8|confirmed',
             'role' => ['required', Rule::in($roles)],
-            'branch_name' => 'nullable|string|max:100',
+            'branch_id' => [
+                Rule::requiredIf(! $request->user()->isBranchScoped()),
+                'nullable',
+                'integer',
+                Rule::exists('branches', 'id')->where(fn ($q) => $q->where('business_id', $request->user()->business_id)),
+            ],
             'is_active' => 'nullable|boolean',
         ]);
 
@@ -104,7 +123,7 @@ class EmployeeController extends Controller
         $employee->email = $data['email'];
         $employee->phone = $data['phone'] ?? null;
         $employee->role = $data['role'];
-        $employee->branch_name = $data['role'] === 'supervisor' ? ($data['branch_name'] ?? null) : null;
+        $this->employeeService->updateBranch($request->user(), $employee, $business, $data);
         $employee->is_active = $request->boolean('is_active', true);
 
         if (! empty($data['password'])) {

@@ -17,13 +17,32 @@ if (! function_exists('platform_brand')) {
 
         $brand = [
             'name' => $storedName,
-            'tagline' => \App\Models\SystemSetting::get('company_tagline', 'Manage your Business From Anywhere'),
+            'tagline' => \App\Models\SystemSetting::get('company_tagline', 'Empowering African businesses with smart management'),
             'logo_url' => ($path = \App\Models\SystemSetting::get('company_logo_path'))
                 ? asset('storage/' . ltrim($path, '/'))
                 : null,
         ];
 
         return $key ? ($brand[$key] ?? null) : $brand;
+    }
+}
+
+if (! function_exists('platform_footer_tagline')) {
+    function platform_footer_tagline(): string
+    {
+        $tagline = trim((string) platform_brand('tagline'));
+        $legacy = [
+            "Trusted by 5000+ businesses",
+            "Trusted by 5000+ Businesses",
+            "Manage your Business From Anywhere",
+            "LET'S GO DIGITAL",
+        ];
+
+        if ($tagline === '' || in_array($tagline, $legacy, true)) {
+            return 'Empowering African businesses with smart management';
+        }
+
+        return $tagline;
     }
 }
 

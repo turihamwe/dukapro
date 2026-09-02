@@ -30,7 +30,7 @@
                     <tr>
                         <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $member->name }}</td>
                         <td class="px-6 py-4 text-sm capitalize text-gray-600">{{ $member->role }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-500">{{ $member->branch_name ?? '—' }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">{{ $member->branch->name ?? '—' }}</td>
                         <td class="px-6 py-4 text-sm text-gray-500">{{ $member->email }}</td>
                         <td class="px-6 py-4 text-right text-sm">
                             @can('update', $member)

@@ -11,10 +11,10 @@
     <form method="POST" action="{{ route('superadmin.entities.store', $entity) }}" class="space-y-4">
         @csrf
 
-        @if(in_array($entity, ['staff', 'products', 'customers', 'expenses'], true))
+        @if(in_array($entity, ['staff', 'products', 'customers', 'expenses', 'branches'], true))
             <div>
                 <label class="mb-1 block text-sm font-medium">Business</label>
-                <select name="business_id" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                <select name="business_id" id="entity-business-id" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
                     @foreach($businesses as $business)
                         <option value="{{ $business->id }}" @selected(old('business_id') == $business->id)>{{ $business->name }}</option>
                     @endforeach
@@ -26,7 +26,22 @@
             <input type="text" name="name" value="{{ old('name') }}" required placeholder="Business name" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <input type="email" name="email" value="{{ old('email') }}" placeholder="Email" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <input type="text" name="phone" value="{{ old('phone') }}" placeholder="Phone" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+        @elseif($entity === 'branches')
+            <input type="text" name="name" value="{{ old('name') }}" required placeholder="Branch name" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <input type="text" name="address" value="{{ old('address') }}" placeholder="Address" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <input type="text" name="phone" value="{{ old('phone') }}" placeholder="Phone" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_active" value="1" @checked(old('is_active', true))> Active</label>
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_default" value="1" @checked(old('is_default'))> Default branch</label>
         @elseif($entity === 'staff')
+            <div>
+                <label class="mb-1 block text-sm font-medium">Branch</label>
+                <select name="branch_id" id="staff-branch-id" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                    <option value="">Select branch…</option>
+                    @foreach($branches as $branch)
+                        <option value="{{ $branch->id }}" data-business-id="{{ $branch->business_id }}" @selected(old('branch_id') == $branch->id)>{{ $branch->name }}</option>
+                    @endforeach
+                </select>
+            </div>
             <input type="text" name="name" value="{{ old('name') }}" required placeholder="Full name" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <input type="text" name="username" value="{{ old('username') }}" required placeholder="Username" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <input type="email" name="email" value="{{ old('email') }}" required placeholder="Email" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
@@ -95,4 +110,31 @@
         <button type="submit" class="rounded-lg bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-violet-500">Create</button>
     </form>
 </div>
+
+@if($entity === 'staff')
+@push('scripts')
+<script>
+(function () {
+    var businessSelect = document.getElementById('entity-business-id');
+    var branchSelect = document.getElementById('staff-branch-id');
+    if (!businessSelect || !branchSelect) return;
+
+    function filterBranches() {
+        var businessId = businessSelect.value;
+        Array.from(branchSelect.options).forEach(function (option, index) {
+            if (index === 0) {
+                option.hidden = false;
+                return;
+            }
+            option.hidden = option.dataset.businessId !== businessId;
+        });
+        branchSelect.value = '';
+    }
+
+    businessSelect.addEventListener('change', filterBranches);
+    filterBranches();
+})();
+</script>
+@endpush
+@endif
 @endsection

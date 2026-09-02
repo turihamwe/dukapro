@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\Branch;
 use App\Models\Brand;
 use App\Models\Business;
 use App\Models\Customer;
@@ -24,6 +25,19 @@ class RouteServiceProvider extends ServiceProvider
     {
         Route::bind('business', function (string $value) {
             return Business::where('slug', $value)->firstOrFail();
+        });
+
+        Route::bind('branch', function (string $value, $route) {
+            $business = $route->parameter('business');
+
+            if (! $business instanceof Business) {
+                abort(404);
+            }
+
+            return Branch::query()
+                ->where('business_id', $business->id)
+                ->where('slug', $value)
+                ->firstOrFail();
         });
 
         Route::bind('employee', function ($value, $route) {

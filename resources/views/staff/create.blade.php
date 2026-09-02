@@ -28,9 +28,22 @@
                 @endforeach
             </select>
         </div>
-        <div id="branch-field" class="{{ old('role', $roles[0] ?? '') === UserRole::SUPERVISOR ? '' : 'hidden' }}">
-            <x-input type="text" name="branch_name" label="Branch name" value="{{ old('branch_name') }}" placeholder="e.g. Westlands Branch" />
-        </div>
+        @if(auth()->user()->isBranchScoped())
+            <p class="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600">This staff member will be assigned to <strong>{{ auth()->user()->branch->name ?? 'your branch' }}</strong>.</p>
+        @else
+            <div>
+                <label for="branch_id" class="mb-1 block text-sm font-medium text-gray-700">Branch</label>
+                <select name="branch_id" id="branch_id" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                    <option value="">Select branch…</option>
+                    @foreach($branches as $branchId => $branchName)
+                        <option value="{{ $branchId }}" @selected(old('branch_id') == $branchId)>{{ $branchName }}</option>
+                    @endforeach
+                </select>
+                @error('branch_id')
+                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+        @endif
         <div class="grid gap-4 sm:grid-cols-2">
             <x-password-input name="password" label="Password" required />
             <x-password-input name="password_confirmation" label="Confirm password" required />
@@ -39,11 +52,3 @@
     </form>
 </x-card>
 @endsection
-
-@push('scripts')
-<script>
-document.getElementById('staff-role')?.addEventListener('change', function () {
-    document.getElementById('branch-field')?.classList.toggle('hidden', this.value !== 'supervisor');
-});
-</script>
-@endpush

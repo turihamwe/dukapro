@@ -132,6 +132,7 @@
         {{-- Footer --}}
         <footer class="border-t border-gray-200 bg-white px-4 py-4 sm:px-6 lg:px-8">
             <div class="flex flex-col gap-2 text-xs text-gray-500 sm:flex-row sm:items-center sm:justify-between">
+                <p>{{ platform_footer_tagline() }}</p>
                 <p>
                     For any inquiries, contact us on
                     <a href="{{ whatsapp_support_url() }}" target="_blank" rel="noopener noreferrer" class="font-medium text-emerald-600 hover:text-emerald-700">WhatsApp</a>

@@ -22,6 +22,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'business_id',
+        'branch_id',
         'name',
         'username',
         'email',
@@ -54,6 +55,11 @@ class User extends Authenticatable
     public function business(): BelongsTo
     {
         return $this->belongsTo(Business::class);
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     public function affiliateProfile(): HasOne
@@ -108,6 +114,11 @@ class User extends Authenticatable
         }
 
         return $this->canSwitchToCashierMode() && CashierMode::isActive();
+    }
+
+    public function isBranchScoped(): bool
+    {
+        return $this->isStaff() && ! $this->isOwner();
     }
 
     public function isStaff(): bool

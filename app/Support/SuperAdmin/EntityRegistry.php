@@ -4,6 +4,7 @@ namespace App\Support\SuperAdmin;
 
 use App\Models\Affiliate;
 use App\Models\AffiliateCommission;
+use App\Models\Branch;
 use App\Models\Business;
 use App\Models\Customer;
 use App\Models\Expense;
@@ -27,6 +28,14 @@ class EntityRegistry
                 'creatable' => true,
                 'deletable' => true,
             ],
+            'branches' => [
+                'label' => 'Branches',
+                'model' => Branch::class,
+                'search' => ['name', 'slug', 'address', 'phone'],
+                'list' => ['name', 'slug', 'business_id', 'is_active', 'is_default'],
+                'creatable' => true,
+                'deletable' => true,
+            ],
             'users' => [
                 'label' => 'Users',
                 'model' => User::class,
@@ -45,7 +54,7 @@ class EntityRegistry
                         ->whereIn('role', UserRole::staffRoles());
                 },
                 'search' => ['name', 'email', 'username', 'role'],
-                'list' => ['name', 'username', 'email', 'role', 'business_id'],
+                'list' => ['name', 'username', 'email', 'role', 'business_id', 'branch_id'],
                 'creatable' => true,
                 'deletable' => true,
             ],

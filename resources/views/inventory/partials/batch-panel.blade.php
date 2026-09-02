@@ -28,7 +28,7 @@
         </div>
         @can('update', $parentProduct)
             @if($sellable->id !== $parentProduct->id)
-                <x-button variant="primary" size="sm" type="button" onclick="document.getElementById('{{ $modalId }}').classList.remove('hidden')">+ Add Batch</x-button>
+                <x-button variant="primary" size="sm" type="button" onclick="openAppModal('{{ $modalId }}')">+ Add Batch</x-button>
             @endif
         @endcan
     </div>
@@ -90,14 +90,16 @@
 
 @can('update', $parentProduct)
     @if($sellable->id !== $parentProduct->id)
-        <div id="{{ $modalId }}" class="fixed inset-0 z-50 hidden">
-            <div class="absolute inset-0 bg-gray-900/50" onclick="document.getElementById('{{ $modalId }}').classList.add('hidden')"></div>
-            <div class="relative flex min-h-full items-center justify-center p-4">
-                <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+        <div id="{{ $modalId }}" class="app-modal-overlay" role="dialog" aria-modal="true">
+            <div class="app-modal-panel">
+                <div class="app-modal-header">
                     <h3 class="text-lg font-semibold text-gray-900">Add Batch — {{ $sellable->displayName() }}</h3>
-                    <form method="POST" action="{{ tenant_route('tenant.inventory.batches.store', ['product' => $parentProduct]) }}" class="mt-5 space-y-4">
-                        @csrf
-                        <input type="hidden" name="variant_id" value="{{ $sellable->id }}">
+                    <button type="button" onclick="closeAppModal('{{ $modalId }}')" class="rounded-lg p-1 text-gray-400 hover:bg-gray-100">&times;</button>
+                </div>
+                <form method="POST" action="{{ tenant_route('tenant.inventory.batches.store', ['product' => $parentProduct]) }}" class="flex min-h-0 flex-1 flex-col">
+                    @csrf
+                    <input type="hidden" name="variant_id" value="{{ $sellable->id }}">
+                    <div class="app-modal-body space-y-4">
                         <div>
                             <label class="mb-1.5 block text-sm font-medium text-gray-700">Quantity received</label>
                             <input type="number" step="0.001" min="0.001" name="quantity" required
@@ -126,13 +128,13 @@
                             <label class="mb-1.5 block text-sm font-medium text-gray-700">Notes</label>
                             <textarea name="notes" rows="2" class="block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
                         </div>
-                        <div class="flex justify-end gap-3 pt-2">
-                            <button type="button" onclick="document.getElementById('{{ $modalId }}').classList.add('hidden')"
-                                    class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
-                            <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Save Batch</button>
-                        </div>
-                    </form>
-                </div>
+                    </div>
+                    <div class="app-modal-footer">
+                        <button type="button" onclick="closeAppModal('{{ $modalId }}')"
+                                class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+                        <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Save Batch</button>
+                    </div>
+                </form>
             </div>
         </div>
     @endif

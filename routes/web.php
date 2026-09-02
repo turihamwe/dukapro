@@ -8,6 +8,7 @@ use App\Http\Controllers\ShareholderApplicationController;
 use App\Http\Controllers\ShareholderAuthController;
 use App\Http\Controllers\Shareholder\DashboardController as ShareholderDashboardController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BranchController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\BusinessSettingsController;
 use App\Http\Controllers\CashierModeController;
@@ -146,6 +147,15 @@ Route::middleware(['maintenance'])->group(function () {
                         Route::get('/business', [BusinessSettingsController::class, 'edit'])->name('business.edit');
                         Route::put('/business', [BusinessSettingsController::class, 'update'])->name('business.update');
                     });
+
+                    Route::middleware(['can:manage-branches'])->prefix('branches')->name('branches.')->group(function () {
+                        Route::get('/', [BranchController::class, 'index'])->name('index');
+                        Route::get('/create', [BranchController::class, 'create'])->name('create');
+                        Route::post('/', [BranchController::class, 'store'])->name('store');
+                        Route::get('/{branch}/edit', [BranchController::class, 'edit'])->name('edit');
+                        Route::put('/{branch}', [BranchController::class, 'update'])->name('update');
+                        Route::delete('/{branch}', [BranchController::class, 'destroy'])->name('destroy');
+                    });
                 });
 
                 Route::middleware(['can:view-customers', 'management.access'])->prefix('contacts')->name('contacts.')->group(function () {
@@ -283,7 +293,7 @@ Route::prefix('superadmin')
             Route::get('/activity', [ActivityLogController::class, 'index'])->name('activity');
         });
 
-        Route::prefix('entities/{entity}')->where(['entity' => 'businesses|users|staff|products|customers|sales|expenses|affiliates|affiliate_commissions|shareholders|shareholder_earnings'])->name('entities.')->group(function () {
+        Route::prefix('entities/{entity}')->where(['entity' => 'businesses|branches|users|staff|products|customers|sales|expenses|affiliates|affiliate_commissions|shareholders|shareholder_earnings'])->name('entities.')->group(function () {
             Route::get('/', [SuperAdminEntityController::class, 'index'])->name('index');
             Route::get('/create', [SuperAdminEntityController::class, 'create'])->name('create');
             Route::post('/', [SuperAdminEntityController::class, 'store'])->name('store');

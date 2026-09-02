@@ -26,6 +26,10 @@ class UserPolicy
             return false;
         }
 
+        if ($user->isBranchScoped() && $user->branch_id && (int) $employee->branch_id !== (int) $user->branch_id) {
+            return false;
+        }
+
         if ($user->isOwner()) {
             return true;
         }

@@ -28,7 +28,7 @@
                     <p class="text-lg font-semibold text-gray-900">@money($expected['expected_bank_other'] ?? 0)</p>
                 </div>
                 <div>
-                    <p class="text-xs text-gray-500">Sales count</p>
+                    <p class="text-xs text-gray-500">Total sales</p>
                     <p class="text-lg font-semibold text-gray-900">{{ $expected['sale_count'] }}</p>
                 </div>
             </div>

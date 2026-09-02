@@ -82,6 +82,10 @@
             @yield('content')
             @include('layouts.partials.subscription-expired-overlay')
         </main>
+
+        <footer class="border-t border-gray-200 bg-white px-4 py-4 sm:px-8">
+            <p class="text-xs text-gray-500">{{ platform_footer_tagline() }}</p>
+        </footer>
     </div>
 </div>
 

@@ -14,7 +14,7 @@
         @can('update', $product)
             <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.inventory.edit', ['product' => $product]) }}">Edit Product</x-button>
             @if(! $isVariable)
-                <x-button variant="primary" size="sm" type="button" onclick="document.getElementById('add-batch-modal').classList.remove('hidden')">+ Add New Batch</x-button>
+                <x-button variant="primary" size="sm" type="button" onclick="openAppModal('add-batch-modal')">+ Add New Batch</x-button>
             @endif
         @endcan
     </x-slot>
@@ -95,14 +95,16 @@
 
 @can('update', $product)
     @if(! $isVariable)
-        <div id="add-batch-modal" class="fixed inset-0 z-50 hidden">
-            <div class="absolute inset-0 bg-gray-900/50" onclick="document.getElementById('add-batch-modal').classList.add('hidden')"></div>
-            <div class="relative flex min-h-full items-center justify-center p-4">
-                <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+        <div id="add-batch-modal" class="app-modal-overlay" role="dialog" aria-modal="true">
+            <div class="app-modal-panel">
+                <div class="app-modal-header">
                     <h3 class="text-lg font-semibold text-gray-900">Add New Batch</h3>
-                    <p class="mt-1 text-sm text-gray-500">Log a new shipment without changing existing legacy stock.</p>
-                    <form method="POST" action="{{ tenant_route('tenant.inventory.batches.store', ['product' => $product]) }}" class="mt-5 space-y-4">
-                        @csrf
+                    <button type="button" onclick="closeAppModal('add-batch-modal')" class="rounded-lg p-1 text-gray-400 hover:bg-gray-100">&times;</button>
+                </div>
+                <form method="POST" action="{{ tenant_route('tenant.inventory.batches.store', ['product' => $product]) }}" class="flex min-h-0 flex-1 flex-col">
+                    @csrf
+                    <div class="app-modal-body space-y-4">
+                        <p class="text-sm text-gray-500">Log a new shipment without changing existing legacy stock.</p>
                         <div>
                             <label class="mb-1.5 block text-sm font-medium text-gray-700" for="batch_quantity">Quantity received</label>
                             <input type="number" step="0.001" min="0.001" name="quantity" id="batch_quantity" required
@@ -133,13 +135,13 @@
                             <label class="mb-1.5 block text-sm font-medium text-gray-700" for="batch_notes">Notes <span class="font-normal text-gray-400">(optional)</span></label>
                             <textarea name="notes" id="batch_notes" rows="2" class="block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">{{ old('notes') }}</textarea>
                         </div>
-                        <div class="flex justify-end gap-3 pt-2">
-                            <button type="button" onclick="document.getElementById('add-batch-modal').classList.add('hidden')"
-                                    class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
-                            <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Save Batch</button>
-                        </div>
-                    </form>
-                </div>
+                    </div>
+                    <div class="app-modal-footer">
+                        <button type="button" onclick="closeAppModal('add-batch-modal')"
+                                class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+                        <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Save Batch</button>
+                    </div>
+                </form>
             </div>
         </div>
     @endif

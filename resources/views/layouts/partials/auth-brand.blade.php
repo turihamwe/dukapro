@@ -7,4 +7,5 @@
     @if(!empty($subtitle))
         <p class="mt-1 text-sm text-gray-500 sm:mt-4">{{ $subtitle }}</p>
     @endif
+    <p class="mt-3 text-xs text-gray-400">{{ platform_footer_tagline() }}</p>
 </div>

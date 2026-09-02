@@ -52,18 +52,16 @@
     <div class="mt-6">{{ $damages->links() }}</div>
 @endif
 
-<div id="damage-modal" class="fixed inset-0 z-50 hidden" aria-hidden="true">
-    <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" id="damage-modal-backdrop"></div>
-    <div class="flex min-h-full items-end justify-center p-4 sm:items-center">
-        <div class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <div class="mb-5 flex items-center justify-between">
-                <h2 class="text-lg font-semibold text-gray-900">Log Damaged Stock</h2>
-                <button type="button" id="close-damage-modal" class="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600">&times;</button>
-            </div>
+<div id="damage-modal" class="app-modal-overlay" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="app-modal-panel">
+        <div class="app-modal-header">
+            <h2 class="text-lg font-semibold text-gray-900">Log Damaged Stock</h2>
+            <button type="button" id="close-damage-modal" class="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600">&times;</button>
+        </div>
 
-            <form method="POST" action="{{ tenant_route('tenant.damages.store') }}" class="space-y-4">
-                @csrf
-
+        <form method="POST" action="{{ tenant_route('tenant.damages.store') }}" class="flex min-h-0 flex-1 flex-col">
+            @csrf
+            <div class="app-modal-body space-y-4">
                 <x-select name="product_id" label="Product" required>
                     <option value="">Select product…</option>
                     @foreach($products as $product)
@@ -84,13 +82,12 @@
                 <input type="hidden" name="damage_date" value="{{ $date }}">
 
                 <p class="text-xs text-gray-500">Stock will be reduced automatically using FIFO costing.</p>
-
-                <div class="flex gap-3 pt-2">
-                    <x-button variant="primary" type="submit" class="flex-1">Record Damage</x-button>
-                    <x-button variant="secondary" type="button" id="cancel-damage-modal">Cancel</x-button>
-                </div>
-            </form>
-        </div>
+            </div>
+            <div class="app-modal-footer">
+                <x-button variant="secondary" type="button" id="cancel-damage-modal">Cancel</x-button>
+                <x-button variant="primary" type="submit">Record Damage</x-button>
+            </div>
+        </form>
     </div>
 </div>
 @endsection
@@ -102,22 +99,23 @@
     var openBtn = document.getElementById('open-damage-modal');
     var closeBtn = document.getElementById('close-damage-modal');
     var cancelBtn = document.getElementById('cancel-damage-modal');
-    var backdrop = document.getElementById('damage-modal-backdrop');
 
     function openModal() {
-        modal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
+        modal.classList.add('is-open');
+        document.body.classList.add('app-modal-open');
     }
 
     function closeModal() {
-        modal.classList.add('hidden');
-        document.body.style.overflow = '';
+        modal.classList.remove('is-open');
+        document.body.classList.remove('app-modal-open');
     }
 
     if (openBtn) openBtn.addEventListener('click', openModal);
     if (closeBtn) closeBtn.addEventListener('click', closeModal);
     if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
-    if (backdrop) backdrop.addEventListener('click', closeModal);
+    modal?.addEventListener('click', function (e) {
+        if (e.target === modal) closeModal();
+    });
 
     @if($errors->any() && old('product_id'))
         openModal();

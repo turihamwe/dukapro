@@ -7,6 +7,7 @@ use App\Enums\UserRole;
 use App\Mail\WelcomeOwnerMail;
 use App\Models\Business;
 use App\Models\User;
+use App\Services\BranchService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -40,6 +41,8 @@ class TenantRegistrationService
             ]);
 
             app(ExpenseService::class)->seedDefaultCategories((int) $business->id);
+
+            app(BranchService::class)->createDefault($business);
 
             return User::create([
                 'business_id' => $business->id,

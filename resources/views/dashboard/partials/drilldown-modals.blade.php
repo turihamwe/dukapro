@@ -10,15 +10,15 @@
 @endphp
 
 @foreach($modals as $id => $modal)
-    <div id="{{ $id }}" class="dashboard-drilldown-modal fixed inset-0 z-[100] hidden items-end justify-center bg-black/40 p-4 sm:items-center" role="dialog" aria-modal="true">
-        <div class="max-h-[80vh] w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-xl">
-            <div class="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+    <div id="{{ $id }}" class="dashboard-drilldown-modal app-modal-overlay" role="dialog" aria-modal="true">
+        <div class="app-modal-panel max-w-lg">
+            <div class="app-modal-header">
                 <h3 class="text-sm font-semibold text-gray-900">{{ $modal['title'] }}</h3>
                 <button type="button" class="dashboard-drilldown-close rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600" aria-label="Close">
                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
             </div>
-            <div class="max-h-[60vh] overflow-y-auto px-5 py-3">
+            <div class="app-modal-body !py-3">
                 @forelse($modal['items'] as $row)
                     <div class="flex items-start justify-between gap-3 border-b border-gray-50 py-3 last:border-0">
                         <div class="min-w-0">
@@ -45,16 +45,14 @@
     function openModal(id) {
         var modal = document.getElementById(id);
         if (!modal) return;
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-        document.body.classList.add('overflow-hidden');
+        modal.classList.add('is-open');
+        document.body.classList.add('app-modal-open');
     }
 
     function closeModal(modal) {
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-        if (!document.querySelector('.dashboard-drilldown-modal.flex')) {
-            document.body.classList.remove('overflow-hidden');
+        modal.classList.remove('is-open');
+        if (!document.querySelector('.app-modal-overlay.is-open')) {
+            document.body.classList.remove('app-modal-open');
         }
     }
 

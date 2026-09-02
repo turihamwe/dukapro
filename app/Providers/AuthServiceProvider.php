@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Enums\UserRole;
 use App\Models\AuditLog;
 use App\Models\Brand;
+use App\Models\Branch;
 use App\Models\Customer;
 use App\Models\Damage;
 use App\Models\Expense;
@@ -13,6 +14,7 @@ use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SoldByUnit;
 use App\Models\User;
+use App\Policies\BranchPolicy;
 use App\Policies\BrandPolicy;
 use App\Policies\AuditLogPolicy;
 use App\Policies\CustomerPolicy;
@@ -30,6 +32,7 @@ use Illuminate\Support\Facades\Gate;
 class AuthServiceProvider extends ServiceProvider
 {
     protected $policies = [
+        Branch::class => BranchPolicy::class,
         Product::class => ProductPolicy::class,
         Brand::class => BrandPolicy::class,
         SoldByUnit::class => SoldByUnitPolicy::class,
@@ -59,6 +62,10 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('manage-settings', function (User $user) {
+            return $user->isOwner();
+        });
+
+        Gate::define('manage-branches', function (User $user) {
             return $user->isOwner();
         });
 

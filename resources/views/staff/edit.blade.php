@@ -28,9 +28,21 @@
                 @endforeach
             </select>
         </div>
-        <div id="branch-field" class="{{ old('role', $employee->role) === UserRole::SUPERVISOR ? '' : 'hidden' }}">
-            <x-input type="text" name="branch_name" label="Branch name" value="{{ old('branch_name', $employee->branch_name) }}" />
-        </div>
+        @if(auth()->user()->isBranchScoped())
+            <p class="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600">Branch: <strong>{{ $employee->branch->name ?? auth()->user()->branch->name ?? '—' }}</strong></p>
+        @else
+            <div>
+                <label for="branch_id" class="mb-1 block text-sm font-medium text-gray-700">Branch</label>
+                <select name="branch_id" id="branch_id" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                    @foreach($branches as $branchId => $branchName)
+                        <option value="{{ $branchId }}" @selected(old('branch_id', $employee->branch_id) == $branchId)>{{ $branchName }}</option>
+                    @endforeach
+                </select>
+                @error('branch_id')
+                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+        @endif
         <label class="flex items-center gap-2 text-sm text-gray-700">
             <input type="checkbox" name="is_active" value="1" class="rounded border-gray-300 text-indigo-600" {{ old('is_active', $employee->is_active) ? 'checked' : '' }}>
             Active account
@@ -46,11 +58,3 @@
     </form>
 </x-card>
 @endsection
-
-@push('scripts')
-<script>
-document.getElementById('staff-role')?.addEventListener('change', function () {
-    document.getElementById('branch-field')?.classList.toggle('hidden', this.value !== 'supervisor');
-});
-</script>
-@endpush

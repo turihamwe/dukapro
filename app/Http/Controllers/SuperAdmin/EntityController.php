@@ -9,6 +9,7 @@ use App\Helpers\SystemAuditLogger;
 use App\Http\Controllers\Controller;
 use App\Models\Affiliate;
 use App\Models\AffiliateCommission;
+use App\Models\Branch;
 use App\Models\Business;
 use App\Models\Customer;
 use App\Models\Expense;
@@ -17,6 +18,7 @@ use App\Models\Shareholder;
 use App\Models\ShareholderEarning;
 use App\Models\User;
 use App\Services\AffiliateReferralCodeGenerator;
+use App\Services\BranchService;
 use App\Services\ShareAllocationService;
 use App\Services\ShareholderEarningsService;
 use App\Services\ShareholderRegistrationService;
@@ -38,18 +40,22 @@ class EntityController extends Controller
 
     protected AffiliateReferralCodeGenerator $referralCodeGenerator;
 
+    protected BranchService $branchService;
+
     public function __construct(
         ShareAllocationService $allocationService,
         ShareholderRegistrationService $shareholderRegistrationService,
         ShareholderEarningsService $shareholderEarningsService,
         UserPromotionService $userPromotionService,
-        AffiliateReferralCodeGenerator $referralCodeGenerator
+        AffiliateReferralCodeGenerator $referralCodeGenerator,
+        BranchService $branchService
     ) {
         $this->allocationService = $allocationService;
         $this->shareholderRegistrationService = $shareholderRegistrationService;
         $this->shareholderEarningsService = $shareholderEarningsService;
         $this->userPromotionService = $userPromotionService;
         $this->referralCodeGenerator = $referralCodeGenerator;
+        $this->branchService = $branchService;
     }
 
     public function index(Request $request, string $entity)
@@ -74,7 +80,7 @@ class EntityController extends Controller
             });
         }
 
-        if (in_array($entity, ['users', 'staff', 'products', 'customers', 'expenses'], true)) {
+        if (in_array($entity, ['users', 'staff', 'products', 'customers', 'expenses', 'branches'], true)) {
             $query->with('business');
         }
 
@@ -141,6 +147,7 @@ class EntityController extends Controller
             'remainingShares' => $entity === 'shareholders' ? $this->allocationService->remainingShares() : null,
             'pricePerShare' => $this->allocationService->pricePerShare(),
             'shareholders' => Shareholder::orderBy('name')->get(['id', 'name', 'email']),
+            'branches' => Branch::orderBy('name')->get(['id', 'name', 'business_id']),
         ]);
     }
 
@@ -170,19 +177,46 @@ class EntityController extends Controller
                     'subscription_status' => 'trial',
                     'trial_ends_at' => now()->addDays(30),
                 ]));
+                $this->branchService->createDefault($record);
+                break;
+
+            case 'branches':
+                $data = $request->validate([
+                    'business_id' => 'required|exists:businesses,id',
+                    'name' => 'required|string|max:255',
+                    'address' => 'nullable|string|max:255',
+                    'phone' => 'nullable|string|max:30',
+                    'is_active' => 'nullable|boolean',
+                    'is_default' => 'nullable|boolean',
+                ]);
+                $business = Business::findOrFail($data['business_id']);
+                $record = $this->branchService->create($business, [
+                    'name' => $data['name'],
+                    'address' => $data['address'] ?? null,
+                    'phone' => $data['phone'] ?? null,
+                    'is_active' => $request->boolean('is_active', true),
+                    'is_default' => $request->boolean('is_default', false),
+                ]);
                 break;
 
             case 'staff':
                 $data = $request->validate([
                     'business_id' => 'required|exists:businesses,id',
+                    'branch_id' => 'required|exists:branches,id',
                     'name' => 'required|string|max:255',
                     'username' => 'required|string|max:50|alpha_dash|unique:users,username',
                     'email' => 'required|email|unique:users,email',
                     'password' => 'required|string|min:8',
                     'role' => 'required|in:' . implode(',', UserRole::staffRoles()),
                 ]);
+                abort_unless(
+                    Branch::where('id', $data['branch_id'])->where('business_id', $data['business_id'])->exists(),
+                    422,
+                    'Branch must belong to the selected business.'
+                );
                 $record = User::create([
                     'business_id' => $data['business_id'],
+                    'branch_id' => $data['branch_id'],
                     'name' => $data['name'],
                     'username' => strtolower($data['username']),
                     'email' => $data['email'],
@@ -398,6 +432,7 @@ class EntityController extends Controller
             'remainingShares' => $entity === 'shareholders' ? $this->allocationService->remainingShares($item->id) : null,
             'pricePerShare' => $this->allocationService->pricePerShare(),
             'shareholders' => Shareholder::orderBy('name')->get(['id', 'name', 'email']),
+            'branches' => Branch::orderBy('name')->get(['id', 'name', 'business_id']),
         ]);
     }
 
@@ -424,13 +459,36 @@ class EntityController extends Controller
                 $item->update($data);
                 break;
 
+            case 'branches':
+                $data = $request->validate([
+                    'name' => 'required|string|max:255',
+                    'address' => 'nullable|string|max:255',
+                    'phone' => 'nullable|string|max:30',
+                    'is_active' => 'nullable|boolean',
+                    'is_default' => 'nullable|boolean',
+                ]);
+                $this->branchService->update($item, [
+                    'name' => $data['name'],
+                    'address' => $data['address'] ?? null,
+                    'phone' => $data['phone'] ?? null,
+                    'is_active' => $request->boolean('is_active', true),
+                    'is_default' => $request->boolean('is_default', false),
+                ]);
+                break;
+
             case 'staff':
                 $data = $request->validate([
                     'name' => 'required|string|max:255',
                     'email' => 'required|email|unique:users,email,' . $item->id,
                     'role' => 'required|in:' . implode(',', UserRole::staffRoles()),
+                    'branch_id' => 'required|exists:branches,id',
                     'is_active' => 'nullable|boolean',
                 ]);
+                abort_unless(
+                    Branch::where('id', $data['branch_id'])->where('business_id', $item->business_id)->exists(),
+                    422,
+                    'Branch must belong to the staff member business.'
+                );
                 $data['is_active'] = $request->boolean('is_active', true);
                 $item->update($data);
                 break;
@@ -560,6 +618,11 @@ class EntityController extends Controller
 
         $modelClass = $config['model'];
         $item = $modelClass::query()->findOrFail($record);
+
+        if ($entity === 'branches' && ! $this->branchService->canDelete($item)) {
+            return back()->with('error', 'Cannot delete the default branch or a branch that still has staff assigned.');
+        }
+
         $businessId = $item->business_id ?? null;
         $itemId = $item->id;
         $item->delete();

@@ -35,6 +35,68 @@
             .theme-modern header a.rounded-lg { min-height: 44px; min-width: 44px; display: inline-flex; align-items: center; justify-content: center; }
             .theme-modern main { padding-left: 1rem; padding-right: 1rem; }
         }
+
+        /* Mobile-friendly modals & slide-overs */
+        .app-modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: none;
+            align-items: flex-end;
+            justify-content: center;
+            padding: max(0.75rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom));
+            background: rgb(17 24 39 / 0.55);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+        }
+        .app-modal-overlay.is-open { display: flex; }
+        @media (min-width: 640px) {
+            .app-modal-overlay { align-items: center; }
+        }
+        .app-modal-panel {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 28rem;
+            max-height: min(calc(100dvh - 1.5rem), 100%);
+            border-radius: 1rem;
+            background: #fff;
+            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+            overflow: hidden;
+        }
+        @media (min-width: 640px) {
+            .app-modal-panel { max-width: 32rem; border-radius: 1rem; }
+        }
+        .app-modal-header {
+            flex-shrink: 0;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.75rem;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .app-modal-body {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            padding: 1rem 1.25rem;
+        }
+        .app-modal-footer {
+            flex-shrink: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            justify-content: flex-end;
+            padding: 1rem 1.25rem;
+            padding-bottom: max(1rem, env(safe-area-inset-bottom));
+            border-top: 1px solid #f3f4f6;
+            background: #fff;
+        }
+        body.app-modal-open { overflow: hidden; touch-action: none; }
     </style>
     @stack('styles')
 </head>
@@ -108,14 +170,14 @@
 
         function openModal() {
             if (modal) {
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
+                modal.classList.add('is-open');
+                document.body.classList.add('app-modal-open');
             }
         }
         function closeModal() {
             if (modal) {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
+                modal.classList.remove('is-open');
+                document.body.classList.remove('app-modal-open');
             }
         }
 
@@ -147,6 +209,27 @@
             input.addEventListener('change', updatePlanSummary);
         });
         updatePlanSummary();
+
+        window.openAppModal = function (id) {
+            var el = typeof id === 'string' ? document.getElementById(id) : id;
+            if (!el) return;
+            el.classList.add('is-open');
+            document.body.classList.add('app-modal-open');
+        };
+
+        window.closeAppModal = function (target) {
+            var el = typeof target === 'string' ? document.getElementById(target) : target;
+            if (!el) return;
+            if (el.classList.contains('app-modal-overlay')) {
+                el.classList.remove('is-open');
+            } else {
+                var overlay = el.closest('.app-modal-overlay');
+                if (overlay) overlay.classList.remove('is-open');
+            }
+            if (!document.querySelector('.app-modal-overlay.is-open')) {
+                document.body.classList.remove('app-modal-open');
+            }
+        };
 
         form?.addEventListener('submit', function (e) {
             e.preventDefault();

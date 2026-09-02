@@ -18,12 +18,23 @@
             <input type="text" name="phone" value="{{ old('phone', $item->phone) }}" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <input type="text" name="subscription_status" value="{{ old('subscription_status', $item->subscription_status) }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_active" value="1" @checked(old('is_active', $item->is_active))> Active</label>
+        @elseif($entity === 'branches')
+            <input type="text" name="name" value="{{ old('name', $item->name) }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <input type="text" name="address" value="{{ old('address', $item->address) }}" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <input type="text" name="phone" value="{{ old('phone', $item->phone) }}" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_active" value="1" @checked(old('is_active', $item->is_active))> Active</label>
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_default" value="1" @checked(old('is_default', $item->is_default))> Default branch</label>
         @elseif($entity === 'staff')
             <input type="text" name="name" value="{{ old('name', $item->name) }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <input type="email" name="email" value="{{ old('email', $item->email) }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <select name="role" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
                 @foreach($roles as $role)
                     <option value="{{ $role }}" @selected(old('role', $item->role) === $role)>{{ ucfirst($role) }}</option>
+                @endforeach
+            </select>
+            <select name="branch_id" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                @foreach(($branches ?? collect())->where('business_id', $item->business_id) as $branch)
+                    <option value="{{ $branch->id }}" @selected(old('branch_id', $item->branch_id) == $branch->id)>{{ $branch->name }}</option>
                 @endforeach
             </select>
             <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_active" value="1" @checked(old('is_active', $item->is_active))> Active</label>

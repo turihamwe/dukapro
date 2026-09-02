@@ -59,6 +59,11 @@ class Business extends Model
         return $this->hasMany(User::class);
     }
 
+    public function branches(): HasMany
+    {
+        return $this->hasMany(Branch::class);
+    }
+
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);

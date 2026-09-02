@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToBranch;
 use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -9,10 +10,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class EndOfDayReconciliation extends Model
 {
-    use BelongsToTenant, HasFactory;
+    use BelongsToBranch, BelongsToTenant, HasFactory;
 
     protected $fillable = [
         'business_id',
+        'branch_id',
         'user_id',
         'reconciliation_date',
         'expected_cash',
