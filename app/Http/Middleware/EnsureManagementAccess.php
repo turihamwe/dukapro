@@ -46,7 +46,23 @@ class EnsureManagementAccess
             'tenant.damages.store',
             'tenant.pos.index',
             'tenant.pos.search',
-            'tenant.pos.checkout'
+            'tenant.pos.checkout',
+            'tenant.pos.send-kitchen',
+            'tenant.waiter-shift.index',
+            'tenant.waiter-shift.balance-all',
+            'tenant.waiter-shift.show',
+            'tenant.waiter-shift.settle-credit',
+            'tenant.restaurant-orders.index',
+            'tenant.restaurant-orders.print',
+            'tenant.kitchen.index',
+            'tenant.kitchen.poll',
+            'tenant.kitchen.update-status',
+            'tenant.kitchen.ready',
+            'tenant.kitchen.settle',
+            'tenant.kitchen.settle.store',
+            'tenant.waiter-orders.index',
+            'tenant.waiter-orders.search',
+            'tenant.waiter-orders.place'
         );
     }
 }

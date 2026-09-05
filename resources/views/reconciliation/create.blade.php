@@ -69,7 +69,7 @@
         <p class="-mt-2 text-xs text-gray-500">Record any unexpected cash found separately — it improves balancing and is kept on file for future shortage offsets.</p>
         <x-textarea name="notes" label="Notes" rows="2" placeholder="Explain any missing money...">{{ old('notes') }}</x-textarea>
 
-        @if($business->usesShiftWaiterMode())
+        @can('access-bar-shift')
             <div class="rounded-xl border border-violet-200 bg-violet-50 p-4 text-sm">
                 <div class="flex flex-wrap items-start justify-between gap-2">
                     <div>
@@ -110,7 +110,7 @@
                     <p class="mt-3 text-xs text-amber-800">Waiters have orders today but are not balanced yet. Use “Balance All Waiters” first for accurate EOD.</p>
                 @endif
             </div>
-        @endif
+        @endcan
 
         <x-button variant="primary" size="lg" type="submit">Submit Reconciliation</x-button>
     </form>

@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Enums\UserRole;
+use App\Modules\ModuleKeys;
 use App\Models\AuditLog;
 use App\Models\Brand;
 use App\Models\Branch;
@@ -154,7 +155,7 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('access-waiter-orders', function (User $user) {
-            if (! $user->business || ! $user->business->usesRestaurantMode()) {
+            if (! $user->business || ! $user->business->hasModule(ModuleKeys::RESTAURANT)) {
                 return false;
             }
 
@@ -162,7 +163,7 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('access-kitchen', function (User $user) {
-            if (! $user->business || ! $user->business->usesRestaurantMode()) {
+            if (! $user->business || ! $user->business->hasModule(ModuleKeys::RESTAURANT)) {
                 return false;
             }
 
@@ -174,7 +175,7 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('settle-kitchen-orders', function (User $user) {
-            if (! $user->business || ! $user->business->usesRestaurantMode()) {
+            if (! $user->business || ! $user->business->hasModule(ModuleKeys::RESTAURANT)) {
                 return false;
             }
 
@@ -186,7 +187,7 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('view-restaurant-orders', function (User $user) {
-            if (! $user->business || ! $user->business->usesRestaurantMode()) {
+            if (! $user->business || ! $user->business->hasModule(ModuleKeys::RESTAURANT)) {
                 return false;
             }
 
@@ -194,11 +195,23 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('manage-restaurant-tables', function (User $user) {
-            if (! $user->business || ! $user->business->usesRestaurantMode()) {
+            if (! $user->business || ! $user->business->hasModule(ModuleKeys::RESTAURANT)) {
                 return false;
             }
 
             return $user->isOwner() || $user->isManager();
+        });
+
+        Gate::define('access-bar-shift', function (User $user) {
+            if (! $user->business || ! $user->business->hasModule(ModuleKeys::BAR_SHIFT)) {
+                return false;
+            }
+
+            return $user->can('access-pos');
+        });
+
+        Gate::define('use-catalog-variants', function (User $user) {
+            return $user->business && $user->business->hasModule(ModuleKeys::CATALOG_VARIANTS);
         });
 
         Gate::define('submit-reconciliation', function (User $user) {

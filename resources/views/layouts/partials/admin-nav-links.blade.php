@@ -7,7 +7,7 @@
 @can('view-inventory')
     <a href="{{ tenant_route('tenant.inventory.index') }}"
        class="{{ $navLink }} {{ request()->routeIs('tenant.inventory.*') && ! request()->routeIs('tenant.brands.*') ? $navActive : $navIdle }}">
-        <span>📦</span> {{ auth()->user()->business && auth()->user()->business->usesRestaurantMode() ? 'Menu' : 'Inventory' }}
+        <span>📦</span> @module('restaurant') Menu @else Inventory @endmodule
     </a>
     <a href="{{ tenant_route('tenant.brands.index') }}"
        class="{{ $navLink }} {{ request()->routeIs('tenant.brands.*') ? $navActive : $navIdle }}">

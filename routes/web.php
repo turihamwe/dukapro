@@ -164,7 +164,7 @@ Route::middleware(['maintenance'])->group(function () {
                         Route::delete('/{branch}', [BranchController::class, 'destroy'])->name('destroy');
                     });
 
-                    Route::middleware(['can:manage-restaurant-tables'])->prefix('restaurant-tables')->name('restaurant-tables.')->group(function () {
+                    Route::middleware(['can:manage-restaurant-tables', 'module:restaurant'])->prefix('restaurant-tables')->name('restaurant-tables.')->group(function () {
                         Route::get('/', [RestaurantTableController::class, 'index'])->name('index');
                         Route::get('/create', [RestaurantTableController::class, 'create'])->name('create');
                         Route::post('/', [RestaurantTableController::class, 'store'])->name('store');
@@ -207,25 +207,29 @@ Route::middleware(['maintenance'])->group(function () {
 
                 Route::middleware(['can:view-inventory', 'management.access'])->prefix('inventory')->name('inventory.')->group(function () {
                     Route::get('/catalog', [InventoryController::class, 'catalog'])->name('catalog');
-                    Route::get('/attributes', [ProductAttributeController::class, 'index'])->name('attributes.index');
-                    Route::post('/attributes/quick', [ProductAttributeController::class, 'quickStore'])
-                        ->middleware('can:create-inventory')
-                        ->name('attributes.quick-store');
-                    Route::post('/attributes/quick-value', [ProductAttributeController::class, 'quickValue'])
-                        ->middleware('can:create-inventory')
-                        ->name('attributes.quick-value');
+
+                    Route::middleware(['module:catalog_variants'])->group(function () {
+                        Route::get('/attributes', [ProductAttributeController::class, 'index'])->name('attributes.index');
+                        Route::post('/attributes/quick', [ProductAttributeController::class, 'quickStore'])
+                            ->middleware('can:create-inventory')
+                            ->name('attributes.quick-store');
+                        Route::post('/attributes/quick-value', [ProductAttributeController::class, 'quickValue'])
+                            ->middleware('can:create-inventory')
+                            ->name('attributes.quick-value');
+                        Route::post('/attributes', [ProductAttributeController::class, 'store'])
+                            ->middleware('can:create-inventory')
+                            ->name('attributes.store');
+                        Route::put('/attributes/{attribute}', [ProductAttributeController::class, 'update'])
+                            ->middleware('can:update-inventory')
+                            ->name('attributes.update');
+                        Route::delete('/attributes/{attribute}', [ProductAttributeController::class, 'destroy'])
+                            ->middleware('can:delete-inventory')
+                            ->name('attributes.destroy');
+                    });
+
                     Route::post('/units/quick', [SoldByUnitController::class, 'quickStore'])
                         ->middleware('can:create-inventory')
                         ->name('units.quick-store');
-                    Route::post('/attributes', [ProductAttributeController::class, 'store'])
-                        ->middleware('can:create-inventory')
-                        ->name('attributes.store');
-                    Route::put('/attributes/{attribute}', [ProductAttributeController::class, 'update'])
-                        ->middleware('can:update-inventory')
-                        ->name('attributes.update');
-                    Route::delete('/attributes/{attribute}', [ProductAttributeController::class, 'destroy'])
-                        ->middleware('can:delete-inventory')
-                        ->name('attributes.destroy');
 
                     Route::get('/', [InventoryController::class, 'index'])->name('index');
                     Route::middleware(['can:create-inventory'])->group(function () {
@@ -264,13 +268,13 @@ Route::middleware(['maintenance'])->group(function () {
                     Route::post('/disable', [CashierModeController::class, 'disable'])->name('disable');
                 });
 
-                Route::middleware(['can:access-waiter-orders'])->prefix('waiter-orders')->name('waiter-orders.')->group(function () {
+                Route::middleware(['can:access-waiter-orders', 'module:restaurant'])->prefix('waiter-orders')->name('waiter-orders.')->group(function () {
                     Route::get('/', [WaiterOrderController::class, 'index'])->name('index');
                     Route::get('/search', [WaiterOrderController::class, 'search'])->name('search');
                     Route::post('/place', [WaiterOrderController::class, 'place'])->name('place');
                 });
 
-                Route::prefix('kitchen')->name('kitchen.')->group(function () {
+                Route::middleware(['module:restaurant'])->prefix('kitchen')->name('kitchen.')->group(function () {
                     Route::middleware(['can:access-kitchen'])->group(function () {
                         Route::get('/', [KitchenController::class, 'index'])->name('index');
                         Route::get('/poll', [KitchenController::class, 'poll'])->name('poll');
@@ -284,7 +288,7 @@ Route::middleware(['maintenance'])->group(function () {
                     });
                 });
 
-                Route::middleware(['can:view-restaurant-orders'])->prefix('orders')->name('restaurant-orders.')->group(function () {
+                Route::middleware(['can:view-restaurant-orders', 'module:restaurant'])->prefix('orders')->name('restaurant-orders.')->group(function () {
                     Route::get('/', [RestaurantOrderController::class, 'index'])->name('index');
                     Route::get('/{kitchenOrder}/print', [RestaurantOrderController::class, 'print'])->name('print');
                 });
@@ -292,11 +296,13 @@ Route::middleware(['maintenance'])->group(function () {
                 Route::middleware(['can:access-pos'])->prefix('pos')->name('pos.')->group(function () {
                     Route::get('/', [PosController::class, 'index'])->name('index');
                     Route::get('/search', [PosController::class, 'search'])->name('search');
-                    Route::post('/send-kitchen', [PosController::class, 'sendToKitchen'])->name('send-kitchen');
+                    Route::post('/send-kitchen', [PosController::class, 'sendToKitchen'])
+                        ->middleware('module:restaurant')
+                        ->name('send-kitchen');
                     Route::post('/checkout', [PosController::class, 'checkout'])->name('checkout');
                 });
 
-                Route::middleware(['can:access-pos'])->prefix('waiter-shift')->name('waiter-shift.')->group(function () {
+                Route::middleware(['can:access-bar-shift', 'module:bar_shift'])->prefix('waiter-shift')->name('waiter-shift.')->group(function () {
                     Route::get('/', [WaiterShiftController::class, 'index'])->name('index');
                     Route::post('/balance-all', [WaiterShiftController::class, 'balanceAll'])->name('balance-all');
                     Route::get('/waiters/{waiter}', [WaiterShiftController::class, 'show'])->name('show');

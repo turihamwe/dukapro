@@ -2,8 +2,10 @@
     $isEdit = isset($product);
     $isVariable = $isEdit && $product->isVariableParent();
     $selectedBrandId = old('brand_id', $product->brand_id ?? '');
+    $catalogVariantsEnabled = $catalogVariantsEnabled ?? auth()->user()->can('use-catalog-variants');
+    $showVariantFields = $catalogVariantsEnabled || ($isEdit && $isVariable);
     $productType = old('product_type', $isVariable ? 'variable' : 'simple');
-    $variantsEnabled = $productType === 'variable';
+    $variantsEnabled = $showVariantFields && $productType === 'variable';
     $canViewCost = $canViewCost ?? auth()->user()->can('view-cost-prices');
 
     $existingVariants = collect();
@@ -109,6 +111,7 @@
     </div>
 
     {{-- Variant toggle --}}
+    @if($showVariantFields)
     <div class="flex items-center gap-3">
         <label class="relative inline-flex shrink-0 cursor-pointer items-center">
             <input type="checkbox" id="enable_variants_toggle" class="peer sr-only" @checked($variantsEnabled)>
@@ -120,6 +123,7 @@
             <p class="text-xs text-gray-500">Size or color combinations with separate prices and stock</p>
         </div>
     </div>
+    @endif
 
     @php
         $selectedUnit = old('measurement_unit', $product->measurement_unit ?? 'piece');
@@ -165,6 +169,7 @@
 
     <x-input type="number" step="1" name="critical_threshold" label="Low-stock alert" value="{{ old('critical_threshold', $product->critical_threshold ?? 5) }}" />
 
+    @if($showVariantFields)
     {{-- Variant builder --}}
     <div id="variant-product-fields" class="{{ $variantsEnabled ? '' : 'hidden' }}">
         <div class="rounded-xl border border-gray-200 bg-gray-50 p-5 space-y-5">
@@ -231,6 +236,7 @@
             </div>
         </div>
     </div>
+    @endif
 
     <x-textarea name="description" label="Notes (optional)" rows="2">{{ old('description', $product->description ?? '') }}</x-textarea>
 

@@ -20,8 +20,6 @@ has-cashier-bottom-nav
 @endif
 
 @php
-    $waiterModeNav = auth()->user()->business && auth()->user()->business->usesShiftWaiterMode();
-    $restaurantModeNav = auth()->user()->business && auth()->user()->business->usesRestaurantMode();
     $showOperationsNav = auth()->user()->can('view-inventory')
         || auth()->user()->can('record-expenses')
         || auth()->user()->can('log-damages');
@@ -29,7 +27,26 @@ has-cashier-bottom-nav
         || request()->routeIs('tenant.inventory.*')
         || request()->routeIs('tenant.expenses.*')
         || request()->routeIs('tenant.damages.*');
-    $navCols = 2 + ($waiterModeNav ? 1 : 0) + ($restaurantModeNav ? 2 : 0) + ($showOperationsNav ? 1 : 0);
+    $navCols = 0;
+    if (auth()->user()->can('access-pos')) {
+        $navCols++;
+    }
+    if (auth()->user()->can('access-bar-shift')) {
+        $navCols++;
+    }
+    if (auth()->user()->can('view-restaurant-orders')) {
+        $navCols++;
+    }
+    if (auth()->user()->can('settle-kitchen-orders')) {
+        $navCols++;
+    }
+    if ($showOperationsNav) {
+        $navCols++;
+    }
+    if (auth()->user()->can('submit-reconciliation')) {
+        $navCols++;
+    }
+    $navCols = max($navCols, 1);
 @endphp
 
 <div class="cashier-shell flex min-h-[100dvh] flex-col bg-gray-100 @yield('cashier_shell_class')">
@@ -65,28 +82,24 @@ has-cashier-bottom-nav
                     <span class="mb-0.5 text-xl leading-none">🛒</span> POS
                 </a>
             @endcan
-            @if($waiterModeNav)
-                @can('access-pos')
-                    <a href="{{ tenant_route('tenant.waiter-shift.index') }}"
-                       class="flex min-h-[56px] flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-semibold {{ request()->routeIs('tenant.waiter-shift.*') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600' }}">
-                        <span class="mb-0.5 text-xl leading-none">🍽</span> Waiters
-                    </a>
-                @endcan
-            @endif
-            @if($restaurantModeNav)
-                @can('view-restaurant-orders')
-                    <a href="{{ tenant_route('tenant.restaurant-orders.index') }}"
-                       class="flex min-h-[56px] flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-semibold {{ request()->routeIs('tenant.restaurant-orders.*') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600' }}">
-                        <span class="mb-0.5 text-xl leading-none">📋</span> Orders
-                    </a>
-                @endcan
-                @can('settle-kitchen-orders')
-                    <a href="{{ tenant_route('tenant.kitchen.ready') }}"
-                       class="flex min-h-[56px] flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-semibold {{ request()->routeIs('tenant.kitchen.ready') || request()->routeIs('tenant.kitchen.settle*') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600' }}">
-                        <span class="mb-0.5 text-xl leading-none">🍳</span> Ready
-                    </a>
-                @endcan
-            @endif
+            @can('access-bar-shift')
+                <a href="{{ tenant_route('tenant.waiter-shift.index') }}"
+                   class="flex min-h-[56px] flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-semibold {{ request()->routeIs('tenant.waiter-shift.*') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600' }}">
+                    <span class="mb-0.5 text-xl leading-none">🍽</span> Waiters
+                </a>
+            @endcan
+            @can('view-restaurant-orders')
+                <a href="{{ tenant_route('tenant.restaurant-orders.index') }}"
+                   class="flex min-h-[56px] flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-semibold {{ request()->routeIs('tenant.restaurant-orders.*') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600' }}">
+                    <span class="mb-0.5 text-xl leading-none">📋</span> Orders
+                </a>
+            @endcan
+            @can('settle-kitchen-orders')
+                <a href="{{ tenant_route('tenant.kitchen.ready') }}"
+                   class="flex min-h-[56px] flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-semibold {{ request()->routeIs('tenant.kitchen.ready') || request()->routeIs('tenant.kitchen.settle*') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600' }}">
+                    <span class="mb-0.5 text-xl leading-none">🍳</span> Ready
+                </a>
+            @endcan
             @if($showOperationsNav)
                 <a href="{{ tenant_route('tenant.operations.index') }}"
                    class="flex min-h-[56px] flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-semibold {{ $operationsActive ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600' }}">

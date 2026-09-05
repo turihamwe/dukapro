@@ -47,5 +47,11 @@ class AppServiceProvider extends ServiceProvider
         Blade::directive('checked', function ($expression) {
             return "<?php if ($expression): echo 'checked'; endif; ?>";
         });
+
+        Blade::if('module', function (string $moduleKey) {
+            $user = auth()->user();
+
+            return $user && $user->business && $user->business->hasModule($moduleKey);
+        });
     }
 }

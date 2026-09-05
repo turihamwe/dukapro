@@ -162,6 +162,8 @@ class InventoryController extends Controller
         $productType = $request->input('product_type', 'simple');
 
         if ($productType === 'variable') {
+            $this->ensureCatalogVariantsEnabled($business);
+
             return $this->storeVariableProduct($request, $business);
         }
 
@@ -219,6 +221,10 @@ class InventoryController extends Controller
         }
 
         if ($request->input('product_type') === 'variable') {
+            if (! $business->usesProductVariants() && ! $product->isVariableParent()) {
+                $this->ensureCatalogVariantsEnabled($business);
+            }
+
             return $this->updateVariableProduct($request, $business, $product);
         }
 
@@ -462,33 +468,38 @@ class InventoryController extends Controller
                 ->map(fn ($row) => ['slug' => $row->slug, 'name' => $row->name, 'business_count' => (int) $row->business_count])
                 ->values(),
             'default_units' => MeasurementUnit::all(),
-            'attributes' => ProductAttribute::query()
-                ->where('business_id', $businessId)
-                ->with(['values:id,product_attribute_id,value,sort_order'])
-                ->orderBy('sort_order')
-                ->orderBy('name')
-                ->get()
-                ->map(fn (ProductAttribute $attribute) => [
-                    'id' => $attribute->id,
-                    'name' => $attribute->name,
-                    'values' => $attribute->values->map(fn ($value) => [
-                        'id' => $value->id,
-                        'value' => $value->value,
-                    ])->values(),
-                ]),
+            'attributes' => $request->user()->business->usesProductVariants()
+                ? ProductAttribute::query()
+                    ->where('business_id', $businessId)
+                    ->with(['values:id,product_attribute_id,value,sort_order'])
+                    ->orderBy('sort_order')
+                    ->orderBy('name')
+                    ->get()
+                    ->map(fn (ProductAttribute $attribute) => [
+                        'id' => $attribute->id,
+                        'name' => $attribute->name,
+                        'values' => $attribute->values->map(fn ($value) => [
+                            'id' => $value->id,
+                            'value' => $value->value,
+                        ])->values(),
+                    ])
+                : [],
         ]);
     }
 
     protected function formContext(Business $business): array
     {
-        $attributes = ProductAttribute::query()
-            ->with('values')
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
+        $attributes = $business->usesProductVariants()
+            ? ProductAttribute::query()
+                ->with('values')
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get()
+            : collect();
 
         return [
             'business' => $business,
+            'catalogVariantsEnabled' => $business->usesProductVariants(),
             'branches' => auth()->user()->isOwner() && \App\Enums\BusinessType::isHospitality($business->business_type)
                 ? Branch::query()->where('business_id', $business->id)->where('is_active', true)->orderByDesc('is_default')->orderBy('name')->pluck('name', 'id')
                 : collect(),
@@ -560,6 +571,17 @@ class InventoryController extends Controller
         ]);
 
         return $record->slug;
+    }
+
+    protected function ensureCatalogVariantsEnabled(Business $business): void
+    {
+        if ($business->usesProductVariants()) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'product_type' => 'Product variants are not enabled for this business.',
+        ]);
     }
 
     protected function storeRedirect(Request $request, string $message): \Illuminate\Http\RedirectResponse

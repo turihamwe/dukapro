@@ -10,6 +10,9 @@
         @can('create', App\Models\Product::class)
             <x-button variant="primary" size="sm" href="{{ tenant_route('tenant.inventory.create') }}">+ Add Product</x-button>
         @endcan
+        @can('use-catalog-variants')
+            <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.inventory.attributes.index') }}">Attributes</x-button>
+        @endcan
     </x-slot>
 </x-page-header>
 
