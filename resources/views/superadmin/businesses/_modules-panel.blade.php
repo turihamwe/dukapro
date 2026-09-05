@@ -13,7 +13,6 @@
     $moduleRegistry = app(\App\Modules\ModuleRegistry::class);
     $moduleFootnotes = [
         ModuleKeys::BAR_SHIFT => 'Turn on for a bar or pub with no kitchen. Waiters are included automatically.',
-        ModuleKeys::APPOINTMENTS => 'Developer preview module.',
     ];
     $moduleStyles = [
         ModuleKeys::BAR_SHIFT => [
@@ -27,12 +26,6 @@
             'bg' => 'bg-white',
             'checkbox' => 'text-indigo-600 focus:ring-indigo-500',
             'badge' => 'bg-indigo-100 text-indigo-800',
-        ],
-        ModuleKeys::APPOINTMENTS => [
-            'border' => 'border-emerald-200',
-            'bg' => 'bg-white',
-            'checkbox' => 'text-emerald-600 focus:ring-emerald-500',
-            'badge' => 'bg-emerald-100 text-emerald-800',
         ],
     ];
 @endphp

@@ -20,12 +20,6 @@
         <span>👨‍🍳</span> Kitchen
     </a>
 @endcan
-@can('access-appointments')
-    <a href="{{ tenant_route('tenant.appointments.index') }}"
-       class="{{ $navLink }} {{ request()->routeIs('tenant.appointments.*') ? $navActive : $navIdle }}">
-        <span>📅</span> Appointments
-    </a>
-@endcan
 @can('view-customers')
     <a href="{{ tenant_route('tenant.contacts.index') }}"
        class="{{ $navLink }} {{ request()->routeIs('tenant.contacts.*') ? $navActive : $navIdle }}">

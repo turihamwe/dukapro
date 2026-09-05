@@ -10,7 +10,4 @@ return [
     App\Modules\Restaurant\RestaurantModule::class,
     App\Modules\BarShift\BarShiftModule::class,
     App\Modules\CatalogVariants\CatalogVariantsModule::class,
-
-    // Proof-of-pattern module (Phase 5) — safe to remove when no longer needed.
-    App\Modules\Appointments\AppointmentsModule::class,
 ];

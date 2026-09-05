@@ -51,7 +51,7 @@ config/modules.php            # list of module classes (registration)
 
 ## Reference implementation
 
-See `app/Modules/Appointments/` — preview module with route, gate, controller, and Capabilities checkbox. Remove from `config/modules.php` when no longer needed.
+Follow the three production modules (`Restaurant`, `BarShift`, `CatalogVariants`) and the checklist above when adding module #4.
 
 ## Runtime API
 

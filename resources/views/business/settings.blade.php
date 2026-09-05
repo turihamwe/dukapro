@@ -12,7 +12,6 @@
     $moduleFootnotes = [
         ModuleKeys::BAR_SHIFT => 'Turn on for a bar or pub with no kitchen. Waiters are included automatically — you don\'t need Restaurant Mode.',
         ModuleKeys::CATALOG_VARIANTS => 'New products can use size/color variants. You can still toggle variants per product on the add/edit form.',
-        ModuleKeys::APPOINTMENTS => 'Developer preview — demonstrates how new modules are plugged in. Safe to leave off.',
     ];
     $moduleStyles = [
         ModuleKeys::BAR_SHIFT => [
@@ -26,12 +25,6 @@
             'bg' => 'bg-indigo-50',
             'checkbox' => 'text-indigo-600 focus:ring-indigo-500',
             'badge' => 'bg-indigo-100 text-indigo-800',
-        ],
-        ModuleKeys::APPOINTMENTS => [
-            'border' => 'border-emerald-200',
-            'bg' => 'bg-emerald-50',
-            'checkbox' => 'text-emerald-600 focus:ring-emerald-500',
-            'badge' => 'bg-emerald-100 text-emerald-800',
         ],
     ];
 @endphp
