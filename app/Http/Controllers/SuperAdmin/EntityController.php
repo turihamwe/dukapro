@@ -366,7 +366,6 @@ class EntityController extends Controller
 
         $modelClass = $config['model'];
         $item = $modelClass::query()->findOrFail($record);
-        $owner = null;
 
         if ($entity === 'affiliates') {
             $item->loadCount('referredBusinesses', 'commissions');
@@ -391,23 +390,20 @@ class EntityController extends Controller
 
         if ($entity === 'businesses') {
             $item->load('businessModules');
-            $owner = User::query()
-                ->where('business_id', $item->id)
-                ->where('role', UserRole::OWNER)
-                ->first();
             $capabilities = app(BusinessModuleService::class)->capabilityStates($item);
         }
+
+        $promotionUser = $entity === 'users' ? $item : null;
 
         return view('superadmin.entities.show', [
             'entity' => $entity,
             'config' => $config,
             'item' => $item,
-            'owner' => $owner ?? null,
-            'canPromoteAffiliate' => ($entity === 'users' || $entity === 'businesses')
-                && isset($item) && ($entity === 'users' ? $this->userPromotionService->canPromoteToAffiliate($item) : ($owner && $this->userPromotionService->canPromoteToAffiliate($owner))),
-            'canPromoteShareholder' => ($entity === 'users' || $entity === 'businesses')
-                && isset($item) && ($entity === 'users' ? $this->userPromotionService->canPromoteToShareholder($item) : ($owner && $this->userPromotionService->canPromoteToShareholder($owner))),
-            'promotionUser' => $entity === 'users' ? $item : ($owner ?? null),
+            'canPromoteAffiliate' => $entity === 'users'
+                && $this->userPromotionService->canPromoteToAffiliate($item),
+            'canPromoteShareholder' => $entity === 'users'
+                && $this->userPromotionService->canPromoteToShareholder($item),
+            'promotionUser' => $promotionUser,
             'defaultPromotionShares' => config('shareholders.default_promotion_shares', 1),
             'remainingShares' => $this->allocationService->remainingShares(),
             'capabilities' => $entity === 'businesses' ? ($capabilities ?? []) : [],

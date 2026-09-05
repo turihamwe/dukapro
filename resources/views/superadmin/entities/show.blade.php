@@ -137,7 +137,7 @@
         @endcan
     @endif
 
-    @if(in_array($entity, ['users', 'businesses'], true) && ! empty($promotionUser))
+    @if($entity === 'users' && ! empty($promotionUser))
         @can('platform-full-access')
             <div class="mb-6 rounded-lg border border-dashed border-violet-200 bg-violet-50/50 p-4">
                 <h2 class="text-sm font-semibold text-gray-900">Role promotion</h2>
