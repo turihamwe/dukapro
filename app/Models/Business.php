@@ -120,6 +120,28 @@ class Business extends Model
         return $this->hasModule(ModuleKeys::BAR_SHIFT);
     }
 
+    public function hasRestaurantWaitersSetting(): bool
+    {
+        if (! $this->usesRestaurantMode()) {
+            return false;
+        }
+
+        return (bool) $this->moduleSetting(ModuleKeys::RESTAURANT, 'use_waiters', false);
+    }
+
+    /**
+     * Waiter picker at POS, sale attribution, and shift balancing.
+     */
+    public function usesWaiterAssignment(): bool
+    {
+        return $this->usesShiftWaiterMode() || $this->hasRestaurantWaitersSetting();
+    }
+
+    public function usesShiftBalancing(): bool
+    {
+        return $this->usesWaiterAssignment();
+    }
+
     public function usesRestaurantMode(): bool
     {
         return $this->hasModule(ModuleKeys::RESTAURANT);

@@ -19,6 +19,7 @@ use App\Models\ShareholderEarning;
 use App\Models\User;
 use App\Services\AffiliateReferralCodeGenerator;
 use App\Services\BranchService;
+use App\Services\BusinessModuleService;
 use App\Services\ShareAllocationService;
 use App\Services\ShareholderEarningsService;
 use App\Services\ShareholderRegistrationService;
@@ -389,10 +390,12 @@ class EntityController extends Controller
         }
 
         if ($entity === 'businesses') {
+            $item->load('businessModules');
             $owner = User::query()
                 ->where('business_id', $item->id)
                 ->where('role', UserRole::OWNER)
                 ->first();
+            $capabilities = app(BusinessModuleService::class)->capabilityStates($item);
         }
 
         return view('superadmin.entities.show', [
@@ -407,6 +410,8 @@ class EntityController extends Controller
             'promotionUser' => $entity === 'users' ? $item : ($owner ?? null),
             'defaultPromotionShares' => config('shareholders.default_promotion_shares', 1),
             'remainingShares' => $this->allocationService->remainingShares(),
+            'capabilities' => $entity === 'businesses' ? ($capabilities ?? []) : [],
+            'businessTab' => $entity === 'businesses' ? request('tab', 'details') : 'details',
         ]);
     }
 

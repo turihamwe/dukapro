@@ -22,6 +22,7 @@ use App\Http\Controllers\SalesReportController;
 use App\Http\Controllers\SoldByUnitController;
 use App\Http\Controllers\SuperAdmin\UserActionController;
 use App\Http\Controllers\SuperAdmin\AffiliateActionController;
+use App\Http\Controllers\SuperAdmin\BusinessModuleController;
 use App\Http\Controllers\SuperAdmin\ShareholderActionController;
 use App\Http\Controllers\SuperAdmin\ActivityLogController;
 use App\Http\Controllers\SuperAdmin\DashboardController as SuperAdminDashboardController;
@@ -302,7 +303,7 @@ Route::middleware(['maintenance'])->group(function () {
                     Route::post('/checkout', [PosController::class, 'checkout'])->name('checkout');
                 });
 
-                Route::middleware(['can:access-bar-shift', 'module:bar_shift'])->prefix('waiter-shift')->name('waiter-shift.')->group(function () {
+                Route::middleware(['can:access-bar-shift'])->prefix('waiter-shift')->name('waiter-shift.')->group(function () {
                     Route::get('/', [WaiterShiftController::class, 'index'])->name('index');
                     Route::post('/balance-all', [WaiterShiftController::class, 'balanceAll'])->name('balance-all');
                     Route::get('/waiters/{waiter}', [WaiterShiftController::class, 'show'])->name('show');
@@ -377,6 +378,7 @@ Route::prefix('superadmin')
             Route::post('/users/{user}/promote-affiliate', [UserActionController::class, 'promoteAffiliate'])->whereNumber('user')->name('users.promote-affiliate');
             Route::post('/users/{user}/promote-shareholder', [UserActionController::class, 'promoteShareholder'])->whereNumber('user')->name('users.promote-shareholder');
             Route::post('/businesses/{businessId}/impersonate', [ImpersonationController::class, 'start'])->whereNumber('businessId')->name('impersonate.start');
+            Route::post('/businesses/{businessId}/modules', [BusinessModuleController::class, 'update'])->whereNumber('businessId')->name('businesses.modules.update');
             Route::get('/settings', [SuperAdminSettingsController::class, 'edit'])->name('settings');
             Route::put('/settings', [SuperAdminSettingsController::class, 'update'])->name('settings.update');
         });

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\AuditLogger;
-use App\Modules\ModuleKeys;
 use App\Services\BusinessModuleService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -40,6 +39,7 @@ class BusinessSettingsController extends Controller
             'modules' => 'nullable|array',
             'modules.restaurant.enabled' => 'nullable|boolean',
             'modules.restaurant.use_tables' => 'nullable|boolean',
+            'modules.restaurant.use_waiters' => 'nullable|boolean',
             'modules.bar_shift.enabled' => 'nullable|boolean',
             'modules.catalog_variants.enabled' => 'nullable|boolean',
         ]);
@@ -71,18 +71,7 @@ class BusinessSettingsController extends Controller
 
         app(BusinessModuleService::class)->updateCapabilities(
             $business->fresh(),
-            [
-                ModuleKeys::RESTAURANT => [
-                    'enabled' => $request->boolean('modules.restaurant.enabled'),
-                    'use_tables' => $request->boolean('modules.restaurant.use_tables'),
-                ],
-                ModuleKeys::BAR_SHIFT => [
-                    'enabled' => $request->boolean('modules.bar_shift.enabled'),
-                ],
-                ModuleKeys::CATALOG_VARIANTS => [
-                    'enabled' => $request->boolean('modules.catalog_variants.enabled'),
-                ],
-            ],
+            app(BusinessModuleService::class)->capabilitiesFromModulesInput($request->input('modules', [])),
             BusinessModuleService::SOURCE_OWNER
         );
 

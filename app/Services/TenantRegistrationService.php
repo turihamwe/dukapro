@@ -48,9 +48,14 @@ class TenantRegistrationService
 
             $settings = $business->settings ?? [];
 
-            if (BusinessType::isHospitality($data['business_type'])) {
-                $settings['restaurant_mode'] = true;
+            if ($data['business_type'] === BusinessType::BAR_PUB) {
                 $settings['shift_waiter_mode'] = true;
+            }
+
+            if ($data['business_type'] === BusinessType::RESTAURANT) {
+                $settings['restaurant_mode'] = true;
+                $settings['use_restaurant_waiters'] = false;
+                $settings['use_restaurant_tables'] = false;
             }
 
             if ($data['business_type'] === BusinessType::BOUTIQUE) {

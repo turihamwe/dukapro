@@ -3,6 +3,9 @@
 @section('title', 'View ' . $config['label'])
 
 @section('content')
+@php
+    $businessTab = $businessTab ?? 'details';
+@endphp
 <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
     <div>
         <h1 class="text-2xl font-bold tracking-tight">{{ $config['label'] }} #{{ $item->id }}</h1>
@@ -21,6 +24,20 @@
     </div>
 </div>
 
+@if($entity === 'businesses')
+    <div class="mb-6 flex gap-1 rounded-lg border border-gray-200 bg-gray-50 p-1">
+        <a href="{{ route('superadmin.entities.show', ['businesses', $item->id, 'tab' => 'details']) }}"
+           class="rounded-md px-4 py-2 text-sm font-medium {{ $businessTab === 'details' ? 'bg-white text-violet-700 shadow-sm' : 'text-gray-600 hover:text-gray-900' }}">
+            Details
+        </a>
+        <a href="{{ route('superadmin.entities.show', ['businesses', $item->id, 'tab' => 'modules']) }}"
+           class="rounded-md px-4 py-2 text-sm font-medium {{ $businessTab === 'modules' ? 'bg-white text-violet-700 shadow-sm' : 'text-gray-600 hover:text-gray-900' }}">
+            Modules
+        </a>
+    </div>
+@endif
+
+@if($entity !== 'businesses' || $businessTab === 'details')
 <div class="rounded-xl border border-gray-200 bg-white p-6">
     @if($entity === 'affiliates')
         <div class="mb-6 grid gap-4 sm:grid-cols-3">
@@ -189,4 +206,9 @@
         @endforeach
     </dl>
 </div>
+@endif
+
+@if($entity === 'businesses' && $businessTab === 'modules')
+    @include('superadmin.businesses._modules-panel', ['business' => $item, 'capabilities' => $capabilities ?? []])
+@endif
 @endsection

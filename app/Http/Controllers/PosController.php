@@ -31,7 +31,7 @@ class PosController extends Controller
     public function index(Request $request)
     {
         $business = $request->user()->business;
-        $waiterMode = $business->usesShiftWaiterMode();
+        $waiterMode = $business->usesWaiterAssignment();
         $restaurantMode = $business->usesRestaurantMode();
         $isHospitality = $business->isHospitality();
         $useRestaurantTables = $business->hasRestaurantTablesSetting();
@@ -114,7 +114,7 @@ class PosController extends Controller
         ]);
 
         $business = $request->user()->business;
-        if ($business->usesShiftWaiterMode()) {
+        if ($business->usesWaiterAssignment()) {
             $request->validate(['waiter_id' => 'required|exists:users,id']);
             if (($data['payment_method'] ?? '') === 'mobile_money') {
                 $request->validate(['mobile_money_provider' => 'required|in:airtel,mtn']);
@@ -162,7 +162,7 @@ class PosController extends Controller
             'waiter_id' => 'nullable|exists:users,id',
         ]);
 
-        if ($business->usesShiftWaiterMode()) {
+        if ($business->usesWaiterAssignment()) {
             $request->validate(['waiter_id' => 'required|exists:users,id']);
             app(\App\Services\WaiterShiftService::class)->resolveAssignableFloorStaff(
                 $business,

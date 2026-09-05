@@ -57,11 +57,12 @@
                     $restaurant = $capabilities[ModuleKeys::RESTAURANT] ?? [];
                     $restaurantEnabled = (bool) old('modules.restaurant.enabled', $restaurant['enabled'] ?? false);
                     $tablesEnabled = (bool) old('modules.restaurant.use_tables', $restaurant['settings']['use_tables'] ?? false);
+                    $waitersEnabled = (bool) old('modules.restaurant.use_waiters', $restaurant['settings']['use_waiters'] ?? false);
                 @endphp
                 <div class="rounded-xl border border-orange-200 bg-orange-50 p-4 space-y-4">
                     <label class="flex items-start gap-3">
                         <input type="hidden" name="modules[restaurant][enabled]" value="0">
-                        <input type="checkbox" name="modules[restaurant][enabled]" value="1"
+                        <input type="checkbox" name="modules[restaurant][enabled]" value="1" id="restaurant_mode_enabled"
                                class="mt-1 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
                                {{ $restaurantEnabled ? 'checked' : '' }}>
                         <span>
@@ -72,21 +73,12 @@
                             @endif
                         </span>
                     </label>
-                    <label class="flex items-start gap-3 border-t border-orange-200/80 pt-4">
-                        <input type="hidden" name="modules[restaurant][use_tables]" value="0">
-                        <input type="checkbox" name="modules[restaurant][use_tables]" value="1"
-                               class="mt-1 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
-                               {{ $tablesEnabled ? 'checked' : '' }}>
-                        <span>
-                            <span class="block text-sm font-semibold text-gray-900">Use restaurant tables</span>
-                            <span class="mt-1 block text-xs text-gray-600">Manage tables and tie orders to seating. Leave off for bars or counter-service venues.</span>
-                            @can('manage-restaurant-tables')
-                                @if($restaurantEnabled)
-                                    <a href="{{ tenant_route('tenant.restaurant-tables.index') }}" class="mt-2 inline-block text-xs font-medium text-orange-800 underline">Manage tables →</a>
-                                @endif
-                            @endcan
-                        </span>
-                    </label>
+                    @include('business._restaurant-module-options', [
+                        'restaurantEnabled' => $restaurantEnabled,
+                        'tablesEnabled' => $tablesEnabled,
+                        'waitersEnabled' => $waitersEnabled,
+                        'showManageTablesLink' => true,
+                    ])
                 </div>
 
                 @php
@@ -105,7 +97,7 @@
                             @if($barShift['suggested'] ?? false)
                                 <span class="mt-1 inline-block rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-800">Suggested for {{ $businessTypeLabel }}</span>
                             @endif
-                            <span class="mt-2 block text-xs text-gray-500">When disabled, POS uses standard direct cashier checkout without waiter shift balancing.</span>
+                            <span class="mt-2 block text-xs text-gray-500">Turn on for a bar or pub with no kitchen. Waiters are included automatically — you don’t need Restaurant Mode.</span>
                         </span>
                     </label>
                 </div>

@@ -203,7 +203,7 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('access-bar-shift', function (User $user) {
-            if (! $user->business || ! $user->business->hasModule(ModuleKeys::BAR_SHIFT)) {
+            if (! $user->business || ! $user->business->usesShiftBalancing()) {
                 return false;
             }
 

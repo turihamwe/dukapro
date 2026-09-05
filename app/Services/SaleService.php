@@ -37,7 +37,7 @@ class SaleService
             $waiterId = $payload['waiter_id'] ?? null;
             $mobileProvider = $payload['mobile_money_provider'] ?? null;
             $business = $user->business;
-            $waiterMode = $business && $business->usesShiftWaiterMode();
+            $waiterMode = $business && $business->usesWaiterAssignment();
 
             if ($waiterMode && ! $waiterId) {
                 throw ValidationException::withMessages([

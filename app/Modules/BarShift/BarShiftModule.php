@@ -16,17 +16,17 @@ class BarShiftModule implements ModuleDefinition
 
     public function label(): string
     {
-        return 'Bar / Shift Mode';
+        return 'Bar / Pub Mode';
     }
 
     public function description(): string
     {
-        return 'Waiter assignment at POS and shift balancing before close.';
+        return 'For bars and pubs without a kitchen. Waiters and shift balancing are always included — no extra toggle.';
     }
 
     public function defaultEnabledFor(Business $business): bool
     {
-        return BusinessType::isHospitality($business->business_type);
+        return $business->business_type === BusinessType::BAR_PUB;
     }
 
     public function defaultSettingsFor(Business $business): array

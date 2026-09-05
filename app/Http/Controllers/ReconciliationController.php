@@ -70,7 +70,7 @@ class ReconciliationController extends Controller
 
         $waiterShift = null;
         $waiterBalances = collect();
-        if ($business->usesShiftWaiterMode()) {
+        if ($business->usesShiftBalancing()) {
             $waiterShift = app(\App\Services\WaiterShiftService::class)->summarizeShift($business, Carbon::parse($date), $request->user());
             $waiterBalances = app(\App\Services\WaiterShiftService::class)->balancesForDate($business->id, Carbon::parse($date));
         }
@@ -90,7 +90,7 @@ class ReconciliationController extends Controller
             'bundle_waiter_balances' => 'nullable|boolean',
         ]);
 
-        $reconciliation = $request->user()->business->usesShiftWaiterMode()
+        $reconciliation = $request->user()->business->usesShiftBalancing()
             ? $this->reconciliationService->submitWithWaiterBalances($request->user(), $data)
             : $this->reconciliationService->submit($request->user(), $data);
 

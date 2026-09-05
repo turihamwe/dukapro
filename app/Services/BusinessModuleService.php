@@ -122,7 +122,11 @@ class BusinessModuleService
             $settings = $this->settings($business, $moduleKey);
 
             if ($moduleKey === ModuleKeys::RESTAURANT) {
-                $settings['use_tables'] = (bool) ($payload['use_tables'] ?? ($settings['use_tables'] ?? false));
+                $restaurantEnabled = (bool) ($payload['enabled'] ?? false);
+                $settings['use_tables'] = $restaurantEnabled
+                    && (bool) ($payload['use_tables'] ?? ($settings['use_tables'] ?? false));
+                $settings['use_waiters'] = $restaurantEnabled
+                    && (bool) ($payload['use_waiters'] ?? ($settings['use_waiters'] ?? false));
             }
 
             BusinessModule::query()->updateOrCreate(
@@ -143,6 +147,31 @@ class BusinessModuleService
         $fresh->clearModuleCache();
     }
 
+    /**
+     * @param  array<string, array<string, mixed>>  $modules
+     * @return array<string, array<string, mixed>>
+     */
+    public function capabilitiesFromModulesInput(array $modules): array
+    {
+        $enabled = function (string $key) use ($modules) {
+            return filter_var(data_get($modules, $key, false), FILTER_VALIDATE_BOOLEAN);
+        };
+
+        return [
+            ModuleKeys::RESTAURANT => [
+                'enabled' => $enabled('restaurant.enabled'),
+                'use_tables' => $enabled('restaurant.use_tables'),
+                'use_waiters' => $enabled('restaurant.use_waiters'),
+            ],
+            ModuleKeys::BAR_SHIFT => [
+                'enabled' => $enabled('bar_shift.enabled'),
+            ],
+            ModuleKeys::CATALOG_VARIANTS => [
+                'enabled' => $enabled('catalog_variants.enabled'),
+            ],
+        ];
+    }
+
     public function syncToLegacySettings(Business $business): void
     {
         $this->forgetBusiness($business);
@@ -150,6 +179,7 @@ class BusinessModuleService
         $settings = $business->settings ?? [];
         $settings['restaurant_mode'] = $this->isEnabled($business, ModuleKeys::RESTAURANT);
         $settings['use_restaurant_tables'] = (bool) $this->setting($business, ModuleKeys::RESTAURANT, 'use_tables', false);
+        $settings['use_restaurant_waiters'] = (bool) $this->setting($business, ModuleKeys::RESTAURANT, 'use_waiters', false);
         $settings['shift_waiter_mode'] = $this->isEnabled($business, ModuleKeys::BAR_SHIFT);
         $settings['use_product_variants'] = $this->isEnabled($business, ModuleKeys::CATALOG_VARIANTS);
 
@@ -285,8 +315,12 @@ class BusinessModuleService
         $settings = $business->settings ?? [];
 
         if ($moduleKey === ModuleKeys::RESTAURANT) {
+            $restaurantMode = (bool) ($settings['restaurant_mode'] ?? false);
+            $shiftWaiterMode = (bool) ($settings['shift_waiter_mode'] ?? false);
+
             return [
                 'use_tables' => (bool) ($settings['use_restaurant_tables'] ?? false),
+                'use_waiters' => (bool) ($settings['use_restaurant_waiters'] ?? ($restaurantMode && $shiftWaiterMode)),
             ];
         }
 

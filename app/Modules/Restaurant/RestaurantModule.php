@@ -21,22 +21,19 @@ class RestaurantModule implements ModuleDefinition
 
     public function description(): string
     {
-        return 'Kitchen workflow, waiter orders, and digital order routing.';
+        return 'Kitchen workflow: send orders to the kitchen, track ready orders, and waiter tablet ordering. Waiters and tables are optional below.';
     }
 
     public function defaultEnabledFor(Business $business): bool
     {
-        if (! BusinessType::isHospitality($business->business_type)) {
-            return false;
-        }
-
-        return true;
+        return $business->business_type === BusinessType::RESTAURANT;
     }
 
     public function defaultSettingsFor(Business $business): array
     {
         return [
             'use_tables' => false,
+            'use_waiters' => false,
         ];
     }
 }
