@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\AuditLogger;
+use App\Modules\ModuleKeys;
 use App\Services\BusinessModuleService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -17,9 +18,10 @@ class BusinessSettingsController extends Controller
 
     public function edit(Request $request)
     {
-        $business = $request->user()->business;
+        $business = $request->user()->business->load('businessModules');
+        $capabilities = app(BusinessModuleService::class)->capabilityStates($business);
 
-        return view('business.settings', compact('business'));
+        return view('business.settings', compact('business', 'capabilities'));
     }
 
     public function update(Request $request)
@@ -35,21 +37,14 @@ class BusinessSettingsController extends Controller
             'currency_symbol' => 'required|string|max:20',
             'currency_position' => 'required|in:prefix,suffix',
             'brand_color' => 'nullable|string|max:7',
-            'use_product_variants' => 'nullable|boolean',
-            'shift_waiter_mode' => 'nullable|boolean',
-            'restaurant_mode' => 'nullable|boolean',
-            'use_restaurant_tables' => 'nullable|boolean',
+            'modules' => 'nullable|array',
+            'modules.restaurant.enabled' => 'nullable|boolean',
+            'modules.restaurant.use_tables' => 'nullable|boolean',
+            'modules.bar_shift.enabled' => 'nullable|boolean',
+            'modules.catalog_variants.enabled' => 'nullable|boolean',
         ]);
 
         $old = $business->toArray();
-
-        $settings = $business->settings ?? [];
-        $settings['use_product_variants'] = $request->boolean('use_product_variants');
-        $settings['shift_waiter_mode'] = $request->boolean('shift_waiter_mode');
-        if (\App\Enums\BusinessType::isHospitality($business->business_type)) {
-            $settings['restaurant_mode'] = $request->boolean('restaurant_mode', true);
-            $settings['use_restaurant_tables'] = $request->boolean('use_restaurant_tables');
-        }
 
         $slug = $business->slug;
         if ($business->name !== $data['name']) {
@@ -72,11 +67,22 @@ class BusinessSettingsController extends Controller
             'currency_position' => $data['currency_position'],
             'currency' => $data['currency_symbol'],
             'brand_color' => $data['brand_color'] ?? $business->brand_color,
-            'settings' => $settings,
         ]);
 
-        app(BusinessModuleService::class)->syncFromLegacySettings(
+        app(BusinessModuleService::class)->updateCapabilities(
             $business->fresh(),
+            [
+                ModuleKeys::RESTAURANT => [
+                    'enabled' => $request->boolean('modules.restaurant.enabled'),
+                    'use_tables' => $request->boolean('modules.restaurant.use_tables'),
+                ],
+                ModuleKeys::BAR_SHIFT => [
+                    'enabled' => $request->boolean('modules.bar_shift.enabled'),
+                ],
+                ModuleKeys::CATALOG_VARIANTS => [
+                    'enabled' => $request->boolean('modules.catalog_variants.enabled'),
+                ],
+            ],
             BusinessModuleService::SOURCE_OWNER
         );
 

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\BusinessType;
 use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
 use App\Mail\WelcomeOwnerMail;
@@ -45,12 +46,18 @@ class TenantRegistrationService
 
             app(BranchService::class)->createDefault($business);
 
-            if (\App\Enums\BusinessType::isHospitality($data['business_type'])) {
-                $settings = $business->settings ?? [];
+            $settings = $business->settings ?? [];
+
+            if (BusinessType::isHospitality($data['business_type'])) {
                 $settings['restaurant_mode'] = true;
                 $settings['shift_waiter_mode'] = true;
-                $business->update(['settings' => $settings]);
             }
+
+            if ($data['business_type'] === BusinessType::BOUTIQUE) {
+                $settings['use_product_variants'] = true;
+            }
+
+            $business->update(['settings' => $settings]);
 
             app(BusinessModuleService::class)->syncFromLegacySettings(
                 $business->fresh(),

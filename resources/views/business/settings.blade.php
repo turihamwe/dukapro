@@ -3,9 +3,14 @@
 @section('title', 'Business Profile')
 
 @section('content')
-@php $settings = $business->settings ?? []; @endphp
+@php
+    use App\Enums\BusinessType;
+    use App\Modules\ModuleKeys;
 
-<x-page-header title="Business Profile" subtitle="Update your store information" />
+    $businessTypeLabel = BusinessType::label($business->business_type);
+@endphp
+
+<x-page-header title="Business Profile" subtitle="Update your store information and capabilities" />
 
 <div class="mb-6 rounded-xl border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-900">
     <p class="font-semibold">Staff login portal</p>
@@ -39,64 +44,93 @@
 
         <x-input type="color" name="brand_color" label="Brand color" value="{{ old('brand_color', $business->brand_color ?? '#4f46e5') }}" />
 
-        <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
-            <label class="flex items-start gap-3">
-                <input type="checkbox" name="use_product_variants" value="1" class="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                    {{ old('use_product_variants', $settings['use_product_variants'] ?? false) ? 'checked' : '' }}>
-                <span>
-                    <span class="block text-sm font-semibold text-gray-900">Default new products to variant mode</span>
-                    <span class="mt-1 block text-xs text-gray-500">Optional shortcut — you can still toggle variants on/off for each product individually on the add/edit form.</span>
-                </span>
-            </label>
-        </div>
-
-        @if(\App\Enums\BusinessType::isHospitality($business->business_type))
-            @php
-                $restaurantEnabled = old('restaurant_mode', $settings['restaurant_mode'] ?? true);
-                $tablesEnabled = old('use_restaurant_tables', $settings['use_restaurant_tables'] ?? false);
-            @endphp
-            <div class="rounded-xl border border-orange-200 bg-orange-50 p-4 space-y-4">
-                <label class="flex items-start gap-3">
-                    <input type="checkbox" name="restaurant_mode" value="1" class="mt-1 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
-                        {{ $restaurantEnabled ? 'checked' : '' }}>
-                    <span>
-                        <span class="block text-sm font-semibold text-gray-900">Restaurant Mode (kitchen workflow)</span>
-                        <span class="mt-1 block text-xs text-gray-600">Waiters fire orders to the kitchen digitally. Chefs track Pending → Preparing → Ready. Cashiers collect payment when ready.</span>
-                    </span>
-                </label>
-                <label class="flex items-start gap-3 border-t border-orange-200/80 pt-4">
-                    <input type="checkbox" name="use_restaurant_tables" value="1" class="mt-1 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
-                        {{ $tablesEnabled ? 'checked' : '' }}>
-                    <span>
-                        <span class="block text-sm font-semibold text-gray-900">Use restaurant tables</span>
-                        <span class="mt-1 block text-xs text-gray-600">Enable table management and require orders to be tied to a table. Leave off for bars or venues without fixed seating.</span>
-                        @can('manage-restaurant-tables')
-                            <a href="{{ tenant_route('tenant.restaurant-tables.index') }}" class="mt-2 inline-block text-xs font-medium text-orange-800 underline">Manage tables →</a>
-                        @endcan
-                    </span>
-                </label>
+        <div class="rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
+            <div class="mb-4">
+                <p class="text-sm font-semibold text-gray-900">Capabilities</p>
+                <p class="mt-1 text-xs text-gray-500">
+                    Turn features on or off for this business. You signed up as <span class="font-medium text-gray-700">{{ $businessTypeLabel }}</span> — suggested modules are marked below, but you can enable any combination.
+                </p>
             </div>
-        @endif
 
-        @php
-            $shiftWaiterSuggested = $business->suggestsShiftWaiterMode();
-            $shiftWaiterEnabled = old('shift_waiter_mode', $settings['shift_waiter_mode'] ?? $shiftWaiterSuggested);
-        @endphp
-        <div class="rounded-xl border border-violet-200 bg-violet-50 p-4">
-            <label class="flex items-start gap-3">
-                <input type="checkbox" name="shift_waiter_mode" value="1" class="mt-1 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
-                    {{ $shiftWaiterEnabled ? 'checked' : '' }}>
-                <span>
-                    <span class="block text-sm font-semibold text-gray-900">Shift Waiter / Floor Staff Order Mode</span>
-                    <span class="mt-1 block text-xs text-gray-600">
-                        When enabled, cashiers assign orders to waiters/floor staff at POS and balance collections before closing shift.
-                        @if($shiftWaiterSuggested)
-                            <span class="font-medium text-violet-800">Suggested for {{ \App\Enums\BusinessType::label($business->business_type) }} businesses.</span>
-                        @endif
-                    </span>
-                    <span class="mt-1 block text-xs text-gray-500">When disabled, POS works as standard direct cashier checkout.</span>
-                </span>
-            </label>
+            <div class="space-y-4">
+                @php
+                    $restaurant = $capabilities[ModuleKeys::RESTAURANT] ?? [];
+                    $restaurantEnabled = (bool) old('modules.restaurant.enabled', $restaurant['enabled'] ?? false);
+                    $tablesEnabled = (bool) old('modules.restaurant.use_tables', $restaurant['settings']['use_tables'] ?? false);
+                @endphp
+                <div class="rounded-xl border border-orange-200 bg-orange-50 p-4 space-y-4">
+                    <label class="flex items-start gap-3">
+                        <input type="hidden" name="modules[restaurant][enabled]" value="0">
+                        <input type="checkbox" name="modules[restaurant][enabled]" value="1"
+                               class="mt-1 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                               {{ $restaurantEnabled ? 'checked' : '' }}>
+                        <span>
+                            <span class="block text-sm font-semibold text-gray-900">{{ $restaurant['label'] ?? 'Restaurant Mode' }}</span>
+                            <span class="mt-1 block text-xs text-gray-600">{{ $restaurant['description'] ?? '' }}</span>
+                            @if($restaurant['suggested'] ?? false)
+                                <span class="mt-1 inline-block rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-orange-800">Suggested for {{ $businessTypeLabel }}</span>
+                            @endif
+                        </span>
+                    </label>
+                    <label class="flex items-start gap-3 border-t border-orange-200/80 pt-4">
+                        <input type="hidden" name="modules[restaurant][use_tables]" value="0">
+                        <input type="checkbox" name="modules[restaurant][use_tables]" value="1"
+                               class="mt-1 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                               {{ $tablesEnabled ? 'checked' : '' }}>
+                        <span>
+                            <span class="block text-sm font-semibold text-gray-900">Use restaurant tables</span>
+                            <span class="mt-1 block text-xs text-gray-600">Manage tables and tie orders to seating. Leave off for bars or counter-service venues.</span>
+                            @can('manage-restaurant-tables')
+                                @if($restaurantEnabled)
+                                    <a href="{{ tenant_route('tenant.restaurant-tables.index') }}" class="mt-2 inline-block text-xs font-medium text-orange-800 underline">Manage tables →</a>
+                                @endif
+                            @endcan
+                        </span>
+                    </label>
+                </div>
+
+                @php
+                    $barShift = $capabilities[ModuleKeys::BAR_SHIFT] ?? [];
+                    $barShiftEnabled = (bool) old('modules.bar_shift.enabled', $barShift['enabled'] ?? false);
+                @endphp
+                <div class="rounded-xl border border-violet-200 bg-violet-50 p-4">
+                    <label class="flex items-start gap-3">
+                        <input type="hidden" name="modules[bar_shift][enabled]" value="0">
+                        <input type="checkbox" name="modules[bar_shift][enabled]" value="1"
+                               class="mt-1 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                               {{ $barShiftEnabled ? 'checked' : '' }}>
+                        <span>
+                            <span class="block text-sm font-semibold text-gray-900">{{ $barShift['label'] ?? 'Bar / Shift Mode' }}</span>
+                            <span class="mt-1 block text-xs text-gray-600">{{ $barShift['description'] ?? '' }}</span>
+                            @if($barShift['suggested'] ?? false)
+                                <span class="mt-1 inline-block rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-800">Suggested for {{ $businessTypeLabel }}</span>
+                            @endif
+                            <span class="mt-2 block text-xs text-gray-500">When disabled, POS uses standard direct cashier checkout without waiter shift balancing.</span>
+                        </span>
+                    </label>
+                </div>
+
+                @php
+                    $variants = $capabilities[ModuleKeys::CATALOG_VARIANTS] ?? [];
+                    $variantsEnabled = (bool) old('modules.catalog_variants.enabled', $variants['enabled'] ?? false);
+                @endphp
+                <div class="rounded-xl border border-indigo-200 bg-indigo-50 p-4">
+                    <label class="flex items-start gap-3">
+                        <input type="hidden" name="modules[catalog_variants][enabled]" value="0">
+                        <input type="checkbox" name="modules[catalog_variants][enabled]" value="1"
+                               class="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                               {{ $variantsEnabled ? 'checked' : '' }}>
+                        <span>
+                            <span class="block text-sm font-semibold text-gray-900">{{ $variants['label'] ?? 'Variant Catalog' }}</span>
+                            <span class="mt-1 block text-xs text-gray-600">{{ $variants['description'] ?? '' }}</span>
+                            @if($variants['suggested'] ?? false)
+                                <span class="mt-1 inline-block rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-800">Suggested for {{ $businessTypeLabel }}</span>
+                            @endif
+                            <span class="mt-2 block text-xs text-gray-500">New products default to variant mode. You can still toggle variants per product on the add/edit form.</span>
+                        </span>
+                    </label>
+                </div>
+            </div>
         </div>
 
         <x-button type="submit" variant="primary">Save business profile</x-button>

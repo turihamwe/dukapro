@@ -137,10 +137,6 @@ class Business extends Model
             return false;
         }
 
-        if (! \App\Enums\BusinessType::isHospitality($this->business_type)) {
-            return false;
-        }
-
         return (bool) $this->moduleSetting(ModuleKeys::RESTAURANT, 'use_tables', false);
     }
 

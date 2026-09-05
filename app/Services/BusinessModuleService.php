@@ -90,6 +90,72 @@ class BusinessModuleService
         $business->clearModuleCache();
     }
 
+    /**
+     * @return array<string, array{label: string, description: string, enabled: bool, settings: array<string, mixed>, suggested: bool}>
+     */
+    public function capabilityStates(Business $business): array
+    {
+        $states = [];
+
+        foreach ($this->registry->all() as $definition) {
+            $key = $definition->key();
+            $states[$key] = [
+                'label' => $definition->label(),
+                'description' => $definition->description(),
+                'enabled' => $this->isEnabled($business, $key),
+                'settings' => $this->settings($business, $key),
+                'suggested' => $definition->defaultEnabledFor($business),
+            ];
+        }
+
+        return $states;
+    }
+
+    /**
+     * @param  array<string, array<string, mixed>>  $capabilities
+     */
+    public function updateCapabilities(Business $business, array $capabilities, string $source = self::SOURCE_OWNER): void
+    {
+        foreach ($this->registry->keys() as $moduleKey) {
+            $payload = $capabilities[$moduleKey] ?? [];
+            $enabled = (bool) ($payload['enabled'] ?? false);
+            $settings = $this->settings($business, $moduleKey);
+
+            if ($moduleKey === ModuleKeys::RESTAURANT) {
+                $settings['use_tables'] = (bool) ($payload['use_tables'] ?? ($settings['use_tables'] ?? false));
+            }
+
+            BusinessModule::query()->updateOrCreate(
+                [
+                    'business_id' => $business->id,
+                    'module_key' => $moduleKey,
+                ],
+                [
+                    'enabled' => $enabled,
+                    'settings' => $settings,
+                    'source' => $source,
+                ]
+            );
+        }
+
+        $fresh = $business->fresh();
+        $this->syncToLegacySettings($fresh);
+        $fresh->clearModuleCache();
+    }
+
+    public function syncToLegacySettings(Business $business): void
+    {
+        $this->forgetBusiness($business);
+
+        $settings = $business->settings ?? [];
+        $settings['restaurant_mode'] = $this->isEnabled($business, ModuleKeys::RESTAURANT);
+        $settings['use_restaurant_tables'] = (bool) $this->setting($business, ModuleKeys::RESTAURANT, 'use_tables', false);
+        $settings['shift_waiter_mode'] = $this->isEnabled($business, ModuleKeys::BAR_SHIFT);
+        $settings['use_product_variants'] = $this->isEnabled($business, ModuleKeys::CATALOG_VARIANTS);
+
+        $business->update(['settings' => $settings]);
+    }
+
     public function forgetBusiness(Business $business): void
     {
         unset(self::$enabledKeysCache[$business->id]);
@@ -198,14 +264,10 @@ class BusinessModuleService
 
         switch ($moduleKey) {
             case ModuleKeys::RESTAURANT:
-                if (! BusinessType::isHospitality($business->business_type)) {
-                    return false;
-                }
-
-                return (bool) ($settings['restaurant_mode'] ?? true);
+                return (bool) ($settings['restaurant_mode'] ?? false);
 
             case ModuleKeys::BAR_SHIFT:
-                return (bool) ($settings['shift_waiter_mode'] ?? BusinessType::isHospitality($business->business_type));
+                return (bool) ($settings['shift_waiter_mode'] ?? false);
 
             case ModuleKeys::CATALOG_VARIANTS:
                 return (bool) ($settings['use_product_variants'] ?? false);
