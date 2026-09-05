@@ -5,6 +5,9 @@ namespace App\Http\Controllers\SuperAdmin;
 use App\Helpers\SystemAuditLogger;
 use App\Http\Controllers\Controller;
 use App\Models\SystemSetting;
+use App\Modules\ModuleRegistry;
+use App\Services\ModuleBillingService;
+use App\Support\BillingMode;
 use Illuminate\Http\Request;
 
 class SettingsController extends Controller
@@ -13,8 +16,10 @@ class SettingsController extends Controller
     {
         $settings = SystemSetting::allCached();
         $yoPaymentsConfigured = app(\App\Services\YoPaymentsService::class)->isConfigured();
+        $moduleRegistry = app(ModuleRegistry::class);
+        $modulePrices = app(ModuleBillingService::class)->modulePrices();
 
-        return view('superadmin.settings', compact('settings', 'yoPaymentsConfigured'));
+        return view('superadmin.settings', compact('settings', 'yoPaymentsConfigured', 'moduleRegistry', 'modulePrices'));
     }
 
     public function update(Request $request)
@@ -35,6 +40,9 @@ class SettingsController extends Controller
             'yopayments_api_password' => 'nullable|string|max:255',
             'yopayments_account_id' => 'nullable|string|max:255',
             'maintenance_mode' => 'nullable|boolean',
+            'billing_mode' => 'nullable|in:unified,addons',
+            'module_prices' => 'nullable|array',
+            'module_prices.*' => 'nullable|numeric|min:0',
         ]);
 
         SystemSetting::set('default_currency_symbol', $data['default_currency_symbol']);
@@ -54,6 +62,13 @@ class SettingsController extends Controller
         }
         SystemSetting::set('yopayments_account_id', $data['yopayments_account_id'] ?? '');
         SystemSetting::set('maintenance_mode', $request->boolean('maintenance_mode') ? '1' : '0');
+        SystemSetting::set('billing_mode', $data['billing_mode'] ?? BillingMode::UNIFIED);
+
+        $modulePrices = [];
+        foreach (app(ModuleRegistry::class)->keys() as $moduleKey) {
+            $modulePrices[$moduleKey] = (float) ($data['module_prices'][$moduleKey] ?? 0);
+        }
+        SystemSetting::set('module_prices', json_encode($modulePrices));
 
         SystemAuditLogger::record(
             'settings_updated',

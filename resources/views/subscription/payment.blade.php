@@ -33,7 +33,7 @@
         <form method="POST" action="{{ route('subscription.initiate') }}" class="space-y-5">
             @csrf
 
-            @include('subscription.partials.plan-options')
+            @include('subscription.partials.billing-breakdown')
 
             <div>
                 <label class="mb-2 block text-sm font-medium text-gray-700">Mobile money provider</label>

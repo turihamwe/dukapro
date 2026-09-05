@@ -1,6 +1,7 @@
 @php
     use App\Enums\BusinessType;
     use App\Modules\ModuleKeys;
+    use App\Support\BillingMode;
 
     $businessTypeLabel = BusinessType::label($business->business_type);
     $moduleRecords = $business->businessModules->keyBy('module_key');
@@ -36,7 +37,11 @@
             <h2 class="text-lg font-semibold text-gray-900">Modules</h2>
             <p class="mt-1 text-sm text-gray-600">
                 Enable or disable capabilities for <strong>{{ $business->name }}</strong>.
-                Changes apply immediately — no billing impact.
+                @if(BillingMode::isAddons())
+                    In add-on billing mode, module access also depends on subscription, comping, or grandfathering below.
+                @else
+                    Changes apply immediately — unified billing (no per-module fees).
+                @endif
             </p>
         </div>
         <form method="POST" action="{{ route('superadmin.impersonate.start', $business->id) }}" class="shrink-0">
@@ -50,6 +55,19 @@
     @can('platform-full-access')
         <form method="POST" action="{{ route('superadmin.businesses.modules.update', ['businessId' => $business->id]) }}" class="space-y-5">
             @csrf
+
+            @if(BillingMode::isAddons())
+                <div class="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
+                    <input type="hidden" name="billing_grandfathered" value="0">
+                    <input type="checkbox" name="billing_grandfathered" value="1" id="billing_grandfathered"
+                           class="mt-0.5 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                           {{ old('billing_grandfathered', $business->billing_grandfathered) ? 'checked' : '' }}>
+                    <div>
+                        <label for="billing_grandfathered" class="block text-sm font-medium text-gray-900">Grandfathered flat pricing</label>
+                        <p class="mt-0.5 text-xs text-gray-600">When checked, this business pays only the base subscription — all modules are free. Use for existing customers when switching to add-on billing.</p>
+                    </div>
+                </div>
+            @endif
 
             <div class="space-y-4">
                 @foreach($moduleRegistry->all() as $moduleKey => $definition)
@@ -88,6 +106,18 @@
                                 'waitersEnabled' => $waitersEnabled,
                                 'showManageTablesLink' => false,
                             ])
+                            @if(BillingMode::isAddons() && ! old('billing_grandfathered', $business->billing_grandfathered))
+                                @php $restaurantBilling = $capabilities[ModuleKeys::RESTAURANT]['billing'] ?? []; @endphp
+                                @if($restaurantBilling['billable'] ?? false)
+                                    <label class="flex items-center gap-2 text-xs text-gray-600">
+                                        <input type="hidden" name="modules[restaurant][billing_comped]" value="0">
+                                        <input type="checkbox" name="modules[restaurant][billing_comped]" value="1"
+                                               class="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                                               {{ old('modules.restaurant.billing_comped', optional($restaurantRecord)->billing_comped ?? false) ? 'checked' : '' }}>
+                                        Comp this add-on (free for tenant)
+                                    </label>
+                                @endif
+                            @endif
                         </div>
                     @else
                         @php
@@ -114,6 +144,21 @@
                             'footnote' => $moduleFootnotes[$moduleKey] ?? null,
                             'sourceLabel' => $sourceLabel,
                         ])
+                        @if(BillingMode::isAddons() && ! old('billing_grandfathered', $business->billing_grandfathered))
+                            @php
+                                $moduleBilling = $capabilities[$moduleKey]['billing'] ?? [];
+                                $moduleRecord = $record;
+                            @endphp
+                            @if($moduleBilling['billable'] ?? false)
+                                <label class="-mt-2 ml-7 flex items-center gap-2 text-xs text-gray-600">
+                                    <input type="hidden" name="modules[{{ $moduleKey }}][billing_comped]" value="0">
+                                    <input type="checkbox" name="modules[{{ $moduleKey }}][billing_comped]" value="1"
+                                           class="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                                           {{ old("modules.{$moduleKey}.billing_comped", optional($moduleRecord)->billing_comped ?? false) ? 'checked' : '' }}>
+                                    Comp this add-on (free for tenant)
+                                </label>
+                            @endif
+                        @endif
                     @endif
                 @endforeach
             </div>

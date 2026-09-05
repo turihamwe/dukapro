@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\SubscriptionStatus;
 use App\Modules\ModuleKeys;
 use App\Services\BusinessModuleService;
+use App\Services\ModuleBillingService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -37,6 +38,7 @@ class Business extends Model
         'subscription_status',
         'subscription_ends_at',
         'subscription_amount',
+        'billing_grandfathered',
         'sole_proprietor',
         'employees_onboarding_complete',
     ];
@@ -49,6 +51,7 @@ class Business extends Model
         'trial_ends_at' => 'datetime',
         'subscription_ends_at' => 'datetime',
         'subscription_amount' => 'float',
+        'billing_grandfathered' => 'boolean',
     ];
 
     public function sponsor(): BelongsTo
@@ -101,6 +104,11 @@ class Business extends Model
     }
 
     public function hasModule(string $moduleKey): bool
+    {
+        return app(ModuleBillingService::class)->isAccessible($this, $moduleKey);
+    }
+
+    public function hasModuleEnabled(string $moduleKey): bool
     {
         return app(BusinessModuleService::class)->isEnabled($this, $moduleKey);
     }

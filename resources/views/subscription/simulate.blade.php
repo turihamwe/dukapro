@@ -22,6 +22,17 @@
                 <dt class="text-gray-500">Amount</dt>
                 <dd class="font-medium text-gray-900">{{ format_money($payment->amount, auth()->user()->business) }}</dd>
             </div>
+            @if(! empty($payment->metadata['line_items']))
+                <div class="border-t border-gray-200 pt-3">
+                    <dt class="mb-2 text-gray-500">Breakdown</dt>
+                    @foreach($payment->metadata['line_items'] as $item)
+                        <div class="flex justify-between text-xs text-gray-700">
+                            <span>{{ $item['label'] }}</span>
+                            <span>{{ format_money($item['amount'], auth()->user()->business) }}</span>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
             <div class="flex justify-between">
                 <dt class="text-gray-500">Status</dt>
                 <dd><x-badge color="amber">{{ ucfirst($payment->status) }}</x-badge></dd>

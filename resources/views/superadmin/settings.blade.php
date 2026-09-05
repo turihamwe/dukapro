@@ -77,6 +77,40 @@
 
     <div class="rounded-xl border border-gray-200 bg-white p-6 space-y-5">
         <div>
+            <h2 class="text-sm font-semibold text-gray-900">Subscription billing</h2>
+            <p class="mt-1 text-xs text-gray-500">Control whether tenants pay a single flat fee or base subscription plus module add-ons.</p>
+        </div>
+
+        @php
+            $billingMode = old('billing_mode', $settings['billing_mode'] ?? \App\Support\BillingMode::UNIFIED);
+        @endphp
+
+        <div>
+            <label for="billing_mode" class="mb-1 block text-sm font-medium">Billing mode</label>
+            <select name="billing_mode" id="billing_mode"
+                    class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-violet-500 focus:outline-none">
+                <option value="unified" {{ $billingMode === 'unified' ? 'selected' : '' }}>Unified — flat subscription (100k/month), modules free</option>
+                <option value="addons" {{ $billingMode === 'addons' ? 'selected' : '' }}>Add-ons — base subscription + per-module fees</option>
+            </select>
+            <p class="mt-1 text-xs text-gray-500">Start with <strong>Unified</strong> for production. Switch to Add-ons when you are ready to monetize modules separately.</p>
+        </div>
+
+        <div id="module-prices-section" class="space-y-3 {{ $billingMode === 'addons' ? '' : 'hidden' }}">
+            <p class="text-sm font-medium text-gray-900">Monthly add-on prices (UGX)</p>
+            @foreach($moduleRegistry->all() as $moduleKey => $definition)
+                <div>
+                    <label for="module_price_{{ $moduleKey }}" class="mb-1 block text-xs font-medium text-gray-700">{{ $definition->label() }}</label>
+                    <input type="number" min="0" step="1000" name="module_prices[{{ $moduleKey }}]" id="module_price_{{ $moduleKey }}"
+                           value="{{ old('module_prices.'.$moduleKey, $modulePrices[$moduleKey] ?? 0) }}"
+                           class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-violet-500 focus:outline-none">
+                </div>
+            @endforeach
+            <p class="text-xs text-gray-500">Set to 0 for modules included in the base subscription. Existing businesses are grandfathered on flat pricing until you change them per tenant.</p>
+        </div>
+    </div>
+
+    <div class="rounded-xl border border-gray-200 bg-white p-6 space-y-5">
+        <div>
             <h2 class="text-sm font-semibold text-gray-900">Platform payment API keys</h2>
             <p class="mt-1 text-xs text-gray-500">Used for subscription billing and platform mobile-money collections — not individual store POS transactions.</p>
         </div>
@@ -162,4 +196,13 @@
         Save Settings
     </button>
 </form>
+
+<script>
+document.getElementById('billing_mode')?.addEventListener('change', function () {
+    const section = document.getElementById('module-prices-section');
+    if (section) {
+        section.classList.toggle('hidden', this.value !== 'addons');
+    }
+});
+</script>
 @endsection

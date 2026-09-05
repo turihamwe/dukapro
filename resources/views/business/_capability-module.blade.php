@@ -29,6 +29,7 @@
             @if($capability['suggested'] ?? false)
                 <span class="mt-1 inline-block rounded-full {{ $styles['badge'] }} px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">Suggested for {{ $businessTypeLabel ?? 'your business type' }}</span>
             @endif
+            @include('business._module-billing-badge', ['capability' => $capability, 'billing' => $capability['billing'] ?? []])
             @if($footnote)
                 <span class="mt-2 block text-xs text-gray-500">{{ $footnote }}</span>
             @endif

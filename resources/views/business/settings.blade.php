@@ -6,6 +6,7 @@
 @php
     use App\Enums\BusinessType;
     use App\Modules\ModuleKeys;
+    use App\Support\BillingMode;
 
     $businessTypeLabel = BusinessType::label($business->business_type);
     $moduleRegistry = app(\App\Modules\ModuleRegistry::class);
@@ -68,6 +69,9 @@
                 <p class="text-sm font-semibold text-gray-900">Capabilities</p>
                 <p class="mt-1 text-xs text-gray-500">
                     Turn features on or off for this business. You signed up as <span class="font-medium text-gray-700">{{ $businessTypeLabel }}</span> — suggested modules are marked below, but you can enable any combination.
+                    @if(BillingMode::isAddons())
+                        Paid add-ons require an active subscription — <a href="{{ route('subscription.payment') }}" class="font-medium text-indigo-600 hover:text-indigo-800">renew subscription</a> to unlock enabled modules.
+                    @endif
                 </p>
             </div>
 
@@ -92,6 +96,7 @@
                                     @if($restaurant['suggested'] ?? false)
                                         <span class="mt-1 inline-block rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-orange-800">Suggested for {{ $businessTypeLabel }}</span>
                                     @endif
+                                    @include('business._module-billing-badge', ['capability' => $restaurant, 'billing' => $restaurant['billing'] ?? []])
                                 </span>
                             </label>
                             @include('business._restaurant-module-options', [

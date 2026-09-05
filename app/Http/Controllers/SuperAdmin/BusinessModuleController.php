@@ -24,15 +24,17 @@ class BusinessModuleController extends Controller
             'modules.*.enabled' => 'nullable|boolean',
             'modules.bar_shift.enabled' => 'nullable|boolean',
             'modules.catalog_variants.enabled' => 'nullable|boolean',
+            'modules.*.billing_comped' => 'nullable|boolean',
+            'billing_grandfathered' => 'nullable|boolean',
             'note' => 'nullable|string|max:500',
         ]);
 
         $before = $moduleService->capabilityStates($businessModel);
 
-        $moduleService->updateCapabilities(
+        $moduleService->updateSuperadminModules(
             $businessModel,
-            $moduleService->capabilitiesFromModulesInput($data['modules']),
-            BusinessModuleService::SOURCE_SUPERADMIN
+            $data['modules'],
+            $request->boolean('billing_grandfathered')
         );
 
         $after = $moduleService->capabilityStates($businessModel->fresh());

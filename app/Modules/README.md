@@ -47,7 +47,13 @@ config/modules.php            # list of module classes (registration)
 
 8. **Legacy JSON** — only the original three modules dual-write to `businesses.settings`. New modules use `business_modules` only.
 
-9. **Billing** — unchanged until Phase 6; no price fields on modules yet.
+9. **Billing (Phase 6)** — platform mode is controlled in **Superadmin → System Settings**:
+   - `unified` — flat subscription (100k/month); modules are free toggles.
+   - `addons` — base subscription + per-module monthly fees from platform settings.
+   - Per-tenant **grandfathering** and **comped add-ons** on Superadmin → Business → Modules tab.
+   - Optional `monthlyPrice()` defaults live in `config/billing.php`; runtime prices in `SystemSetting`.
+   - Runtime access: `$business->hasModule()` checks enabled **and** billing entitlement in add-ons mode.
+   - Toggle state only: `$business->hasModuleEnabled()`.
 
 ## Reference implementation
 
@@ -56,13 +62,15 @@ Follow the three production modules (`Restaurant`, `BarShift`, `CatalogVariants`
 ## Runtime API
 
 ```php
-$business->hasModule('restaurant');
+$business->hasModule('restaurant');           // enabled + billing entitled (use for gates/routes)
+$business->hasModuleEnabled('restaurant');    // toggle state only (UI)
 $business->moduleSetting('restaurant', 'use_tables', false);
 app(BusinessModuleService::class)->capabilityStates($business);
+app(ModuleBillingService::class)->calculatePaymentAmount($business, 'monthly');
 ```
 
 ## Do not
 
 - Hard-code module lists in views (loop `$capabilities` or `ModuleRegistry::all()`).
 - Gate features with `business_type` at runtime (presets only).
-- Add per-module pricing until billing Phase 6.
+- Bypass `BillingMode` when calculating subscription checkout amounts.

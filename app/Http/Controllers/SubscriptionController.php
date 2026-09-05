@@ -8,6 +8,8 @@ use App\Scopes\TenantScope;
 use App\Services\MobileMoneyService;
 use App\Services\YoPaymentsService;
 use App\Support\SubscriptionPlan;
+use App\Services\ModuleBillingService;
+use App\Support\BillingMode;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -27,8 +29,14 @@ class SubscriptionController extends Controller
     {
         $business = $request->user()->business;
         $plans = SubscriptionPlan::all();
+        $billing = app(ModuleBillingService::class);
+        $checkoutByPlan = [];
 
-        return view('subscription.payment', compact('business', 'plans'));
+        foreach (SubscriptionPlan::keys() as $planKey) {
+            $checkoutByPlan[$planKey] = $billing->calculatePaymentAmount($business, $planKey);
+        }
+
+        return view('subscription.payment', compact('business', 'plans', 'checkoutByPlan'));
     }
 
     public function initiate(Request $request)

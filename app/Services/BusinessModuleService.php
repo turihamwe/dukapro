@@ -91,11 +91,12 @@ class BusinessModuleService
     }
 
     /**
-     * @return array<string, array{label: string, description: string, enabled: bool, settings: array<string, mixed>, suggested: bool}>
+     * @return array<string, array{label: string, description: string, enabled: bool, settings: array<string, mixed>, suggested: bool, billing: array<string, mixed>}>
      */
     public function capabilityStates(Business $business): array
     {
         $states = [];
+        $billing = app(ModuleBillingService::class)->billingStates($business);
 
         foreach ($this->registry->all() as $definition) {
             $key = $definition->key();
@@ -105,6 +106,7 @@ class BusinessModuleService
                 'enabled' => $this->isEnabled($business, $key),
                 'settings' => $this->settings($business, $key),
                 'suggested' => $definition->defaultEnabledFor($business),
+                'billing' => $billing[$key] ?? [],
             ];
         }
 
@@ -145,6 +147,34 @@ class BusinessModuleService
         $fresh = $business->fresh();
         $this->syncToLegacySettings($fresh);
         $fresh->clearModuleCache();
+    }
+
+    /**
+     * @param  array<string, array<string, mixed>>  $modulesInput
+     */
+    public function updateSuperadminModules(Business $business, array $modulesInput, bool $billingGrandfathered): void
+    {
+        $this->updateCapabilities(
+            $business,
+            $this->capabilitiesFromModulesInput($modulesInput),
+            self::SOURCE_SUPERADMIN
+        );
+
+        $business->update(['billing_grandfathered' => $billingGrandfathered]);
+
+        foreach ($this->registry->keys() as $moduleKey) {
+            $comped = filter_var(
+                data_get($modulesInput, "{$moduleKey}.billing_comped", false),
+                FILTER_VALIDATE_BOOLEAN
+            );
+
+            BusinessModule::query()
+                ->where('business_id', $business->id)
+                ->where('module_key', $moduleKey)
+                ->update(['billing_comped' => $comped]);
+        }
+
+        $business->fresh()->clearModuleCache();
     }
 
     /**

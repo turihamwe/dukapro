@@ -6,6 +6,7 @@ use App\Helpers\AuditLogger;
 use App\Models\Business;
 use App\Models\SubscriptionPayment;
 use App\Scopes\TenantScope;
+use App\Support\BillingMode;
 use App\Support\SubscriptionPlan;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
@@ -27,13 +28,16 @@ class MobileMoneyService
     public function initiatePayment(Business $business, string $phoneNumber, string $provider = 'mtn', string $planKey = 'monthly'): array
     {
         $plan = SubscriptionPlan::find($planKey);
+        $billing = app(ModuleBillingService::class);
+        $breakdown = $billing->calculatePaymentAmount($business, $planKey);
+        $amount = $breakdown['total'];
         $providerKey = $provider === 'airtel' ? 'airtel_money' : 'mtn_momo';
         $reference = 'DUKA-' . strtoupper(Str::random(10));
         $narrative = platform_brand('name') . ' subscription - ' . $plan['label'];
 
         $payment = SubscriptionPayment::create([
             'business_id' => $business->id,
-            'amount' => $plan['amount'],
+            'amount' => $amount,
             'payment_method' => 'mobile_money',
             'reference' => $reference,
             'provider' => $providerKey,
@@ -44,6 +48,11 @@ class MobileMoneyService
                 'plan' => $plan['key'],
                 'plan_label' => $plan['label'],
                 'subscription_days' => $plan['days'],
+                'billing_mode' => BillingMode::current(),
+                'base_amount' => $breakdown['base_amount'],
+                'module_amount' => $breakdown['module_amount'],
+                'module_keys' => $breakdown['module_keys'],
+                'line_items' => $breakdown['line_items'],
                 'initiated_at' => Carbon::now()->toIso8601String(),
                 'environment' => $this->yoPaymentsService->config()['environment'],
             ],
@@ -200,6 +209,16 @@ class MobileMoneyService
         $planLabel = $payment->metadata['plan_label'] ?? ($subscriptionDays >= 365 ? '1 Year' : '1 Month');
 
         $business->activateSubscription($subscriptionDays);
+
+        $freshBusiness = $business->fresh();
+        $moduleKeys = $payment->metadata['module_keys'] ?? [];
+        if (BillingMode::isAddons() && ! empty($moduleKeys) && $freshBusiness->subscription_ends_at) {
+            app(ModuleBillingService::class)->activateModuleSubscriptions(
+                $freshBusiness,
+                $moduleKeys,
+                $freshBusiness->subscription_ends_at
+            );
+        }
 
         AuditLogger::record(
             'subscription_activated',

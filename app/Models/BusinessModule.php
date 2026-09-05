@@ -13,11 +13,15 @@ class BusinessModule extends Model
         'enabled',
         'settings',
         'source',
+        'billing_comped',
+        'billing_subscribed_until',
     ];
 
     protected $casts = [
         'enabled' => 'boolean',
         'settings' => 'array',
+        'billing_comped' => 'boolean',
+        'billing_subscribed_until' => 'datetime',
     ];
 
     public function business(): BelongsTo

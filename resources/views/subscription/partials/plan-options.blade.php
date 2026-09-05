@@ -3,18 +3,23 @@
     $selectedPlan = old('plan', $selectedPlan ?? \App\Support\SubscriptionPlan::defaultKey());
     $inputName = $inputName ?? 'plan';
     $compact = $compact ?? false;
+    $checkoutByPlan = $checkoutByPlan ?? [];
 @endphp
 
 <fieldset class="space-y-3">
     <legend class="mb-2 block text-sm font-medium text-gray-700">Choose a plan</legend>
     <div class="{{ $compact ? 'grid grid-cols-1 gap-3 sm:grid-cols-2' : 'grid grid-cols-1 gap-4 sm:grid-cols-2' }}">
         @foreach($plans as $plan)
+            @php
+                $checkout = $checkoutByPlan[$plan['key']] ?? null;
+                $displayAmount = $checkout['total'] ?? $plan['amount'];
+            @endphp
             <label class="group relative flex cursor-pointer flex-col rounded-xl border-2 bg-white p-4 transition has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50/60 {{ $selectedPlan === $plan['key'] ? 'border-indigo-600 bg-indigo-50/60' : 'border-gray-200 hover:border-indigo-200' }}">
                 <input type="radio"
                        name="{{ $inputName }}"
                        value="{{ $plan['key'] }}"
-                       class="peer sr-only"
-                       data-plan-amount="{{ $plan['amount'] }}"
+                       class="peer sr-only plan-option"
+                       data-plan-amount="{{ $displayAmount }}"
                        data-plan-label="{{ $plan['label'] }}"
                        @checked($selectedPlan === $plan['key'])
                        required>
@@ -27,7 +32,10 @@
                         <span class="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">Save</span>
                     @endif
                 </div>
-                <p class="mt-3 text-2xl font-bold text-gray-900">{{ format_money($plan['amount']) }}</p>
+                <p class="mt-3 text-2xl font-bold text-gray-900">{{ format_money($displayAmount) }}</p>
+                @if($checkout && ($checkout['module_amount'] ?? 0) > 0)
+                    <p class="mt-0.5 text-xs text-indigo-600">Includes {{ format_money($checkout['module_amount']) }} in module add-ons</p>
+                @endif
                 <p class="mt-1 text-xs text-gray-500">{{ $plan['days'] }} days of access</p>
             </label>
         @endforeach
