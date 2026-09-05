@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Enums\SubscriptionStatus;
+use App\Modules\ModuleKeys;
+use App\Services\BusinessModuleService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -84,23 +86,43 @@ class Business extends Model
         return $this->hasMany(SoldByUnit::class);
     }
 
+    public function businessModules(): HasMany
+    {
+        return $this->hasMany(BusinessModule::class);
+    }
+
+    public function clearModuleCache(): void
+    {
+        app(BusinessModuleService::class)->forgetBusiness($this);
+
+        if ($this->relationLoaded('businessModules')) {
+            unset($this->relations['businessModules']);
+        }
+    }
+
+    public function hasModule(string $moduleKey): bool
+    {
+        return app(BusinessModuleService::class)->isEnabled($this, $moduleKey);
+    }
+
+    public function moduleSetting(string $moduleKey, string $settingKey, $default = null)
+    {
+        return app(BusinessModuleService::class)->setting($this, $moduleKey, $settingKey, $default);
+    }
+
     public function usesProductVariants(): bool
     {
-        return (bool) ($this->settings['use_product_variants'] ?? false);
+        return $this->hasModule(ModuleKeys::CATALOG_VARIANTS);
     }
 
     public function usesShiftWaiterMode(): bool
     {
-        return (bool) ($this->settings['shift_waiter_mode'] ?? false);
+        return $this->hasModule(ModuleKeys::BAR_SHIFT);
     }
 
     public function usesRestaurantMode(): bool
     {
-        if (! \App\Enums\BusinessType::isHospitality($this->business_type)) {
-            return false;
-        }
-
-        return (bool) ($this->settings['restaurant_mode'] ?? true);
+        return $this->hasModule(ModuleKeys::RESTAURANT);
     }
 
     public function usesRestaurantTables(): bool
@@ -111,11 +133,15 @@ class Business extends Model
 
     public function hasRestaurantTablesSetting(): bool
     {
+        if (! $this->usesRestaurantMode()) {
+            return false;
+        }
+
         if (! \App\Enums\BusinessType::isHospitality($this->business_type)) {
             return false;
         }
 
-        return (bool) ($this->settings['use_restaurant_tables'] ?? false);
+        return (bool) $this->moduleSetting(ModuleKeys::RESTAURANT, 'use_tables', false);
     }
 
     public function isHospitality(): bool

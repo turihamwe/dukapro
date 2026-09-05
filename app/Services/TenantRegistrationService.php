@@ -8,6 +8,7 @@ use App\Mail\WelcomeOwnerMail;
 use App\Models\Business;
 use App\Models\User;
 use App\Services\BranchService;
+use App\Services\BusinessModuleService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -50,6 +51,11 @@ class TenantRegistrationService
                 $settings['shift_waiter_mode'] = true;
                 $business->update(['settings' => $settings]);
             }
+
+            app(BusinessModuleService::class)->syncFromLegacySettings(
+                $business->fresh(),
+                BusinessModuleService::SOURCE_PRESET
+            );
 
             return User::create([
                 'business_id' => $business->id,

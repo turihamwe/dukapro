@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\AuditLogger;
+use App\Services\BusinessModuleService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -73,6 +74,11 @@ class BusinessSettingsController extends Controller
             'brand_color' => $data['brand_color'] ?? $business->brand_color,
             'settings' => $settings,
         ]);
+
+        app(BusinessModuleService::class)->syncFromLegacySettings(
+            $business->fresh(),
+            BusinessModuleService::SOURCE_OWNER
+        );
 
         AuditLogger::record('business_updated', $business, $old, $business->fresh()->toArray());
 
