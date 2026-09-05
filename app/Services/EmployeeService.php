@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\BusinessType;
 use App\Enums\UserRole;
 use App\Models\Branch;
 use App\Models\Business;
@@ -11,30 +12,24 @@ use Illuminate\Validation\ValidationException;
 
 class EmployeeService
 {
-    public function assignableRoles(User $actor): array
+    public function assignableRoles(User $actor, Business $business): array
     {
-        if ($actor->isOwner()) {
-            return UserRole::staffRoles();
-        }
-
-        if ($actor->isManager()) {
-            return [UserRole::SUPERVISOR, UserRole::CASHIER];
-        }
-
-        if ($actor->isSupervisor()) {
-            return [UserRole::CASHIER];
-        }
-
-        return [];
+        return $this->rolesForBusiness(UserRole::rolesAssignableBy($actor->role), $business);
     }
 
     public function create(Business $business, User $actor, array $data): User
     {
         $role = $data['role'];
 
-        if (! in_array($role, $this->assignableRoles($actor), true)) {
+        if (! in_array($role, $this->assignableRoles($actor, $business), true)) {
             throw ValidationException::withMessages([
                 'role' => 'You are not allowed to add employees with this role.',
+            ]);
+        }
+
+        if (! UserRole::canManageRole($actor->role, $role)) {
+            throw ValidationException::withMessages([
+                'role' => 'You cannot add staff at or above your role level.',
             ]);
         }
 
@@ -45,7 +40,7 @@ class EmployeeService
             'branch_id' => $branchId,
             'name' => $data['name'],
             'username' => strtolower($data['username']),
-            'email' => $data['email'],
+            'email' => ! empty($data['email']) ? $data['email'] : null,
             'phone' => $data['phone'] ?? null,
             'password' => Hash::make($data['password']),
             'role' => $role,
@@ -80,9 +75,26 @@ class EmployeeService
         return $query->pluck('name', 'id')->all();
     }
 
-    public function canRemove(User $actor, User $target): bool
+    public function canManage(User $actor, User $target): bool
     {
         if ($target->isOwner()) {
+            return false;
+        }
+
+        if ((int) $actor->business_id !== (int) $target->business_id) {
+            return false;
+        }
+
+        if ($actor->isOwner()) {
+            return true;
+        }
+
+        return UserRole::canManageRole($actor->role, $target->role);
+    }
+
+    public function canRemove(User $actor, User $target): bool
+    {
+        if (! $this->canManage($actor, $target)) {
             return false;
         }
 
@@ -94,19 +106,16 @@ class EmployeeService
             return false;
         }
 
-        if ($actor->isOwner()) {
-            return true;
+        return true;
+    }
+
+    protected function rolesForBusiness(array $roles, Business $business): array
+    {
+        if (! BusinessType::isHospitality($business->business_type)) {
+            $roles = array_values(array_filter($roles, fn ($role) => $role !== UserRole::WAITER));
         }
 
-        if ($actor->isManager()) {
-            return in_array($target->role, [UserRole::SUPERVISOR, UserRole::CASHIER], true);
-        }
-
-        if ($actor->isSupervisor()) {
-            return $target->isCashier();
-        }
-
-        return false;
+        return $roles;
     }
 
     protected function resolveBranchId(Business $business, User $actor, array $data, ?User $existing = null): int

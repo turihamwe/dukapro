@@ -45,6 +45,7 @@ class ReconciliationService
             'expected_cash' => round($expectedCash, 2),
             'expected_mobile_money' => round($expectedMobileMoney, 2),
             'expected_bank_other' => round($expectedBankOther, 2),
+            'user_total_sales' => round((float) $sales->sum('total'), 2),
             'sale_count' => $sales->count(),
             'total_sales' => $dailySummary['total_sales'],
             'total_expenses' => $dailySummary['total_expenses'],

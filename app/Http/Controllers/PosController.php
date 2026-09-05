@@ -46,7 +46,7 @@ class PosController extends Controller
             ->get(['id', 'name', 'phone', 'outstanding_balance', 'credit_limit']);
 
         $floorStaff = $waiterMode
-            ? app(\App\Services\WaiterShiftService::class)->floorStaff($business)
+            ? app(\App\Services\WaiterShiftService::class)->floorStaff($business, $request->user())
             : collect();
 
         return view('pos.checkout', compact('products', 'customers', 'waiterMode', 'floorStaff'));
@@ -103,6 +103,11 @@ class PosController extends Controller
             if (($data['payment_method'] ?? '') === 'mobile_money') {
                 $request->validate(['mobile_money_provider' => 'required|in:airtel,mtn']);
             }
+            app(\App\Services\WaiterShiftService::class)->resolveAssignableFloorStaff(
+                $business,
+                $request->user(),
+                (int) $data['waiter_id']
+            );
         }
 
         $data['is_credit_sale'] = ($data['payment_method'] ?? '') === 'credit';

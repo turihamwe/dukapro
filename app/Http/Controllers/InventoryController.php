@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Enums\MeasurementUnit;
 use App\Helpers\AuditLogger;
 use App\Models\Brand;
+use App\Models\Branch;
 use App\Models\Business;
 use App\Models\Product;
 use App\Models\ProductAttribute;
 use App\Models\SoldByUnit;
+use App\Scopes\BranchScope;
 use App\Services\CatalogDiscoveryService;
 use App\Services\ProductBatchService;
 use App\Services\ProductInventoryService;
@@ -38,12 +40,35 @@ class InventoryController extends Controller
     public function index(Request $request)
     {
         $search = trim((string) $request->input('search', ''));
+        $business = $request->user()->business;
+        $branches = collect();
+        $branchId = null;
 
         $query = Product::query()
             ->catalog()
-            ->with(['brand', 'variants.activeBatches', 'activeBatches'])
+            ->with(['brand', 'variants.activeBatches', 'activeBatches', 'branch'])
             ->withCount(['variants', 'activeBatches as active_batches_count'])
             ->orderBy('name');
+
+        if ($request->user()->isOwner()) {
+            $branches = Branch::query()
+                ->where('business_id', $business->id)
+                ->where('is_active', true)
+                ->orderByDesc('is_default')
+                ->orderBy('name')
+                ->pluck('name', 'id');
+
+            if ($request->filled('branch_id')) {
+                $branchId = (int) $request->input('branch_id');
+
+                if ($branches->has($branchId)) {
+                    $query->withoutGlobalScope(BranchScope::class)
+                        ->where('products.branch_id', $branchId);
+                } else {
+                    $branchId = null;
+                }
+            }
+        }
 
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
@@ -58,10 +83,12 @@ class InventoryController extends Controller
             });
         }
 
-        $products = $query->paginate(20)->appends(['search' => $search]);
-        $business = $request->user()->business;
+        $products = $query->paginate(20)->appends(array_filter([
+            'search' => $search !== '' ? $search : null,
+            'branch_id' => $branchId,
+        ]));
 
-        return view('inventory.index', compact('products', 'search', 'business'));
+        return view('inventory.index', compact('products', 'search', 'business', 'branches', 'branchId'));
     }
 
     public function show(Business $business, Product $product)

@@ -52,16 +52,24 @@ class SaleService
             }
 
             if ($waiterId) {
-                $waiter = User::query()
-                    ->where('business_id', $businessId)
-                    ->where('id', $waiterId)
-                    ->where('is_active', true)
-                    ->first();
+                if ($waiterMode) {
+                    app(WaiterShiftService::class)->resolveAssignableFloorStaff(
+                        $business,
+                        $user,
+                        (int) $waiterId
+                    );
+                } else {
+                    $waiter = User::query()
+                        ->where('business_id', $businessId)
+                        ->where('id', $waiterId)
+                        ->where('is_active', true)
+                        ->first();
 
-                if (! $waiter) {
-                    throw ValidationException::withMessages([
-                        'waiter_id' => 'Selected staff member is invalid.',
-                    ]);
+                    if (! $waiter) {
+                        throw ValidationException::withMessages([
+                            'waiter_id' => 'Selected staff member is invalid.',
+                        ]);
+                    }
                 }
             }
 

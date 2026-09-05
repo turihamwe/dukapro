@@ -30,19 +30,7 @@ class UserPolicy
             return false;
         }
 
-        if ($user->isOwner()) {
-            return true;
-        }
-
-        if ($user->isManager()) {
-            return in_array($employee->role, ['supervisor', 'cashier'], true);
-        }
-
-        if ($user->isSupervisor()) {
-            return $employee->isCashier();
-        }
-
-        return false;
+        return app(EmployeeService::class)->canManage($user, $employee);
     }
 
     public function delete(User $user, User $employee): bool

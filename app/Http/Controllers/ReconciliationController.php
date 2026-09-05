@@ -69,7 +69,7 @@ class ReconciliationController extends Controller
         $waiterShift = null;
         $waiterBalances = collect();
         if ($business->usesShiftWaiterMode()) {
-            $waiterShift = app(\App\Services\WaiterShiftService::class)->summarizeShift($business, Carbon::parse($date));
+            $waiterShift = app(\App\Services\WaiterShiftService::class)->summarizeShift($business, Carbon::parse($date), $request->user());
             $waiterBalances = app(\App\Services\WaiterShiftService::class)->balancesForDate($business->id, Carbon::parse($date));
         }
 

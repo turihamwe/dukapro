@@ -25,7 +25,7 @@ class WaiterShiftController extends Controller
         abort_unless($business->usesShiftWaiterMode(), 404);
 
         $date = Carbon::parse($request->get('date', Carbon::today()->toDateString()));
-        $shift = $this->waiterShiftService->summarizeShift($business, $date);
+        $shift = $this->waiterShiftService->summarizeShift($business, $date, $request->user());
 
         return view('waiter-shift.index', compact('shift', 'date', 'business'));
     }
@@ -34,6 +34,7 @@ class WaiterShiftController extends Controller
     {
         abort_unless($business->usesShiftWaiterMode(), 404);
         abort_unless((int) $waiter->business_id === (int) $business->id, 404);
+        abort_unless($this->waiterShiftService->isFloorStaffMember($waiter), 404);
 
         $date = Carbon::parse($request->get('date', Carbon::today()->toDateString()));
         $summary = $this->waiterShiftService->calculateWaiterSummary($business->id, $waiter->id, $date);

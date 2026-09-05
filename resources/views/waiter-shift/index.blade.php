@@ -37,7 +37,7 @@
                         <div class="flex flex-wrap items-start justify-between gap-2">
                             <div>
                                 <p class="font-semibold text-gray-900">{{ $waiter->name }}</p>
-                                <p class="text-xs text-gray-500">{{ ucfirst($waiter->role) }} · {{ $summary['order_count'] }} orders</p>
+                                <p class="text-xs text-gray-500">{{ \App\Enums\UserRole::floorStaffLabel($waiter->role) }} · {{ $summary['order_count'] }} orders</p>
                             </div>
                             <a href="{{ tenant_route('tenant.waiter-shift.show', ['waiter' => $waiter->id, 'date' => $date->toDateString()]) }}"
                                class="text-xs font-medium text-indigo-600 hover:text-indigo-800">View orders →</a>

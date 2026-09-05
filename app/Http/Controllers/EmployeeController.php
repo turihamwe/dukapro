@@ -46,7 +46,7 @@ class EmployeeController extends Controller
     {
         $this->authorize('create', User::class);
 
-        $roles = $this->employeeService->assignableRoles($request->user());
+        $roles = $this->employeeService->assignableRoles($request->user(), $request->user()->business);
         $branches = $this->employeeService->branchOptions($request->user()->business, $request->user());
 
         return view('staff.create', compact('roles', 'branches'));
@@ -56,7 +56,7 @@ class EmployeeController extends Controller
     {
         $this->authorize('create', User::class);
 
-        $roles = $this->employeeService->assignableRoles($request->user());
+        $roles = $this->employeeService->assignableRoles($request->user(), $request->user()->business);
 
         if ($request->filled('username')) {
             $request->merge(['username' => strtolower(trim($request->input('username')))]);
@@ -65,7 +65,7 @@ class EmployeeController extends Controller
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'username' => 'required|string|max:50|alpha_dash|unique:users,username',
-            'email' => 'required|email|unique:users,email',
+            'email' => ['nullable', 'email', 'max:255', Rule::unique('users', 'email')],
             'phone' => 'nullable|string|max:30',
             'password' => 'required|string|min:8|confirmed',
             'role' => ['required', Rule::in($roles)],
@@ -90,7 +90,7 @@ class EmployeeController extends Controller
     {
         $this->authorize('update', $employee);
 
-        $roles = $this->employeeService->assignableRoles(auth()->user());
+        $roles = $this->employeeService->assignableRoles(auth()->user(), $business);
         $branches = $this->employeeService->branchOptions($business, auth()->user());
 
         return view('staff.edit', compact('employee', 'roles', 'branches'));
@@ -100,11 +100,11 @@ class EmployeeController extends Controller
     {
         $this->authorize('update', $employee);
 
-        $roles = $this->employeeService->assignableRoles($request->user());
+        $roles = $this->employeeService->assignableRoles($request->user(), $business);
 
         $data = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => ['required', 'email', Rule::unique('users', 'email')->ignore($employee->id)],
+            'email' => ['nullable', 'email', 'max:255', Rule::unique('users', 'email')->ignore($employee->id)],
             'phone' => 'nullable|string|max:30',
             'password' => 'nullable|string|min:8|confirmed',
             'role' => ['required', Rule::in($roles)],
@@ -120,7 +120,7 @@ class EmployeeController extends Controller
         $old = $employee->toArray();
 
         $employee->name = $data['name'];
-        $employee->email = $data['email'];
+        $employee->email = ! empty($data['email']) ? $data['email'] : null;
         $employee->phone = $data['phone'] ?? null;
         $employee->role = $data['role'];
         $this->employeeService->updateBranch($request->user(), $employee, $business, $data);

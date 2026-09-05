@@ -14,20 +14,43 @@
 </x-page-header>
 
 <div class="mb-4">
-    <label for="inventory-search" class="sr-only">Search products</label>
-    <div class="relative">
-        <svg class="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-        </svg>
-        <input type="search" id="inventory-search" name="search" value="{{ $search ?? '' }}"
-               placeholder="Search by name, SKU, or notes…"
-               autocomplete="off"
-               class="w-full rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-4 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-stretch">
+        <label for="inventory-search" class="sr-only">Search products</label>
+        <div class="relative min-w-0 flex-1">
+            <svg class="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <input type="search" id="inventory-search" name="search" value="{{ $search ?? '' }}"
+                   placeholder="Search by name, SKU, or notes…"
+                   autocomplete="off"
+                   class="w-full rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-4 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
+        </div>
+        @if(auth()->user()->isOwner() && $branches->isNotEmpty())
+            <form method="GET" action="{{ tenant_route('tenant.inventory.index') }}" class="shrink-0 sm:w-52">
+                @if(!empty($search))
+                    <input type="hidden" name="search" value="{{ $search }}">
+                @endif
+                <label for="inventory-branch" class="sr-only">Branch</label>
+                <select id="inventory-branch" name="branch_id" onchange="this.form.submit()"
+                        class="h-full w-full rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
+                    <option value="">All branches</option>
+                    @foreach($branches as $id => $name)
+                        <option value="{{ $id }}" @selected((int) ($branchId ?? 0) === (int) $id)>{{ $name }}</option>
+                    @endforeach
+                </select>
+            </form>
+        @endif
     </div>
-    @if(!empty($search))
+    @if(!empty($search) || !empty($branchId))
         <p class="mt-2 text-xs text-gray-500">
-            Showing results for “{{ $search }}”.
-            <a href="{{ tenant_route('tenant.inventory.index') }}" class="font-medium text-emerald-600 hover:text-emerald-700">Clear search</a>
+            @if(!empty($branchId))
+                Showing products for <strong>{{ $branches[$branchId] ?? 'selected branch' }}</strong>.
+            @endif
+            @if(!empty($search))
+                @if(!empty($branchId)) · @endif
+                Results for “{{ $search }}”.
+            @endif
+            <a href="{{ tenant_route('tenant.inventory.index') }}" class="font-medium text-emerald-600 hover:text-emerald-700">Clear filters</a>
         </p>
     @endif
 </div>
@@ -200,7 +223,21 @@
     if (!input) return;
 
     var baseUrl = @json(tenant_route('tenant.inventory.index'));
+    var branchId = @json($branchId ?? null);
     var timer = null;
+
+    function buildInventoryUrl(search) {
+        var params = new URLSearchParams();
+        var trimmed = search.trim();
+        if (trimmed) {
+            params.set('search', trimmed);
+        }
+        if (branchId) {
+            params.set('branch_id', branchId);
+        }
+        var query = params.toString();
+        return baseUrl + (query ? '?' + query : '');
+    }
 
     function filterVisible(query) {
         var q = query.toLowerCase().trim();
@@ -216,7 +253,7 @@
         clearTimeout(timer);
         timer = setTimeout(function () {
             var trimmed = value.trim();
-            var target = baseUrl + (trimmed ? '?search=' + encodeURIComponent(trimmed) : '');
+            var target = buildInventoryUrl(value);
             var current = window.location.pathname + window.location.search;
             var next = new URL(target, window.location.origin).pathname + new URL(target, window.location.origin).search;
             if (current !== next && (trimmed.length >= 2 || trimmed === '')) {
@@ -230,7 +267,7 @@
             e.preventDefault();
             clearTimeout(timer);
             var value = input.value.trim();
-            window.location.href = baseUrl + (value ? '?search=' + encodeURIComponent(value) : '');
+            window.location.href = buildInventoryUrl(value);
         }
     });
 })();

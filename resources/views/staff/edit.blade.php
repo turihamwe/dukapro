@@ -17,7 +17,7 @@
         @method('PUT')
         <x-input type="text" name="name" label="Full name" value="{{ old('name', $employee->name) }}" required />
         <div class="grid gap-4 sm:grid-cols-2">
-            <x-input type="email" name="email" label="Email" value="{{ old('email', $employee->email) }}" required />
+            <x-input type="email" name="email" label="Email" value="{{ old('email', $employee->email) }}" hint="Optional — staff can sign in with username." />
             <x-input type="text" name="phone" label="Phone" value="{{ old('phone', $employee->phone) }}" />
         </div>
         <div>

@@ -17,7 +17,7 @@
             <x-input type="text" name="name" label="Full name" required />
             <x-input type="text" name="username" label="Username" value="{{ old('username') }}" required hint="Simple login name for this staff member." />
             <div class="grid gap-4 sm:grid-cols-2">
-            <x-input type="email" name="email" label="Email" required />
+            <x-input type="email" name="email" label="Email" hint="Optional — staff can sign in with username." />
             <x-input type="text" name="phone" label="Phone" />
         </div>
         <div>

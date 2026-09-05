@@ -21,14 +21,65 @@ class WaiterShiftService
         $this->debtLedgerService = $debtLedgerService;
     }
 
-    public function floorStaff(Business $business): Collection
+    public function floorStaff(Business $business, ?User $forUser = null): Collection
     {
-        return User::query()
+        $query = User::query()
             ->where('business_id', $business->id)
             ->where('is_active', true)
-            ->whereIn('role', UserRole::staffRoles())
-            ->orderBy('name')
-            ->get(['id', 'name', 'role', 'username']);
+            ->where('is_super_admin', false)
+            ->where('is_sub_admin', false)
+            ->whereIn('role', UserRole::floorStaffRoles())
+            ->orderBy('name');
+
+        if ($forUser && $forUser->isBranchScoped() && $forUser->branch_id) {
+            $query->where('branch_id', $forUser->branch_id);
+        }
+
+        return $query->get(['id', 'name', 'role', 'username', 'branch_id']);
+    }
+
+    public function isFloorStaffMember(User $user): bool
+    {
+        return (bool) $user->business_id
+            && $user->is_active
+            && ! $user->isPlatformAdmin()
+            && UserRole::isFloorStaff((string) $user->role);
+    }
+
+    /**
+     * Resolve and validate a waiter/floor-staff assignment for POS or shift balancing.
+     *
+     * @throws ValidationException
+     */
+    public function resolveAssignableFloorStaff(Business $business, User $assigner, int $waiterUserId): User
+    {
+        $waiter = User::query()
+            ->where('business_id', $business->id)
+            ->where('id', $waiterUserId)
+            ->where('is_active', true)
+            ->first();
+
+        if (! $waiter || ! $this->isFloorStaffMember($waiter)) {
+            throw ValidationException::withMessages([
+                'waiter_id' => 'Select a valid waiter or floor staff member.',
+            ]);
+        }
+
+        if (UserRole::hierarchyRank($waiter->role) < UserRole::hierarchyRank($assigner->role)) {
+            throw ValidationException::withMessages([
+                'waiter_id' => 'You cannot assign orders to management or supervisory staff.',
+            ]);
+        }
+
+        if ($assigner->isBranchScoped() && $assigner->branch_id) {
+            if ((int) $waiter->branch_id !== (int) $assigner->branch_id) {
+                throw ValidationException::withMessages([
+                    'waiter_id' => 'You can only assign orders to floor staff in your branch.',
+                ]);
+            }
+        }
+
+        return $waiter;
     }
 
     public function waitersWithOrders(int $businessId, Carbon $date): Collection
@@ -70,10 +121,15 @@ class WaiterShiftService
         ];
     }
 
-    public function summarizeShift(Business $business, Carbon $date): array
+    public function summarizeShift(Business $business, Carbon $date, ?User $forUser = null): array
     {
-        $staff = $this->floorStaff($business);
-        $waiterIds = $this->waitersWithOrders($business->id, $date);
+        $staff = $this->floorStaff($business, $forUser);
+        $waiterIds = $this->waitersWithOrders($business->id, $date)
+            ->filter(function ($waiterId) use ($business) {
+                $user = User::query()->find($waiterId);
+
+                return $user && $this->isFloorStaffMember($user);
+            });
 
         $rows = $staff->map(function (User $waiter) use ($business, $date, $waiterIds) {
             $summary = $this->calculateWaiterSummary($business->id, $waiter->id, $date);
@@ -116,6 +172,8 @@ class WaiterShiftService
                 if ($waiterId <= 0) {
                     continue;
                 }
+
+                $this->resolveAssignableFloorStaff($business, $cashier, $waiterId);
 
                 $expected = $this->calculateWaiterSummary($business->id, $waiterId, $date);
                 if ($expected['expected_mobile_unspecified'] > 0) {

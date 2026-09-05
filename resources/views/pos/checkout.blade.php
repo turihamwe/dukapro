@@ -53,10 +53,12 @@
                     <span id="cartTotal" class="text-xl font-bold text-gray-900">0.00</span>
                 </div>                @if($waiterMode ?? false)
                     <x-select id="waiterId" label="Waiter / Floor Staff" required>
-                        <option value="">Select staff member</option>
-                        @foreach($floorStaff as $staff)
-                            <option value="{{ $staff->id }}">{{ $staff->name }} ({{ ucfirst($staff->role) }})</option>
-                        @endforeach
+                        <option value="">Select floor staff</option>
+                        @forelse($floorStaff as $staff)
+                            <option value="{{ $staff->id }}">{{ $staff->name }} ({{ \App\Enums\UserRole::floorStaffLabel($staff->role) }})</option>
+                        @empty
+                            <option value="" disabled>No floor staff available in your branch</option>
+                        @endforelse
                     </x-select>
                 @endif
 

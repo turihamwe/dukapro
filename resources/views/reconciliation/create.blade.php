@@ -29,7 +29,7 @@
                 </div>
                 <div>
                     <p class="text-xs text-gray-500">Total sales</p>
-                    <p class="text-lg font-semibold text-gray-900">{{ $expected['sale_count'] }}</p>
+                    <p class="text-lg font-semibold text-gray-900">@money($expected['user_total_sales'])</p>
                 </div>
             </div>
         </div>
