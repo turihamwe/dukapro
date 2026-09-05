@@ -1,5 +1,6 @@
 @php
     $moduleKey = $moduleKey ?? '';
+    $inputId = $inputId ?? null;
     $capability = $capability ?? [];
     $moduleEnabled = (bool) old("modules.{$moduleKey}.enabled", $capability['enabled'] ?? false);
     $styles = $styles ?? [
@@ -16,6 +17,7 @@
     <label class="flex items-start gap-3">
         <input type="hidden" name="modules[{{ $moduleKey }}][enabled]" value="0">
         <input type="checkbox" name="modules[{{ $moduleKey }}][enabled]" value="1"
+               @if($inputId) id="{{ $inputId }}" @endif
                class="mt-1 rounded border-gray-300 {{ $styles['checkbox'] }}"
                {{ $moduleEnabled ? 'checked' : '' }}>
         <span class="min-w-0 flex-1">

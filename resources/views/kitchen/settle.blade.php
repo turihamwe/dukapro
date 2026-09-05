@@ -34,7 +34,7 @@
                 <option value="cash">Cash</option>
                 <option value="mobile_money">Mobile Money</option>
                 <option value="bank">Bank / other</option>
-                @if($business->usesWaiterAssignment())
+                @if($business->usesMultiWaiterAttribution())
                     <option value="credit">Credit tab (unpaid)</option>
                 @endif
             </select>

@@ -27,7 +27,7 @@ class OnboardingService
             'catalog_route' => 'tenant.inventory.create',
             'staff_cta' => $isHospitality ? 'Set up branch staff' : 'Add employees',
             'staff_hint' => $isHospitality
-                ? 'Add waiters, kitchen staff, and cashiers — each tied to a branch.'
+                ? 'Add waiters, kitchen staff, and cashiers — each tied to a branch. Running alone? You act as cashier at the till (enable Cashier Mode) — no separate waiter staff needed.'
                 : 'Create accounts for managers, supervisors, and cashiers.',
             'welcome_subtitle' => $isHospitality
                 ? 'Set up your menu and branch team to start taking orders.'
@@ -56,6 +56,13 @@ class OnboardingService
         $business->update([
             'sole_proprietor' => true,
             'employees_onboarding_complete' => true,
+        ]);
+
+        $moduleService = app(BusinessModuleService::class);
+        $floor = $moduleService->floorSettings($business);
+        $moduleService->syncFloorSettings($business->fresh(), [
+            'use_waiters' => false,
+            'use_tables' => $floor['use_tables'],
         ]);
     }
 }

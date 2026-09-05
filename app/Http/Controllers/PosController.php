@@ -34,7 +34,7 @@ class PosController extends Controller
         $waiterMode = $business->usesWaiterAssignment();
         $restaurantMode = $business->usesRestaurantMode();
         $isHospitality = $business->isHospitality();
-        $useRestaurantTables = $business->hasRestaurantTablesSetting();
+        $useRestaurantTables = $business->usesTableSeating();
         $restaurantTables = $useRestaurantTables
             ? app(\App\Services\RestaurantTableService::class)->optionsForOrder($request->user())
             : [];

@@ -22,7 +22,7 @@ class WaiterShiftController extends Controller
     public function index(Request $request)
     {
         $business = $request->user()->business;
-        abort_unless($business->usesShiftBalancing(), 404);
+        abort_unless($business->usesPerWaiterShiftBalancing(), 404);
 
         $date = Carbon::parse($request->get('date', Carbon::today()->toDateString()));
         $shift = $this->waiterShiftService->summarizeShift($business, $date, $request->user());
@@ -32,7 +32,7 @@ class WaiterShiftController extends Controller
 
     public function show(Request $request, Business $business, User $waiter)
     {
-        abort_unless($business->usesShiftBalancing(), 404);
+        abort_unless($business->usesPerWaiterShiftBalancing(), 404);
         abort_unless((int) $waiter->business_id === (int) $business->id, 404);
         abort_unless($this->waiterShiftService->isFloorStaffMember($waiter), 404);
 
@@ -55,7 +55,7 @@ class WaiterShiftController extends Controller
     public function balanceAll(Request $request)
     {
         $business = $request->user()->business;
-        abort_unless($business->usesShiftBalancing(), 404);
+        abort_unless($business->usesPerWaiterShiftBalancing(), 404);
 
         $data = $request->validate([
             'shift_date' => 'required|date',
@@ -79,7 +79,7 @@ class WaiterShiftController extends Controller
 
     public function settleCredit(Request $request, Business $business, Sale $sale)
     {
-        abort_unless($business->usesShiftBalancing(), 404);
+        abort_unless($business->usesPerWaiterShiftBalancing(), 404);
         abort_unless((int) $sale->business_id === (int) $business->id, 404);
 
         $data = $request->validate([

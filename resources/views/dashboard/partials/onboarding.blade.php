@@ -30,7 +30,7 @@
         <p class="mt-4 max-w-md text-xs text-gray-500">{{ $onboarding['staff_hint'] }}</p>
         <form method="POST" action="{{ tenant_route('tenant.onboarding.sole-proprietor') }}" class="mt-3">
             @csrf
-            <button type="submit" class="text-xs font-medium text-gray-500 underline hover:text-gray-700">I'm running this alone for now</button>
+            <button type="submit" class="text-xs font-medium text-gray-500 underline hover:text-gray-700">I'm running this alone — I'll act as cashier</button>
         </form>
     @endif
 </div>

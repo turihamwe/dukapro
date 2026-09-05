@@ -165,7 +165,7 @@ Route::middleware(['maintenance'])->group(function () {
                         Route::delete('/{branch}', [BranchController::class, 'destroy'])->name('destroy');
                     });
 
-                    Route::middleware(['can:manage-restaurant-tables', 'module:restaurant'])->prefix('restaurant-tables')->name('restaurant-tables.')->group(function () {
+                    Route::middleware(['can:manage-floor-tables'])->prefix('restaurant-tables')->name('restaurant-tables.')->group(function () {
                         Route::get('/', [RestaurantTableController::class, 'index'])->name('index');
                         Route::get('/create', [RestaurantTableController::class, 'create'])->name('create');
                         Route::post('/', [RestaurantTableController::class, 'store'])->name('store');
@@ -304,7 +304,7 @@ Route::middleware(['maintenance'])->group(function () {
                     Route::post('/checkout', [PosController::class, 'checkout'])->name('checkout');
                 });
 
-                Route::middleware(['can:access-bar-shift'])->prefix('waiter-shift')->name('waiter-shift.')->group(function () {
+                Route::middleware(['can:access-waiter-shift-balancing'])->prefix('waiter-shift')->name('waiter-shift.')->group(function () {
                     Route::get('/', [WaiterShiftController::class, 'index'])->name('index');
                     Route::post('/balance-all', [WaiterShiftController::class, 'balanceAll'])->name('balance-all');
                     Route::get('/waiters/{waiter}', [WaiterShiftController::class, 'show'])->name('show');

@@ -11,7 +11,7 @@
     $businessTypeLabel = BusinessType::label($business->business_type);
     $moduleRegistry = app(\App\Modules\ModuleRegistry::class);
     $moduleFootnotes = [
-        ModuleKeys::BAR_SHIFT => 'Turn on for a bar or pub with no kitchen. Waiters are included automatically — you don\'t need Restaurant Mode.',
+        ModuleKeys::BAR_SHIFT => 'Turn on for a bar or pub with no kitchen. Use Floor service below for waiters and tables.',
         ModuleKeys::CATALOG_VARIANTS => 'New products can use size/color variants. You can still toggle variants per product on the add/edit form.',
     ];
     $moduleStyles = [
@@ -28,6 +28,9 @@
             'badge' => 'bg-indigo-100 text-indigo-800',
         ],
     ];
+    $restaurantEnabled = (bool) old('modules.restaurant.enabled', ($capabilities[ModuleKeys::RESTAURANT]['enabled'] ?? false));
+    $barEnabled = (bool) old('modules.bar_shift.enabled', ($capabilities[ModuleKeys::BAR_SHIFT]['enabled'] ?? false));
+    $floorEnabled = $restaurantEnabled || $barEnabled;
 @endphp
 
 <x-page-header title="Business Profile" subtitle="Update your store information and capabilities" />
@@ -78,13 +81,8 @@
             <div class="space-y-4">
                 @foreach($moduleRegistry->all() as $moduleKey => $definition)
                     @if($moduleKey === ModuleKeys::RESTAURANT)
-                        @php
-                            $restaurant = $capabilities[$moduleKey] ?? [];
-                            $restaurantEnabled = (bool) old('modules.restaurant.enabled', $restaurant['enabled'] ?? false);
-                            $tablesEnabled = (bool) old('modules.restaurant.use_tables', $restaurant['settings']['use_tables'] ?? false);
-                            $waitersEnabled = (bool) old('modules.restaurant.use_waiters', $restaurant['settings']['use_waiters'] ?? false);
-                        @endphp
-                        <div class="rounded-xl border border-orange-200 bg-orange-50 p-4 space-y-4">
+                        @php $restaurant = $capabilities[$moduleKey] ?? []; @endphp
+                        <div class="rounded-xl border border-orange-200 bg-orange-50 p-4">
                             <label class="flex items-start gap-3">
                                 <input type="hidden" name="modules[restaurant][enabled]" value="0">
                                 <input type="checkbox" name="modules[restaurant][enabled]" value="1" id="restaurant_mode_enabled"
@@ -99,16 +97,11 @@
                                     @include('business._module-billing-badge', ['capability' => $restaurant, 'billing' => $restaurant['billing'] ?? []])
                                 </span>
                             </label>
-                            @include('business._restaurant-module-options', [
-                                'restaurantEnabled' => $restaurantEnabled,
-                                'tablesEnabled' => $tablesEnabled,
-                                'waitersEnabled' => $waitersEnabled,
-                                'showManageTablesLink' => true,
-                            ])
                         </div>
                     @else
                         @include('business._capability-module', [
                             'moduleKey' => $moduleKey,
+                            'inputId' => $moduleKey === ModuleKeys::BAR_SHIFT ? 'bar_shift_mode_enabled' : null,
                             'capability' => $capabilities[$moduleKey] ?? [
                                 'label' => $definition->label(),
                                 'description' => $definition->description(),
@@ -126,6 +119,12 @@
                         ])
                     @endif
                 @endforeach
+
+                @include('business._floor-service-options', [
+                    'floor' => $floor ?? $business->floorSettings(),
+                    'floorEnabled' => $floorEnabled,
+                    'showManageTablesLink' => true,
+                ])
             </div>
         </div>
 

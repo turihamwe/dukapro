@@ -391,6 +391,7 @@ class EntityController extends Controller
         if ($entity === 'businesses') {
             $item->load('businessModules');
             $capabilities = app(BusinessModuleService::class)->capabilityStates($item);
+            $floor = app(BusinessModuleService::class)->floorSettings($item);
         }
 
         $promotionUser = $entity === 'users' ? $item : null;
@@ -407,6 +408,7 @@ class EntityController extends Controller
             'defaultPromotionShares' => config('shareholders.default_promotion_shares', 1),
             'remainingShares' => $this->allocationService->remainingShares(),
             'capabilities' => $entity === 'businesses' ? ($capabilities ?? []) : [],
+            'floor' => $entity === 'businesses' ? ($floor ?? []) : [],
             'businessTab' => $entity === 'businesses' ? request('tab', 'details') : 'details',
         ]);
     }

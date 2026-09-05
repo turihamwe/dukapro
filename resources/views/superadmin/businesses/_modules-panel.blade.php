@@ -13,8 +13,11 @@
     ];
     $moduleRegistry = app(\App\Modules\ModuleRegistry::class);
     $moduleFootnotes = [
-        ModuleKeys::BAR_SHIFT => 'Turn on for a bar or pub with no kitchen. Waiters are included automatically.',
+        ModuleKeys::BAR_SHIFT => 'Turn on for a bar or pub with no kitchen. Configure waiters and tables in Floor service below.',
     ];
+    $restaurantEnabled = (bool) old('modules.restaurant.enabled', ($capabilities[ModuleKeys::RESTAURANT]['enabled'] ?? false));
+    $barEnabled = (bool) old('modules.bar_shift.enabled', ($capabilities[ModuleKeys::BAR_SHIFT]['enabled'] ?? false));
+    $floorEnabled = $restaurantEnabled || $barEnabled;
     $moduleStyles = [
         ModuleKeys::BAR_SHIFT => [
             'border' => 'border-violet-200',
@@ -74,12 +77,9 @@
                     @if($moduleKey === ModuleKeys::RESTAURANT)
                         @php
                             $restaurant = $capabilities[$moduleKey] ?? [];
-                            $restaurantEnabled = (bool) old('modules.restaurant.enabled', $restaurant['enabled'] ?? false);
-                            $tablesEnabled = (bool) old('modules.restaurant.use_tables', $restaurant['settings']['use_tables'] ?? false);
-                            $waitersEnabled = (bool) old('modules.restaurant.use_waiters', $restaurant['settings']['use_waiters'] ?? false);
                             $restaurantRecord = $moduleRecords->get(ModuleKeys::RESTAURANT);
                         @endphp
-                        <div class="rounded-xl border border-orange-200 bg-white p-4 space-y-4">
+                        <div class="rounded-xl border border-orange-200 bg-white p-4 space-y-3">
                             <label class="flex items-start gap-3">
                                 <input type="hidden" name="modules[restaurant][enabled]" value="0">
                                 <input type="checkbox" name="modules[restaurant][enabled]" value="1" id="restaurant_mode_enabled"
@@ -100,12 +100,6 @@
                                     @endif
                                 </span>
                             </label>
-                            @include('business._restaurant-module-options', [
-                                'restaurantEnabled' => $restaurantEnabled,
-                                'tablesEnabled' => $tablesEnabled,
-                                'waitersEnabled' => $waitersEnabled,
-                                'showManageTablesLink' => false,
-                            ])
                             @if(BillingMode::isAddons() && ! old('billing_grandfathered', $business->billing_grandfathered))
                                 @php $restaurantBilling = $capabilities[ModuleKeys::RESTAURANT]['billing'] ?? []; @endphp
                                 @if($restaurantBilling['billable'] ?? false)
@@ -128,6 +122,7 @@
                         @endphp
                         @include('business._capability-module', [
                             'moduleKey' => $moduleKey,
+                            'inputId' => $moduleKey === ModuleKeys::BAR_SHIFT ? 'bar_shift_mode_enabled' : null,
                             'capability' => $capabilities[$moduleKey] ?? [
                                 'label' => $definition->label(),
                                 'description' => $definition->description(),
@@ -161,6 +156,12 @@
                         @endif
                     @endif
                 @endforeach
+
+                @include('business._floor-service-options', [
+                    'floor' => $floor ?? $business->floorSettings(),
+                    'floorEnabled' => $floorEnabled,
+                    'showManageTablesLink' => false,
+                ])
             </div>
 
             <div>

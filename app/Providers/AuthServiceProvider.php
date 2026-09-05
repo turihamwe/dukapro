@@ -194,20 +194,28 @@ class AuthServiceProvider extends ServiceProvider
             return $user->can('settle-kitchen-orders');
         });
 
-        Gate::define('manage-restaurant-tables', function (User $user) {
-            if (! $user->business || ! $user->business->hasModule(ModuleKeys::RESTAURANT)) {
+        Gate::define('manage-floor-tables', function (User $user) {
+            if (! $user->business || ! $user->business->usesTableSeating()) {
                 return false;
             }
 
             return $user->isOwner() || $user->isManager();
         });
 
-        Gate::define('access-bar-shift', function (User $user) {
-            if (! $user->business || ! $user->business->usesShiftBalancing()) {
+        Gate::define('manage-restaurant-tables', function (User $user) {
+            return Gate::forUser($user)->allows('manage-floor-tables');
+        });
+
+        Gate::define('access-waiter-shift-balancing', function (User $user) {
+            if (! $user->business || ! $user->business->usesPerWaiterShiftBalancing()) {
                 return false;
             }
 
             return $user->can('access-pos');
+        });
+
+        Gate::define('access-bar-shift', function (User $user) {
+            return Gate::forUser($user)->allows('access-waiter-shift-balancing');
         });
 
         Gate::define('use-catalog-variants', function (User $user) {

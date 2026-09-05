@@ -173,7 +173,7 @@ class ReconciliationService
     {
         $reconciliation = $this->submit($user, $data);
 
-        if ($user->business->usesShiftBalancing() && ! empty($data['bundle_waiter_balances'])) {
+        if ($user->business->usesPerWaiterShiftBalancing() && ! empty($data['bundle_waiter_balances'])) {
             $date = Carbon::parse($data['reconciliation_date']);
             $this->waiterShiftService->attachBalancesToReconciliation(
                 $user->business_id,
@@ -193,7 +193,7 @@ class ReconciliationService
         return array_merge($summary, [
             'reconciliation' => $reconciliation,
             'date' => $date,
-            'waiter_balances' => $reconciliation->business->usesShiftBalancing()
+            'waiter_balances' => $reconciliation->business->usesPerWaiterShiftBalancing()
                 ? $this->waiterShiftService->balancesForDate($reconciliation->business_id, $date)
                 : collect(),
         ]);

@@ -19,7 +19,7 @@ class WaiterOrderController extends Controller
     public function index(Request $request)
     {
         $business = $request->user()->business;
-        $useRestaurantTables = $business->hasRestaurantTablesSetting();
+        $useRestaurantTables = $business->usesTableSeating();
         $restaurantTables = $useRestaurantTables
             ? app(\App\Services\RestaurantTableService::class)->optionsForOrder($request->user())
             : [];

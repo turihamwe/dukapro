@@ -69,7 +69,7 @@
         <p class="-mt-2 text-xs text-gray-500">Record any unexpected cash found separately — it improves balancing and is kept on file for future shortage offsets.</p>
         <x-textarea name="notes" label="Notes" rows="2" placeholder="Explain any missing money...">{{ old('notes') }}</x-textarea>
 
-        @can('access-bar-shift')
+        @can('access-waiter-shift-balancing')
             <div class="rounded-xl border border-violet-200 bg-violet-50 p-4 text-sm">
                 <div class="flex flex-wrap items-start justify-between gap-2">
                     <div>

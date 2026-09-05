@@ -125,29 +125,83 @@ class Business extends Model
 
     public function usesShiftWaiterMode(): bool
     {
-        return $this->hasModule(ModuleKeys::BAR_SHIFT);
+        return $this->hasModuleEnabled(ModuleKeys::BAR_SHIFT);
     }
 
-    public function hasRestaurantWaitersSetting(): bool
+    public function usesBarPubMode(): bool
     {
-        if (! $this->usesRestaurantMode()) {
-            return false;
-        }
+        return $this->usesShiftWaiterMode();
+    }
 
-        return (bool) $this->moduleSetting(ModuleKeys::RESTAURANT, 'use_waiters', false);
+    public function usesHospitalityFloor(): bool
+    {
+        return app(BusinessModuleService::class)->usesHospitalityFloor($this);
     }
 
     /**
-     * Waiter picker at POS, sale attribution, and shift balancing.
+     * @return array{use_waiters: bool, use_tables: bool}
+     */
+    public function floorSettings(): array
+    {
+        return app(BusinessModuleService::class)->floorSettings($this);
+    }
+
+    public function floorUseWaiters(): bool
+    {
+        return $this->usesHospitalityFloor() && ($this->floorSettings()['use_waiters'] ?? false);
+    }
+
+    public function floorUseTables(): bool
+    {
+        return $this->usesHospitalityFloor() && ($this->floorSettings()['use_tables'] ?? false);
+    }
+
+    /**
+     * Multiple floor staff — POS waiter picker and per-waiter shift balances.
+     */
+    public function usesMultiWaiterAttribution(): bool
+    {
+        return $this->floorUseWaiters();
+    }
+
+    /**
+     * Per-waiter float balancing before EOD bundle (not the same as cashier shift close).
+     */
+    public function usesPerWaiterShiftBalancing(): bool
+    {
+        return $this->usesMultiWaiterAttribution();
+    }
+
+    /**
+     * Cashier shift close (EOD) — always available where reconciliation is permitted.
+     */
+    public function usesCashierShiftReconciliation(): bool
+    {
+        return true;
+    }
+
+    /** @deprecated Use usesMultiWaiterAttribution() */
+    public function hasRestaurantWaitersSetting(): bool
+    {
+        return $this->floorUseWaiters() && $this->usesRestaurantMode();
+    }
+
+    /**
+     * Waiter picker at POS and sale attribution to floor staff.
+     *
+     * @deprecated Use usesMultiWaiterAttribution()
      */
     public function usesWaiterAssignment(): bool
     {
-        return $this->usesShiftWaiterMode() || $this->hasRestaurantWaitersSetting();
+        return $this->usesMultiWaiterAttribution();
     }
 
+    /**
+     * @deprecated Use usesPerWaiterShiftBalancing()
+     */
     public function usesShiftBalancing(): bool
     {
-        return $this->usesWaiterAssignment();
+        return $this->usesPerWaiterShiftBalancing();
     }
 
     public function usesRestaurantMode(): bool
@@ -155,19 +209,21 @@ class Business extends Model
         return $this->hasModule(ModuleKeys::RESTAURANT);
     }
 
-    public function usesRestaurantTables(): bool
+    public function usesTableSeating(): bool
     {
-        return $this->usesRestaurantMode()
-            && $this->hasRestaurantTablesSetting();
+        return $this->floorUseTables();
     }
 
+    /** @deprecated Use usesTableSeating() */
+    public function usesRestaurantTables(): bool
+    {
+        return $this->usesTableSeating();
+    }
+
+    /** @deprecated Use floorUseTables() */
     public function hasRestaurantTablesSetting(): bool
     {
-        if (! $this->usesRestaurantMode()) {
-            return false;
-        }
-
-        return (bool) $this->moduleSetting(ModuleKeys::RESTAURANT, 'use_tables', false);
+        return $this->floorUseTables();
     }
 
     public function isHospitality(): bool

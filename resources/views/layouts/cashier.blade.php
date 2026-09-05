@@ -31,7 +31,7 @@ has-cashier-bottom-nav
     if (auth()->user()->can('access-pos')) {
         $navCols++;
     }
-    if (auth()->user()->can('access-bar-shift')) {
+    if (auth()->user()->can('access-waiter-shift-balancing')) {
         $navCols++;
     }
     if (auth()->user()->can('view-restaurant-orders')) {
@@ -82,7 +82,7 @@ has-cashier-bottom-nav
                     <span class="mb-0.5 text-xl leading-none">🛒</span> POS
                 </a>
             @endcan
-            @can('access-bar-shift')
+            @can('access-waiter-shift-balancing')
                 <a href="{{ tenant_route('tenant.waiter-shift.index') }}"
                    class="flex min-h-[56px] flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-semibold {{ request()->routeIs('tenant.waiter-shift.*') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600' }}">
                     <span class="mb-0.5 text-xl leading-none">🍽</span> Waiters

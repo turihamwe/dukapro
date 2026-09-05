@@ -26,6 +26,8 @@ class BusinessModuleController extends Controller
             'modules.catalog_variants.enabled' => 'nullable|boolean',
             'modules.*.billing_comped' => 'nullable|boolean',
             'billing_grandfathered' => 'nullable|boolean',
+            'floor.use_waiters' => 'nullable|boolean',
+            'floor.use_tables' => 'nullable|boolean',
             'note' => 'nullable|string|max:500',
         ]);
 
@@ -34,7 +36,8 @@ class BusinessModuleController extends Controller
         $moduleService->updateSuperadminModules(
             $businessModel,
             $data['modules'],
-            $request->boolean('billing_grandfathered')
+            $request->boolean('billing_grandfathered'),
+            $request->input('floor', [])
         );
 
         $after = $moduleService->capabilityStates($businessModel->fresh());

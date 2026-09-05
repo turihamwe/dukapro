@@ -19,8 +19,9 @@ class BusinessSettingsController extends Controller
     {
         $business = $request->user()->business->load('businessModules');
         $capabilities = app(BusinessModuleService::class)->capabilityStates($business);
+        $floor = app(BusinessModuleService::class)->floorSettings($business);
 
-        return view('business.settings', compact('business', 'capabilities'));
+        return view('business.settings', compact('business', 'capabilities', 'floor'));
     }
 
     public function update(Request $request)
@@ -43,6 +44,8 @@ class BusinessSettingsController extends Controller
             'modules.*.enabled' => 'nullable|boolean',
             'modules.bar_shift.enabled' => 'nullable|boolean',
             'modules.catalog_variants.enabled' => 'nullable|boolean',
+            'floor.use_waiters' => 'nullable|boolean',
+            'floor.use_tables' => 'nullable|boolean',
         ]);
 
         $old = $business->toArray();
@@ -74,6 +77,11 @@ class BusinessSettingsController extends Controller
             $business->fresh(),
             app(BusinessModuleService::class)->capabilitiesFromModulesInput($request->input('modules', [])),
             BusinessModuleService::SOURCE_OWNER
+        );
+
+        app(BusinessModuleService::class)->syncFloorSettings(
+            $business->fresh(),
+            $request->input('floor', [])
         );
 
         AuditLogger::record('business_updated', $business, $old, $business->fresh()->toArray());

@@ -209,6 +209,6 @@
 @endif
 
 @if($entity === 'businesses' && $businessTab === 'modules')
-    @include('superadmin.businesses._modules-panel', ['business' => $item, 'capabilities' => $capabilities ?? []])
+    @include('superadmin.businesses._modules-panel', ['business' => $item, 'capabilities' => $capabilities ?? [], 'floor' => $floor ?? []])
 @endif
 @endsection

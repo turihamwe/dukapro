@@ -69,6 +69,11 @@ class TenantRegistrationService
                 BusinessModuleService::SOURCE_PRESET
             );
 
+            app(BusinessModuleService::class)->syncFloorSettings($business->fresh(), [
+                'use_waiters' => false,
+                'use_tables' => false,
+            ]);
+
             return User::create([
                 'business_id' => $business->id,
                 'name' => $data['name'],

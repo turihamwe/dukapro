@@ -21,7 +21,7 @@ class BarShiftModule implements ModuleDefinition
 
     public function description(): string
     {
-        return 'For bars and pubs without a kitchen. Waiters and shift balancing are always included — no extra toggle.';
+        return 'For bars and pubs without a kitchen. Configure waiters and tables below — shift close always applies via the cashier.';
     }
 
     public function defaultEnabledFor(Business $business): bool
@@ -31,6 +31,9 @@ class BarShiftModule implements ModuleDefinition
 
     public function defaultSettingsFor(Business $business): array
     {
-        return [];
+        return [
+            'use_waiters' => false,
+            'use_tables' => false,
+        ];
     }
 }

@@ -123,14 +123,6 @@ class BusinessModuleService
             $enabled = (bool) ($payload['enabled'] ?? false);
             $settings = $this->settings($business, $moduleKey);
 
-            if ($moduleKey === ModuleKeys::RESTAURANT) {
-                $restaurantEnabled = (bool) ($payload['enabled'] ?? false);
-                $settings['use_tables'] = $restaurantEnabled
-                    && (bool) ($payload['use_tables'] ?? ($settings['use_tables'] ?? false));
-                $settings['use_waiters'] = $restaurantEnabled
-                    && (bool) ($payload['use_waiters'] ?? ($settings['use_waiters'] ?? false));
-            }
-
             BusinessModule::query()->updateOrCreate(
                 [
                     'business_id' => $business->id,
@@ -152,13 +144,15 @@ class BusinessModuleService
     /**
      * @param  array<string, array<string, mixed>>  $modulesInput
      */
-    public function updateSuperadminModules(Business $business, array $modulesInput, bool $billingGrandfathered): void
+    public function updateSuperadminModules(Business $business, array $modulesInput, bool $billingGrandfathered, array $floorInput = []): void
     {
         $this->updateCapabilities(
             $business,
             $this->capabilitiesFromModulesInput($modulesInput),
             self::SOURCE_SUPERADMIN
         );
+
+        $this->syncFloorSettings($business->fresh(), $floorInput);
 
         $business->update(['billing_grandfathered' => $billingGrandfathered]);
 
@@ -205,14 +199,126 @@ class BusinessModuleService
         return $capabilities;
     }
 
+    public function usesHospitalityFloor(Business $business): bool
+    {
+        return $this->isEnabled($business, ModuleKeys::RESTAURANT)
+            || $this->isEnabled($business, ModuleKeys::BAR_SHIFT);
+    }
+
+    /**
+     * @return array{use_waiters: bool, use_tables: bool}
+     */
+    public function floorSettings(Business $business): array
+    {
+        $floor = ($business->settings ?? [])['floor'] ?? null;
+
+        if (is_array($floor)) {
+            return [
+                'use_waiters' => (bool) ($floor['use_waiters'] ?? false),
+                'use_tables' => (bool) ($floor['use_tables'] ?? false),
+            ];
+        }
+
+        return $this->legacyFloorSettings($business);
+    }
+
+    /**
+     * @param  array<string, mixed>  $floorInput
+     */
+    public function syncFloorSettings(Business $business, array $floorInput): void
+    {
+        if (! $this->usesHospitalityFloor($business)) {
+            return;
+        }
+
+        $this->persistFloorSettings($business, [
+            'use_waiters' => filter_var($floorInput['use_waiters'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            'use_tables' => filter_var($floorInput['use_tables'] ?? false, FILTER_VALIDATE_BOOLEAN),
+        ]);
+    }
+
+    public function migrateFloorSettingsFromLegacy(Business $business): void
+    {
+        if (! $this->usesHospitalityFloor($business)) {
+            return;
+        }
+
+        $this->persistFloorSettings($business, $this->legacyFloorSettings($business));
+    }
+
+    /**
+     * @return array{use_waiters: bool, use_tables: bool}
+     */
+    protected function legacyFloorSettings(Business $business): array
+    {
+        if ($this->isEnabled($business, ModuleKeys::RESTAURANT)) {
+            return [
+                'use_waiters' => (bool) $this->setting($business, ModuleKeys::RESTAURANT, 'use_waiters', false),
+                'use_tables' => (bool) $this->setting($business, ModuleKeys::RESTAURANT, 'use_tables', false),
+            ];
+        }
+
+        if ($this->isEnabled($business, ModuleKeys::BAR_SHIFT)) {
+            $barSettings = $this->settings($business, ModuleKeys::BAR_SHIFT);
+
+            return [
+                'use_waiters' => (bool) ($barSettings['use_waiters'] ?? true),
+                'use_tables' => (bool) ($barSettings['use_tables'] ?? false),
+            ];
+        }
+
+        return [
+            'use_waiters' => false,
+            'use_tables' => false,
+        ];
+    }
+
+    /**
+     * @param  array{use_waiters: bool, use_tables: bool}  $floor
+     */
+    protected function persistFloorSettings(Business $business, array $floor): void
+    {
+        $settings = $business->settings ?? [];
+        $settings['floor'] = $floor;
+        $business->update(['settings' => $settings]);
+
+        foreach ([ModuleKeys::RESTAURANT, ModuleKeys::BAR_SHIFT] as $moduleKey) {
+            if (! $this->isEnabled($business, $moduleKey)) {
+                continue;
+            }
+
+            $record = $this->moduleRecord($business, $moduleKey);
+            $moduleSettings = $record ? ($record->settings ?? []) : [];
+            $moduleSettings['use_waiters'] = $floor['use_waiters'];
+            $moduleSettings['use_tables'] = $floor['use_tables'];
+
+            BusinessModule::query()->updateOrCreate(
+                [
+                    'business_id' => $business->id,
+                    'module_key' => $moduleKey,
+                ],
+                [
+                    'enabled' => true,
+                    'settings' => $moduleSettings,
+                    'source' => $record ? $record->source : self::SOURCE_OWNER,
+                ]
+            );
+        }
+
+        $fresh = $business->fresh();
+        $this->syncToLegacySettings($fresh);
+        $fresh->clearModuleCache();
+    }
+
     public function syncToLegacySettings(Business $business): void
     {
         $this->forgetBusiness($business);
 
         $settings = $business->settings ?? [];
+        $floor = $this->floorSettings($business);
         $settings['restaurant_mode'] = $this->isEnabled($business, ModuleKeys::RESTAURANT);
-        $settings['use_restaurant_tables'] = (bool) $this->setting($business, ModuleKeys::RESTAURANT, 'use_tables', false);
-        $settings['use_restaurant_waiters'] = (bool) $this->setting($business, ModuleKeys::RESTAURANT, 'use_waiters', false);
+        $settings['use_restaurant_tables'] = $this->usesHospitalityFloor($business) ? $floor['use_tables'] : false;
+        $settings['use_restaurant_waiters'] = $this->usesHospitalityFloor($business) ? $floor['use_waiters'] : false;
         $settings['shift_waiter_mode'] = $this->isEnabled($business, ModuleKeys::BAR_SHIFT);
         $settings['use_product_variants'] = $this->isEnabled($business, ModuleKeys::CATALOG_VARIANTS);
 
@@ -357,7 +463,16 @@ class BusinessModuleService
             ];
         }
 
-        if ($moduleKey === ModuleKeys::CATALOG_VARIANTS || $moduleKey === ModuleKeys::BAR_SHIFT) {
+        if ($moduleKey === ModuleKeys::BAR_SHIFT) {
+            $floor = ($business->settings ?? [])['floor'] ?? [];
+
+            return [
+                'use_tables' => (bool) ($floor['use_tables'] ?? false),
+                'use_waiters' => (bool) ($floor['use_waiters'] ?? true),
+            ];
+        }
+
+        if ($moduleKey === ModuleKeys::CATALOG_VARIANTS) {
             return [];
         }
 

@@ -51,9 +51,13 @@ config/modules.php            # list of module classes (registration)
    - `unified` — flat subscription (100k/month); modules are free toggles.
    - `addons` — base subscription + per-module monthly fees from platform settings.
    - Per-tenant **grandfathering** and **comped add-ons** on Superadmin → Business → Modules tab.
-   - Optional `monthlyPrice()` defaults live in `config/billing.php`; runtime prices in `SystemSetting`.
    - Runtime access: `$business->hasModule()` checks enabled **and** billing entitlement in add-ons mode.
-   - Toggle state only: `$business->hasModuleEnabled()`.
+
+10. **Floor service** — shared `business.settings.floor` with `use_waiters` and `use_tables` when Restaurant or Bar/Pub is enabled:
+   - **Shift close (EOD)** always applies via cashier reconciliation.
+   - **Use waiters** → multi-staff attribution + per-waiter shift balancing (`usesMultiWaiterAttribution()`).
+   - **Use tables** → table seating for restaurants and bars (`usesTableSeating()`).
+   - Sole proprietor onboarding sets `use_waiters` off — owner acts as cashier in Cashier Mode.
 
 ## Reference implementation
 
@@ -62,11 +66,12 @@ Follow the three production modules (`Restaurant`, `BarShift`, `CatalogVariants`
 ## Runtime API
 
 ```php
-$business->hasModule('restaurant');           // enabled + billing entitled (use for gates/routes)
-$business->hasModuleEnabled('restaurant');    // toggle state only (UI)
-$business->moduleSetting('restaurant', 'use_tables', false);
-app(BusinessModuleService::class)->capabilityStates($business);
-app(ModuleBillingService::class)->calculatePaymentAmount($business, 'monthly');
+$business->hasModule('restaurant');              // enabled + billing entitled (use for gates/routes)
+$business->hasModuleEnabled('restaurant');       // toggle state only (UI)
+$business->usesMultiWaiterAttribution();         // floor waiters on — POS picker + per-waiter balancing
+$business->usesTableSeating();                   // floor tables on — restaurants and bars
+$business->usesCashierShiftReconciliation();     // EOD always available where permitted
+$business->floorSettings();                      // ['use_waiters' => bool, 'use_tables' => bool]
 ```
 
 ## Do not

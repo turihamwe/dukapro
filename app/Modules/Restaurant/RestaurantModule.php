@@ -21,7 +21,7 @@ class RestaurantModule implements ModuleDefinition
 
     public function description(): string
     {
-        return 'Kitchen workflow: send orders to the kitchen, track ready orders, and waiter tablet ordering. Waiters and tables are optional below.';
+        return 'Kitchen workflow: send orders to the kitchen and track ready orders. Configure waiters and tables in Floor service below.';
     }
 
     public function defaultEnabledFor(Business $business): bool
