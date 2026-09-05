@@ -153,6 +153,54 @@ class AuthServiceProvider extends ServiceProvider
             return $user->canSwitchToCashierMode() && CashierMode::isActive();
         });
 
+        Gate::define('access-waiter-orders', function (User $user) {
+            if (! $user->business || ! $user->business->usesRestaurantMode()) {
+                return false;
+            }
+
+            return $user->isWaiter();
+        });
+
+        Gate::define('access-kitchen', function (User $user) {
+            if (! $user->business || ! $user->business->usesRestaurantMode()) {
+                return false;
+            }
+
+            if ($user->isChef()) {
+                return true;
+            }
+
+            return in_array($user->role, [UserRole::OWNER, UserRole::MANAGER, UserRole::SUPERVISOR], true);
+        });
+
+        Gate::define('settle-kitchen-orders', function (User $user) {
+            if (! $user->business || ! $user->business->usesRestaurantMode()) {
+                return false;
+            }
+
+            if ($user->isCashier()) {
+                return true;
+            }
+
+            return $user->canSwitchToCashierMode() && CashierMode::isActive();
+        });
+
+        Gate::define('view-restaurant-orders', function (User $user) {
+            if (! $user->business || ! $user->business->usesRestaurantMode()) {
+                return false;
+            }
+
+            return $user->can('settle-kitchen-orders');
+        });
+
+        Gate::define('manage-restaurant-tables', function (User $user) {
+            if (! $user->business || ! $user->business->usesRestaurantMode()) {
+                return false;
+            }
+
+            return $user->isOwner() || $user->isManager();
+        });
+
         Gate::define('submit-reconciliation', function (User $user) {
             if ($user->isCashier()) {
                 return true;
@@ -163,6 +211,22 @@ class AuthServiceProvider extends ServiceProvider
 
         Gate::define('view-reconciliation-history', function (User $user) {
             return in_array($user->role, UserRole::all(), true);
+        });
+
+        Gate::define('view-reconciliation-shortages', function (User $user) {
+            if ($user->canSwitchToCashierMode() && CashierMode::isActive()) {
+                return false;
+            }
+
+            return $user->isOwner() || $user->isManager() || $user->isSupervisor();
+        });
+
+        Gate::define('settle-reconciliation-shortages', function (User $user) {
+            if ($user->canSwitchToCashierMode() && CashierMode::isActive()) {
+                return false;
+            }
+
+            return $user->isOwner() || $user->isManager();
         });
 
         Gate::define('log-damages', function (User $user) {

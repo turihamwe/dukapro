@@ -1,10 +1,10 @@
 @extends(auth()->user()->usesCashierExperience() ? 'layouts.cashier' : 'layouts.admin')
 
-@section('title', 'Add Product')
+@section('title', $isHospitality ?? false ? 'Add Menu Item' : 'Add Product')
 @section('container_class', 'max-w-4xl')
 
 @section('content')
-<x-page-header title="Add Product" subtitle="Everything inline — brands, attributes, and variants on one page">
+<x-page-header :title="$isHospitality ?? false ? 'Add Menu Item' : 'Add Product'" :subtitle="$isHospitality ?? false ? 'Food and beverages for this branch' : 'Everything inline — brands, attributes, and variants on one page'">
     <x-slot name="actions">
         <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.inventory.index') }}">All products</x-button>
     </x-slot>

@@ -162,7 +162,7 @@
                             <p class="text-xs text-gray-500">{{ $report->reconciliation_date->format('M d, Y') }}</p>
                         </div>
                         <div class="text-right text-xs">
-                            <p>Missing <span class="{{ ($report->missing_money ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600' }} font-medium">@money($report->missing_money ?? 0)</span></p>
+                            <p>Missing <span class="{{ ($report->missing_money ?? 0) > 0 ? 'text-red-600' : 'text-emerald-600' }} font-medium">@money($report->missing_money ?? 0)</span></p>
                         </div>
                     </li>
                 @endforeach

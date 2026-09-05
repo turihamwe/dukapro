@@ -9,7 +9,7 @@
     <p class="text-sm text-gray-600">{{ $reconciliation->reconciliation_date->format('l, F j, Y') }} · {{ $reconciliation->user->name }}</p>
 </div>
 
-<div class="mb-6 grid gap-3 sm:grid-cols-3">
+<div class="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
     <div class="rounded-xl border border-gray-200 p-4">
         <p class="text-xs uppercase text-gray-500">Total sales</p>
         <p class="mt-1 text-lg font-bold">@money($report['total_sales'])</p>
@@ -22,6 +22,10 @@
         <p class="text-xs uppercase text-amber-800">Damages</p>
         <p class="mt-1 text-lg font-bold text-amber-900">@money($report['total_damages'])</p>
     </div>
+    <div class="rounded-xl border border-sky-100 bg-sky-50 p-4">
+        <p class="text-xs uppercase text-sky-800">Extra cash</p>
+        <p class="mt-1 text-lg font-bold text-sky-900">@money($reconciliation->extra_cash ?? 0)</p>
+    </div>
 </div>
 
 <div class="mb-6 rounded-xl border border-indigo-200 bg-indigo-50 p-5">
@@ -29,13 +33,14 @@
     <dl class="mt-4 space-y-2 text-sm">
         <div class="flex justify-between"><dt class="text-indigo-900/70">Expected cash</dt><dd class="font-semibold text-indigo-950">@money($reconciliation->expected_cash)</dd></div>
         <div class="flex justify-between"><dt class="text-indigo-900/70">Actual cash</dt><dd class="font-medium">@money($reconciliation->actual_cash)</dd></div>
+        <div class="flex justify-between"><dt class="text-indigo-900/70">Extra cash</dt><dd class="font-medium text-sky-800">@money($reconciliation->extra_cash ?? 0)</dd></div>
         <div class="flex justify-between"><dt class="text-indigo-900/70">Mobile money</dt><dd class="font-medium">@money($reconciliation->actual_mobile_money)</dd></div>
         <div class="flex justify-between"><dt class="text-indigo-900/70">Bank &amp; other</dt><dd class="font-medium">@money($reconciliation->actual_bank_other ?? 0)</dd></div>
         <div class="flex justify-between"><dt class="text-indigo-900/70">Expenses</dt><dd class="font-medium text-red-700">@money($reconciliation->total_expenses ?? 0)</dd></div>
         <div class="flex justify-between"><dt class="text-indigo-900/70">Damages</dt><dd class="font-medium text-amber-800">@money($reconciliation->total_damages ?? 0)</dd></div>
         <div class="flex justify-between border-t border-indigo-200 pt-2">
             <dt class="font-semibold text-indigo-950">Missing money</dt>
-            <dd class="font-bold {{ $missingMoney >= 0 ? 'text-emerald-700' : 'text-red-700' }}">@money($missingMoney)</dd>
+            <dd class="font-bold {{ $missingMoney > 0 ? 'text-red-700' : 'text-emerald-700' }}">@money($missingMoney)</dd>
         </div>
     </dl>
 </div>
@@ -65,12 +70,56 @@
                         <td class="px-5 py-3">@money($balance->actual_mobile_airtel + $balance->actual_mobile_mtn)</td>
                         <td class="px-5 py-3">@money($balance->actual_bank_other)</td>
                         <td class="px-5 py-3">@money($balance->actual_credit_collected)</td>
-                        <td class="px-5 py-3 font-semibold {{ $balance->shortage >= 0 ? 'text-emerald-700' : 'text-red-700' }}">@money($balance->shortage)</td>
+                        <td class="px-5 py-3 font-semibold {{ $balance->shortage <= 0 ? 'text-emerald-700' : 'text-red-700' }}">@money($balance->shortage)</td>
                     </tr>
                 @endforeach
             </tbody>
         </table>
     </div>
+</div>
+@endif
+
+@if(! empty($shortages) && $shortages->isNotEmpty())
+<div class="mb-6 overflow-hidden rounded-xl border border-red-200 bg-red-50">
+    <div class="border-b border-red-200 px-5 py-3">
+        <h2 class="text-sm font-semibold text-red-950">Recorded shortages</h2>
+        <p class="mt-1 text-xs text-red-900/80">Amounts owed by staff from this shift. Clear them when payment is received.</p>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full min-w-[480px] text-left text-sm">
+            <thead class="bg-red-100/60 text-xs uppercase tracking-wide text-red-900/70">
+                <tr>
+                    <th class="px-5 py-2">Staff</th>
+                    <th class="px-5 py-2">Source</th>
+                    <th class="px-5 py-2">Amount</th>
+                    <th class="px-5 py-2">Status</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-red-200/60">
+                @foreach($shortages as $shortage)
+                    <tr>
+                        <td class="px-5 py-3 font-medium text-red-950">{{ $shortage->user->name ?? 'Staff' }}</td>
+                        <td class="px-5 py-3">{{ $shortage->sourceLabel() }}</td>
+                        <td class="px-5 py-3 font-semibold">@money($shortage->amount)</td>
+                        <td class="px-5 py-3">
+                            @if($shortage->status === 'settled')
+                                <span class="text-emerald-700">Cleared</span>
+                            @elseif($shortage->status === 'waived')
+                                <span class="text-gray-600">Waived</span>
+                            @else
+                                <span class="font-semibold text-red-700">Pending · @money($shortage->outstandingAmount())</span>
+                            @endif
+                        </td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+    @can('view-reconciliation-shortages')
+        <div class="border-t border-red-200 px-5 py-3">
+            <a href="{{ tenant_route('tenant.reconciliation-shortages.index') }}" class="text-xs font-medium text-red-800 hover:text-red-950">Manage all shortages →</a>
+        </div>
+    @endcan
 </div>
 @endif
 

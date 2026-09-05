@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Enums\MeasurementUnit;
 use App\Helpers\AuditLogger;
-use App\Models\Brand;
 use App\Models\Branch;
+use App\Models\Brand;
 use App\Models\Business;
 use App\Models\Product;
 use App\Models\ProductAttribute;
@@ -168,6 +168,17 @@ class InventoryController extends Controller
         $rules = $this->simpleProductRules($businessId, $request);
 
         $data = $request->validate($rules);
+
+        if ($request->user()->isOwner() && \App\Enums\BusinessType::isHospitality($business->business_type)) {
+            $branchData = $request->validate([
+                'branch_id' => [
+                    'required',
+                    'integer',
+                    Rule::exists('branches', 'id')->where(fn ($q) => $q->where('business_id', $businessId)->where('is_active', true)),
+                ],
+            ]);
+            $data['branch_id'] = $branchData['branch_id'];
+        }
 
         if (! $request->user()->can('view-cost-prices')) {
             unset($data['cost_price']);
@@ -478,6 +489,11 @@ class InventoryController extends Controller
 
         return [
             'business' => $business,
+            'branches' => auth()->user()->isOwner() && \App\Enums\BusinessType::isHospitality($business->business_type)
+                ? Branch::query()->where('business_id', $business->id)->where('is_active', true)->orderByDesc('is_default')->orderBy('name')->pluck('name', 'id')
+                : collect(),
+            'isHospitality' => \App\Enums\BusinessType::isHospitality($business->business_type),
+            'requireBranch' => auth()->user()->isOwner() && \App\Enums\BusinessType::isHospitality($business->business_type),
             'brands' => Brand::query()->where('is_active', true)->orderBy('name')->get(),
             'suggestedBrands' => $this->catalogDiscovery->suggestedBrands($business),
             'soldByUnits' => SoldByUnit::query()->where('is_active', true)->orderBy('name')->get(),

@@ -36,6 +36,8 @@ class BusinessSettingsController extends Controller
             'brand_color' => 'nullable|string|max:7',
             'use_product_variants' => 'nullable|boolean',
             'shift_waiter_mode' => 'nullable|boolean',
+            'restaurant_mode' => 'nullable|boolean',
+            'use_restaurant_tables' => 'nullable|boolean',
         ]);
 
         $old = $business->toArray();
@@ -43,6 +45,10 @@ class BusinessSettingsController extends Controller
         $settings = $business->settings ?? [];
         $settings['use_product_variants'] = $request->boolean('use_product_variants');
         $settings['shift_waiter_mode'] = $request->boolean('shift_waiter_mode');
+        if (\App\Enums\BusinessType::isHospitality($business->business_type)) {
+            $settings['restaurant_mode'] = $request->boolean('restaurant_mode', true);
+            $settings['use_restaurant_tables'] = $request->boolean('use_restaurant_tables');
+        }
 
         $slug = $business->slug;
         if ($business->name !== $data['name']) {

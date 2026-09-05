@@ -94,6 +94,35 @@ class Business extends Model
         return (bool) ($this->settings['shift_waiter_mode'] ?? false);
     }
 
+    public function usesRestaurantMode(): bool
+    {
+        if (! \App\Enums\BusinessType::isHospitality($this->business_type)) {
+            return false;
+        }
+
+        return (bool) ($this->settings['restaurant_mode'] ?? true);
+    }
+
+    public function usesRestaurantTables(): bool
+    {
+        return $this->usesRestaurantMode()
+            && $this->hasRestaurantTablesSetting();
+    }
+
+    public function hasRestaurantTablesSetting(): bool
+    {
+        if (! \App\Enums\BusinessType::isHospitality($this->business_type)) {
+            return false;
+        }
+
+        return (bool) ($this->settings['use_restaurant_tables'] ?? false);
+    }
+
+    public function isHospitality(): bool
+    {
+        return \App\Enums\BusinessType::isHospitality($this->business_type);
+    }
+
     public function suggestsShiftWaiterMode(): bool
     {
         return \App\Enums\BusinessType::isHospitality($this->business_type);
@@ -102,6 +131,16 @@ class Business extends Model
     public function shiftWaiterBalances(): HasMany
     {
         return $this->hasMany(ShiftWaiterBalance::class);
+    }
+
+    public function kitchenOrders(): HasMany
+    {
+        return $this->hasMany(KitchenOrder::class);
+    }
+
+    public function restaurantTables(): HasMany
+    {
+        return $this->hasMany(RestaurantTable::class);
     }
 
     public function sales(): HasMany

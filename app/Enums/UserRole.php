@@ -8,6 +8,7 @@ class UserRole
     public const MANAGER = 'manager';
     public const SUPERVISOR = 'supervisor';
     public const CASHIER = 'cashier';
+    public const CHEF = 'chef';
     public const WAITER = 'waiter';
     public const AFFILIATE = 'affiliate';
     public const SHAREHOLDER = 'shareholder';
@@ -19,6 +20,7 @@ class UserRole
             self::MANAGER,
             self::SUPERVISOR,
             self::CASHIER,
+            self::CHEF,
             self::WAITER,
             self::AFFILIATE,
             self::SHAREHOLDER,
@@ -31,7 +33,16 @@ class UserRole
             self::MANAGER,
             self::SUPERVISOR,
             self::CASHIER,
+            self::CHEF,
             self::WAITER,
+        ];
+    }
+
+    public static function hospitalityRoles(): array
+    {
+        return [
+            self::WAITER,
+            self::CHEF,
         ];
     }
 
@@ -91,7 +102,8 @@ class UserRole
             self::MANAGER => 1,
             self::SUPERVISOR => 2,
             self::CASHIER => 3,
-            self::WAITER => 4,
+            self::CHEF => 4,
+            self::WAITER => 5,
             self::AFFILIATE => 99,
             self::SHAREHOLDER => 99,
         ][$role] ?? 100;
@@ -105,7 +117,8 @@ class UserRole
     public static function label(string $role): string
     {
         $labels = [
-            self::WAITER => 'Waiter',
+            self::WAITER => 'Waiter / Floor Staff',
+            self::CHEF => 'Chef / Kitchen Staff',
         ];
 
         return $labels[$role] ?? ucfirst($role);

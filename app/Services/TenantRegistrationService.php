@@ -44,6 +44,13 @@ class TenantRegistrationService
 
             app(BranchService::class)->createDefault($business);
 
+            if (\App\Enums\BusinessType::isHospitality($data['business_type'])) {
+                $settings = $business->settings ?? [];
+                $settings['restaurant_mode'] = true;
+                $settings['shift_waiter_mode'] = true;
+                $business->update(['settings' => $settings]);
+            }
+
             return User::create([
                 'business_id' => $business->id,
                 'name' => $data['name'],

@@ -16,14 +16,18 @@ class ReconciliationService
 
     protected WaiterShiftService $waiterShiftService;
 
+    protected ReconciliationShortageService $shortageService;
+
     public function __construct(
         DamageService $damageService,
         ExpenseService $expenseService,
-        WaiterShiftService $waiterShiftService
+        WaiterShiftService $waiterShiftService,
+        ReconciliationShortageService $shortageService
     ) {
         $this->damageService = $damageService;
         $this->expenseService = $expenseService;
         $this->waiterShiftService = $waiterShiftService;
+        $this->shortageService = $shortageService;
     }
 
     public function calculateExpectedTotals(int $businessId, int $userId, Carbon $date): array
@@ -50,6 +54,7 @@ class ReconciliationService
             'total_sales' => $dailySummary['total_sales'],
             'total_expenses' => $dailySummary['total_expenses'],
             'total_damages' => $dailySummary['total_damages'],
+            'total_extra_cash' => $dailySummary['total_extra_cash'],
             'net_income' => $dailySummary['net_income'],
             'expenses' => $dailySummary['expenses'],
             'damages' => $dailySummary['damages'],
@@ -81,10 +86,16 @@ class ReconciliationService
 
         $netIncome = round($totalSales - $totalExpenses - $totalDamages, 2);
 
+        $totalExtraCash = (float) EndOfDayReconciliation::query()
+            ->where('business_id', $businessId)
+            ->whereDate('reconciliation_date', $date)
+            ->sum('extra_cash');
+
         return [
             'total_sales' => round($totalSales, 2),
             'total_expenses' => round($totalExpenses, 2),
             'total_damages' => round($totalDamages, 2),
+            'total_extra_cash' => round($totalExtraCash, 2),
             'net_income' => $netIncome,
             'expenses' => $expenses,
             'damages' => $damagesSummary,
@@ -97,10 +108,11 @@ class ReconciliationService
         float $actualMobile,
         float $actualBankOther,
         float $totalExpenses,
-        float $totalDamages
+        float $totalDamages,
+        float $extraCash = 0
     ): float {
         return round(
-            $expectedCash - $actualCash - $actualMobile - $actualBankOther - $totalExpenses - $totalDamages,
+            $expectedCash - ($actualCash + $extraCash) - $actualMobile - $actualBankOther - $totalExpenses - $totalDamages,
             2
         );
     }
@@ -112,8 +124,9 @@ class ReconciliationService
         $dailySummary = $this->calculateDailySummary($user->business_id, $date);
 
         $actualCash = (float) $data['actual_cash'];
-        $actualMobile = (float) $data['actual_mobile_money'];
+        $actualMobile = (float) ($data['actual_mobile_money'] ?? 0);
         $actualBankOther = (float) ($data['actual_bank_other'] ?? 0);
+        $extraCash = (float) ($data['extra_cash'] ?? 0);
 
         $missingMoney = $this->calculateMissingMoney(
             $expected['expected_cash'],
@@ -121,10 +134,11 @@ class ReconciliationService
             $actualMobile,
             $actualBankOther,
             $dailySummary['total_expenses'],
-            $dailySummary['total_damages']
+            $dailySummary['total_damages'],
+            $extraCash
         );
 
-        return EndOfDayReconciliation::updateOrCreate(
+        $reconciliation = EndOfDayReconciliation::updateOrCreate(
             [
                 'business_id' => $user->business_id,
                 'user_id' => $user->id,
@@ -143,11 +157,16 @@ class ReconciliationService
                 'total_sales' => $dailySummary['total_sales'],
                 'total_expenses' => $dailySummary['total_expenses'],
                 'total_damages' => $dailySummary['total_damages'],
+                'extra_cash' => $extraCash,
                 'net_income' => $dailySummary['net_income'],
                 'notes' => $data['notes'] ?? null,
                 'status' => 'submitted',
             ]
         );
+
+        $this->shortageService->recordFromReconciliation($reconciliation, $user);
+
+        return $reconciliation;
     }
 
     public function submitWithWaiterBalances(User $user, array $data): EndOfDayReconciliation
@@ -212,6 +231,7 @@ class ReconciliationService
             '• Bank & other: ' . format_money($reconciliation->actual_bank_other ?? 0, $business),
             '• Expenses: ' . format_money($reconciliation->total_expenses ?? 0, $business),
             '• Damages: ' . format_money($reconciliation->total_damages ?? 0, $business),
+            '• Extra cash: ' . format_money($reconciliation->extra_cash ?? 0, $business),
             '• Missing money: ' . format_money($reconciliation->missing_money ?? 0, $business),
         ]));
 

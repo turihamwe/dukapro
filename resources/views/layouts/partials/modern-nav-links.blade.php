@@ -17,10 +17,11 @@
         Brands
     </a> --}}
 @endcan
-@if(auth()->user()->can('view-sales-reports') || auth()->user()->can('view-all-reconciliations') || auth()->user()->can('view-expenses'))
+@if(auth()->user()->can('view-sales-reports') || auth()->user()->can('view-all-reconciliations') || auth()->user()->can('view-expenses') || auth()->user()->can('view-reconciliation-shortages'))
     @php
         $reportsOpen = request()->routeIs('tenant.reports.*')
             || request()->routeIs('tenant.reconciliation.*')
+            || request()->routeIs('tenant.reconciliation-shortages.*')
             || request()->routeIs('tenant.expenses.index');
     @endphp
     <div class="modern-reports-nav">
@@ -41,7 +42,11 @@
             @endcan
             @can('view-all-reconciliations')
                 <a href="{{ tenant_route('tenant.reconciliation.index') }}"
-                   class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('tenant.reconciliation.*') ? 'font-medium text-emerald-400 bg-white/10' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">EOD reports</a>
+                   class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('tenant.reconciliation.*') && ! request()->routeIs('tenant.reconciliation-shortages.*') ? 'font-medium text-emerald-400 bg-white/10' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">EOD reports</a>
+            @endcan
+            @can('view-reconciliation-shortages')
+                <a href="{{ tenant_route('tenant.reconciliation-shortages.index') }}"
+                   class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('tenant.reconciliation-shortages.*') ? 'font-medium text-emerald-400 bg-white/10' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">Shift shortages</a>
             @endcan
             @can('view-expenses')
                 <a href="{{ tenant_route('tenant.expenses.index') }}"

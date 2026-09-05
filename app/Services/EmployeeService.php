@@ -112,7 +112,10 @@ class EmployeeService
     protected function rolesForBusiness(array $roles, Business $business): array
     {
         if (! BusinessType::isHospitality($business->business_type)) {
-            $roles = array_values(array_filter($roles, fn ($role) => $role !== UserRole::WAITER));
+            $roles = array_values(array_filter(
+                $roles,
+                fn ($role) => ! in_array($role, UserRole::hospitalityRoles(), true)
+            ));
         }
 
         return $roles;

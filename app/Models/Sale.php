@@ -21,6 +21,7 @@ class Sale extends Model
         'user_id',
         'waiter_id',
         'customer_id',
+        'kitchen_order_id',
         'sale_number',
         'subtotal',
         'tax_amount',
@@ -65,6 +66,11 @@ class Sale extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function kitchenOrder(): BelongsTo
+    {
+        return $this->belongsTo(KitchenOrder::class);
     }
 
     public function items(): HasMany

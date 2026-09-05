@@ -40,10 +40,11 @@ class ReconciliationController extends Controller
 
         $reconciliation->load('user', 'business');
         $report = $this->reconciliationService->buildReportDetails($reconciliation);
+        $shortages = $reconciliation->shortages()->with('user')->get();
         $bossPhone = $this->resolveBossPhone($business);
         $whatsAppUrl = $this->reconciliationService->whatsAppShareUrl($reconciliation, $bossPhone);
 
-        return view('reconciliation.show', compact('reconciliation', 'report', 'whatsAppUrl', 'bossPhone'));
+        return view('reconciliation.show', compact('reconciliation', 'report', 'whatsAppUrl', 'bossPhone', 'shortages'));
     }
 
     public function print(Business $business, EndOfDayReconciliation $reconciliation)
@@ -52,8 +53,9 @@ class ReconciliationController extends Controller
 
         $reconciliation->load('user', 'business');
         $report = $this->reconciliationService->buildReportDetails($reconciliation);
+        $shortages = $reconciliation->shortages()->with('user')->get();
 
-        return view('reconciliation.print', compact('reconciliation', 'report'));
+        return view('reconciliation.print', compact('reconciliation', 'report', 'shortages'));
     }
 
     public function create(Request $request)
@@ -81,8 +83,9 @@ class ReconciliationController extends Controller
         $data = $request->validate([
             'reconciliation_date' => 'required|date',
             'actual_cash' => 'required|numeric|min:0',
-            'actual_mobile_money' => 'required|numeric|min:0',
+            'actual_mobile_money' => 'nullable|numeric|min:0',
             'actual_bank_other' => 'nullable|numeric|min:0',
+            'extra_cash' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
             'bundle_waiter_balances' => 'nullable|boolean',
         ]);

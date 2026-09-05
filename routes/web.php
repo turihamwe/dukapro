@@ -33,10 +33,16 @@ use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\HomeRedirectController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\KitchenController;
+use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\WaiterOrderController;
 use App\Http\Controllers\PosController;
 use App\Http\Controllers\OperationsController;
 use App\Http\Controllers\WaiterShiftController;
+use App\Http\Controllers\RestaurantOrderController;
+use App\Http\Controllers\RestaurantTableController;
 use App\Http\Controllers\ReconciliationController;
+use App\Http\Controllers\ReconciliationShortageController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SuperAdmin\SettingsController as SuperAdminSettingsController;
 use App\Models\Business;
@@ -146,6 +152,7 @@ Route::middleware(['maintenance'])->group(function () {
                     Route::middleware(['can:manage-settings'])->group(function () {
                         Route::get('/business', [BusinessSettingsController::class, 'edit'])->name('business.edit');
                         Route::put('/business', [BusinessSettingsController::class, 'update'])->name('business.update');
+                        Route::post('/onboarding/sole-proprietor', [OnboardingController::class, 'soleProprietor'])->name('onboarding.sole-proprietor');
                     });
 
                     Route::middleware(['can:manage-branches'])->prefix('branches')->name('branches.')->group(function () {
@@ -155,6 +162,15 @@ Route::middleware(['maintenance'])->group(function () {
                         Route::get('/{branch}/edit', [BranchController::class, 'edit'])->name('edit');
                         Route::put('/{branch}', [BranchController::class, 'update'])->name('update');
                         Route::delete('/{branch}', [BranchController::class, 'destroy'])->name('destroy');
+                    });
+
+                    Route::middleware(['can:manage-restaurant-tables'])->prefix('restaurant-tables')->name('restaurant-tables.')->group(function () {
+                        Route::get('/', [RestaurantTableController::class, 'index'])->name('index');
+                        Route::get('/create', [RestaurantTableController::class, 'create'])->name('create');
+                        Route::post('/', [RestaurantTableController::class, 'store'])->name('store');
+                        Route::get('/{restaurantTable}/edit', [RestaurantTableController::class, 'edit'])->name('edit');
+                        Route::put('/{restaurantTable}', [RestaurantTableController::class, 'update'])->name('update');
+                        Route::delete('/{restaurantTable}', [RestaurantTableController::class, 'destroy'])->name('destroy');
                     });
                 });
 
@@ -248,9 +264,35 @@ Route::middleware(['maintenance'])->group(function () {
                     Route::post('/disable', [CashierModeController::class, 'disable'])->name('disable');
                 });
 
+                Route::middleware(['can:access-waiter-orders'])->prefix('waiter-orders')->name('waiter-orders.')->group(function () {
+                    Route::get('/', [WaiterOrderController::class, 'index'])->name('index');
+                    Route::get('/search', [WaiterOrderController::class, 'search'])->name('search');
+                    Route::post('/place', [WaiterOrderController::class, 'place'])->name('place');
+                });
+
+                Route::prefix('kitchen')->name('kitchen.')->group(function () {
+                    Route::middleware(['can:access-kitchen'])->group(function () {
+                        Route::get('/', [KitchenController::class, 'index'])->name('index');
+                        Route::get('/poll', [KitchenController::class, 'poll'])->name('poll');
+                        Route::post('/orders/{kitchenOrder}/status', [KitchenController::class, 'updateStatus'])->name('update-status');
+                    });
+
+                    Route::middleware(['can:settle-kitchen-orders'])->group(function () {
+                        Route::get('/ready', [KitchenController::class, 'readyOrders'])->name('ready');
+                        Route::get('/orders/{kitchenOrder}/settle', [KitchenController::class, 'settleForm'])->name('settle');
+                        Route::post('/orders/{kitchenOrder}/settle', [KitchenController::class, 'settle'])->name('settle.store');
+                    });
+                });
+
+                Route::middleware(['can:view-restaurant-orders'])->prefix('orders')->name('restaurant-orders.')->group(function () {
+                    Route::get('/', [RestaurantOrderController::class, 'index'])->name('index');
+                    Route::get('/{kitchenOrder}/print', [RestaurantOrderController::class, 'print'])->name('print');
+                });
+
                 Route::middleware(['can:access-pos'])->prefix('pos')->name('pos.')->group(function () {
                     Route::get('/', [PosController::class, 'index'])->name('index');
                     Route::get('/search', [PosController::class, 'search'])->name('search');
+                    Route::post('/send-kitchen', [PosController::class, 'sendToKitchen'])->name('send-kitchen');
                     Route::post('/checkout', [PosController::class, 'checkout'])->name('checkout');
                 });
 
@@ -278,6 +320,19 @@ Route::middleware(['maintenance'])->group(function () {
                         Route::get('/{reconciliation}', [ReconciliationController::class, 'show'])->name('show');
                     });
                 });
+
+                Route::middleware(['can:view-reconciliation-shortages', 'management.access'])
+                    ->prefix('reconciliation-shortages')
+                    ->name('reconciliation-shortages.')
+                    ->group(function () {
+                        Route::get('/', [ReconciliationShortageController::class, 'index'])->name('index');
+                        Route::post('/{shortage}/settle', [ReconciliationShortageController::class, 'settle'])
+                            ->middleware('can:settle-reconciliation-shortages')
+                            ->name('settle');
+                        Route::post('/{shortage}/waive', [ReconciliationShortageController::class, 'waive'])
+                            ->middleware('can:settle-reconciliation-shortages')
+                            ->name('waive');
+                    });
             });
         });
 });

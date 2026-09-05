@@ -3,7 +3,7 @@
 @section('title', 'EOD Report — ' . $reconciliation->reconciliation_date->format('M j, Y'))
 
 @section('content')
-@include('reconciliation.partials.report-body', ['reconciliation' => $reconciliation, 'report' => $report, 'business' => $reconciliation->business])
+@include('reconciliation.partials.report-body', ['reconciliation' => $reconciliation, 'report' => $report, 'business' => $reconciliation->business, 'shortages' => $shortages ?? collect()])
 @endsection
 
 @push('scripts')

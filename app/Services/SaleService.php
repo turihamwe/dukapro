@@ -102,6 +102,7 @@ class SaleService
                     'cost_price' => $deduction['cost_price'],
                     'subtotal' => $lineSubtotal,
                     'allocations' => $deduction['allocations'],
+                    'notes' => ! empty($item['notes']) ? mb_substr(trim((string) $item['notes']), 0, 500) : null,
                 ];
             }
 
@@ -129,6 +130,7 @@ class SaleService
                 'user_id' => $user->id,
                 'waiter_id' => $waiterId,
                 'customer_id' => $customerId,
+                'kitchen_order_id' => $payload['kitchen_order_id'] ?? null,
                 'sale_number' => $saleNumber,
                 'subtotal' => $subtotal,
                 'tax_amount' => $taxAmount,
@@ -158,6 +160,7 @@ class SaleService
                     'cost_price' => $line['cost_price'],
                     'discount_amount' => 0,
                     'subtotal' => $line['subtotal'],
+                    'notes' => $line['notes'] ?? null,
                 ]);
 
                 foreach ($line['allocations'] as $allocation) {

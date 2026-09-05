@@ -61,7 +61,7 @@
                         <td class="px-6 py-4 text-right text-sm text-red-600">@money($recon->total_expenses ?? 0)</td>
                         <td class="px-6 py-4 text-right text-sm text-amber-700">@money($recon->total_damages ?? 0)</td>
                         <td class="px-6 py-4 text-right text-sm font-semibold {{ ($recon->net_income ?? 0) >= 0 ? 'text-emerald-700' : 'text-red-600' }}">@money($recon->net_income ?? 0)</td>
-                        <td class="px-6 py-4 text-right text-sm font-medium {{ ($recon->missing_money ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600' }}">@money($recon->missing_money ?? 0)</td>
+                        <td class="px-6 py-4 text-right text-sm font-medium {{ ($recon->missing_money ?? 0) > 0 ? 'text-red-600' : 'text-emerald-600' }}">@money($recon->missing_money ?? 0)</td>
                         <td class="px-6 py-4 text-right text-sm">
                             <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.reconciliation.show', ['reconciliation' => $recon]) }}">View</x-button>
                         </td>

@@ -329,12 +329,24 @@ class AuthController extends Controller
     {
         $params = ['business' => $user->business->slug];
 
+        if ($user->isWaiter() && $user->can('access-waiter-orders')) {
+            return redirect()->route('tenant.waiter-orders.index', $params);
+        }
+
+        if ($user->isChef() && $user->can('access-kitchen')) {
+            return redirect()->route('tenant.kitchen.index', $params);
+        }
+
         if ($user->isCashier()) {
             return redirect()->route('tenant.pos.index', $params);
         }
 
         if ($user->can('view-dashboard')) {
             return redirect()->route('tenant.dashboard', $params);
+        }
+
+        if ($user->can('access-kitchen')) {
+            return redirect()->route('tenant.kitchen.index', $params);
         }
 
         return redirect()->route('tenant.pos.index', $params);

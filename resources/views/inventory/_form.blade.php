@@ -33,6 +33,21 @@
 @endphp
 
 <div class="space-y-5">
+    @if(!empty($requireBranch) && $branches->isNotEmpty())
+        <div>
+            <label for="branch_id" class="mb-1 block text-sm font-medium text-gray-700">Branch</label>
+            <select name="branch_id" id="branch_id" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                <option value="">Select branch for this menu item…</option>
+                @foreach($branches as $branchId => $branchName)
+                    <option value="{{ $branchId }}" @selected(old('branch_id') == $branchId)>{{ $branchName }}</option>
+                @endforeach
+            </select>
+            @error('branch_id')
+                <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+            @enderror
+        </div>
+    @endif
+
     <input type="hidden" name="product_type" id="product_type_input" value="{{ $variantsEnabled ? 'variable' : 'simple' }}">
 
     {{-- Brand --}}

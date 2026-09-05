@@ -50,6 +50,34 @@
             </label>
         </div>
 
+        @if(\App\Enums\BusinessType::isHospitality($business->business_type))
+            @php
+                $restaurantEnabled = old('restaurant_mode', $settings['restaurant_mode'] ?? true);
+                $tablesEnabled = old('use_restaurant_tables', $settings['use_restaurant_tables'] ?? false);
+            @endphp
+            <div class="rounded-xl border border-orange-200 bg-orange-50 p-4 space-y-4">
+                <label class="flex items-start gap-3">
+                    <input type="checkbox" name="restaurant_mode" value="1" class="mt-1 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                        {{ $restaurantEnabled ? 'checked' : '' }}>
+                    <span>
+                        <span class="block text-sm font-semibold text-gray-900">Restaurant Mode (kitchen workflow)</span>
+                        <span class="mt-1 block text-xs text-gray-600">Waiters fire orders to the kitchen digitally. Chefs track Pending → Preparing → Ready. Cashiers collect payment when ready.</span>
+                    </span>
+                </label>
+                <label class="flex items-start gap-3 border-t border-orange-200/80 pt-4">
+                    <input type="checkbox" name="use_restaurant_tables" value="1" class="mt-1 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                        {{ $tablesEnabled ? 'checked' : '' }}>
+                    <span>
+                        <span class="block text-sm font-semibold text-gray-900">Use restaurant tables</span>
+                        <span class="mt-1 block text-xs text-gray-600">Enable table management and require orders to be tied to a table. Leave off for bars or venues without fixed seating.</span>
+                        @can('manage-restaurant-tables')
+                            <a href="{{ tenant_route('tenant.restaurant-tables.index') }}" class="mt-2 inline-block text-xs font-medium text-orange-800 underline">Manage tables →</a>
+                        @endcan
+                    </span>
+                </label>
+            </div>
+        @endif
+
         @php
             $shiftWaiterSuggested = $business->suggestsShiftWaiterMode();
             $shiftWaiterEnabled = old('shift_waiter_mode', $settings['shift_waiter_mode'] ?? $shiftWaiterSuggested);

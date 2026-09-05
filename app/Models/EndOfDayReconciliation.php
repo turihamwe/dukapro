@@ -29,6 +29,7 @@ class EndOfDayReconciliation extends Model
         'total_sales',
         'total_expenses',
         'total_damages',
+        'extra_cash',
         'net_income',
         'notes',
         'status',
@@ -48,6 +49,7 @@ class EndOfDayReconciliation extends Model
         'total_sales' => 'float',
         'total_expenses' => 'float',
         'total_damages' => 'float',
+        'extra_cash' => 'float',
         'net_income' => 'float',
     ];
 
@@ -64,5 +66,10 @@ class EndOfDayReconciliation extends Model
     public function waiterBalances(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(ShiftWaiterBalance::class, 'end_of_day_reconciliation_id');
+    }
+
+    public function shortages(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ReconciliationShortage::class, 'end_of_day_reconciliation_id');
     }
 }

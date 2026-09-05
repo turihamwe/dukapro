@@ -19,7 +19,7 @@
     </x-slot>
 </x-page-header>
 
-@include('reconciliation.partials.report-body', ['reconciliation' => $reconciliation, 'report' => $report, 'business' => $business])
+@include('reconciliation.partials.report-body', ['reconciliation' => $reconciliation, 'report' => $report, 'business' => $business, 'shortages' => $shortages ?? collect()])
 
 @if(!$whatsAppUrl && $bossPhone === null)
     <x-card class="mt-4">

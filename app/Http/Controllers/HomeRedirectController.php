@@ -30,12 +30,28 @@ class HomeRedirectController extends Controller
         }
 
         if ($user->business) {
+            if ($user->isWaiter() && $user->can('access-waiter-orders')) {
+                return redirect()->route('tenant.waiter-orders.index', ['business' => $user->business->slug]);
+            }
+
+            if ($user->isChef() && $user->can('access-kitchen')) {
+                return redirect()->route('tenant.kitchen.index', ['business' => $user->business->slug]);
+            }
+
             if ($user->isCashier()) {
                 return redirect()->route('tenant.pos.index', ['business' => $user->business->slug]);
             }
 
             if ($user->can('view-dashboard')) {
                 return redirect()->route('tenant.dashboard', ['business' => $user->business->slug]);
+            }
+
+            if ($user->can('access-waiter-orders')) {
+                return redirect()->route('tenant.waiter-orders.index', ['business' => $user->business->slug]);
+            }
+
+            if ($user->can('access-kitchen')) {
+                return redirect()->route('tenant.kitchen.index', ['business' => $user->business->slug]);
             }
 
             return redirect()->route('tenant.pos.index', ['business' => $user->business->slug]);

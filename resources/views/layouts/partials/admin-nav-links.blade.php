@@ -7,11 +7,17 @@
 @can('view-inventory')
     <a href="{{ tenant_route('tenant.inventory.index') }}"
        class="{{ $navLink }} {{ request()->routeIs('tenant.inventory.*') && ! request()->routeIs('tenant.brands.*') ? $navActive : $navIdle }}">
-        <span>📦</span> Inventory
+        <span>📦</span> {{ auth()->user()->business && auth()->user()->business->usesRestaurantMode() ? 'Menu' : 'Inventory' }}
     </a>
     <a href="{{ tenant_route('tenant.brands.index') }}"
        class="{{ $navLink }} {{ request()->routeIs('tenant.brands.*') ? $navActive : $navIdle }}">
         <span>🏷</span> Brands
+    </a>
+@endcan
+@can('access-kitchen')
+    <a href="{{ tenant_route('tenant.kitchen.index') }}"
+       class="{{ $navLink }} {{ request()->routeIs('tenant.kitchen.index') ? $navActive : $navIdle }}">
+        <span>👨‍🍳</span> Kitchen
     </a>
 @endcan
 @can('view-customers')
@@ -20,8 +26,8 @@
         <span>👥</span> Contacts
     </a>
 @endcan
-@if(auth()->user()->can('view-sales-reports') || auth()->user()->can('view-all-reconciliations') || auth()->user()->can('view-expenses'))
-    @php $reportsOpen = request()->routeIs('tenant.reports.*') || request()->routeIs('tenant.reconciliation.*') || request()->routeIs('tenant.expenses.index'); @endphp
+@if(auth()->user()->can('view-sales-reports') || auth()->user()->can('view-all-reconciliations') || auth()->user()->can('view-expenses') || auth()->user()->can('view-reconciliation-shortages'))
+    @php $reportsOpen = request()->routeIs('tenant.reports.*') || request()->routeIs('tenant.reconciliation.*') || request()->routeIs('tenant.reconciliation-shortages.*') || request()->routeIs('tenant.expenses.index'); @endphp
     <div class="reports-nav">
         <button type="button"
                 data-reports-toggle
@@ -37,7 +43,11 @@
             @endcan
             @can('view-all-reconciliations')
                 <a href="{{ tenant_route('tenant.reconciliation.index') }}"
-                   class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('tenant.reconciliation.*') ? 'font-medium text-indigo-700 bg-indigo-50' : 'text-gray-600 hover:bg-gray-100' }}">EOD reports</a>
+                   class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('tenant.reconciliation.*') && ! request()->routeIs('tenant.reconciliation-shortages.*') ? 'font-medium text-indigo-700 bg-indigo-50' : 'text-gray-600 hover:bg-gray-100' }}">EOD reports</a>
+            @endcan
+            @can('view-reconciliation-shortages')
+                <a href="{{ tenant_route('tenant.reconciliation-shortages.index') }}"
+                   class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('tenant.reconciliation-shortages.*') ? 'font-medium text-indigo-700 bg-indigo-50' : 'text-gray-600 hover:bg-gray-100' }}">Shift shortages</a>
             @endcan
             @can('view-expenses')
                 <a href="{{ tenant_route('tenant.expenses.index') }}"

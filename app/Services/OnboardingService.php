@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\BusinessType;
 use App\Enums\UserRole;
 use App\Models\Business;
 
@@ -9,6 +10,7 @@ class OnboardingService
 {
     public function status(Business $business): array
     {
+        $isHospitality = BusinessType::isHospitality($business->business_type);
         $hasProducts = $business->products()->exists();
         $employeesComplete = $this->employeesOnboardingComplete($business);
 
@@ -19,6 +21,17 @@ class OnboardingService
             'needs_employees' => ! $employeesComplete,
             'is_complete' => $hasProducts && $employeesComplete,
             'sole_proprietor' => (bool) $business->sole_proprietor,
+            'is_hospitality' => $isHospitality,
+            'catalog_label' => $isHospitality ? 'menu items' : 'products',
+            'catalog_cta' => $isHospitality ? 'Add menu items' : 'Add products',
+            'catalog_route' => 'tenant.inventory.create',
+            'staff_cta' => $isHospitality ? 'Set up branch staff' : 'Add employees',
+            'staff_hint' => $isHospitality
+                ? 'Add waiters, kitchen staff, and cashiers — each tied to a branch.'
+                : 'Create accounts for managers, supervisors, and cashiers.',
+            'welcome_subtitle' => $isHospitality
+                ? 'Set up your menu and branch team to start taking orders.'
+                : 'Get started by adding your inventory and team. These steps stay visible until both are complete.',
         ];
     }
 
