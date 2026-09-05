@@ -2,10 +2,8 @@
 
 namespace App\Providers;
 
-use App\Modules\BarShift\BarShiftModule;
-use App\Modules\CatalogVariants\CatalogVariantsModule;
+use App\Modules\Contracts\ModuleDefinition;
 use App\Modules\ModuleRegistry;
-use App\Modules\Restaurant\RestaurantModule;
 use Illuminate\Support\ServiceProvider;
 
 class ModuleServiceProvider extends ServiceProvider
@@ -15,11 +13,7 @@ class ModuleServiceProvider extends ServiceProvider
         $this->app->singleton(ModuleRegistry::class, function () {
             $registry = new ModuleRegistry();
 
-            foreach ([
-                new RestaurantModule(),
-                new BarShiftModule(),
-                new CatalogVariantsModule(),
-            ] as $module) {
+            foreach ($this->moduleDefinitions() as $module) {
                 $registry->register($module);
             }
 
@@ -30,5 +24,27 @@ class ModuleServiceProvider extends ServiceProvider
     public function boot(): void
     {
         //
+    }
+
+    /**
+     * @return list<ModuleDefinition>
+     */
+    protected function moduleDefinitions(): array
+    {
+        $modules = [];
+
+        foreach (config('modules', []) as $class) {
+            if (! is_string($class) || ! class_exists($class)) {
+                continue;
+            }
+
+            $instance = $this->app->make($class);
+
+            if ($instance instanceof ModuleDefinition) {
+                $modules[] = $instance;
+            }
+        }
+
+        return $modules;
     }
 }

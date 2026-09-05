@@ -13,12 +13,15 @@ class ModuleKeys
 
     public const CATALOG_VARIANTS = 'catalog_variants';
 
+    public const APPOINTMENTS = 'appointments';
+
     public static function all(): array
     {
         return [
             self::RESTAURANT,
             self::BAR_SHIFT,
             self::CATALOG_VARIANTS,
+            self::APPOINTMENTS,
         ];
     }
 }

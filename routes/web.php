@@ -46,6 +46,7 @@ use App\Http\Controllers\ReconciliationController;
 use App\Http\Controllers\ReconciliationShortageController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SuperAdmin\SettingsController as SuperAdminSettingsController;
+use App\Modules\Appointments\Http\AppointmentsController;
 use App\Models\Business;
 use Illuminate\Support\Facades\Route;
 
@@ -172,6 +173,10 @@ Route::middleware(['maintenance'])->group(function () {
                         Route::get('/{restaurantTable}/edit', [RestaurantTableController::class, 'edit'])->name('edit');
                         Route::put('/{restaurantTable}', [RestaurantTableController::class, 'update'])->name('update');
                         Route::delete('/{restaurantTable}', [RestaurantTableController::class, 'destroy'])->name('destroy');
+                    });
+
+                    Route::middleware(['can:access-appointments', 'module:appointments'])->prefix('appointments')->name('appointments.')->group(function () {
+                        Route::get('/', [AppointmentsController::class, 'index'])->name('index');
                     });
                 });
 

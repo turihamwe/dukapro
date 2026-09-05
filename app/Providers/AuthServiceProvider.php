@@ -214,6 +214,14 @@ class AuthServiceProvider extends ServiceProvider
             return $user->business && $user->business->hasModule(ModuleKeys::CATALOG_VARIANTS);
         });
 
+        Gate::define('access-appointments', function (User $user) {
+            if (! $user->business || ! $user->business->hasModule(ModuleKeys::APPOINTMENTS)) {
+                return false;
+            }
+
+            return $user->isOwner() || $user->isManager();
+        });
+
         Gate::define('submit-reconciliation', function (User $user) {
             if ($user->isCashier()) {
                 return true;

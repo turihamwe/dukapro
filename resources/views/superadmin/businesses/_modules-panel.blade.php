@@ -10,6 +10,31 @@
         \App\Services\BusinessModuleService::SOURCE_MIGRATION => 'Migration',
         \App\Services\BusinessModuleService::SOURCE_PRESET => 'Signup preset',
     ];
+    $moduleRegistry = app(\App\Modules\ModuleRegistry::class);
+    $moduleFootnotes = [
+        ModuleKeys::BAR_SHIFT => 'Turn on for a bar or pub with no kitchen. Waiters are included automatically.',
+        ModuleKeys::APPOINTMENTS => 'Developer preview module.',
+    ];
+    $moduleStyles = [
+        ModuleKeys::BAR_SHIFT => [
+            'border' => 'border-violet-200',
+            'bg' => 'bg-white',
+            'checkbox' => 'text-violet-600 focus:ring-violet-500',
+            'badge' => 'bg-violet-100 text-violet-800',
+        ],
+        ModuleKeys::CATALOG_VARIANTS => [
+            'border' => 'border-indigo-200',
+            'bg' => 'bg-white',
+            'checkbox' => 'text-indigo-600 focus:ring-indigo-500',
+            'badge' => 'bg-indigo-100 text-indigo-800',
+        ],
+        ModuleKeys::APPOINTMENTS => [
+            'border' => 'border-emerald-200',
+            'bg' => 'bg-white',
+            'checkbox' => 'text-emerald-600 focus:ring-emerald-500',
+            'badge' => 'bg-emerald-100 text-emerald-800',
+        ],
+    ];
 @endphp
 
 <div class="rounded-xl border border-violet-200 bg-violet-50/40 p-6">
@@ -34,98 +59,70 @@
             @csrf
 
             <div class="space-y-4">
-                @php
-                    $restaurant = $capabilities[ModuleKeys::RESTAURANT] ?? [];
-                    $restaurantEnabled = (bool) old('modules.restaurant.enabled', $restaurant['enabled'] ?? false);
-                    $tablesEnabled = (bool) old('modules.restaurant.use_tables', $restaurant['settings']['use_tables'] ?? false);
-                    $waitersEnabled = (bool) old('modules.restaurant.use_waiters', $restaurant['settings']['use_waiters'] ?? false);
-                    $restaurantRecord = $moduleRecords->get(ModuleKeys::RESTAURANT);
-                @endphp
-                <div class="rounded-xl border border-orange-200 bg-white p-4 space-y-4">
-                    <label class="flex items-start gap-3">
-                        <input type="hidden" name="modules[restaurant][enabled]" value="0">
-                        <input type="checkbox" name="modules[restaurant][enabled]" value="1" id="restaurant_mode_enabled"
-                               class="mt-1 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
-                               {{ $restaurantEnabled ? 'checked' : '' }}>
-                        <span class="min-w-0 flex-1">
-                            <span class="flex flex-wrap items-center gap-2">
-                                <span class="text-sm font-semibold text-gray-900">{{ $restaurant['label'] ?? 'Restaurant Mode' }}</span>
-                                @if($restaurantRecord && $restaurantRecord->source)
-                                    <span class="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600">
-                                        {{ $sourceLabels[$restaurantRecord->source] ?? $restaurantRecord->source }}
+                @foreach($moduleRegistry->all() as $moduleKey => $definition)
+                    @if($moduleKey === ModuleKeys::RESTAURANT)
+                        @php
+                            $restaurant = $capabilities[$moduleKey] ?? [];
+                            $restaurantEnabled = (bool) old('modules.restaurant.enabled', $restaurant['enabled'] ?? false);
+                            $tablesEnabled = (bool) old('modules.restaurant.use_tables', $restaurant['settings']['use_tables'] ?? false);
+                            $waitersEnabled = (bool) old('modules.restaurant.use_waiters', $restaurant['settings']['use_waiters'] ?? false);
+                            $restaurantRecord = $moduleRecords->get(ModuleKeys::RESTAURANT);
+                        @endphp
+                        <div class="rounded-xl border border-orange-200 bg-white p-4 space-y-4">
+                            <label class="flex items-start gap-3">
+                                <input type="hidden" name="modules[restaurant][enabled]" value="0">
+                                <input type="checkbox" name="modules[restaurant][enabled]" value="1" id="restaurant_mode_enabled"
+                                       class="mt-1 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                                       {{ $restaurantEnabled ? 'checked' : '' }}>
+                                <span class="min-w-0 flex-1">
+                                    <span class="flex flex-wrap items-center gap-2">
+                                        <span class="text-sm font-semibold text-gray-900">{{ $restaurant['label'] ?? 'Restaurant Mode' }}</span>
+                                        @if($restaurantRecord && $restaurantRecord->source)
+                                            <span class="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600">
+                                                {{ $sourceLabels[$restaurantRecord->source] ?? $restaurantRecord->source }}
+                                            </span>
+                                        @endif
                                     </span>
-                                @endif
-                            </span>
-                            <span class="mt-1 block text-xs text-gray-600">{{ $restaurant['description'] ?? '' }}</span>
-                            @if($restaurant['suggested'] ?? false)
-                                <span class="mt-1 inline-block rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-orange-800">Suggested for {{ $businessTypeLabel }}</span>
-                            @endif
-                        </span>
-                    </label>
-                    @include('business._restaurant-module-options', [
-                        'restaurantEnabled' => $restaurantEnabled,
-                        'tablesEnabled' => $tablesEnabled,
-                        'waitersEnabled' => $waitersEnabled,
-                        'showManageTablesLink' => false,
-                    ])
-                </div>
-
-                @php
-                    $barShift = $capabilities[ModuleKeys::BAR_SHIFT] ?? [];
-                    $barShiftEnabled = (bool) old('modules.bar_shift.enabled', $barShift['enabled'] ?? false);
-                    $barShiftRecord = $moduleRecords->get(ModuleKeys::BAR_SHIFT);
-                @endphp
-                <div class="rounded-xl border border-violet-200 bg-white p-4">
-                    <label class="flex items-start gap-3">
-                        <input type="hidden" name="modules[bar_shift][enabled]" value="0">
-                        <input type="checkbox" name="modules[bar_shift][enabled]" value="1"
-                               class="mt-1 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
-                               {{ $barShiftEnabled ? 'checked' : '' }}>
-                        <span class="min-w-0 flex-1">
-                            <span class="flex flex-wrap items-center gap-2">
-                                <span class="text-sm font-semibold text-gray-900">{{ $barShift['label'] ?? 'Bar / Shift Mode' }}</span>
-                                @if($barShiftRecord && $barShiftRecord->source)
-                                    <span class="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600">
-                                        {{ $sourceLabels[$barShiftRecord->source] ?? $barShiftRecord->source }}
-                                    </span>
-                                @endif
-                            </span>
-                            <span class="mt-1 block text-xs text-gray-600">{{ $barShift['description'] ?? '' }}</span>
-                            @if($barShift['suggested'] ?? false)
-                                <span class="mt-1 inline-block rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-800">Suggested for {{ $businessTypeLabel }}</span>
-                            @endif
-                            <span class="mt-2 block text-xs text-gray-500">Turn on for a bar or pub with no kitchen. Waiters are included automatically.</span>
-                        </span>
-                    </label>
-                </div>
-
-                @php
-                    $variants = $capabilities[ModuleKeys::CATALOG_VARIANTS] ?? [];
-                    $variantsEnabled = (bool) old('modules.catalog_variants.enabled', $variants['enabled'] ?? false);
-                    $variantsRecord = $moduleRecords->get(ModuleKeys::CATALOG_VARIANTS);
-                @endphp
-                <div class="rounded-xl border border-indigo-200 bg-white p-4">
-                    <label class="flex items-start gap-3">
-                        <input type="hidden" name="modules[catalog_variants][enabled]" value="0">
-                        <input type="checkbox" name="modules[catalog_variants][enabled]" value="1"
-                               class="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                               {{ $variantsEnabled ? 'checked' : '' }}>
-                        <span class="min-w-0 flex-1">
-                            <span class="flex flex-wrap items-center gap-2">
-                                <span class="text-sm font-semibold text-gray-900">{{ $variants['label'] ?? 'Variant Catalog' }}</span>
-                                @if($variantsRecord && $variantsRecord->source)
-                                    <span class="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600">
-                                        {{ $sourceLabels[$variantsRecord->source] ?? $variantsRecord->source }}
-                                    </span>
-                                @endif
-                            </span>
-                            <span class="mt-1 block text-xs text-gray-600">{{ $variants['description'] ?? '' }}</span>
-                            @if($variants['suggested'] ?? false)
-                                <span class="mt-1 inline-block rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-800">Suggested for {{ $businessTypeLabel }}</span>
-                            @endif
-                        </span>
-                    </label>
-                </div>
+                                    <span class="mt-1 block text-xs text-gray-600">{{ $restaurant['description'] ?? '' }}</span>
+                                    @if($restaurant['suggested'] ?? false)
+                                        <span class="mt-1 inline-block rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-orange-800">Suggested for {{ $businessTypeLabel }}</span>
+                                    @endif
+                                </span>
+                            </label>
+                            @include('business._restaurant-module-options', [
+                                'restaurantEnabled' => $restaurantEnabled,
+                                'tablesEnabled' => $tablesEnabled,
+                                'waitersEnabled' => $waitersEnabled,
+                                'showManageTablesLink' => false,
+                            ])
+                        </div>
+                    @else
+                        @php
+                            $record = $moduleRecords->get($moduleKey);
+                            $sourceLabel = ($record && $record->source)
+                                ? ($sourceLabels[$record->source] ?? $record->source)
+                                : null;
+                        @endphp
+                        @include('business._capability-module', [
+                            'moduleKey' => $moduleKey,
+                            'capability' => $capabilities[$moduleKey] ?? [
+                                'label' => $definition->label(),
+                                'description' => $definition->description(),
+                                'enabled' => false,
+                                'suggested' => $definition->defaultEnabledFor($business),
+                            ],
+                            'businessTypeLabel' => $businessTypeLabel,
+                            'styles' => $moduleStyles[$moduleKey] ?? [
+                                'border' => 'border-gray-200',
+                                'bg' => 'bg-white',
+                                'checkbox' => 'text-gray-700 focus:ring-gray-500',
+                                'badge' => 'bg-gray-100 text-gray-800',
+                            ],
+                            'footnote' => $moduleFootnotes[$moduleKey] ?? null,
+                            'sourceLabel' => $sourceLabel,
+                        ])
+                    @endif
+                @endforeach
             </div>
 
             <div>

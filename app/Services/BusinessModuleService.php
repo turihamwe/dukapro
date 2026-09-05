@@ -157,19 +157,22 @@ class BusinessModuleService
             return filter_var(data_get($modules, $key, false), FILTER_VALIDATE_BOOLEAN);
         };
 
-        return [
-            ModuleKeys::RESTAURANT => [
-                'enabled' => $enabled('restaurant.enabled'),
-                'use_tables' => $enabled('restaurant.use_tables'),
-                'use_waiters' => $enabled('restaurant.use_waiters'),
-            ],
-            ModuleKeys::BAR_SHIFT => [
-                'enabled' => $enabled('bar_shift.enabled'),
-            ],
-            ModuleKeys::CATALOG_VARIANTS => [
-                'enabled' => $enabled('catalog_variants.enabled'),
-            ],
-        ];
+        $capabilities = [];
+
+        foreach ($this->registry->keys() as $moduleKey) {
+            $entry = [
+                'enabled' => $enabled("{$moduleKey}.enabled"),
+            ];
+
+            if ($moduleKey === ModuleKeys::RESTAURANT) {
+                $entry['use_tables'] = $enabled('restaurant.use_tables');
+                $entry['use_waiters'] = $enabled('restaurant.use_waiters');
+            }
+
+            $capabilities[$moduleKey] = $entry;
+        }
+
+        return $capabilities;
     }
 
     public function syncToLegacySettings(Business $business): void

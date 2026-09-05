@@ -21,6 +21,7 @@ class BusinessModuleController extends Controller
             'modules.restaurant.enabled' => 'nullable|boolean',
             'modules.restaurant.use_tables' => 'nullable|boolean',
             'modules.restaurant.use_waiters' => 'nullable|boolean',
+            'modules.*.enabled' => 'nullable|boolean',
             'modules.bar_shift.enabled' => 'nullable|boolean',
             'modules.catalog_variants.enabled' => 'nullable|boolean',
             'note' => 'nullable|string|max:500',
