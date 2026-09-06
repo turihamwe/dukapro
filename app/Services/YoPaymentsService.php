@@ -314,7 +314,7 @@ class YoPaymentsService
         $host = parse_url($url, PHP_URL_HOST);
 
         if (in_array($host, ['127.0.0.1', 'localhost', '::1'], true)) {
-            $this->log('warning', 'YoPayments IPN URL is localhost — callbacks will not reach this server. Configure YOPAYMENTS_IPN_URL to a public HTTPS URL.', [
+            $this->log('warning', 'YoPayments IPN URL is localhost. Callbacks will not reach this server. Configure YOPAYMENTS_IPN_URL to a public HTTPS URL.', [
                 'url' => $url,
             ]);
 

@@ -1,6 +1,6 @@
 @extends('layouts.auth')
 
-@section('title', 'Register — ' . platform_brand('name'))
+@section('title', 'Register | ' . platform_brand('name'))
 
 @section('content')
     @include('layouts.partials.auth-brand', [

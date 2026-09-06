@@ -8,7 +8,7 @@ class RepairDualRoleBusinessUsers extends Migration
 {
     public function up()
     {
-        // Promotion previously overwrote business users — restore business identity.
+        // Promotion previously overwrote business users. Restore business identity.
         DB::table('users')
             ->whereNotNull('business_id')
             ->where('is_affiliate', true)

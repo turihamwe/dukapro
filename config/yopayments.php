@@ -3,7 +3,7 @@
 return [
     /*
     |--------------------------------------------------------------------------
-    | Yo! Payments (YoPayments) — Uganda mobile money gateway
+    | Yo! Payments (YoPayments) - Uganda mobile money gateway
     |--------------------------------------------------------------------------
     | Credentials are stored in system_settings by SuperAdmin and loaded here
     | for platform subscription collections from business owners.

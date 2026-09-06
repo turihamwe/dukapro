@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Sign in — ' . $business->name)
+@section('title', 'Sign in | ' . $business->name)
 @section('container_class', 'max-w-md')
 
 @section('content')

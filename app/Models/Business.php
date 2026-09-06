@@ -157,7 +157,7 @@ class Business extends Model
     }
 
     /**
-     * Multiple floor staff — POS waiter picker and per-waiter shift balances.
+     * Multiple floor staff - POS waiter picker and per-waiter shift balances.
      */
     public function usesMultiWaiterAttribution(): bool
     {
@@ -173,7 +173,7 @@ class Business extends Model
     }
 
     /**
-     * Cashier shift close (EOD) — always available where reconciliation is permitted.
+     * Cashier shift close (EOD). Always available where reconciliation is permitted.
      */
     public function usesCashierShiftReconciliation(): bool
     {

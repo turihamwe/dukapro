@@ -241,7 +241,7 @@ class AuthController extends Controller
         );
 
         return redirect()->route('tenant.dashboard', ['business' => $user->business->slug])
-            ->with('success', 'Welcome to your ' . platform_brand('name') . ' store, ' . $user->business->name . '! Your portal URL is ' . $user->business->portalLoginUrl());
+            ->with('success', 'Welcome to your ' . platform_brand('name') . ' dashboard, ' . $user->business->name . '! Your business portal link is ' . $user->business->portalLoginUrl());
     }
 
     public function logout(Request $request)

@@ -23,6 +23,6 @@ class ShortenAffiliateReferralCodes extends Migration
 
     public function down()
     {
-        // Irreversible — old referral URLs would not be restored.
+        // Irreversible. Old referral URLs would not be restored.
     }
 }

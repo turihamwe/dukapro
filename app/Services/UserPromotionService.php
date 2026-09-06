@@ -78,7 +78,7 @@ class UserPromotionService
                 'is_active' => false,
             ]);
 
-            // Keep the user's business role intact — separation lives on affiliates table.
+            // Keep the user's business role intact. Separation lives on affiliates table.
             return $this->affiliateRegistration->approve($affiliate->fresh(), $approver);
         });
     }
@@ -110,7 +110,7 @@ class UserPromotionService
                 'registered_at' => now(),
             ]);
 
-            // Keep the user's business role intact — separation lives on shareholders table.
+            // Keep the user's business role intact. Separation lives on shareholders table.
             return $this->shareholderRegistration->approve($shareholder->fresh(), $approver);
         });
     }

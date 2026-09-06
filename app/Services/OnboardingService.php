@@ -27,7 +27,7 @@ class OnboardingService
             'catalog_route' => 'tenant.inventory.create',
             'staff_cta' => $isHospitality ? 'Set up branch staff' : 'Add employees',
             'staff_hint' => $isHospitality
-                ? 'Add waiters, kitchen staff, and cashiers — each tied to a branch. Running alone? You act as cashier at the till (enable Cashier Mode) — no separate waiter staff needed.'
+                ? 'Add waiters, kitchen staff, and cashiers, each tied to a branch. Running the business alone? Enable Cashier Mode to act as a cashier at the till. No separate waiter staff needed.'
                 : 'Create accounts for managers, supervisors, and cashiers.',
             'welcome_subtitle' => $isHospitality
                 ? 'Set up your menu and branch team to start taking orders.'

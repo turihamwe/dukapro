@@ -7,8 +7,8 @@ return [
     | Platform billing mode
     |--------------------------------------------------------------------------
     |
-    | unified — flat subscription (100k/month); modules are free toggles.
-    | addons  — base subscription + per-module monthly add-on fees.
+    | unified - flat subscription (100k/month); modules are free toggles.
+    | addons  - base subscription + per-module monthly add-on fees.
     |
     | Runtime value comes from SystemSetting (superadmin). This is the default.
     |

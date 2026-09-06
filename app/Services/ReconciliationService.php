@@ -220,7 +220,7 @@ class ReconciliationService
         $dateLabel = $reconciliation->reconciliation_date->format('M j, Y');
 
         $message = implode("\n", array_filter([
-            "EOD Report — {$business->name}",
+            "EOD Report - {$business->name}",
             "Date: {$dateLabel}",
             "Cashier: {$reconciliation->user->name}",
             '',

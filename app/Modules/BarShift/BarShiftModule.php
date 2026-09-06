@@ -21,7 +21,7 @@ class BarShiftModule implements ModuleDefinition
 
     public function description(): string
     {
-        return 'For bars and pubs without a kitchen. Configure waiters and tables below — shift close always applies via the cashier.';
+        return 'For bars and pubs without a kitchen. Configure waiters and tables below. Shift close always applies via the cashier.';
     }
 
     public function defaultEnabledFor(Business $business): bool

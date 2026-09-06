@@ -196,7 +196,7 @@ class ModuleBillingService
         $lineItems = [
             [
                 'key' => 'base',
-                'label' => 'Platform subscription — ' . $plan['label'],
+                'label' => 'Platform subscription - ' . $plan['label'],
                 'amount' => $baseAmount,
             ],
         ];

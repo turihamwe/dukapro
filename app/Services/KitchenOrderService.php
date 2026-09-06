@@ -192,7 +192,7 @@ class KitchenOrderService
             'customer_id' => $payment['customer_id'] ?? null,
             'waiter_id' => $order->waiter_id,
             'mobile_money_provider' => $payment['mobile_money_provider'] ?? null,
-            'notes' => trim(($order->notes ? $order->notes . ' · ' : '') . 'Table ' . ($order->table_label ?: '—') . ' · ' . $order->order_number),
+            'notes' => trim(($order->notes ? $order->notes . ' · ' : '') . 'Table ' . ($order->table_label ?: '-') . ' · ' . $order->order_number),
             'kitchen_order_id' => $order->id,
         ];
 

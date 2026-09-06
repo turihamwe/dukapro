@@ -5,7 +5,7 @@
 @section('content')
 <div class="mb-8">
     <h1 class="text-2xl font-bold tracking-tight">Unified Activity Log</h1>
-    <p class="mt-1 text-sm text-gray-500">Significant actions across all tenants — no private business data exposed</p>
+    <p class="mt-1 text-sm text-gray-500">Significant actions across all tenants. No private business data exposed</p>
 </div>
 
 <form method="GET" class="mb-6 flex flex-wrap gap-3">
