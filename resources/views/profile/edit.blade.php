@@ -13,7 +13,7 @@
         <x-input type="text" name="name" label="Full name" value="{{ old('name', $user->name) }}" required />
 
         <div class="grid gap-4 sm:grid-cols-2">
-            <x-input type="text" name="username" label="Username" value="{{ old('username', $user->username) }}" required hint="Used for quick sign in." />
+            <x-input type="text" name="username" id="profile-username" label="Username" value="{{ old('username', $user->username) }}" required hint="Used for quick sign in (stored lowercase)." autocapitalize="none" />
             <x-input type="email" name="email" label="Email" value="{{ old('email', $user->email) }}" required />
         </div>
 
@@ -42,3 +42,18 @@
     </form>
 </x-card>
 @endsection
+
+@push('scripts')
+<script>
+(function () {
+    var input = document.getElementById('profile-username');
+    if (!input) return;
+    input.addEventListener('input', function () {
+        var start = input.selectionStart;
+        var end = input.selectionEnd;
+        input.value = input.value.toLowerCase();
+        input.setSelectionRange(start, end);
+    });
+})();
+</script>
+@endpush

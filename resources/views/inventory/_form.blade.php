@@ -84,11 +84,6 @@
 
     {{-- Simple product fields --}}
     <div id="simple-product-fields" class="space-y-5 {{ $variantsEnabled ? 'hidden' : '' }}">
-        <div>
-            <label class="mb-1.5 block text-sm font-medium text-gray-700" for="simple_sku">SKU / item code <span class="font-normal text-gray-400">(optional)</span></label>
-            <input type="text" name="sku" id="simple_sku" value="{{ old('sku', $product->sku ?? '') }}" placeholder="Leave blank to auto-generate"
-                   class="simple-field block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-        </div>
         <div class="grid gap-5 sm:grid-cols-2">
             <div>
                 <label class="mb-1.5 block text-sm font-medium text-gray-700" for="simple_price">Selling price <span class="text-red-500">*</span></label>
@@ -223,7 +218,6 @@
                     <thead class="bg-white">
                         <tr>
                             <th class="px-3 py-2 text-left font-medium text-gray-500">Variant</th>
-                            <th class="px-3 py-2 text-left font-medium text-gray-500">SKU <span class="font-normal text-gray-400">(optional)</span></th>
                             <th class="px-3 py-2 text-left font-medium text-gray-500">Price</th>
                             @if($canViewCost)
                                 <th class="px-3 py-2 text-left font-medium text-gray-500">Cost</th>
@@ -484,7 +478,6 @@
             }).join(' · ');
 
             rowState[key] = {
-                sku: prev.sku != null ? prev.sku : (saved.sku || ''),
                 price: prev.price != null ? prev.price : (saved.price || ''),
                 cost_price: prev.cost_price != null ? prev.cost_price : (saved.cost_price || ''),
                 stock_quantity: prev.stock_quantity != null ? prev.stock_quantity : (saved.stock_quantity != null ? saved.stock_quantity : 0),
@@ -499,7 +492,6 @@
 
             tr.innerHTML =
                 '<td class="px-3 py-2 text-gray-900">' + esc(label) + attrsHtml + idHtml + '</td>' +
-                '<td class="px-3 py-2"><input type="text" name="variants[' + index + '][sku]" value="' + esc(rowState[key].sku) + '" placeholder="Auto" class="w-full min-w-[88px] rounded-lg border-gray-300 text-sm variant-field" data-key="' + esc(key) + '" data-field="sku"></td>' +
                 '<td class="px-3 py-2"><input type="number" step="0.01" min="0" required name="variants[' + index + '][price]" value="' + esc(rowState[key].price) + '" class="w-full min-w-[80px] rounded-lg border-gray-300 text-sm variant-field" data-key="' + esc(key) + '" data-field="price"></td>' +
                 (canViewCost ? '<td class="px-3 py-2"><input type="number" step="0.01" min="0" name="variants[' + index + '][cost_price]" value="' + esc(rowState[key].cost_price) + '" class="w-full min-w-[80px] rounded-lg border-gray-300 text-sm variant-field" data-key="' + esc(key) + '" data-field="cost_price"></td>' : '') +
                 '<td class="px-3 py-2"><input type="number" step="0.001" min="0" required name="variants[' + index + '][stock_quantity]" value="' + esc(rowState[key].stock_quantity) + '" class="w-full min-w-[72px] rounded-lg border-gray-300 text-sm variant-field" data-key="' + esc(key) + '" data-field="stock_quantity"></td>';

@@ -23,6 +23,10 @@ class ProfileController extends Controller
     {
         $user = $request->user();
 
+        if ($request->filled('username')) {
+            $request->merge(['username' => strtolower(trim($request->input('username')))]);
+        }
+
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'username' => ['required', 'string', 'max:50', 'alpha_dash', Rule::unique('users', 'username')->ignore($user->id)],

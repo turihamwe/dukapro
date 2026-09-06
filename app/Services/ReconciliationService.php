@@ -6,6 +6,7 @@ use App\Models\EndOfDayReconciliation;
 use App\Models\Expense;
 use App\Models\Sale;
 use App\Models\User;
+use App\Support\ReconciliationVariance;
 use Carbon\Carbon;
 
 class ReconciliationService
@@ -232,7 +233,7 @@ class ReconciliationService
             '• Expenses: ' . format_money($reconciliation->total_expenses ?? 0, $business),
             '• Damages: ' . format_money($reconciliation->total_damages ?? 0, $business),
             '• Extra cash: ' . format_money($reconciliation->extra_cash ?? 0, $business),
-            '• Missing money: ' . format_money($reconciliation->missing_money ?? 0, $business),
+            ReconciliationVariance::whatsAppVarianceLine($reconciliation->missing_money ?? 0, $business),
         ]));
 
         return 'https://wa.me/' . $digits . '?text=' . rawurlencode($message);

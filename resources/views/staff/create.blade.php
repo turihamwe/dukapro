@@ -15,7 +15,7 @@
     <form method="POST" action="{{ tenant_route('tenant.staff.store') }}" class="space-y-5">
         @csrf
             <x-input type="text" name="name" label="Full name" required />
-            <x-input type="text" name="username" label="Username" value="{{ old('username') }}" required hint="Simple login name for this staff member." />
+            <x-input type="text" name="username" id="staff-username" label="Username" value="{{ old('username') }}" required hint="Simple login name for this staff member (stored lowercase)." autocapitalize="none" />
             <div class="grid gap-4 sm:grid-cols-2">
             <x-input type="email" name="email" label="Email" hint="Optional — staff can sign in with username." />
             <x-input type="text" name="phone" label="Phone" />
@@ -52,3 +52,18 @@
     </form>
 </x-card>
 @endsection
+
+@push('scripts')
+<script>
+(function () {
+    var input = document.getElementById('staff-username');
+    if (!input) return;
+    input.addEventListener('input', function () {
+        var start = input.selectionStart;
+        var end = input.selectionEnd;
+        input.value = input.value.toLowerCase();
+        input.setSelectionRange(start, end);
+    });
+})();
+</script>
+@endpush

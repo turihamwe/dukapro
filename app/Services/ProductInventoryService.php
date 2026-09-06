@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Helpers\AuditLogger;
 use App\Models\Brand;
+use App\Models\Business;
 use App\Models\Product;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -67,9 +68,7 @@ class ProductInventoryService
         }
 
         $old = $product->toArray();
-        if (array_key_exists('sku', $data)) {
-            $data['sku'] = $this->resolveSku($data['sku'] ?? null, $data['name'] ?? $product->name, (int) $product->business_id, $product->id);
-        }
+        unset($data['sku']);
         $product->update($data);
         AuditLogger::record('product_updated', $product, $old, $product->fresh()->toArray());
 
@@ -158,28 +157,59 @@ class ProductInventoryService
 
     protected function normalizeSku(?string $sku, Product $parent, array $attributes, int $index, int $businessId, ?int $ignoreProductId = null): string
     {
-        $sku = trim((string) $sku);
-        if ($sku !== '') {
-            return $sku;
+        if ($ignoreProductId) {
+            $existing = Product::find($ignoreProductId);
+            if ($existing && $existing->sku) {
+                return $existing->sku;
+            }
         }
 
-        $suffix = collect($attributes)->map(fn ($value) => Str::slug((string) $value))->filter()->implode('-');
-        $base = $suffix !== '' ? Str::upper(Str::slug($parent->name) . '-' . $suffix) : Str::upper(Str::slug($parent->name) . '-' . ($index + 1));
-
-        return $this->uniqueSku($base, $businessId, $ignoreProductId);
+        return $this->nextSequenceSku($businessId, $ignoreProductId);
     }
 
     protected function resolveSku(?string $sku, string $name, int $businessId, ?int $ignoreProductId = null): string
     {
-        $sku = trim((string) $sku);
-        if ($sku !== '') {
-            return $sku;
+        if ($ignoreProductId) {
+            $existing = Product::find($ignoreProductId);
+            if ($existing && $existing->sku) {
+                return $existing->sku;
+            }
         }
 
-        $base = Str::upper(Str::slug($name)) ?: 'ITEM';
-        $base = Str::limit($base, 40, '');
+        return $this->nextSequenceSku($businessId, $ignoreProductId);
+    }
 
-        return $this->uniqueSku($base, $businessId, $ignoreProductId);
+    protected function businessSkuPrefix(int $businessId): string
+    {
+        $business = Business::find($businessId);
+        $name = $business ? $business->name : 'ITEM';
+        $letters = preg_replace('/[^A-Za-z]/', '', $name) ?: 'ITEM';
+        $prefix = strtoupper(substr($letters, 0, 3));
+
+        return str_pad($prefix, 3, 'X');
+    }
+
+    protected function nextSequenceSku(int $businessId, ?int $ignoreProductId = null): string
+    {
+        $prefix = $this->businessSkuPrefix($businessId);
+        $pattern = $prefix . '-%';
+
+        $existingSkus = Product::query()
+            ->where('business_id', $businessId)
+            ->where('sku', 'like', $pattern)
+            ->when($ignoreProductId, fn ($query) => $query->where('id', '!=', $ignoreProductId))
+            ->pluck('sku');
+
+        $max = 0;
+        foreach ($existingSkus as $existingSku) {
+            if (preg_match('/^' . preg_quote($prefix, '/') . '-(\d+)$/', $existingSku, $matches)) {
+                $max = max($max, (int) $matches[1]);
+            }
+        }
+
+        $sku = sprintf('%s-%03d', $prefix, $max + 1);
+
+        return $this->uniqueSku($sku, $businessId, $ignoreProductId);
     }
 
     protected function uniqueSku(string $base, int $businessId, ?int $ignoreProductId = null): string

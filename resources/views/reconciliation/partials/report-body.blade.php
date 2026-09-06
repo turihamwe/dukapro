@@ -1,6 +1,11 @@
 @php
+    use App\Support\ReconciliationVariance;
+
     $business = $reconciliation->business;
-    $missingMoney = $reconciliation->missing_money ?? 0;
+    $missingMoney = (float) ($reconciliation->missing_money ?? 0);
+    $varianceLabel = ReconciliationVariance::label($missingMoney);
+    $varianceAmount = ReconciliationVariance::displayAmount($missingMoney);
+    $varianceTone = ReconciliationVariance::tone($missingMoney);
 @endphp
 
 <div class="mb-6 border-b border-gray-200 pb-4">
@@ -39,8 +44,14 @@
         <div class="flex justify-between"><dt class="text-indigo-900/70">Expenses</dt><dd class="font-medium text-red-700">@money($reconciliation->total_expenses ?? 0)</dd></div>
         <div class="flex justify-between"><dt class="text-indigo-900/70">Damages</dt><dd class="font-medium text-amber-800">@money($reconciliation->total_damages ?? 0)</dd></div>
         <div class="flex justify-between border-t border-indigo-200 pt-2">
-            <dt class="font-semibold text-indigo-950">Missing money</dt>
-            <dd class="font-bold {{ $missingMoney > 0 ? 'text-red-700' : 'text-emerald-700' }}">@money($missingMoney)</dd>
+            <dt class="font-semibold text-indigo-950">{{ $varianceLabel }}</dt>
+            <dd class="font-bold {{ $varianceTone === 'danger' ? 'text-red-700' : ($varianceTone === 'success' ? 'text-emerald-700' : 'text-indigo-950') }}">
+                @if($varianceTone === 'neutral')
+                    Balanced
+                @else
+                    @money($varianceAmount)
+                @endif
+            </dd>
         </div>
     </dl>
 </div>

@@ -56,6 +56,10 @@
 
     input.addEventListener('input', function () {
         clearTimeout(timer);
+        var start = input.selectionStart;
+        var end = input.selectionEnd;
+        input.value = input.value.toLowerCase();
+        input.setSelectionRange(start, end);
         var value = input.value.trim();
         if (value.length < 3) {
             status.classList.add('hidden');

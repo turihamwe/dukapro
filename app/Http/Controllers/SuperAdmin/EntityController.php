@@ -10,6 +10,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Affiliate;
 use App\Models\AffiliateCommission;
 use App\Models\Branch;
+use App\Models\Brand;
 use App\Models\Business;
 use App\Models\Customer;
 use App\Models\Expense;
@@ -81,7 +82,7 @@ class EntityController extends Controller
             });
         }
 
-        if (in_array($entity, ['users', 'staff', 'products', 'customers', 'expenses', 'branches'], true)) {
+        if (in_array($entity, ['users', 'staff', 'products', 'customers', 'expenses', 'branches', 'brands'], true)) {
             $query->with('business');
         }
 
@@ -197,6 +198,22 @@ class EntityController extends Controller
                     'phone' => $data['phone'] ?? null,
                     'is_active' => $request->boolean('is_active', true),
                     'is_default' => $request->boolean('is_default', false),
+                ]);
+                break;
+
+            case 'brands':
+                $data = $request->validate([
+                    'business_id' => 'required|exists:businesses,id',
+                    'name' => 'required|string|max:255',
+                    'description' => 'nullable|string|max:500',
+                    'is_active' => 'nullable|boolean',
+                ]);
+                $record = Brand::create([
+                    'business_id' => $data['business_id'],
+                    'name' => $data['name'],
+                    'slug' => Brand::uniqueSlug((int) $data['business_id'], $data['name']),
+                    'description' => $data['description'] ?? null,
+                    'is_active' => $request->boolean('is_active', true),
                 ]);
                 break;
 
@@ -476,6 +493,20 @@ class EntityController extends Controller
                     'phone' => $data['phone'] ?? null,
                     'is_active' => $request->boolean('is_active', true),
                     'is_default' => $request->boolean('is_default', false),
+                ]);
+                break;
+
+            case 'brands':
+                $data = $request->validate([
+                    'name' => 'required|string|max:255',
+                    'description' => 'nullable|string|max:500',
+                    'is_active' => 'nullable|boolean',
+                ]);
+                $item->update([
+                    'name' => $data['name'],
+                    'slug' => Brand::uniqueSlug((int) $item->business_id, $data['name'], $item->id),
+                    'description' => $data['description'] ?? null,
+                    'is_active' => $request->boolean('is_active', true),
                 ]);
                 break;
 

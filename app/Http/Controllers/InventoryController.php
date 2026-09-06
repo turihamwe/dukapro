@@ -281,7 +281,6 @@ class InventoryController extends Controller
             'variants.*.attribute_values' => 'required|array|min:1',
             'variants.*.price' => 'required|numeric|min:0',
             'variants.*.stock_quantity' => 'required|numeric|min:0',
-            'variants.*.sku' => 'nullable|string|max:100',
             'variants.*.cost_price' => 'nullable|numeric|min:0',
         ]);
 
@@ -299,8 +298,6 @@ class InventoryController extends Controller
                 unset($data['variants'][$index]['cost_price']);
             }
         }
-
-        $this->validateVariantSkus($data['variants'], $businessId);
 
         $parent = $this->inventoryService->createWithVariants([
             'name' => $data['name'],
@@ -328,7 +325,6 @@ class InventoryController extends Controller
             'variants.*.attribute_values' => 'required|array|min:1',
             'variants.*.price' => 'required|numeric|min:0',
             'variants.*.stock_quantity' => 'required|numeric|min:0',
-            'variants.*.sku' => 'nullable|string|max:100',
             'variants.*.cost_price' => 'nullable|numeric|min:0',
         ]);
 
@@ -341,8 +337,6 @@ class InventoryController extends Controller
                 unset($data['variants'][$index]['cost_price']);
             }
         }
-
-        $this->validateVariantSkus($data['variants'], $business->id, $product->variants->pluck('id')->all());
 
         $this->inventoryService->updateVariableParent($product, [
             'name' => $data['name'],
@@ -358,16 +352,10 @@ class InventoryController extends Controller
 
     protected function simpleProductRules(int $businessId, Request $request, ?int $ignoreProductId = null): array
     {
-        $skuRule = Rule::unique('products', 'sku')->where(fn ($query) => $query->where('business_id', $businessId));
-        if ($ignoreProductId) {
-            $skuRule = $skuRule->ignore($ignoreProductId);
-        }
-
         $rules = [
             'name' => 'required|string|max:255',
             'brand_id' => 'nullable|exists:brands,id',
             'new_brand_name' => 'nullable|string|max:255',
-            'sku' => ['nullable', 'string', 'max:100', $skuRule],
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
             'measurement_unit' => 'required|string|max:50',
@@ -408,38 +396,6 @@ class InventoryController extends Controller
         );
 
         return $brand->id;
-    }
-
-    protected function validateVariantSkus(array $variants, int $businessId, array $ignoreIds = []): void
-    {
-        $skus = [];
-        foreach ($variants as $index => $variant) {
-            $sku = trim((string) ($variant['sku'] ?? ''));
-            if ($sku === '') {
-                continue;
-            }
-
-            if (in_array($sku, $skus, true)) {
-                throw ValidationException::withMessages([
-                    "variants.$index.sku" => 'Duplicate SKU in variant list.',
-                ]);
-            }
-            $skus[] = $sku;
-
-            $variantId = isset($variant['id']) ? (int) $variant['id'] : null;
-
-            $exists = Product::query()
-                ->where('business_id', $businessId)
-                ->where('sku', $sku)
-                ->when($variantId, fn ($q) => $q->where('id', '!=', $variantId))
-                ->exists();
-
-            if ($exists) {
-                throw ValidationException::withMessages([
-                    "variants.$index.sku" => 'SKU already used by another product.',
-                ]);
-            }
-        }
     }
 
     public function catalog(Request $request)

@@ -6,6 +6,7 @@ use App\Helpers\AuditLogger;
 use App\Models\Business;
 use App\Models\EndOfDayReconciliation;
 use App\Services\ReconciliationService;
+use App\Support\ReconciliationVariance;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -18,7 +19,7 @@ class ReconciliationController extends Controller
     {
         $this->reconciliationService = $reconciliationService;
         $this->middleware('can:view-reconciliation-history')->only(['index', 'show', 'print']);
-        $this->middleware('can:submit-reconciliation')->only(['create', 'store']);
+        $this->middleware('can:submit-reconciliation')->only(['create', 'store', 'edit', 'update']);
     }
 
     public function index(Request $request)
@@ -43,8 +44,9 @@ class ReconciliationController extends Controller
         $shortages = $reconciliation->shortages()->with('user')->get();
         $bossPhone = $this->resolveBossPhone($business);
         $whatsAppUrl = $this->reconciliationService->whatsAppShareUrl($reconciliation, $bossPhone);
+        $canEdit = $this->canEditReconciliation($request, $reconciliation);
 
-        return view('reconciliation.show', compact('reconciliation', 'report', 'whatsAppUrl', 'bossPhone', 'shortages'));
+        return view('reconciliation.show', compact('reconciliation', 'report', 'whatsAppUrl', 'bossPhone', 'shortages', 'canEdit'));
     }
 
     public function print(Business $business, EndOfDayReconciliation $reconciliation)
@@ -78,17 +80,31 @@ class ReconciliationController extends Controller
         return view('reconciliation.create', compact('expected', 'date', 'waiterShift', 'waiterBalances', 'business'));
     }
 
+    public function edit(Request $request, Business $business, EndOfDayReconciliation $reconciliation)
+    {
+        $this->authorizeEditableReconciliation($request, $reconciliation);
+
+        $date = $reconciliation->reconciliation_date->toDateString();
+        $expected = $this->reconciliationService->calculateExpectedTotals(
+            $request->user()->business_id,
+            $reconciliation->user_id,
+            Carbon::parse($date)
+        );
+
+        $waiterShift = null;
+        $waiterBalances = collect();
+        if ($business->usesPerWaiterShiftBalancing()) {
+            $waiterShift = app(\App\Services\WaiterShiftService::class)->summarizeShift($business, Carbon::parse($date), $reconciliation->user);
+            $waiterBalances = app(\App\Services\WaiterShiftService::class)->balancesForDate($business->id, Carbon::parse($date));
+        }
+
+        return view('reconciliation.edit', compact('reconciliation', 'expected', 'date', 'waiterShift', 'waiterBalances', 'business'));
+    }
+
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'reconciliation_date' => 'required|date',
-            'actual_cash' => 'required|numeric|min:0',
-            'actual_mobile_money' => 'nullable|numeric|min:0',
-            'actual_bank_other' => 'nullable|numeric|min:0',
-            'extra_cash' => 'nullable|numeric|min:0',
-            'notes' => 'nullable|string',
-            'bundle_waiter_balances' => 'nullable|boolean',
-        ]);
+        $data = $this->validatedSubmission($request);
+        $this->assertEditableDate(Carbon::parse($data['reconciliation_date']));
 
         $reconciliation = $request->user()->business->usesPerWaiterShiftBalancing()
             ? $this->reconciliationService->submitWithWaiterBalances($request->user(), $data)
@@ -97,7 +113,62 @@ class ReconciliationController extends Controller
         AuditLogger::record('reconciliation_submitted', $reconciliation, null, $reconciliation->toArray());
 
         return redirect()->to(tenant_route('tenant.reconciliation.show', ['reconciliation' => $reconciliation]))
-            ->with('success', 'End-of-day reconciliation submitted. Missing money: ' . format_money($reconciliation->missing_money ?? 0));
+            ->with('success', ReconciliationVariance::successMessage($reconciliation->missing_money ?? 0, $reconciliation->business));
+    }
+
+    public function update(Request $request, Business $business, EndOfDayReconciliation $reconciliation)
+    {
+        $this->authorizeEditableReconciliation($request, $reconciliation);
+
+        $data = $this->validatedSubmission($request);
+        $this->assertEditableDate(Carbon::parse($data['reconciliation_date']));
+
+        $old = $reconciliation->toArray();
+
+        $reconciliation = $reconciliation->user->business->usesPerWaiterShiftBalancing()
+            ? $this->reconciliationService->submitWithWaiterBalances($reconciliation->user, $data)
+            : $this->reconciliationService->submit($reconciliation->user, $data);
+
+        AuditLogger::record('reconciliation_updated', $reconciliation, $old, $reconciliation->toArray());
+
+        return redirect()->to(tenant_route('tenant.reconciliation.show', ['reconciliation' => $reconciliation]))
+            ->with('success', ReconciliationVariance::successMessage($reconciliation->missing_money ?? 0, $reconciliation->business));
+    }
+
+    protected function validatedSubmission(Request $request): array
+    {
+        return $request->validate([
+            'reconciliation_date' => 'required|date',
+            'actual_cash' => 'required|numeric|min:0',
+            'actual_mobile_money' => 'nullable|numeric|min:0',
+            'actual_bank_other' => 'nullable|numeric|min:0',
+            'extra_cash' => 'nullable|numeric|min:0',
+            'notes' => 'nullable|string',
+            'bundle_waiter_balances' => 'nullable|boolean',
+        ]);
+    }
+
+    protected function assertEditableDate(Carbon $date): void
+    {
+        abort_unless($date->isToday(), 403, 'Only today\'s reconciliation can be submitted or edited.');
+    }
+
+    protected function canEditReconciliation(Request $request, EndOfDayReconciliation $reconciliation): bool
+    {
+        if (! Gate::allows('submit-reconciliation')) {
+            return false;
+        }
+
+        if ((int) $reconciliation->user_id !== (int) $request->user()->id) {
+            return false;
+        }
+
+        return Carbon::parse($reconciliation->reconciliation_date)->isToday();
+    }
+
+    protected function authorizeEditableReconciliation(Request $request, EndOfDayReconciliation $reconciliation): void
+    {
+        abort_unless($this->canEditReconciliation($request, $reconciliation), 403);
     }
 
     protected function authorizeReconciliation(Request $request, EndOfDayReconciliation $reconciliation): void

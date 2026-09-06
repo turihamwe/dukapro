@@ -24,6 +24,10 @@
             <input type="text" name="phone" value="{{ old('phone', $item->phone) }}" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_active" value="1" @checked(old('is_active', $item->is_active))> Active</label>
             <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_default" value="1" @checked(old('is_default', $item->is_default))> Default branch</label>
+        @elseif($entity === 'brands')
+            <input type="text" name="name" value="{{ old('name', $item->name) }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <textarea name="description" rows="3" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">{{ old('description', $item->description) }}</textarea>
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_active" value="1" @checked(old('is_active', $item->is_active))> Active</label>
         @elseif($entity === 'staff')
             <input type="text" name="name" value="{{ old('name', $item->name) }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <input type="email" name="email" value="{{ old('email', $item->email) }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">

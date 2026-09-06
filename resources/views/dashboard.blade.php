@@ -4,6 +4,8 @@
 
 @section('content')
 @php
+    use App\Support\ReconciliationVariance;
+
     $canViewMargins = auth()->user()->can('view-profit-margins');
 @endphp
 
@@ -156,13 +158,23 @@
         @if($stats['eod_reports']->isNotEmpty())
             <ul class="divide-y divide-gray-100">
                 @foreach($stats['eod_reports'] as $report)
+                    @php
+                        $variance = (float) ($report->missing_money ?? 0);
+                        $varianceTone = ReconciliationVariance::tone($variance);
+                    @endphp
                     <li class="flex items-start justify-between gap-4 py-3 text-sm">
                         <div>
                             <p class="font-medium text-gray-900">{{ $report->user->name }}</p>
                             <p class="text-xs text-gray-500">{{ $report->reconciliation_date->format('M d, Y') }}</p>
                         </div>
                         <div class="text-right text-xs">
-                            <p>Missing <span class="{{ ($report->missing_money ?? 0) > 0 ? 'text-red-600' : 'text-emerald-600' }} font-medium">@money($report->missing_money ?? 0)</span></p>
+                            @if($varianceTone === 'neutral')
+                                <p class="text-gray-600">Balanced</p>
+                            @elseif($varianceTone === 'danger')
+                                <p>Missing <span class="font-medium text-red-600">@money(ReconciliationVariance::displayAmount($variance))</span></p>
+                            @else
+                                <p>Extra <span class="font-medium text-emerald-600">@money(ReconciliationVariance::displayAmount($variance))</span></p>
+                            @endif
                         </div>
                     </li>
                 @endforeach

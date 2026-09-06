@@ -11,7 +11,7 @@
     <form method="POST" action="{{ route('superadmin.entities.store', $entity) }}" class="space-y-4">
         @csrf
 
-        @if(in_array($entity, ['staff', 'products', 'customers', 'expenses', 'branches'], true))
+        @if(in_array($entity, ['staff', 'products', 'customers', 'expenses', 'branches', 'brands'], true))
             <div>
                 <label class="mb-1 block text-sm font-medium">Business</label>
                 <select name="business_id" id="entity-business-id" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
@@ -32,6 +32,10 @@
             <input type="text" name="phone" value="{{ old('phone') }}" placeholder="Phone" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_active" value="1" @checked(old('is_active', true))> Active</label>
             <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_default" value="1" @checked(old('is_default'))> Default branch</label>
+        @elseif($entity === 'brands')
+            <input type="text" name="name" value="{{ old('name') }}" required placeholder="Brand name" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <textarea name="description" rows="3" placeholder="Description (optional)" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">{{ old('description') }}</textarea>
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_active" value="1" @checked(old('is_active', true))> Active</label>
         @elseif($entity === 'staff')
             <div>
                 <label class="mb-1 block text-sm font-medium">Branch</label>
@@ -43,7 +47,7 @@
                 </select>
             </div>
             <input type="text" name="name" value="{{ old('name') }}" required placeholder="Full name" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
-            <input type="text" name="username" value="{{ old('username') }}" required placeholder="Username" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <input type="text" name="username" id="staff-username" value="{{ old('username') }}" required placeholder="Username" autocapitalize="none" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <input type="email" name="email" value="{{ old('email') }}" required placeholder="Email" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <input type="password" name="password" required placeholder="Password" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <select name="role" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
@@ -117,6 +121,17 @@
 (function () {
     var businessSelect = document.getElementById('entity-business-id');
     var branchSelect = document.getElementById('staff-branch-id');
+    var usernameInput = document.getElementById('staff-username');
+
+    if (usernameInput) {
+        usernameInput.addEventListener('input', function () {
+            var start = usernameInput.selectionStart;
+            var end = usernameInput.selectionEnd;
+            usernameInput.value = usernameInput.value.toLowerCase();
+            usernameInput.setSelectionRange(start, end);
+        });
+    }
+
     if (!businessSelect || !branchSelect) return;
 
     function filterBranches() {

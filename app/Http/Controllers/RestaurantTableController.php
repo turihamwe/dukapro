@@ -17,13 +17,13 @@ class RestaurantTableController extends Controller
     public function __construct(RestaurantTableService $tableService)
     {
         $this->tableService = $tableService;
-        $this->middleware('can:manage-restaurant-tables');
+        $this->middleware('can:manage-floor-tables');
     }
 
     public function index(Request $request)
     {
         $business = $request->user()->business;
-        abort_unless($business && $business->usesRestaurantMode(), 404);
+        abort_unless($business && $business->usesTableSeating(), 404);
 
         $tables = RestaurantTable::query()
             ->with('branch')
@@ -39,6 +39,8 @@ class RestaurantTableController extends Controller
     public function create(Request $request)
     {
         $business = $request->user()->business;
+        abort_unless($business && $business->usesTableSeating(), 404);
+
         $branches = Branch::query()
             ->where('business_id', $business->id)
             ->where('is_active', true)
@@ -52,6 +54,7 @@ class RestaurantTableController extends Controller
     public function store(Request $request)
     {
         $business = $request->user()->business;
+        abort_unless($business && $business->usesTableSeating(), 404);
 
         $data = $request->validate([
             'branch_id' => [

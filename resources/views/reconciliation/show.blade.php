@@ -4,7 +4,7 @@
 
 @section('content')
 @php
-    $business = $reconciliation->business;
+    use App\Support\ReconciliationVariance;
 @endphp
 
 <x-page-header
@@ -12,6 +12,9 @@
     subtitle="{{ $reconciliation->reconciliation_date->format('l, M j, Y') }} · {{ $reconciliation->user->name }}">
     <x-slot name="actions">
         <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.reconciliation.index') }}">All reports</x-button>
+        @if(! empty($canEdit))
+            <x-button variant="primary" size="sm" href="{{ tenant_route('tenant.reconciliation.edit', ['reconciliation' => $reconciliation]) }}">Edit report</x-button>
+        @endif
         <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.reconciliation.print', ['reconciliation' => $reconciliation]) }}" target="_blank">Print / PDF</x-button>
         @if($whatsAppUrl)
             <x-button variant="primary" size="sm" href="{{ $whatsAppUrl }}" target="_blank" rel="noopener">Share on WhatsApp</x-button>

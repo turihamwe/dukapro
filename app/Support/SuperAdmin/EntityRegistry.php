@@ -4,6 +4,7 @@ namespace App\Support\SuperAdmin;
 
 use App\Models\Affiliate;
 use App\Models\AffiliateCommission;
+use App\Models\Brand;
 use App\Models\Branch;
 use App\Models\Business;
 use App\Models\Customer;
@@ -33,6 +34,14 @@ class EntityRegistry
                 'model' => Branch::class,
                 'search' => ['name', 'slug', 'address', 'phone'],
                 'list' => ['name', 'slug', 'business_id', 'is_active', 'is_default'],
+                'creatable' => true,
+                'deletable' => true,
+            ],
+            'brands' => [
+                'label' => 'Brands',
+                'model' => Brand::class,
+                'search' => ['name', 'slug', 'description'],
+                'list' => ['name', 'slug', 'business_id', 'is_active'],
                 'creatable' => true,
                 'deletable' => true,
             ],
