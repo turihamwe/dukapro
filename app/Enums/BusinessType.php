@@ -50,8 +50,12 @@ class BusinessType
         ];
     }
 
-    public static function label(string $type): string
+    public static function label(?string $type): string
     {
+        if ($type === null || $type === '') {
+            return 'Not set';
+        }
+
         return self::labels()[$type] ?? ucfirst(str_replace('_', ' ', $type));
     }
 
