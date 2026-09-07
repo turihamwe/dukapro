@@ -13,12 +13,15 @@
         <x-card class="flex flex-wrap items-start justify-between gap-3">
             <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center gap-2">
+                    <span class="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-bold text-indigo-900">
+                        {{ $order->tableDisplay() }}
+                    </span>
                     <p class="font-semibold text-gray-900">{{ $order->order_number }}</p>
                     <span class="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase {{ $order->isPaid() ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-800' }}">
                         {{ $order->isPaid() ? 'Paid' : KitchenOrderStatus::label($order->status) }}
                     </span>
                 </div>
-                <p class="mt-1 text-sm text-gray-600">{{ $order->tableDisplay() }} · {{ $order->waiter->name ?? 'Staff' }}</p>
+                <p class="mt-1 text-sm text-gray-600">{{ $order->waiter->name ?? 'Staff' }}</p>
                 <ul class="mt-2 space-y-1 text-xs text-gray-500">
                     @foreach($order->items as $item)
                         <li>

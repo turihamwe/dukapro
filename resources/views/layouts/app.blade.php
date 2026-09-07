@@ -118,6 +118,7 @@
     @endauth
 
     @stack('scripts')
+    @include('layouts.partials.form-validation')
     <script>
     (function () {
         document.querySelectorAll('.password-toggle').forEach(function (btn) {

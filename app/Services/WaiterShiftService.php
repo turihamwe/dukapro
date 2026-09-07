@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Models\Business;
 use App\Models\Sale;
 use App\Models\ShiftWaiterBalance;
+use App\Models\ShiftWaiterRoster;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -36,6 +37,94 @@ class WaiterShiftService
         }
 
         return $query->get(['id', 'name', 'role', 'username', 'branch_id']);
+    }
+
+    public function activeFloorStaff(Business $business, ?User $forUser = null, ?Carbon $date = null): Collection
+    {
+        $date = $date ?? Carbon::today();
+        $staff = $this->floorStaff($business, $forUser);
+        $rosterIds = $this->rosterWaiterIds($business, $date, $forUser);
+
+        if ($rosterIds->isEmpty()) {
+            return $staff;
+        }
+
+        return $staff->whereIn('id', $rosterIds->all())->values();
+    }
+
+    public function rosterWaiterIds(Business $business, Carbon $date, ?User $forUser = null): Collection
+    {
+        return $this->rosterQuery($business, $date, $forUser)->pluck('waiter_user_id');
+    }
+
+    public function saveRoster(User $cashier, Carbon $date, array $waiterIds): Collection
+    {
+        if (! $date->isToday()) {
+            throw ValidationException::withMessages([
+                'shift_date' => 'You can only update today\'s active waiter roster.',
+            ]);
+        }
+
+        $business = $cashier->business;
+        $waiterIds = collect($waiterIds)
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values();
+
+        if ($waiterIds->isEmpty()) {
+            throw ValidationException::withMessages([
+                'waiter_ids' => 'Select at least one waiter for today\'s shift.',
+            ]);
+        }
+
+        foreach ($waiterIds as $waiterId) {
+            $this->resolveAssignableFloorStaff($business, $cashier, $waiterId);
+        }
+
+        $branchId = $this->rosterBranchScope($cashier);
+
+        return DB::transaction(function () use ($business, $cashier, $date, $waiterIds, $branchId) {
+            $this->rosterQuery($business, $date, $cashier)->delete();
+
+            $saved = collect();
+            foreach ($waiterIds as $waiterId) {
+                $saved->push(ShiftWaiterRoster::create([
+                    'business_id' => $business->id,
+                    'branch_id' => $branchId,
+                    'shift_date' => $date->toDateString(),
+                    'waiter_user_id' => $waiterId,
+                    'selected_by_user_id' => $cashier->id,
+                ]));
+            }
+
+            return $saved;
+        });
+    }
+
+    protected function rosterQuery(Business $business, Carbon $date, ?User $forUser = null)
+    {
+        $query = ShiftWaiterRoster::query()
+            ->where('business_id', $business->id)
+            ->whereDate('shift_date', $date->toDateString());
+
+        $branchId = $this->rosterBranchScope($forUser);
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        } else {
+            $query->whereNull('branch_id');
+        }
+
+        return $query;
+    }
+
+    protected function rosterBranchScope(?User $forUser): ?int
+    {
+        if ($forUser && $forUser->isBranchScoped() && $forUser->branch_id) {
+            return (int) $forUser->branch_id;
+        }
+
+        return null;
     }
 
     public function isFloorStaffMember(User $user): bool
@@ -79,6 +168,15 @@ class WaiterShiftService
             }
         }
 
+        if ($business->usesPerWaiterShiftBalancing()) {
+            $rosterIds = $this->rosterWaiterIds($business, Carbon::today(), $assigner);
+            if ($rosterIds->isNotEmpty() && ! $rosterIds->contains($waiter->id)) {
+                throw ValidationException::withMessages([
+                    'waiter_id' => 'This waiter is not on today\'s active shift roster.',
+                ]);
+            }
+        }
+
         return $waiter;
     }
 
@@ -96,6 +194,7 @@ class WaiterShiftService
     public function calculateWaiterSummary(int $businessId, int $waiterId, Carbon $date): array
     {
         $sales = Sale::query()
+            ->with(['kitchenOrder.restaurantTable'])
             ->where('business_id', $businessId)
             ->where('waiter_id', $waiterId)
             ->where('status', 'completed')
@@ -123,7 +222,11 @@ class WaiterShiftService
 
     public function summarizeShift(Business $business, Carbon $date, ?User $forUser = null): array
     {
-        $staff = $this->floorStaff($business, $forUser);
+        $rosterIds = $this->rosterWaiterIds($business, $date, $forUser);
+        $staff = $rosterIds->isNotEmpty()
+            ? $this->floorStaff($business, $forUser)->whereIn('id', $rosterIds->all())->values()
+            : $this->floorStaff($business, $forUser);
+
         $waiterIds = $this->waitersWithOrders($business->id, $date)
             ->filter(function ($waiterId) use ($business) {
                 $user = User::query()->find($waiterId);
@@ -149,7 +252,11 @@ class WaiterShiftService
                 'balance' => $balance,
                 'has_activity' => $waiterIds->contains($waiter->id),
             ];
-        })->filter(function (array $row) {
+        })->filter(function (array $row) use ($rosterIds) {
+            if ($rosterIds->isNotEmpty()) {
+                return true;
+            }
+
             return $row['has_activity'] || $row['balance'];
         })->values();
 

@@ -26,8 +26,37 @@ class WaiterShiftController extends Controller
 
         $date = Carbon::parse($request->get('date', Carbon::today()->toDateString()));
         $shift = $this->waiterShiftService->summarizeShift($business, $date, $request->user());
+        $availableWaiters = $this->waiterShiftService->floorStaff($business, $request->user());
+        $rosterIds = $this->waiterShiftService->rosterWaiterIds($business, $date, $request->user());
+        $canManageRoster = $date->isToday();
 
-        return view('waiter-shift.index', compact('shift', 'date', 'business'));
+        return view('waiter-shift.index', compact(
+            'shift',
+            'date',
+            'business',
+            'availableWaiters',
+            'rosterIds',
+            'canManageRoster'
+        ));
+    }
+
+    public function saveRoster(Request $request)
+    {
+        $business = $request->user()->business;
+        abort_unless($business->usesPerWaiterShiftBalancing(), 404);
+
+        $data = $request->validate([
+            'shift_date' => 'required|date',
+            'waiter_ids' => 'required|array|min:1',
+            'waiter_ids.*' => 'required|integer|exists:users,id',
+        ]);
+
+        $date = Carbon::parse($data['shift_date']);
+        $this->waiterShiftService->saveRoster($request->user(), $date, $data['waiter_ids']);
+
+        return redirect()
+            ->to(tenant_route('tenant.waiter-shift.index', ['date' => $date->toDateString()]))
+            ->with('success', 'Active waiters saved for today\'s shift.');
     }
 
     public function show(Request $request, Business $business, User $waiter)

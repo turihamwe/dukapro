@@ -17,6 +17,34 @@
 
 <x-page-header title="Take Order" subtitle="Tap items to add — review the order, then send to kitchen." class="!mb-4" />
 
+@if(isset($myOrders) && $myOrders->isNotEmpty())
+    <x-card class="mb-4">
+        <h2 class="text-sm font-semibold text-gray-900">Your orders today</h2>
+        <div class="mt-3 space-y-2">
+            @foreach($myOrders as $order)
+                <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5">
+                    <div class="min-w-0">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-bold text-indigo-900">
+                                {{ $order->tableDisplay() }}
+                            </span>
+                            <span class="text-sm font-medium text-gray-900">{{ $order->order_number }}</span>
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500">
+                            {{ $order->created_at->format('g:i A') }}
+                            · {{ $order->items->count() }} items
+                            · @money($order->subtotal)
+                        </p>
+                    </div>
+                    <span class="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase {{ $order->isPaid() ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-800' }}">
+                        {{ $order->isPaid() ? 'Paid' : \App\Enums\KitchenOrderStatus::label($order->status) }}
+                    </span>
+                </div>
+            @endforeach
+        </div>
+    </x-card>
+@endif
+
 <div class="flex flex-col gap-4 lg:grid lg:grid-cols-5 lg:gap-6">
     <div class="order-2 lg:order-1 lg:col-span-3">
         <x-input type="search" id="menu-search" placeholder="Search menu items…" autofocus large class="mb-4" />

@@ -59,7 +59,7 @@ class PosController extends Controller
             ->get(['id', 'name', 'phone', 'outstanding_balance', 'credit_limit']);
 
         $floorStaff = $waiterMode
-            ? app(\App\Services\WaiterShiftService::class)->floorStaff($business, $request->user())
+            ? app(\App\Services\WaiterShiftService::class)->activeFloorStaff($business, $request->user())
             : collect();
 
         return view('pos.checkout', compact('products', 'customers', 'waiterMode', 'restaurantMode', 'isHospitality', 'useRestaurantTables', 'restaurantTables', 'floorStaff'));

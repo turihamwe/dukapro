@@ -24,7 +24,14 @@
             <div class="px-4 py-4 sm:px-5">
                 <div class="flex flex-wrap items-start justify-between gap-2">
                     <div>
-                        <p class="font-medium text-gray-900">#{{ $sale->sale_number }}</p>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <p class="font-medium text-gray-900">#{{ $sale->sale_number }}</p>
+                            @if($sale->tableDisplay())
+                                <span class="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-800">
+                                    Table {{ $sale->tableDisplay() }}
+                                </span>
+                            @endif
+                        </div>
                         <p class="text-xs text-gray-500">{{ optional($sale->completed_at)->format('g:i A') }} · {{ ucfirst(str_replace('_', ' ', $sale->payment_method)) }}
                             @if($sale->mobile_money_provider)
                                 ({{ strtoupper($sale->mobile_money_provider) }})

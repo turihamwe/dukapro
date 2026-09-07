@@ -306,6 +306,7 @@ Route::middleware(['maintenance'])->group(function () {
 
                 Route::middleware(['can:access-waiter-shift-balancing'])->prefix('waiter-shift')->name('waiter-shift.')->group(function () {
                     Route::get('/', [WaiterShiftController::class, 'index'])->name('index');
+                    Route::post('/roster', [WaiterShiftController::class, 'saveRoster'])->name('roster.save');
                     Route::post('/balance-all', [WaiterShiftController::class, 'balanceAll'])->name('balance-all');
                     Route::get('/waiters/{waiter}', [WaiterShiftController::class, 'show'])->name('show');
                     Route::post('/sales/{sale}/settle-credit', [WaiterShiftController::class, 'settleCredit'])->name('settle-credit');

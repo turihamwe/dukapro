@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\KitchenOrder;
 use App\Models\Product;
 use App\Services\KitchenOrderService;
 use Illuminate\Http\Request;
@@ -29,7 +30,16 @@ class WaiterOrderController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'sku', 'price', 'measurement_unit']);
 
-        return view('waiter-orders.index', compact('business', 'products', 'useRestaurantTables', 'restaurantTables'));
+        $myOrders = KitchenOrder::query()
+            ->with(['items', 'restaurantTable'])
+            ->where('business_id', $business->id)
+            ->where('waiter_id', $request->user()->id)
+            ->whereDate('created_at', today())
+            ->latest()
+            ->limit(15)
+            ->get();
+
+        return view('waiter-orders.index', compact('business', 'products', 'useRestaurantTables', 'restaurantTables', 'myOrders'));
     }
 
     public function search(Request $request)

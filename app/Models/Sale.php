@@ -73,6 +73,19 @@ class Sale extends Model
         return $this->belongsTo(KitchenOrder::class);
     }
 
+    public function tableDisplay(): ?string
+    {
+        if ($this->kitchenOrder) {
+            return $this->kitchenOrder->tableDisplay();
+        }
+
+        if ($this->notes && preg_match('/Table\s+([^·]+)/u', $this->notes, $matches)) {
+            return trim($matches[1]);
+        }
+
+        return null;
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(SaleItem::class);

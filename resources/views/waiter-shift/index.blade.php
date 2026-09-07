@@ -17,9 +17,49 @@
     <x-button type="submit" variant="secondary" size="sm">Load</x-button>
 </form>
 
+@if($canManageRoster)
+    <x-card class="mb-4">
+        <h2 class="text-sm font-semibold text-gray-900">Today's active waiters</h2>
+        <p class="mt-1 text-xs text-gray-500">Select the floor staff working this shift. Only active waiters appear at POS and in balancing below.</p>
+
+        @if($availableWaiters->isEmpty())
+            <p class="mt-3 text-sm text-amber-800">No waiters found for this branch. Add staff with the waiter role first.</p>
+        @else
+            <form method="POST" action="{{ tenant_route('tenant.waiter-shift.roster.save') }}" class="mt-4 space-y-4">
+                @csrf
+                <input type="hidden" name="shift_date" value="{{ $date->toDateString() }}">
+                <div class="grid gap-2 sm:grid-cols-2" data-min-checked="1" data-checkbox-name="waiter_ids[]">
+                    @foreach($availableWaiters as $waiter)
+                        <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 text-sm transition hover:border-indigo-200 hover:bg-indigo-50/40">
+                            <input type="checkbox" name="waiter_ids[]" value="{{ $waiter->id }}"
+                                   class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                   @checked($rosterIds->contains($waiter->id))>
+                            <span>
+                                <span class="font-medium text-gray-900">{{ $waiter->name }}</span>
+                                <span class="block text-xs text-gray-500">{{ \App\Enums\UserRole::floorStaffLabel($waiter->role) }}</span>
+                            </span>
+                        </label>
+                    @endforeach
+                </div>
+                <x-button variant="primary" size="sm" type="submit">Save active waiters</x-button>
+            </form>
+        @endif
+    </x-card>
+@elseif($rosterIds->isNotEmpty())
+    <div class="mb-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+        Active roster for this date: {{ $rosterIds->count() }} waiter{{ $rosterIds->count() === 1 ? '' : 's' }} selected.
+    </div>
+@endif
+
 @if($shift['rows']->isEmpty())
     <x-card>
-        <p class="text-sm text-gray-600">No waiter orders recorded for this date yet. Assign waiters at POS when completing sales.</p>
+        <p class="text-sm text-gray-600">
+            @if($canManageRoster && $rosterIds->isEmpty())
+                Select today's active waiters above, then assign them at POS when completing sales.
+            @else
+                No waiter orders recorded for this date yet. Assign waiters at POS when completing sales.
+            @endif
+        </p>
     </x-card>
 @else
     <div class="mb-3 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2.5 text-sm text-indigo-950">
