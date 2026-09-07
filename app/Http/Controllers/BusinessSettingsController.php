@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\AuditLogger;
+use App\Models\Branch;
 use App\Services\BusinessModuleService;
+use App\Services\BusinessPermissionService;
+use App\Support\BatchMode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -20,8 +23,11 @@ class BusinessSettingsController extends Controller
         $business = $request->user()->business->load('businessModules');
         $capabilities = app(BusinessModuleService::class)->capabilityStates($business);
         $floor = app(BusinessModuleService::class)->floorSettings($business);
+        $branches = $business->branches()->orderBy('name')->get();
+        $permissionMatrix = app(BusinessPermissionService::class)->matrixForBusiness($business);
+        $activeStaffRoles = app(BusinessPermissionService::class)->activeStaffRoles($business);
 
-        return view('business.settings', compact('business', 'capabilities', 'floor'));
+        return view('business.settings', compact('business', 'capabilities', 'floor', 'branches', 'permissionMatrix', 'activeStaffRoles'));
     }
 
     public function update(Request $request)
@@ -46,6 +52,9 @@ class BusinessSettingsController extends Controller
             'modules.catalog_variants.enabled' => 'nullable|boolean',
             'floor.use_waiters' => 'nullable|boolean',
             'floor.use_tables' => 'nullable|boolean',
+            'batch_mode' => 'nullable|boolean',
+            'branch_batch_mode' => 'nullable|array',
+            'role_permissions' => 'nullable|array',
         ]);
 
         $old = $business->toArray();
@@ -82,6 +91,43 @@ class BusinessSettingsController extends Controller
         app(BusinessModuleService::class)->syncFloorSettings(
             $business->fresh(),
             $request->input('floor', [])
+        );
+
+        $business = $business->fresh();
+        $settings = $business->settings ?? [];
+
+        if (BatchMode::platformEnabled()) {
+            $settings['batch_mode'] = $request->boolean('batch_mode');
+            $business->settings = $settings;
+            $business->save();
+        }
+
+        foreach ($request->input('branch_batch_mode', []) as $branchId => $value) {
+            $branch = Branch::query()
+                ->where('business_id', $business->id)
+                ->whereKey($branchId)
+                ->first();
+
+            if (! $branch) {
+                continue;
+            }
+
+            $branchSettings = $branch->settings ?? [];
+
+            if ($value === '' || $value === null) {
+                unset($branchSettings['batch_mode']);
+            } else {
+                $branchSettings['batch_mode'] = (bool) (int) $value;
+            }
+
+            $branch->settings = $branchSettings;
+            $branch->save();
+        }
+
+        app(BusinessPermissionService::class)->syncRolePermissions(
+            $business->fresh(),
+            $request->input('role_permissions', []),
+            app(BusinessPermissionService::class)->activeStaffRoles($business)
         );
 
         AuditLogger::record('business_updated', $business, $old, $business->fresh()->toArray());

@@ -8,7 +8,10 @@
 <x-page-header title="Inventory" subtitle="Each product is tracked individually with its own price and stock">
     <x-slot name="actions">
         @can('create', App\Models\Product::class)
-            <x-button variant="primary" size="sm" href="{{ tenant_route('tenant.inventory.create') }}">+ Add Product</x-button>
+            <x-button variant="primary" size="sm" href="{{ tenant_route('tenant.inventory.create') }}">+ Add New Product</x-button>
+        @endcan
+        @can('top-up-inventory')
+            <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.inventory.top-up') }}">Top-up Stock</x-button>
         @endcan
         @can('use-catalog-variants')
             <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.inventory.attributes.index') }}">Attributes</x-button>

@@ -255,4 +255,23 @@ class ProductInventoryService
 
         return array_values(array_filter($results));
     }
+
+    public function topUpStock(Product $product, float $quantity): Product
+    {
+        if ($quantity <= 0) {
+            throw ValidationException::withMessages([
+                'quantity' => 'Enter a quantity greater than zero.',
+            ]);
+        }
+
+        if ($product->isVariableParent()) {
+            throw ValidationException::withMessages([
+                'quantity' => 'Top up individual variants, not the parent product.',
+            ]);
+        }
+
+        $product->increment('stock_quantity', $quantity);
+
+        return $product->fresh();
+    }
 }

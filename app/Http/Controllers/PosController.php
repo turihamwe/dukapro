@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Models\Product;
 use App\Services\KitchenOrderService;
+use App\Services\LowStockAlertService;
 use App\Services\ProductBatchService;
 use App\Services\SaleService;
 use Illuminate\Http\Request;
@@ -17,14 +18,18 @@ class PosController extends Controller
 
     protected KitchenOrderService $kitchenOrderService;
 
+    protected LowStockAlertService $lowStockAlertService;
+
     public function __construct(
         SaleService $saleService,
         ProductBatchService $batchService,
-        KitchenOrderService $kitchenOrderService
+        KitchenOrderService $kitchenOrderService,
+        LowStockAlertService $lowStockAlertService
     ) {
         $this->saleService = $saleService;
         $this->batchService = $batchService;
         $this->kitchenOrderService = $kitchenOrderService;
+        $this->lowStockAlertService = $lowStockAlertService;
         $this->middleware('can:access-pos');
     }
 
@@ -62,7 +67,9 @@ class PosController extends Controller
             ? app(\App\Services\WaiterShiftService::class)->activeFloorStaff($business, $request->user())
             : collect();
 
-        return view('pos.checkout', compact('products', 'customers', 'waiterMode', 'restaurantMode', 'isHospitality', 'useRestaurantTables', 'restaurantTables', 'floorStaff'));
+        $lowStockItems = $this->lowStockAlertService->lowStockProducts($business, $request->user(), 8);
+
+        return view('pos.checkout', compact('products', 'customers', 'waiterMode', 'restaurantMode', 'isHospitality', 'useRestaurantTables', 'restaurantTables', 'floorStaff', 'lowStockItems'));
     }
 
     public function search(Request $request)

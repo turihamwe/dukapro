@@ -26,6 +26,7 @@ class Branch extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'is_default' => 'boolean',
+        'settings' => 'array',
     ];
 
     public function business(): BelongsTo

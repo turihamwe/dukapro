@@ -18,7 +18,8 @@ class ProductPolicy
     public function view(User $user, Product $product): bool
     {
         return $user->can('view-inventory')
-            && (int) $user->business_id === (int) $product->business_id;
+            && (int) $user->business_id === (int) $product->business_id
+            && $this->sameBranch($user, $product);
     }
 
     public function create(User $user): bool
@@ -29,17 +30,35 @@ class ProductPolicy
     public function update(User $user, Product $product): bool
     {
         return $user->can('update-inventory')
-            && (int) $user->business_id === (int) $product->business_id;
+            && (int) $user->business_id === (int) $product->business_id
+            && $this->sameBranch($user, $product);
     }
 
     public function delete(User $user, Product $product): bool
     {
         return $user->can('delete-inventory')
-            && (int) $user->business_id === (int) $product->business_id;
+            && (int) $user->business_id === (int) $product->business_id
+            && $this->sameBranch($user, $product);
+    }
+
+    public function topUp(User $user, Product $product): bool
+    {
+        return $user->can('top-up-inventory')
+            && (int) $user->business_id === (int) $product->business_id
+            && $this->sameBranch($user, $product);
     }
 
     public function viewCostPrice(User $user): bool
     {
         return $user->can('view-cost-prices');
+    }
+
+    protected function sameBranch(User $user, Product $product): bool
+    {
+        if (! $user->isBranchScoped() || ! $user->branch_id) {
+            return true;
+        }
+
+        return (int) $product->branch_id === (int) $user->branch_id;
     }
 }

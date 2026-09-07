@@ -226,6 +226,11 @@ class Business extends Model
         return $this->floorUseTables();
     }
 
+    public function usesBatchMode(?int $branchId = null): bool
+    {
+        return \App\Support\BatchMode::active($this, $branchId);
+    }
+
     public function isHospitality(): bool
     {
         return \App\Enums\BusinessType::isHospitality($this->business_type);

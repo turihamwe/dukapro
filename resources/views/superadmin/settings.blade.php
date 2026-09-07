@@ -73,6 +73,17 @@
                 <p class="mt-0.5 text-xs text-amber-200/70">When enabled, tenant users see a maintenance page. SuperAdmin access is unaffected.</p>
             </div>
         </div>
+
+        <div class="flex items-start gap-3 rounded-lg border border-sky-200 bg-sky-50 p-4">
+            <input type="hidden" name="batch_mode_enabled" value="0">
+            <input type="checkbox" name="batch_mode_enabled" id="batch_mode_enabled" value="1"
+                   {{ old('batch_mode_enabled', $settings['batch_mode_enabled'] ?? '0') === '1' ? 'checked' : '' }}
+                   class="mt-0.5 rounded border-gray-300 text-sky-600 focus:ring-sky-500">
+            <div>
+                <label for="batch_mode_enabled" class="block text-sm font-medium text-sky-950">Batch product tracking mode</label>
+                <p class="mt-0.5 text-xs text-sky-900/80">When enabled, business owners can turn on FIFO batch product tracking per business and branch. When disabled, all tenants use direct stock quantities only.</p>
+            </div>
+        </div>
     </div>
 
     <div class="rounded-xl border border-gray-200 bg-white p-6 space-y-5">

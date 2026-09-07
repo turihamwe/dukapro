@@ -2,10 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\LowStockAlertService;
 use Illuminate\Http\Request;
 
 class OperationsController extends Controller
 {
+    protected LowStockAlertService $lowStockAlertService;
+
+    public function __construct(LowStockAlertService $lowStockAlertService)
+    {
+        $this->lowStockAlertService = $lowStockAlertService;
+    }
+
     public function index(Request $request)
     {
         $user = $request->user();
@@ -17,6 +25,8 @@ class OperationsController extends Controller
             403
         );
 
-        return view('operations.index');
+        $lowStockItems = $this->lowStockAlertService->lowStockProducts($user->business, $user);
+
+        return view('operations.index', compact('lowStockItems'));
     }
 }

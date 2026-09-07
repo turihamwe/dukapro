@@ -39,7 +39,7 @@
         <div>
             <label for="branch_id" class="mb-1 block text-sm font-medium text-gray-700">Branch</label>
             <select name="branch_id" id="branch_id" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
-                <option value="">Select branch for this menu item…</option>
+                <option value="">Select branch for this product…</option>
                 @foreach($branches as $branchId => $branchName)
                     <option value="{{ $branchId }}" @selected(old('branch_id') == $branchId)>{{ $branchName }}</option>
                 @endforeach
@@ -99,9 +99,16 @@
             @endif
         </div>
         <div>
-            <label class="mb-1.5 block text-sm font-medium text-gray-700" for="simple_stock">Stock on hand <span class="text-red-500">*</span></label>
-            <input type="number" step="0.001" min="0" name="stock_quantity" id="simple_stock" value="{{ old('stock_quantity', $product->stock_quantity ?? 0) }}" required
-                   class="simple-field block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+            @if($isEdit)
+                <label class="mb-1.5 block text-sm font-medium text-gray-700" for="simple_stock">Stock on hand</label>
+                <input type="number" step="0.001" min="0" name="stock_quantity" id="simple_stock" value="{{ old('stock_quantity', $product->stock_quantity ?? 0) }}"
+                       class="simple-field block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+            @else
+                <label class="mb-1.5 block text-sm font-medium text-gray-700" for="simple_stock">Opening stock <span class="font-normal text-gray-400">(optional)</span></label>
+                <input type="number" step="0.001" min="0" name="stock_quantity" id="simple_stock" value="{{ old('stock_quantity', 0) }}"
+                       class="simple-field block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                <p class="mt-1 text-xs text-gray-500">Leave at 0 and use <strong>Top-up Stock</strong> later to restock existing products.</p>
+            @endif
         </div>
     </div>
 

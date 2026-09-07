@@ -47,6 +47,11 @@ has-cashier-bottom-nav
         $navCols++;
     }
     $navCols = max($navCols, 1);
+
+    $lowStockCount = 0;
+    if (auth()->user()->business && (auth()->user()->can('view-inventory') || auth()->user()->can('access-pos'))) {
+        $lowStockCount = app(\App\Services\LowStockAlertService::class)->count(auth()->user()->business);
+    }
 @endphp
 
 <div class="cashier-shell flex min-h-[100dvh] flex-col bg-gray-100 @yield('cashier_shell_class')">
@@ -78,8 +83,11 @@ has-cashier-bottom-nav
         <div class="mx-auto grid max-w-lg gap-1 px-2 py-2" style="grid-template-columns: repeat({{ $navCols }}, minmax(0, 1fr));">
             @can('access-pos')
                 <a href="{{ tenant_route('tenant.pos.index') }}"
-                   class="flex min-h-[56px] flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-semibold {{ request()->routeIs('tenant.pos.*') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600' }}">
+                   class="relative flex min-h-[56px] flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-semibold {{ request()->routeIs('tenant.pos.*') ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600' }}">
                     <span class="mb-0.5 text-xl leading-none">🛒</span> POS
+                    @if($lowStockCount > 0)
+                        <span class="absolute right-1 top-1 rounded-full bg-amber-500 px-1.5 py-0.5 text-[9px] font-bold leading-none text-white">{{ $lowStockCount > 9 ? '9+' : $lowStockCount }}</span>
+                    @endif
                 </a>
             @endcan
             @can('access-waiter-shift-balancing')
@@ -102,8 +110,11 @@ has-cashier-bottom-nav
             @endcan
             @if($showOperationsNav)
                 <a href="{{ tenant_route('tenant.operations.index') }}"
-                   class="flex min-h-[56px] flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-semibold {{ $operationsActive ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600' }}">
+                   class="relative flex min-h-[56px] flex-col items-center justify-center rounded-xl px-2 py-2 text-[11px] font-semibold {{ $operationsActive ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600' }}">
                     <span class="mb-0.5 text-xl leading-none">⚙</span> Operations
+                    @if($lowStockCount > 0)
+                        <span class="absolute right-1 top-1 rounded-full bg-amber-500 px-1.5 py-0.5 text-[9px] font-bold leading-none text-white">{{ $lowStockCount > 9 ? '9+' : $lowStockCount }}</span>
+                    @endif
                 </a>
             @endif
             @can('submit-reconciliation')

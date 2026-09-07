@@ -40,6 +40,7 @@ class SettingsController extends Controller
             'yopayments_api_password' => 'nullable|string|max:255',
             'yopayments_account_id' => 'nullable|string|max:255',
             'maintenance_mode' => 'nullable|boolean',
+            'batch_mode_enabled' => 'nullable|boolean',
             'billing_mode' => 'nullable|in:unified,addons',
             'module_prices' => 'nullable|array',
             'module_prices.*' => 'nullable|numeric|min:0',
@@ -62,6 +63,7 @@ class SettingsController extends Controller
         }
         SystemSetting::set('yopayments_account_id', $data['yopayments_account_id'] ?? '');
         SystemSetting::set('maintenance_mode', $request->boolean('maintenance_mode') ? '1' : '0');
+        SystemSetting::set('batch_mode_enabled', $request->boolean('batch_mode_enabled') ? '1' : '0');
         SystemSetting::set('billing_mode', $data['billing_mode'] ?? BillingMode::UNIFIED);
 
         $modulePrices = [];

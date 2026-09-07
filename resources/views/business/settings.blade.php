@@ -128,6 +128,13 @@
             </div>
         </div>
 
+        @include('business._inventory-permissions', [
+            'business' => $business,
+            'branches' => $branches ?? collect(),
+            'permissionMatrix' => $permissionMatrix ?? [],
+            'activeStaffRoles' => $activeStaffRoles ?? [],
+        ])
+
         <x-button type="submit" variant="primary">Save business profile</x-button>
     </form>
 </x-card>

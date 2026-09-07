@@ -27,6 +27,7 @@ use App\Policies\SalePolicy;
 use App\Policies\SoldByUnitPolicy;
 use App\Policies\UserPolicy;
 use App\Support\CashierMode;
+use App\Services\BusinessPermissionService;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 
@@ -49,6 +50,8 @@ class AuthServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->registerPolicies();
+
+        $permissions = app(BusinessPermissionService::class);
 
         Gate::define('view-dashboard', function (User $user) {
             return in_array($user->role, [UserRole::OWNER, UserRole::MANAGER, UserRole::SUPERVISOR], true);
@@ -78,48 +81,48 @@ class AuthServiceProvider extends ServiceProvider
             return $user->isOwner();
         });
 
-        Gate::define('view-cost-prices', function (User $user) {
-            if ($user->canSwitchToCashierMode() && CashierMode::isActive()) {
-                return false;
-            }
+        Gate::define('view-cost-prices', function (User $user) use ($permissions) {
+            $default = ! ($user->canSwitchToCashierMode() && CashierMode::isActive())
+                && ($user->isOwner() || $user->isManager());
 
-            return $user->isOwner() || $user->isManager();
+            return $permissions->allows($user, 'view-cost-prices', $default);
         });
 
         Gate::define('view-inventory', function (User $user) {
             return in_array($user->role, [UserRole::OWNER, UserRole::MANAGER, UserRole::SUPERVISOR, UserRole::CASHIER], true);
         });
 
-        Gate::define('create-inventory', function (User $user) {
-            if ($user->isCashier()) {
-                return false;
-            }
+        Gate::define('create-inventory', function (User $user) use ($permissions) {
+            $default = ! $user->isCashier()
+                && ! ($user->canSwitchToCashierMode() && CashierMode::isActive())
+                && in_array($user->role, [UserRole::OWNER, UserRole::MANAGER, UserRole::SUPERVISOR], true);
 
-            if ($user->canSwitchToCashierMode() && CashierMode::isActive()) {
-                return false;
-            }
-
-            return in_array($user->role, [UserRole::OWNER, UserRole::MANAGER, UserRole::SUPERVISOR], true);
+            return $permissions->allows($user, 'create-inventory', $default);
         });
 
-        Gate::define('update-inventory', function (User $user) {
-            if ($user->canSwitchToCashierMode() && CashierMode::isActive()) {
-                return false;
-            }
+        Gate::define('top-up-inventory', function (User $user) use ($permissions) {
+            $default = ! ($user->canSwitchToCashierMode() && CashierMode::isActive())
+                && in_array($user->role, [UserRole::OWNER, UserRole::MANAGER, UserRole::SUPERVISOR], true);
 
-            return $user->isOwner() || $user->isManager();
+            return $permissions->allows($user, 'top-up-inventory', $default);
         });
 
-        Gate::define('delete-inventory', function (User $user) {
-            if ($user->canSwitchToCashierMode() && CashierMode::isActive()) {
-                return false;
-            }
+        Gate::define('update-inventory', function (User $user) use ($permissions) {
+            $default = ! ($user->canSwitchToCashierMode() && CashierMode::isActive())
+                && ($user->isOwner() || $user->isManager());
 
-            return $user->isOwner();
+            return $permissions->allows($user, 'update-inventory', $default);
+        });
+
+        Gate::define('delete-inventory', function (User $user) use ($permissions) {
+            $default = ! ($user->canSwitchToCashierMode() && CashierMode::isActive())
+                && $user->isOwner();
+
+            return $permissions->allows($user, 'delete-inventory', $default);
         });
 
         Gate::define('manage-inventory', function (User $user) {
-            return $user->can('create-inventory') || $user->can('update-inventory');
+            return $user->can('create-inventory') || $user->can('update-inventory') || $user->can('top-up-inventory');
         });
 
         Gate::define('manage-debts', function (User $user) {
@@ -250,20 +253,19 @@ class AuthServiceProvider extends ServiceProvider
             return $user->isOwner() || $user->isManager();
         });
 
-        Gate::define('log-damages', function (User $user) {
-            if ($user->isCashier()) {
-                return true;
-            }
+        Gate::define('log-damages', function (User $user) use ($permissions) {
+            $default = $user->isCashier()
+                || ($user->canSwitchToCashierMode() && CashierMode::isActive())
+                || $user->isOwner()
+                || $user->isManager();
 
-            if ($user->canSwitchToCashierMode() && CashierMode::isActive()) {
-                return true;
-            }
-
-            return $user->isOwner() || $user->isManager();
+            return $permissions->allows($user, 'log-damages', $default);
         });
 
-        Gate::define('manage-employees', function (User $user) {
-            return $user->isOwner() || $user->isManager() || $user->isSupervisor();
+        Gate::define('manage-employees', function (User $user) use ($permissions) {
+            $default = $user->isOwner() || $user->isManager() || $user->isSupervisor();
+
+            return $permissions->allows($user, 'manage-employees', $default);
         });
 
         Gate::define('manage-profile', function (User $user) {
@@ -278,11 +280,13 @@ class AuthServiceProvider extends ServiceProvider
             return $user->isOwner() || $user->isManager() || $user->isSupervisor();
         });
 
-        Gate::define('record-expenses', function (User $user) {
-            return $user->isOwner()
+        Gate::define('record-expenses', function (User $user) use ($permissions) {
+            $default = $user->isOwner()
                 || $user->isManager()
                 || $user->isSupervisor()
                 || $user->isCashier();
+
+            return $permissions->allows($user, 'record-expenses', $default);
         });
 
         Gate::define('access-superadmin', function (User $user) {

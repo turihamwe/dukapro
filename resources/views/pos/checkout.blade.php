@@ -13,6 +13,8 @@
     })->values();
 @endphp
 
+@include('layouts.partials.low-stock-alert', ['lowStockItems' => $lowStockItems ?? collect()])
+
 <div class="flex flex-col gap-4 lg:grid lg:grid-cols-5 lg:gap-6">
     <div class="order-2 lg:order-1 lg:col-span-3">
         <x-input type="search" id="productSearch" placeholder="Search product or SKU..." autofocus large class="mb-4" />

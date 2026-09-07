@@ -10,6 +10,7 @@ use App\Models\Business;
 use App\Models\Product;
 use App\Models\ProductAttribute;
 use App\Models\SoldByUnit;
+use App\Support\BatchMode;
 use App\Scopes\BranchScope;
 use App\Services\CatalogDiscoveryService;
 use App\Services\ProductBatchService;
@@ -101,13 +102,90 @@ class InventoryController extends Controller
         $product->load(['brand', 'variants.activeBatches', 'activeBatches', 'batches' => fn ($q) => $q->orderByDesc('received_at')]);
 
         $canViewCost = auth()->user()->can('view-cost-prices');
+        $batchModeEnabled = $business->usesBatchMode((int) $product->branch_id);
 
-        return view('inventory.show', compact('product', 'business', 'canViewCost'));
+        return view('inventory.show', compact('product', 'business', 'canViewCost', 'batchModeEnabled'));
+    }
+
+    public function topUp(Request $request)
+    {
+        abort_unless($request->user()->can('top-up-inventory'), 403);
+
+        $business = $request->user()->business;
+        $search = trim((string) $request->input('search', ''));
+
+        $query = Product::query()
+            ->catalog()
+            ->where('is_active', true)
+            ->with(['variants', 'branch'])
+            ->orderBy('name');
+
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', '%' . $search . '%')
+                    ->orWhere('sku', 'like', '%' . $search . '%');
+            });
+        }
+
+        $products = $query->paginate(25)->appends(['search' => $search !== '' ? $search : null]);
+
+        return view('inventory.top-up', compact('products', 'search', 'business'));
+    }
+
+    public function storeTopUp(Request $request)
+    {
+        abort_unless($request->user()->can('top-up-inventory'), 403);
+
+        $business = $request->user()->business;
+        $data = $request->validate([
+            'product_id' => 'required|integer|exists:products,id',
+            'variant_id' => 'nullable|integer',
+            'quantity' => 'required|numeric|min:0.001',
+        ]);
+
+        $product = Product::query()->where('business_id', $business->id)->findOrFail($data['product_id']);
+        $this->authorize('topUp', $product);
+
+        $target = $product;
+        if ($product->isVariableParent()) {
+            if (empty($data['variant_id'])) {
+                throw ValidationException::withMessages([
+                    'variant_id' => 'Select a variant to top up.',
+                ]);
+            }
+            $target = $product->variants()->whereKey($data['variant_id'])->firstOrFail();
+            $this->authorize('topUp', $target);
+        }
+
+        $quantity = (float) $data['quantity'];
+
+        if (BatchMode::active($business, (int) $target->branch_id)) {
+            $batchData = [
+                'quantity' => $quantity,
+                'selling_price' => (float) $target->price,
+            ];
+            if ($request->user()->can('view-cost-prices') && $target->cost_price !== null) {
+                $batchData['cost_price'] = (float) $target->cost_price;
+            }
+            $this->batchService->addBatch($target, $batchData, (int) $business->id, $request->user());
+        } else {
+            $this->inventoryService->topUpStock($target, $quantity);
+        }
+
+        AuditLogger::record('product_stock_topped_up', $target, null, [
+            'quantity' => $quantity,
+            'product_id' => $target->id,
+        ]);
+
+        return redirect()
+            ->to(tenant_route('tenant.inventory.top-up', ['search' => $request->input('search')]))
+            ->with('success', 'Stock topped up for ' . $target->displayName() . '.');
     }
 
     public function storeBatch(Request $request, Business $business, Product $product)
     {
         $this->authorize('update', $product);
+        abort_unless($business->usesBatchMode((int) $product->branch_id), 403, 'Batch mode is not enabled for this branch.');
 
         $rules = [
             'quantity' => 'required|numeric|min:0.001',
@@ -171,15 +249,8 @@ class InventoryController extends Controller
 
         $data = $request->validate($rules);
 
-        if ($request->user()->isOwner() && \App\Enums\BusinessType::isHospitality($business->business_type)) {
-            $branchData = $request->validate([
-                'branch_id' => [
-                    'required',
-                    'integer',
-                    Rule::exists('branches', 'id')->where(fn ($q) => $q->where('business_id', $businessId)->where('is_active', true)),
-                ],
-            ]);
-            $data['branch_id'] = $branchData['branch_id'];
+        if ($branchId = $this->resolveBranchIdForOwner($request, $business)) {
+            $data['branch_id'] = $branchId;
         }
 
         if (! $request->user()->can('view-cost-prices')) {
@@ -191,6 +262,7 @@ class InventoryController extends Controller
 
         $product = $this->inventoryService->createSimple(array_merge($data, [
             'is_active' => true,
+            'branch_id' => $data['branch_id'] ?? $this->resolveBranchIdForOwner($request, $business),
         ]), $businessId);
 
         AuditLogger::record('product_created', $product, null, $product->toArray());
@@ -299,13 +371,14 @@ class InventoryController extends Controller
             }
         }
 
-        $parent = $this->inventoryService->createWithVariants([
+        $parent = $this->inventoryService->createWithVariants(array_filter([
             'name' => $data['name'],
             'brand_id' => $data['brand_id'],
             'description' => $data['description'] ?? null,
             'measurement_unit' => $data['measurement_unit'],
             'critical_threshold' => $data['critical_threshold'] ?? 5,
-        ], $data['variants'], $businessId);
+            'branch_id' => $this->resolveBranchIdForOwner($request, $business),
+        ]), $data['variants'], $businessId);
 
         return $this->storeRedirect($request, 'Product with ' . $parent->variants->count() . ' variants added.');
     }
@@ -398,6 +471,32 @@ class InventoryController extends Controller
         return $brand->id;
     }
 
+    protected function resolveBranchIdForOwner(Request $request, Business $business): ?int
+    {
+        if (! $request->user()->isOwner()) {
+            return null;
+        }
+
+        $hasBranches = Branch::query()
+            ->where('business_id', $business->id)
+            ->where('is_active', true)
+            ->exists();
+
+        if (! $hasBranches) {
+            return null;
+        }
+
+        $data = $request->validate([
+            'branch_id' => [
+                'required',
+                'integer',
+                Rule::exists('branches', 'id')->where(fn ($q) => $q->where('business_id', $business->id)->where('is_active', true)),
+            ],
+        ]);
+
+        return (int) $data['branch_id'];
+    }
+
     public function catalog(Request $request)
     {
         $this->authorize('viewAny', Product::class);
@@ -453,14 +552,16 @@ class InventoryController extends Controller
                 ->get()
             : collect();
 
+        $ownerBranches = auth()->user()->isOwner()
+            ? Branch::query()->where('business_id', $business->id)->where('is_active', true)->orderByDesc('is_default')->orderBy('name')->pluck('name', 'id')
+            : collect();
+
         return [
             'business' => $business,
             'catalogVariantsEnabled' => $business->usesProductVariants(),
-            'branches' => auth()->user()->isOwner() && \App\Enums\BusinessType::isHospitality($business->business_type)
-                ? Branch::query()->where('business_id', $business->id)->where('is_active', true)->orderByDesc('is_default')->orderBy('name')->pluck('name', 'id')
-                : collect(),
+            'branches' => $ownerBranches,
             'isHospitality' => \App\Enums\BusinessType::isHospitality($business->business_type),
-            'requireBranch' => auth()->user()->isOwner() && \App\Enums\BusinessType::isHospitality($business->business_type),
+            'requireBranch' => auth()->user()->isOwner() && $ownerBranches->isNotEmpty(),
             'brands' => Brand::query()->where('is_active', true)->orderBy('name')->get(),
             'suggestedBrands' => $this->catalogDiscovery->suggestedBrands($business),
             'soldByUnits' => SoldByUnit::query()->where('is_active', true)->orderBy('name')->get(),
