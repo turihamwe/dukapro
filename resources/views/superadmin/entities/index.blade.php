@@ -37,11 +37,33 @@
     </div>
 @endif
 
+@if(!empty($supportsSoftDeletes))
+    <div class="mb-4 flex flex-wrap gap-2">
+        <a href="{{ route('superadmin.entities.index', array_filter(['entity' => $entity, 'q' => request('q')])) }}"
+           class="rounded-lg px-4 py-2 text-sm font-medium {{ empty($showTrashed) ? 'bg-violet-600 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50' }}">
+            Active
+        </a>
+        <a href="{{ route('superadmin.entities.index', array_filter(['entity' => $entity, 'trashed' => 1, 'q' => request('q')])) }}"
+           class="rounded-lg px-4 py-2 text-sm font-medium {{ ! empty($showTrashed) ? 'bg-amber-600 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50' }}">
+            Archived
+        </a>
+    </div>
+@endif
+
 <form method="GET" class="mb-4 flex gap-2">
+    @if(!empty($showTrashed))
+        <input type="hidden" name="trashed" value="1">
+    @endif
     <input type="search" name="q" value="{{ request('q') }}" placeholder="Search {{ strtolower($config['label']) }}…"
            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
     <button type="submit" class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50">Filter</button>
 </form>
+
+@if(!empty($showTrashed))
+    <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+        Viewing archived (soft-deleted) {{ strtolower($config['label']) }}. These records are hidden from businesses but kept for history such as sales reports.
+    </div>
+@endif
 
 <div class="overflow-hidden rounded-xl border border-gray-200 bg-white">
     <div class="overflow-x-auto">
@@ -57,8 +79,13 @@
             </thead>
             <tbody class="divide-y divide-gray-100">
                 @forelse($records as $record)
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-4 py-3 text-gray-500">#{{ $record->id }}</td>
+                    <tr class="hover:bg-gray-50 {{ ! empty($showTrashed) ? 'bg-amber-50/40' : '' }}">
+                        <td class="px-4 py-3 text-gray-500">
+                            #{{ $record->id }}
+                            @if(! empty($showTrashed) && $record->deleted_at)
+                                <span class="mt-1 block text-[10px] font-semibold uppercase tracking-wide text-amber-700">Archived</span>
+                            @endif
+                        </td>
                         @foreach($config['list'] as $column)
                             <td class="px-4 py-3">
                                 @php $value = data_get($record, $column); @endphp
@@ -66,6 +93,21 @@
                                     {{ $record->business->name }}
                                 @elseif($column === 'affiliate_id' && $record->relationLoaded('affiliate') && $record->affiliate)
                                     {{ $record->affiliate->name }}
+                                @elseif($entity === 'businesses' && $column === 'affiliate')
+                                    @if($record->relationLoaded('sponsor') && $record->sponsor)
+                                        <a href="{{ route('superadmin.entities.show', ['affiliates', $record->sponsor->id]) }}"
+                                           class="font-medium text-violet-700 hover:text-violet-900">
+                                            {{ $record->sponsor->name }}
+                                        </a>
+                                        <span class="block text-xs text-gray-500">{{ $record->sponsor->code }}</span>
+                                        @if($record->relationLoaded('referringAffiliate') && $record->referringAffiliate)
+                                            <span class="mt-0.5 block text-xs text-gray-500">
+                                                Sub: {{ $record->referringAffiliate->name }} ({{ $record->referringAffiliate->code }})
+                                            </span>
+                                        @endif
+                                    @else
+                                        <span class="text-gray-400">—</span>
+                                    @endif
                                 @elseif($column === 'business_type' && $value)
                                     {{ \App\Enums\BusinessType::label($value) }}
                                 @elseif($column === 'shareholder_id' && $record->relationLoaded('shareholder') && $record->shareholder)
@@ -120,11 +162,11 @@
                             <a href="{{ route('superadmin.entities.show', [$entity, $record->id]) }}" class="ml-3 text-violet-600 hover:text-violet-800">View</a>
                             @can('platform-full-access')
                                 <a href="{{ route('superadmin.entities.edit', [$entity, $record->id]) }}" class="ml-3 text-gray-600 hover:text-gray-900">Edit</a>
-                                @if($config['deletable'] ?? true)
-                                    <form method="POST" action="{{ route('superadmin.entities.destroy', [$entity, $record->id]) }}" class="ml-3 inline" onsubmit="return confirm('Soft-delete this record? It can be restored from the database if needed.')">
+                                @if(($config['deletable'] ?? true) && empty($showTrashed))
+                                    <form method="POST" action="{{ route('superadmin.entities.destroy', [$entity, $record->id]) }}" class="ml-3 inline" onsubmit="return confirm('Archive this record? It will be hidden but kept for historical data such as sales reports.')">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="text-red-600 hover:text-red-800">Delete</button>
+                                        <button type="submit" class="text-red-600 hover:text-red-800">Archive</button>
                                     </form>
                                 @endif
                             @endcan

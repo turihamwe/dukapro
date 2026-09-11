@@ -29,6 +29,10 @@
 </div>
 @endif
 
+@if(auth()->user()->isOwner() && isset($lowStockItems) && $lowStockItems->isNotEmpty())
+    @include('layouts.partials.low-stock-alert', ['lowStockItems' => $lowStockItems])
+@endif
+
 @if($showFullDashboard && $stats)
 @php
     $activeRangeKey = $range->key;
@@ -146,7 +150,7 @@
             <p class="text-sm text-gray-500">All products are above the low-stock threshold.</p>
         @endif
         @can('manage-inventory')
-            <a href="{{ tenant_route('tenant.inventory.index') }}" class="mt-4 inline-block text-sm font-medium text-indigo-600 hover:text-indigo-700">Manage inventory →</a>
+            <a href="{{ tenant_route('tenant.inventory.index', ['stock' => 'low']) }}" class="mt-4 inline-block text-sm font-medium text-indigo-600 hover:text-indigo-700">View low stock →</a>
         @endcan
     </x-card>
 

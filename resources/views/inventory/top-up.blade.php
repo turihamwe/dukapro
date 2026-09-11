@@ -15,9 +15,23 @@
     </x-slot>
 </x-page-header>
 
-<form method="GET" class="mb-4">
-    <x-input type="search" name="search" value="{{ $search ?? '' }}" placeholder="Search product name or SKU…" />
-</form>
+@if(!empty($productId))
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+        <span>Topping up a product from your low stock alerts.</span>
+        <div class="flex flex-wrap gap-3">
+            <a href="{{ tenant_route('tenant.inventory.index', ['stock' => 'low']) }}" class="font-semibold text-amber-900 underline underline-offset-2">Back to alerts</a>
+            <a href="{{ tenant_route('tenant.inventory.top-up') }}" class="font-semibold text-amber-900 underline underline-offset-2">Browse all products</a>
+        </div>
+    </div>
+@else
+    <form method="GET" class="mb-4">
+        <x-input type="search" name="search" value="{{ $search ?? '' }}" placeholder="Search product name or SKU…" />
+    </form>
+@endif
+
+@if(session('success'))
+    <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('success') }}</div>
+@endif
 
 <div class="space-y-3">
     @forelse($products as $product)

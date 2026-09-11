@@ -22,16 +22,38 @@
     </div>
 @else
     <div class="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-        <p class="text-xs font-medium uppercase tracking-wide text-emerald-700">Your referral link</p>
+        <p class="text-xs font-medium uppercase tracking-wide text-emerald-700">Business referral link</p>
+        <p class="mt-1 text-xs text-emerald-800/80">Share this so shops register under you{{ $affiliate->isSubAffiliate() ? ' on ' . ($primaryAffiliate->name ?? 'your team') : '' }}.</p>
         <div class="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
-            <code class="flex-1 break-all rounded-lg bg-white px-3 py-2 text-sm text-emerald-900">{{ $affiliate->referralUrl() }}</code>
-            <button type="button" onclick="navigator.clipboard.writeText(@json($affiliate->referralUrl()))"
+            <code class="flex-1 break-all rounded-lg bg-white px-3 py-2 text-sm text-emerald-900">{{ $affiliate->referralUrl($affiliate->isSubAffiliate() ? $affiliate->code : null) }}</code>
+            <button type="button" onclick="navigator.clipboard.writeText(@json($affiliate->referralUrl($affiliate->isSubAffiliate() ? $affiliate->code : null)))"
                     class="shrink-0 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500">
                 Copy link
             </button>
         </div>
-        <p class="mt-2 text-xs text-emerald-700">Referral code: <strong>{{ $affiliate->code }}</strong> · Commission rate: {{ number_format($affiliate->commission_rate * 100, 0) }}%</p>
+        <p class="mt-2 text-xs text-emerald-700">
+            @if($affiliate->isSubAffiliate())
+                Team link for <strong>{{ $primaryAffiliate->name ?? 'parent' }}</strong> · Your agent code: <strong>{{ $affiliate->code }}</strong>
+            @else
+                Referral code: <strong>{{ $affiliate->code }}</strong>
+            @endif
+            · Commission rate: {{ number_format(($primaryAffiliate->commission_rate ?? $affiliate->commission_rate) * 100, 0) }}%
+        </p>
     </div>
+
+    @if(! $affiliate->isSubAffiliate())
+        <div class="mb-6 rounded-xl border border-violet-200 bg-violet-50 p-4">
+            <p class="text-xs font-medium uppercase tracking-wide text-violet-700">Team invite link</p>
+            <p class="mt-1 text-xs text-violet-800/80">Share this so agents can register under your affiliate team.</p>
+            <div class="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
+                <code class="flex-1 break-all rounded-lg bg-white px-3 py-2 text-sm text-violet-900">{{ $affiliate->teamInviteUrl() }}</code>
+                <button type="button" onclick="navigator.clipboard.writeText(@json($affiliate->teamInviteUrl()))"
+                        class="shrink-0 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500">
+                    Copy link
+                </button>
+            </div>
+        </div>
+    @endif
 @endif
 
 <div class="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -48,10 +70,65 @@
         <p class="mt-2 text-3xl font-bold text-amber-600">UGX {{ number_format($stats['pending_commission'], 0) }}</p>
     </div>
     <div class="rounded-xl border border-gray-200 bg-white p-4">
-        <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Paid out</p>
-        <p class="mt-2 text-3xl font-bold text-emerald-600">UGX {{ number_format($stats['paid_commission'], 0) }}</p>
+        <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Wallet balance</p>
+        <p class="mt-2 text-3xl font-bold text-emerald-600">UGX {{ number_format($stats['wallet_balance'], 0) }}</p>
     </div>
 </div>
+
+@if($affiliate->is_active && $affiliate->status === 'approved')
+    <div class="mb-8 grid gap-6 lg:grid-cols-2">
+        <div class="rounded-xl border border-gray-200 bg-white p-5">
+            <h2 class="text-sm font-semibold text-gray-900">Request withdrawal</h2>
+            <form method="POST" action="{{ route('affiliate.withdrawals.store') }}" class="mt-4 space-y-3">
+                @csrf
+                <input type="number" min="1" step="1" name="amount" placeholder="Amount (UGX)" required class="w-full rounded-lg border-gray-300 text-sm">
+                <input type="text" name="payout_method" placeholder="Payout method (Mobile Money / Bank)" required class="w-full rounded-lg border-gray-300 text-sm">
+                <input type="text" name="payout_account" placeholder="Account / phone number" required class="w-full rounded-lg border-gray-300 text-sm">
+                <textarea name="notes" rows="2" placeholder="Notes (optional)" class="w-full rounded-lg border-gray-300 text-sm"></textarea>
+                <button type="submit" class="rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500">Submit withdrawal</button>
+            </form>
+        </div>
+
+        @if(! $affiliate->isSubAffiliate())
+            <div class="rounded-xl border border-gray-200 bg-white p-5">
+                <h2 class="text-sm font-semibold text-gray-900">Add sub-affiliate</h2>
+                <form method="POST" action="{{ route('affiliate.team.store') }}" class="mt-4 space-y-3">
+                    @csrf
+                    <input type="text" name="name" placeholder="Full name" required class="w-full rounded-lg border-gray-300 text-sm">
+                    <input type="email" name="email" placeholder="Email" required class="w-full rounded-lg border-gray-300 text-sm">
+                    <input type="text" name="username" placeholder="Username" required class="w-full rounded-lg border-gray-300 text-sm">
+                    <input type="password" name="password" placeholder="Password" required class="w-full rounded-lg border-gray-300 text-sm">
+                    <input type="password" name="password_confirmation" placeholder="Confirm password" required class="w-full rounded-lg border-gray-300 text-sm">
+                    <button type="submit" class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500">Create team member</button>
+                </form>
+            </div>
+        @endif
+    </div>
+
+    @if(! $affiliate->isSubAffiliate() && ($teamMembers ?? collect())->isNotEmpty())
+        <div class="mb-8 overflow-hidden rounded-xl border border-gray-200 bg-white">
+            <div class="border-b border-gray-200 px-6 py-4">
+                <h2 class="font-semibold text-gray-900">Your team</h2>
+            </div>
+            <div class="divide-y divide-gray-100">
+                @foreach($teamMembers as $member)
+                    <div class="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
+                        <div>
+                            <p class="font-medium text-gray-900">{{ $member->name }}</p>
+                            <p class="text-xs text-gray-500">{{ $member->code }} · Wallet UGX {{ number_format($member->wallet_balance, 0) }}</p>
+                        </div>
+                        <form method="POST" action="{{ route('affiliate.team.payout') }}" class="flex flex-wrap items-end gap-2">
+                            @csrf
+                            <input type="hidden" name="sub_affiliate_id" value="{{ $member->id }}">
+                            <input type="number" min="1" name="amount" placeholder="Payout UGX" required class="w-32 rounded-lg border-gray-300 text-sm">
+                            <button type="submit" class="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-500">Pay sub-affiliate</button>
+                        </form>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+@endif
 
 <div class="mb-8 overflow-hidden rounded-xl border border-gray-200 bg-white">
     <div class="border-b border-gray-200 px-6 py-4">

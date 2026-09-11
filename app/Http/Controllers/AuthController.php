@@ -218,10 +218,14 @@ class AuthController extends Controller
             'phone' => 'nullable|string|max:30',
         ]);
 
-        $sponsor = $this->affiliateReferralService->resolveFromSession($request);
+        $referral = $this->affiliateReferralService->resolveReferralPairFromSession($request);
 
-        if ($sponsor) {
-            $data['sponsor_id'] = $sponsor->id;
+        if ($referral['parent']) {
+            $data['sponsor_id'] = $referral['parent']->id;
+        }
+
+        if ($referral['sub']) {
+            $data['referring_affiliate_id'] = $referral['sub']->id;
         }
 
         $user = $this->registrationService->register($data);

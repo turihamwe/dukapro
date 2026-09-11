@@ -23,7 +23,7 @@ class LowStockAlertService
             ->catalog()
             ->where('business_id', $business->id)
             ->where('is_active', true)
-            ->with(['variants'])
+            ->with(['variants', 'branch:id,name'])
             ->orderBy('name')
             ->get();
 
@@ -46,6 +46,7 @@ class LowStockAlertService
                 'threshold' => $product->critical_threshold ?? AnalyticsDateRange::LOW_STOCK_THRESHOLD,
                 'unit' => $product->measurement_unit,
                 'branch_id' => $product->branch_id,
+                'branch_name' => $product->branch->name ?? null,
             ];
         })->values();
     }

@@ -10,7 +10,9 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\SaleItemBatchAllocation;
 use App\Models\User;
+use App\Scopes\BranchScope;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -20,10 +22,16 @@ class SaleService
 
     protected ProductBatchService $batchService;
 
-    public function __construct(DebtLedgerService $debtLedgerService, ProductBatchService $batchService)
-    {
+    protected BranchResolver $branchResolver;
+
+    public function __construct(
+        DebtLedgerService $debtLedgerService,
+        ProductBatchService $batchService,
+        BranchResolver $branchResolver
+    ) {
         $this->debtLedgerService = $debtLedgerService;
         $this->batchService = $batchService;
+        $this->branchResolver = $branchResolver;
     }
 
     public function completeSale(User $user, array $payload): Sale
@@ -73,14 +81,30 @@ class SaleService
                 }
             }
 
+            $staffBranchId = $this->branchResolver->forUser($user);
             $subtotal = 0;
             $lineItems = [];
+            $resolvedProducts = collect();
 
             foreach ($items as $item) {
-                $product = Product::where('business_id', $businessId)
-                    ->where('id', $item['product_id'])
-                    ->lockForUpdate()
-                    ->firstOrFail();
+                $productQuery = Product::query()
+                    ->withoutGlobalScope(BranchScope::class)
+                    ->where('business_id', $businessId)
+                    ->where('id', $item['product_id']);
+
+                if ($staffBranchId) {
+                    $productQuery->where('branch_id', $staffBranchId);
+                }
+
+                $product = $productQuery->lockForUpdate()->first();
+
+                if (! $product) {
+                    throw ValidationException::withMessages([
+                        'items' => 'One or more products are unavailable at your branch.',
+                    ]);
+                }
+
+                $resolvedProducts->push($product);
 
                 $quantity = (float) $item['quantity'];
                 $available = $this->batchService->availableStock($product);
@@ -123,10 +147,13 @@ class SaleService
                 }
             }
 
-            $saleNumber = $this->generateSaleNumber($businessId);
+            $saleBranchId = $this->resolveSaleBranchId($user, $resolvedProducts);
+
+            $saleNumber = $this->generateSaleNumber($businessId, $saleBranchId);
 
             $sale = Sale::create([
                 'business_id' => $businessId,
+                'branch_id' => $saleBranchId,
                 'user_id' => $user->id,
                 'waiter_id' => $waiterId,
                 'customer_id' => $customerId,
@@ -213,9 +240,32 @@ class SaleService
         });
     }
 
-    protected function generateSaleNumber(int $businessId): string
+    protected function resolveSaleBranchId(User $user, Collection $products): int
     {
-        $count = Sale::where('business_id', $businessId)->count() + 1;
+        if ($user->branch_id) {
+            return (int) $user->branch_id;
+        }
+
+        $branchIds = $products->pluck('branch_id')->filter()->unique()->values();
+
+        if ($branchIds->count() !== 1) {
+            throw ValidationException::withMessages([
+                'items' => 'All products in one sale must belong to the same branch.',
+            ]);
+        }
+
+        return (int) $branchIds->first();
+    }
+
+    protected function generateSaleNumber(int $businessId, ?int $branchId = null): string
+    {
+        $query = Sale::query()->withoutGlobalScope(BranchScope::class)->where('business_id', $businessId);
+
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+
+        $count = $query->count() + 1;
 
         return 'SALE-' . str_pad((string) $businessId, 3, '0', STR_PAD_LEFT) . '-' . str_pad((string) $count, 6, '0', STR_PAD_LEFT);
     }

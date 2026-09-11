@@ -176,6 +176,11 @@ class ProductInventoryService
             }
         }
 
+        $provided = strtoupper(trim((string) $sku));
+        if ($provided !== '') {
+            return $provided;
+        }
+
         return $this->nextSequenceSku($businessId, $ignoreProductId);
     }
 

@@ -15,6 +15,7 @@ use App\Models\Shareholder;
 use App\Models\ShareholderEarning;
 use App\Models\User;
 use App\Enums\UserRole;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class EntityRegistry
 {
@@ -25,7 +26,7 @@ class EntityRegistry
                 'label' => 'Businesses',
                 'model' => Business::class,
                 'search' => ['name', 'email', 'slug', 'portal_slug', 'phone', 'business_type'],
-                'list' => ['name', 'business_type', 'email', 'subscription_status', 'created_at'],
+                'list' => ['name', 'business_type', 'email', 'affiliate', 'subscription_status', 'created_at'],
                 'creatable' => true,
                 'deletable' => true,
             ],
@@ -145,5 +146,16 @@ class EntityRegistry
         abort_unless($config, 404);
 
         return $config['model'];
+    }
+
+    public static function usesSoftDeletes(string $entity): bool
+    {
+        $config = self::get($entity);
+
+        if (! $config) {
+            return false;
+        }
+
+        return in_array(SoftDeletes::class, class_uses_recursive($config['model']), true);
     }
 }

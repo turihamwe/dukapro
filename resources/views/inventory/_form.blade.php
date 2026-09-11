@@ -82,6 +82,24 @@
     <x-input type="text" name="name" label="Product name" value="{{ old('name', $product->name ?? '') }}" required autofocus
              placeholder="e.g. Classic T-Shirt or Guinness beer 500ml" />
 
+    @if(! $isEdit)
+        <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700" for="product_sku">SKU <span class="font-normal text-gray-400">(optional)</span></label>
+            <input type="text" name="sku" id="product_sku" value="{{ old('sku') }}" maxlength="100"
+                   placeholder="Leave blank to auto-generate (e.g. ABC-001)"
+                   class="block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+            <p class="mt-1 text-xs text-gray-500">If empty, the system assigns a SKU using your business prefix.</p>
+            @error('sku')
+                <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+            @enderror
+        </div>
+    @elseif($product->sku ?? null)
+        <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700">SKU</label>
+            <p class="text-sm text-gray-900">{{ $product->sku }}</p>
+        </div>
+    @endif
+
     {{-- Simple product fields --}}
     <div id="simple-product-fields" class="space-y-5 {{ $variantsEnabled ? 'hidden' : '' }}">
         <div class="grid gap-5 sm:grid-cols-2">

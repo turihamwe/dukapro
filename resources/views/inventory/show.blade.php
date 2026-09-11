@@ -21,6 +21,13 @@
         @can('top-up-inventory')
             <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.inventory.top-up') }}">Top-up Stock</x-button>
         @endcan
+        @can('delete', $product)
+            <form method="POST" action="{{ tenant_route('tenant.inventory.destroy', ['product' => $product]) }}" class="inline" onsubmit="return confirm('Archive this product? It will be hidden from inventory but sales history is preserved.')">
+                @csrf
+                @method('DELETE')
+                <x-button variant="secondary" size="sm" type="submit" class="!border-rose-300 !text-rose-700 hover:!bg-rose-50">Archive</x-button>
+            </form>
+        @endcan
     </x-slot>
 </x-page-header>
 

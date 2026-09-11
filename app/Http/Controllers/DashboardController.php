@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\DashboardService;
+use App\Services\LowStockAlertService;
 use App\Services\OnboardingService;
 use App\Support\AnalyticsDateRange;
 use Illuminate\Http\Request;
@@ -37,6 +38,10 @@ class DashboardController extends Controller
             ? $this->dashboardService->ownerSummaryCards($business)
             : null;
 
+        $lowStockItems = $user->isOwner()
+            ? app(LowStockAlertService::class)->lowStockProducts($business, $user, 10)
+            : collect();
+
         $modernPayload = user_ui_theme() === 'modern' && $user->can('view-dashboard')
             ? $this->dashboardService->modernPayload($business)
             : null;
@@ -52,6 +57,7 @@ class DashboardController extends Controller
             'rangePresets' => AnalyticsDateRange::presets(),
             'revenueChart' => $payload['revenue_chart'] ?? null,
             'stockChart' => $payload['stock_chart'] ?? null,
+            'lowStockItems' => $lowStockItems,
         ]);
     }
 

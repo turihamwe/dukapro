@@ -8,6 +8,7 @@ use App\Models\Business;
 use App\Models\Customer;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\SystemAffiliateService;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -16,9 +17,14 @@ class DatabaseSeeder extends Seeder
 {
     public function run()
     {
+        $this->call(SystemAffiliateSeeder::class);
+
+        $systemAffiliate = app(SystemAffiliateService::class)->default();
+
         $business = Business::create([
             'name' => 'Next Level Academy',
             'slug' => 'next-level-academy',
+            'sponsor_id' => $systemAffiliate->id,
             'email' => 'shop@dukapro.test',
             'phone' => '254712345678',
             'address' => 'Nairobi, Kenya',

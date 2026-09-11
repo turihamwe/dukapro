@@ -4,6 +4,9 @@ use App\Http\Controllers\AffiliateApplicationController;
 use App\Http\Controllers\AffiliateReferralController;
 use App\Http\Controllers\AffiliateAuthController;
 use App\Http\Controllers\Affiliate\DashboardController as AffiliateDashboardController;
+use App\Http\Controllers\Affiliate\TeamController as AffiliateTeamController;
+use App\Http\Controllers\Affiliate\WithdrawalController as AffiliateWithdrawalController;
+use App\Http\Controllers\SuperAdmin\AffiliateNetworkController;
 use App\Http\Controllers\ShareholderApplicationController;
 use App\Http\Controllers\ShareholderAuthController;
 use App\Http\Controllers\Shareholder\DashboardController as ShareholderDashboardController;
@@ -20,6 +23,7 @@ use App\Http\Controllers\ProductAttributeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SalesReportController;
 use App\Http\Controllers\SoldByUnitController;
+use App\Http\Controllers\SuperAdmin\AffiliateController as SuperAdminAffiliateController;
 use App\Http\Controllers\SuperAdmin\UserActionController;
 use App\Http\Controllers\SuperAdmin\AffiliateActionController;
 use App\Http\Controllers\SuperAdmin\BusinessModuleController;
@@ -73,6 +77,12 @@ Route::middleware(['maintenance'])->group(function () {
 
     Route::get('/affiliate/apply', [AffiliateApplicationController::class, 'showApply'])->name('affiliate.apply');
     Route::post('/affiliate/apply', [AffiliateApplicationController::class, 'apply'])->name('affiliate.apply.store');
+    Route::get('/affiliate/join/{code}', [AffiliateApplicationController::class, 'showTeamJoin'])
+        ->where('code', '[A-Za-z0-9]+')
+        ->name('affiliate.team.join');
+    Route::post('/affiliate/join/{code}', [AffiliateApplicationController::class, 'storeTeamJoin'])
+        ->where('code', '[A-Za-z0-9]+')
+        ->name('affiliate.team.join.store');
     Route::get('/affiliate/login', [AffiliateAuthController::class, 'showLogin'])->name('affiliate.login');
     Route::post('/affiliate/login', [AffiliateAuthController::class, 'login'])->name('affiliate.login.store');
 
@@ -109,6 +119,9 @@ Route::middleware(['maintenance'])->group(function () {
         ->name('affiliate.')
         ->group(function () {
             Route::get('/dashboard', [AffiliateDashboardController::class, 'index'])->name('dashboard');
+            Route::post('/team/sub-affiliates', [AffiliateTeamController::class, 'storeSubAffiliate'])->name('team.store');
+            Route::post('/team/payouts', [AffiliateTeamController::class, 'payout'])->name('team.payout');
+            Route::post('/withdrawals', [AffiliateWithdrawalController::class, 'store'])->name('withdrawals.store');
             Route::post('/logout', [AffiliateAuthController::class, 'logout'])->name('logout');
         });
 
@@ -132,6 +145,8 @@ Route::middleware(['maintenance'])->group(function () {
                     Route::middleware(['can:view-sales-reports'])->prefix('reports/sales')->name('reports.sales.')->group(function () {
                         Route::get('/', [SalesReportController::class, 'index'])->name('index');
                         Route::get('/print', [SalesReportController::class, 'print'])->name('print');
+                        Route::get('/day/{date}', [SalesReportController::class, 'show'])->name('show');
+                        Route::get('/day/{date}/print', [SalesReportController::class, 'printDay'])->name('day.print');
                     });
 
                     Route::middleware(['can:view-expenses', 'management.access'])->prefix('expenses')->name('expenses.')->group(function () {
@@ -352,11 +367,15 @@ Route::middleware(['maintenance'])->group(function () {
         });
 });
 
+Route::redirect('/admin/affiliates', '/superadmin/affiliates');
+
 Route::prefix('superadmin')
     ->middleware(['auth', 'superadmin'])
     ->name('superadmin.')
     ->group(function () {
         Route::get('/', [SuperAdminDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/affiliates', [SuperAdminAffiliateController::class, 'index'])->name('affiliates.index');
+        Route::get('/affiliates/{affiliate}', [SuperAdminAffiliateController::class, 'show'])->whereNumber('affiliate')->name('affiliates.show');
 
         Route::middleware('platform.full')->group(function () {
             Route::get('/search', [SuperAdminGlobalSearchController::class, 'index'])->name('search');
@@ -379,6 +398,8 @@ Route::prefix('superadmin')
             Route::post('/affiliates/{affiliate}/approve', [AffiliateActionController::class, 'approve'])->whereNumber('affiliate')->name('affiliates.approve');
             Route::post('/affiliates/{affiliate}/reject', [AffiliateActionController::class, 'reject'])->whereNumber('affiliate')->name('affiliates.reject');
             Route::post('/affiliates/{affiliate}/toggle-active', [AffiliateActionController::class, 'toggleActive'])->whereNumber('affiliate')->name('affiliates.toggle-active');
+            Route::post('/affiliates/{affiliate}/team', [AffiliateNetworkController::class, 'storeSubAffiliate'])->whereNumber('affiliate')->name('affiliates.team.store');
+            Route::post('/affiliate-withdrawals/{withdrawal}/process', [AffiliateNetworkController::class, 'processWithdrawal'])->whereNumber('withdrawal')->name('affiliate-withdrawals.process');
             Route::post('/shareholders/{shareholder}/approve', [ShareholderActionController::class, 'approve'])->whereNumber('shareholder')->name('shareholders.approve');
             Route::post('/shareholders/{shareholder}/reject', [ShareholderActionController::class, 'reject'])->whereNumber('shareholder')->name('shareholders.reject');
             Route::post('/shareholders/{shareholder}/toggle-active', [ShareholderActionController::class, 'toggleActive'])->whereNumber('shareholder')->name('shareholders.toggle-active');

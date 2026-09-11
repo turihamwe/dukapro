@@ -19,6 +19,7 @@ class Business extends Model
 
     protected $fillable = [
         'sponsor_id',
+        'referring_affiliate_id',
         'name',
         'business_type',
         'slug',
@@ -57,6 +58,11 @@ class Business extends Model
     public function sponsor(): BelongsTo
     {
         return $this->belongsTo(Affiliate::class, 'sponsor_id');
+    }
+
+    public function referringAffiliate(): BelongsTo
+    {
+        return $this->belongsTo(Affiliate::class, 'referring_affiliate_id');
     }
 
     public function users(): HasMany

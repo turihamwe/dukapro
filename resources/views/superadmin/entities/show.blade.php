@@ -13,16 +13,29 @@
     </div>
     <div class="flex gap-2">
         <a href="{{ route('superadmin.entities.index', $entity) }}" class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50">Back</a>
-        @can('platform-full-access')
-            <a href="{{ route('superadmin.entities.edit', [$entity, $item->id]) }}" class="rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500">Edit</a>
-            <form method="POST" action="{{ route('superadmin.entities.destroy', [$entity, $item->id]) }}" onsubmit="return confirm('Delete this record permanently?')">
-                @csrf
-                @method('DELETE')
-                <button type="submit" class="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50">Delete</button>
-            </form>
-        @endcan
+        @if(! empty($supportsSoftDeletes) && method_exists($item, 'trashed') && $item->trashed())
+            <a href="{{ route('superadmin.entities.index', [$entity, 'trashed' => 1]) }}" class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100">View archived</a>
+        @else
+            @can('platform-full-access')
+                <a href="{{ route('superadmin.entities.edit', [$entity, $item->id]) }}" class="rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500">Edit</a>
+                @if($config['deletable'] ?? true)
+                    <form method="POST" action="{{ route('superadmin.entities.destroy', [$entity, $item->id]) }}" onsubmit="return confirm('Archive this record? It will be hidden but kept for historical data such as sales reports.')">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50">Archive</button>
+                    </form>
+                @endif
+            @endcan
+        @endif
     </div>
 </div>
+
+@if(! empty($supportsSoftDeletes) && method_exists($item, 'trashed') && $item->trashed())
+    <div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+        This record was archived on {{ optional($item->deleted_at)->format('M j, Y g:i A') ?? '—' }}.
+        It is hidden from the business but preserved so linked history (for example sales line items) stays intact.
+    </div>
+@endif
 
 @if($entity === 'businesses')
     <div class="mb-6 flex gap-1 rounded-lg border border-gray-200 bg-gray-50 p-1">
@@ -39,6 +52,42 @@
 
 @if($entity !== 'businesses' || $businessTab === 'details')
 <div class="rounded-xl border border-gray-200 bg-white p-6">
+    @if($entity === 'businesses')
+        <div class="mb-6 rounded-xl border border-violet-200 bg-violet-50 p-4">
+            <p class="text-sm font-semibold text-violet-950">Affiliate attribution</p>
+            <dl class="mt-3 grid gap-3 sm:grid-cols-2 text-sm">
+                <div>
+                    <dt class="text-xs uppercase text-violet-800/70">Primary affiliate (sponsor)</dt>
+                    <dd class="mt-1 font-medium text-violet-950">
+                        @if($item->sponsor)
+                            {{ $item->sponsor->name }}
+                            <span class="text-violet-700">({{ $item->sponsor->code }})</span>
+                            @if($item->sponsor->isSystemDefault())
+                                <span class="ml-1 rounded bg-violet-200 px-1.5 py-0.5 text-[10px] font-bold uppercase">System</span>
+                            @endif
+                        @else
+                            —
+                        @endif
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-xs uppercase text-violet-800/70">Sub-affiliate attribution</dt>
+                    <dd class="mt-1 font-medium text-violet-950">
+                        @if($item->referringAffiliate)
+                            {{ $item->referringAffiliate->name }}
+                            <span class="text-violet-700">({{ $item->referringAffiliate->code }})</span>
+                            @if($item->referringAffiliate->parent)
+                                <span class="block text-xs font-normal text-violet-800/80">Team under {{ $item->referringAffiliate->parent->name }}</span>
+                            @endif
+                        @else
+                            Direct / no sub-affiliate
+                        @endif
+                    </dd>
+                </div>
+            </dl>
+        </div>
+    @endif
+
     @if($entity === 'affiliates')
         <div class="mb-6 grid gap-4 sm:grid-cols-3">
             <div class="rounded-lg bg-gray-50 p-4">
@@ -75,6 +124,39 @@
                 @endif
             </div>
         @endcan
+
+        @if(! $item->isSubAffiliate())
+            <div class="mb-6 rounded-xl border border-gray-200 bg-gray-50 p-4">
+                <p class="text-sm font-semibold text-gray-900">Team sub-affiliates</p>
+                @if(($item->teamMembers ?? collect())->isNotEmpty())
+                    <ul class="mt-3 space-y-2 text-sm">
+                        @foreach($item->teamMembers as $member)
+                            <li class="flex items-center justify-between rounded-lg bg-white px-3 py-2">
+                                <span>{{ $member->name }} <span class="text-gray-500">({{ $member->code }})</span></span>
+                                <a href="{{ route('superadmin.entities.show', ['affiliates', $member->id]) }}" class="text-xs font-semibold text-violet-600">View</a>
+                            </li>
+                        @endforeach
+                    </ul>
+                @else
+                    <p class="mt-2 text-xs text-gray-500">No sub-affiliates yet.</p>
+                @endif
+
+                @can('platform-full-access')
+                    <form method="POST" action="{{ route('superadmin.affiliates.team.store', $item) }}" class="mt-4 grid gap-3 sm:grid-cols-2">
+                        @csrf
+                        <input type="text" name="name" placeholder="Full name" required class="rounded-lg border-gray-300 text-sm">
+                        <input type="email" name="email" placeholder="Email" required class="rounded-lg border-gray-300 text-sm">
+                        <input type="text" name="username" placeholder="Username" required class="rounded-lg border-gray-300 text-sm">
+                        <input type="text" name="phone" placeholder="Phone (optional)" class="rounded-lg border-gray-300 text-sm">
+                        <input type="password" name="password" placeholder="Password" required class="rounded-lg border-gray-300 text-sm">
+                        <input type="password" name="password_confirmation" placeholder="Confirm password" required class="rounded-lg border-gray-300 text-sm">
+                        <div class="sm:col-span-2">
+                            <button type="submit" class="rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500">Add sub-affiliate</button>
+                        </div>
+                    </form>
+                @endcan
+            </div>
+        @endif
     @endif
 
     @if($entity === 'shareholders')

@@ -269,7 +269,7 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('manage-profile', function (User $user) {
-            return (bool) $user->business_id;
+            return $user->isOwner();
         });
 
         Gate::define('manage-expenses', function (User $user) {

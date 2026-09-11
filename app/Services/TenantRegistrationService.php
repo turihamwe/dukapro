@@ -10,6 +10,7 @@ use App\Models\Business;
 use App\Models\User;
 use App\Services\BranchService;
 use App\Services\BusinessModuleService;
+use App\Services\SystemAffiliateService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -31,7 +32,8 @@ class TenantRegistrationService
                 'portal_slug' => $this->uniquePortalSlug($data['business_name']),
                 'email' => $data['email'],
                 'phone' => $data['phone'] ?? null,
-                'sponsor_id' => $data['sponsor_id'] ?? null,
+                'sponsor_id' => $data['sponsor_id'] ?? app(SystemAffiliateService::class)->default()->id,
+                'referring_affiliate_id' => $data['referring_affiliate_id'] ?? null,
                 'currency' => 'UGX',
                 'currency_symbol' => 'UGX',
                 'currency_position' => 'prefix',

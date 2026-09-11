@@ -5,7 +5,7 @@
 
 @section('content')
 @include('layouts.partials.cashier-operations-back')
-<x-page-header title="Inventory" subtitle="Each product is tracked individually with its own price and stock">
+<x-page-header title="{{ ($stockFilter ?? null) === 'low' ? 'Low Stock Alerts' : 'Inventory' }}" subtitle="{{ ($stockFilter ?? null) === 'low' ? 'Products at or below their alert threshold' : 'Each product is tracked individually with its own price and stock' }}">
     <x-slot name="actions">
         @can('create', App\Models\Product::class)
             <x-button variant="primary" size="sm" href="{{ tenant_route('tenant.inventory.create') }}">+ Add New Product</x-button>
@@ -36,6 +36,9 @@
                 @if(!empty($search))
                     <input type="hidden" name="search" value="{{ $search }}">
                 @endif
+                @if(($stockFilter ?? null) === 'low')
+                    <input type="hidden" name="stock" value="low">
+                @endif
                 <label for="inventory-branch" class="sr-only">Branch</label>
                 <select id="inventory-branch" name="branch_id" onchange="this.form.submit()"
                         class="h-full w-full rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
@@ -47,13 +50,17 @@
             </form>
         @endif
     </div>
-    @if(!empty($search) || !empty($branchId))
+    @if(!empty($search) || !empty($branchId) || ($stockFilter ?? null) === 'low')
         <p class="mt-2 text-xs text-gray-500">
+            @if(($stockFilter ?? null) === 'low')
+                Showing <strong>low stock</strong> products only.
+            @endif
             @if(!empty($branchId))
+                @if(($stockFilter ?? null) === 'low') · @endif
                 Showing products for <strong>{{ $branches[$branchId] ?? 'selected branch' }}</strong>.
             @endif
             @if(!empty($search))
-                @if(!empty($branchId)) · @endif
+                @if(!empty($branchId) || ($stockFilter ?? null) === 'low') · @endif
                 Results for “{{ $search }}”.
             @endif
             <a href="{{ tenant_route('tenant.inventory.index') }}" class="font-medium text-emerald-600 hover:text-emerald-700">Clear filters</a>
@@ -97,6 +104,10 @@
                         @endif
                     </div>
                     <p class="text-xs text-gray-500">
+                        @if(($stockFilter ?? null) === 'low')
+                            <span class="font-medium text-amber-800">{{ $product->branch->name ?? 'Unknown branch' }}</span>
+                            ·
+                        @endif
                         {{ $product->brand->name ?? 'No brand' }}
                         · {{ $product->sku ?? 'No SKU' }}
                         · {{ $product->measurement_unit }}
@@ -106,11 +117,40 @@
                     </p>
                 </div>
                 <div class="text-right shrink-0">
-                    @if($product->variants_count === 0)
-                        <p class="text-xs text-gray-500">Sell: <span class="font-semibold text-gray-900">@money($product->price)</span></p>
+                    @if(($stockFilter ?? null) === 'low')
+                        @php $threshold = $product->critical_threshold ?? \App\Support\AnalyticsDateRange::LOW_STOCK_THRESHOLD; @endphp
+                        <p class="text-xs font-medium text-red-600">
+                            {{ format_unit_quantity($totalStock, $product->measurement_unit, $business->id) }}
+                            / {{ format_unit_quantity($threshold, $product->measurement_unit, $business->id) }} min
+                        </p>
+                        <div class="mt-2 flex flex-wrap justify-end gap-2">
+                            @can('topUp', $product)
+                                <a href="{{ tenant_route('tenant.inventory.top-up', ['product_id' => $product->id]) }}"
+                                   class="inline-flex items-center rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700">
+                                    Top up
+                                </a>
+                            @endcan
+                            <a href="{{ tenant_route('tenant.inventory.show', ['product' => $product]) }}" class="text-xs font-medium text-gray-600 hover:text-gray-900">View</a>
+                        </div>
+                    @else
+                        @if($product->variants_count === 0)
+                            <p class="text-xs text-gray-500">Sell: <span class="font-semibold text-gray-900">@money($product->price)</span></p>
+                        @endif
+                        <p class="text-xs {{ $totalStock <= 5 ? 'text-red-600 font-medium' : 'text-gray-500' }}">Stock: {{ $totalStock }}</p>
+                        <div class="mt-1 flex flex-wrap justify-end gap-x-3 gap-y-1">
+                            <a href="{{ tenant_route('tenant.inventory.show', ['product' => $product]) }}" class="text-xs font-medium text-emerald-600 hover:text-emerald-700">View</a>
+                            @can('update', $product)
+                                <a href="{{ tenant_route('tenant.inventory.edit', ['product' => $product]) }}" class="text-xs font-medium text-indigo-600 hover:text-indigo-700">Edit</a>
+                            @endcan
+                            @can('delete', $product)
+                                <form method="POST" action="{{ tenant_route('tenant.inventory.destroy', ['product' => $product]) }}" class="inline" onsubmit="return confirm('Archive this product? It will be hidden from inventory but sales history is preserved.')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-xs font-medium text-rose-600 hover:text-rose-700">Archive</button>
+                                </form>
+                            @endcan
+                        </div>
                     @endif
-                    <p class="text-xs {{ $totalStock <= 5 ? 'text-red-600 font-medium' : 'text-gray-500' }}">Stock: {{ $totalStock }}</p>
-                    <a href="{{ tenant_route('tenant.inventory.show', ['product' => $product]) }}" class="mt-1 inline-block text-xs font-medium text-emerald-600 hover:text-emerald-700">View</a>
                     @if($hasBatches)
                         <button type="button" onclick="document.getElementById('{{ $batchKey }}').classList.toggle('hidden')"
                                 class="mt-1 block w-full text-xs font-medium text-indigo-600 hover:text-indigo-700">Batch breakdown</button>
@@ -124,7 +164,7 @@
             @endif
         </x-card>
     @empty
-        <x-card class="text-center text-sm text-gray-500">No products match your search.</x-card>
+        <x-card class="text-center text-sm text-gray-500">{{ ($stockFilter ?? null) === 'low' ? 'No low stock products right now.' : 'No products match your search.' }}</x-card>
     @endforelse
 </div>
 
@@ -135,11 +175,17 @@
             <thead class="bg-gray-50">
                 <tr>
                     <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Product</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Brand / SKU</th>
-                    <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Cost (UGX)</th>
-                    <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Sell (UGX)</th>
-                    <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">In Stock</th>
-                    <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500"></th>
+                    @if(($stockFilter ?? null) === 'low')
+                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Branch</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Stock</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
+                    @else
+                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Brand / SKU</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Cost (UGX)</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Sell (UGX)</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">In Stock</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500"></th>
+                    @endif
                 </tr>
             </thead>
             <tbody id="inventory-desktop-body" class="divide-y divide-gray-100 bg-white">
@@ -162,47 +208,74 @@
                             </div>
                             @if($product->variants_count > 0)
                                 <p class="mt-1 text-xs font-medium text-indigo-600">{{ $product->variants_count }} sellable variants</p>
+                            @else
+                                <p class="mt-1 text-xs text-gray-400">{{ $product->sku ?? 'No SKU' }} · {{ $product->measurement_unit }}</p>
                             @endif
                         </td>
-                        <td class="px-6 py-4 text-sm text-gray-500">
-                            {{ $product->brand->name ?? '—' }}
-                            @if($product->variants_count === 0)
-                                <span class="block text-xs text-gray-400">{{ $product->sku ?? '—' }} · {{ $product->measurement_unit }}</span>
-                            @endif
-                        </td>
-                        <td class="px-6 py-4 text-center text-sm text-gray-600">
-                            @can('view-cost-prices')
+                        @if(($stockFilter ?? null) === 'low')
+                            @php $threshold = $product->critical_threshold ?? \App\Support\AnalyticsDateRange::LOW_STOCK_THRESHOLD; @endphp
+                            <td class="px-6 py-4 text-sm font-medium text-amber-900">{{ $product->branch->name ?? '—' }}</td>
+                            <td class="px-6 py-4 text-center text-sm font-medium text-red-600">
+                                {{ format_unit_quantity($totalStock, $product->measurement_unit, $business->id) }}
+                                <span class="block text-xs font-normal text-gray-500">min {{ format_unit_quantity($threshold, $product->measurement_unit, $business->id) }}</span>
+                            </td>
+                            <td class="px-6 py-4 text-right whitespace-nowrap">
+                                @can('topUp', $product)
+                                    <a href="{{ tenant_route('tenant.inventory.top-up', ['product_id' => $product->id]) }}"
+                                       class="inline-flex items-center rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700">
+                                        Top up
+                                    </a>
+                                @endcan
+                                <a href="{{ tenant_route('tenant.inventory.show', ['product' => $product]) }}" class="ml-3 text-sm font-medium text-gray-600 hover:text-gray-900">View</a>
+                            </td>
+                        @else
+                            <td class="px-6 py-4 text-sm text-gray-500">
+                                {{ $product->brand->name ?? '—' }}
                                 @if($product->variants_count === 0)
-                                    @money($product->cost_price ?? 0)
+                                    <span class="block text-xs text-gray-400">{{ $product->sku ?? '—' }} · {{ $product->measurement_unit }}</span>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 text-center text-sm text-gray-600">
+                                @can('view-cost-prices')
+                                    @if($product->variants_count === 0)
+                                        @money($product->cost_price ?? 0)
+                                    @else
+                                        —
+                                    @endif
                                 @else
                                     —
+                                @endcan
+                            </td>
+                            <td class="px-6 py-4 text-center text-sm font-medium text-gray-900">
+                                @if($product->variants_count > 0)
+                                    —
+                                @else
+                                    @money($product->price)
                                 @endif
-                            @else
-                                —
-                            @endcan
-                        </td>
-                        <td class="px-6 py-4 text-center text-sm font-medium text-gray-900">
-                            @if($product->variants_count > 0)
-                                —
-                            @else
-                                @money($product->price)
-                            @endif
-                        </td>
-                        <td class="px-6 py-4 text-center text-sm {{ $totalStock <= 5 ? 'font-medium text-red-600' : 'text-gray-500' }}">
-                            {{ $totalStock }}
-                            @if($hasBatches)
-                                <button type="button" onclick="document.getElementById('{{ $batchKey }}').classList.toggle('hidden')"
-                                        class="mt-1 block w-full text-xs font-medium text-indigo-600 hover:text-indigo-700">Show batches</button>
-                            @endif
-                        </td>
-                        <td class="px-6 py-4 text-right whitespace-nowrap">
-                            <a href="{{ tenant_route('tenant.inventory.show', ['product' => $product]) }}" class="text-sm font-medium text-emerald-600 hover:text-emerald-700">View</a>
-                            @can('update', $product)
-                                <a href="{{ tenant_route('tenant.inventory.edit', ['product' => $product]) }}" class="ml-3 text-sm font-medium text-indigo-600 hover:text-indigo-700">Edit</a>
-                            @endcan
-                        </td>
+                            </td>
+                            <td class="px-6 py-4 text-center text-sm {{ $totalStock <= 5 ? 'font-medium text-red-600' : 'text-gray-500' }}">
+                                {{ $totalStock }}
+                                @if($hasBatches)
+                                    <button type="button" onclick="document.getElementById('{{ $batchKey }}').classList.toggle('hidden')"
+                                            class="mt-1 block w-full text-xs font-medium text-indigo-600 hover:text-indigo-700">Show batches</button>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 text-right whitespace-nowrap">
+                                <a href="{{ tenant_route('tenant.inventory.show', ['product' => $product]) }}" class="text-sm font-medium text-emerald-600 hover:text-emerald-700">View</a>
+                                @can('update', $product)
+                                    <a href="{{ tenant_route('tenant.inventory.edit', ['product' => $product]) }}" class="ml-3 text-sm font-medium text-indigo-600 hover:text-indigo-700">Edit</a>
+                                @endcan
+                                @can('delete', $product)
+                                    <form method="POST" action="{{ tenant_route('tenant.inventory.destroy', ['product' => $product]) }}" class="ml-3 inline" onsubmit="return confirm('Archive this product? It will be hidden from inventory but sales history is preserved.')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="text-sm font-medium text-rose-600 hover:text-rose-700">Archive</button>
+                                    </form>
+                                @endcan
+                            </td>
+                        @endif
                     </tr>
-                    @if($hasBatches)
+                    @if($hasBatches && ($stockFilter ?? null) !== 'low')
                         <tr id="{{ $batchKey }}" class="hidden bg-indigo-50/40">
                             <td colspan="6" class="px-6 py-4">
                                 @include('inventory.partials.batch-breakdown', ['product' => $product, 'canViewCost' => auth()->user()->can('view-cost-prices')])
@@ -211,7 +284,7 @@
                     @endif
                 @empty
                     <tr>
-                        <td colspan="6" class="px-6 py-12 text-center text-sm text-gray-500">No products match your search.</td>
+                        <td colspan="{{ ($stockFilter ?? null) === 'low' ? 4 : 6 }}" class="px-6 py-12 text-center text-sm text-gray-500">{{ ($stockFilter ?? null) === 'low' ? 'No low stock products right now.' : 'No products match your search.' }}</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -230,6 +303,7 @@
 
     var baseUrl = @json(tenant_route('tenant.inventory.index'));
     var branchId = @json($branchId ?? null);
+    var stockFilter = @json($stockFilter ?? null);
     var timer = null;
 
     function buildInventoryUrl(search) {
@@ -240,6 +314,9 @@
         }
         if (branchId) {
             params.set('branch_id', branchId);
+        }
+        if (stockFilter === 'low') {
+            params.set('stock', 'low');
         }
         var query = params.toString();
         return baseUrl + (query ? '?' + query : '');

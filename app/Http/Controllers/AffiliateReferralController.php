@@ -17,6 +17,7 @@ class AffiliateReferralController extends Controller
     public function redirect(Request $request, string $code)
     {
         $affiliate = $this->referralService->captureCode($request, $code);
+        $this->referralService->captureFromRequest($request);
 
         if (! $affiliate) {
             return redirect()

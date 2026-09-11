@@ -66,7 +66,8 @@ class EntityController extends Controller
         abort_unless($config, 404);
 
         $modelClass = $config['model'];
-        $query = $modelClass::query();
+        $showTrashed = $request->boolean('trashed') && EntityRegistry::usesSoftDeletes($entity);
+        $query = $showTrashed ? $modelClass::onlyTrashed() : $modelClass::query();
 
         if (isset($config['scope']) && is_callable($config['scope'])) {
             $query = $config['scope']($query);
@@ -84,6 +85,10 @@ class EntityController extends Controller
 
         if (in_array($entity, ['users', 'staff', 'products', 'customers', 'expenses', 'branches', 'brands'], true)) {
             $query->with('business');
+        }
+
+        if ($entity === 'businesses') {
+            $query->with(['sponsor', 'referringAffiliate']);
         }
 
         if ($entity === 'affiliates') {
@@ -108,7 +113,7 @@ class EntityController extends Controller
             $query->latest('id');
         }
 
-        $records = $query->paginate(20)->appends($request->only('q'));
+        $records = $query->paginate(20)->appends($request->only(['q', 'trashed']));
 
         $shareStats = null;
         if ($entity === 'shareholders') {
@@ -126,6 +131,8 @@ class EntityController extends Controller
             'entity' => $entity,
             'config' => $config,
             'records' => $records,
+            'showTrashed' => $showTrashed,
+            'supportsSoftDeletes' => EntityRegistry::usesSoftDeletes($entity),
             'businesses' => Business::orderBy('name')->get(['id', 'name']),
             'shareStats' => $shareStats,
             'defaultPromotionShares' => config('shareholders.default_promotion_shares', 1),
@@ -178,6 +185,7 @@ class EntityController extends Controller
                     'is_active' => true,
                     'subscription_status' => 'trial',
                     'trial_ends_at' => now()->addDays(30),
+                    'sponsor_id' => app(\App\Services\SystemAffiliateService::class)->default()->id,
                 ]));
                 $this->branchService->createDefault($record);
                 break;
@@ -382,11 +390,13 @@ class EntityController extends Controller
         abort_unless($config, 404);
 
         $modelClass = $config['model'];
-        $item = $modelClass::query()->findOrFail($record);
+        $item = EntityRegistry::usesSoftDeletes($entity)
+            ? $modelClass::withTrashed()->findOrFail($record)
+            : $modelClass::query()->findOrFail($record);
 
         if ($entity === 'affiliates') {
             $item->loadCount('referredBusinesses', 'commissions');
-            $item->load('user', 'approver');
+            $item->load(['user', 'approver', 'teamMembers.user', 'parent']);
         }
 
         if ($entity === 'affiliate_commissions') {
@@ -406,7 +416,11 @@ class EntityController extends Controller
         }
 
         if ($entity === 'businesses') {
-            $item->load('businessModules');
+            $item->load([
+                'businessModules',
+                'sponsor.parent',
+                'referringAffiliate.parent',
+            ]);
             $capabilities = app(BusinessModuleService::class)->capabilityStates($item);
             $floor = app(BusinessModuleService::class)->floorSettings($item);
         }
@@ -417,6 +431,7 @@ class EntityController extends Controller
             'entity' => $entity,
             'config' => $config,
             'item' => $item,
+            'supportsSoftDeletes' => EntityRegistry::usesSoftDeletes($entity),
             'canPromoteAffiliate' => $entity === 'users'
                 && $this->userPromotionService->canPromoteToAffiliate($item),
             'canPromoteShareholder' => $entity === 'users'
@@ -595,8 +610,16 @@ class EntityController extends Controller
                 $data = $request->validate([
                     'status' => 'required|in:pending,paid,cancelled',
                 ]);
+                $previousStatus = $item->status;
                 $data['paid_at'] = $data['status'] === 'paid' ? now() : null;
                 $item->update($data);
+
+                if ($data['status'] === 'paid' && $previousStatus !== 'paid' && $item->affiliate) {
+                    app(\App\Services\AffiliateNetworkService::class)->creditWallet(
+                        $item->affiliate,
+                        (float) $item->commission_amount
+                    );
+                }
                 break;
 
             case 'shareholders':

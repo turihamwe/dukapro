@@ -46,7 +46,7 @@ class ReconciliationController extends Controller
         $whatsAppUrl = $this->reconciliationService->whatsAppShareUrl($reconciliation, $bossPhone);
         $canEdit = $this->canEditReconciliation($request, $reconciliation);
 
-        return view('reconciliation.show', compact('reconciliation', 'report', 'whatsAppUrl', 'bossPhone', 'shortages', 'canEdit'));
+        return view('reconciliation.show', compact('business', 'reconciliation', 'report', 'whatsAppUrl', 'bossPhone', 'shortages', 'canEdit'));
     }
 
     public function print(Business $business, EndOfDayReconciliation $reconciliation)

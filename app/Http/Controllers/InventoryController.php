@@ -13,6 +13,7 @@ use App\Models\SoldByUnit;
 use App\Support\BatchMode;
 use App\Scopes\BranchScope;
 use App\Services\CatalogDiscoveryService;
+use App\Services\LowStockAlertService;
 use App\Services\ProductBatchService;
 use App\Services\ProductInventoryService;
 use Illuminate\Http\Request;
@@ -27,20 +28,25 @@ class InventoryController extends Controller
 
     protected ProductBatchService $batchService;
 
+    protected LowStockAlertService $lowStockAlertService;
+
     public function __construct(
         ProductInventoryService $inventoryService,
         CatalogDiscoveryService $catalogDiscovery,
-        ProductBatchService $batchService
+        ProductBatchService $batchService,
+        LowStockAlertService $lowStockAlertService
     ) {
         $this->inventoryService = $inventoryService;
         $this->catalogDiscovery = $catalogDiscovery;
         $this->batchService = $batchService;
+        $this->lowStockAlertService = $lowStockAlertService;
         $this->authorizeResource(Product::class, 'product');
     }
 
     public function index(Request $request)
     {
         $search = trim((string) $request->input('search', ''));
+        $stockFilter = $request->input('stock') === 'low' ? 'low' : null;
         $business = $request->user()->business;
         $branches = collect();
         $branchId = null;
@@ -84,12 +90,24 @@ class InventoryController extends Controller
             });
         }
 
+        if ($stockFilter === 'low') {
+            $lowStockItems = $this->lowStockAlertService->lowStockProducts($business, $request->user(), 10000);
+
+            if ($branchId) {
+                $lowStockItems = $lowStockItems->where('branch_id', $branchId);
+            }
+
+            $lowStockIds = $lowStockItems->pluck('id')->all();
+            $query->whereIn('products.id', $lowStockIds ?: [0]);
+        }
+
         $products = $query->paginate(20)->appends(array_filter([
             'search' => $search !== '' ? $search : null,
             'branch_id' => $branchId,
+            'stock' => $stockFilter,
         ]));
 
-        return view('inventory.index', compact('products', 'search', 'business', 'branches', 'branchId'));
+        return view('inventory.index', compact('products', 'search', 'business', 'branches', 'branchId', 'stockFilter'));
     }
 
     public function show(Business $business, Product $product)
@@ -113,6 +131,7 @@ class InventoryController extends Controller
 
         $business = $request->user()->business;
         $search = trim((string) $request->input('search', ''));
+        $productId = $request->filled('product_id') ? (int) $request->input('product_id') : null;
 
         $query = Product::query()
             ->catalog()
@@ -120,16 +139,21 @@ class InventoryController extends Controller
             ->with(['variants', 'branch'])
             ->orderBy('name');
 
-        if ($search !== '') {
+        if ($productId) {
+            $query->whereKey($productId);
+        } elseif ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', '%' . $search . '%')
                     ->orWhere('sku', 'like', '%' . $search . '%');
             });
         }
 
-        $products = $query->paginate(25)->appends(['search' => $search !== '' ? $search : null]);
+        $products = $query->paginate(25)->appends(array_filter([
+            'search' => $search !== '' ? $search : null,
+            'product_id' => $productId,
+        ]));
 
-        return view('inventory.top-up', compact('products', 'search', 'business'));
+        return view('inventory.top-up', compact('products', 'search', 'business', 'productId'));
     }
 
     public function storeTopUp(Request $request)
@@ -178,7 +202,10 @@ class InventoryController extends Controller
         ]);
 
         return redirect()
-            ->to(tenant_route('tenant.inventory.top-up', ['search' => $request->input('search')]))
+            ->to(tenant_route('tenant.inventory.top-up', array_filter([
+                'search' => $request->input('search'),
+                'product_id' => $data['product_id'],
+            ])))
             ->with('success', 'Stock topped up for ' . $target->displayName() . '.');
     }
 
@@ -248,6 +275,7 @@ class InventoryController extends Controller
         $rules = $this->simpleProductRules($businessId, $request);
 
         $data = $request->validate($rules);
+        $data['stock_quantity'] = $data['stock_quantity'] ?? 0;
 
         if ($branchId = $this->resolveBranchIdForOwner($request, $business)) {
             $data['branch_id'] = $branchId;
@@ -335,7 +363,7 @@ class InventoryController extends Controller
 
         AuditLogger::record('product_deleted', $product, $old, null);
 
-        return redirect()->to(tenant_route('tenant.inventory.index'))->with('success', 'Product removed.');
+        return redirect()->to(tenant_route('tenant.inventory.index'))->with('success', 'Product archived. Historical sales data is preserved.');
     }
 
     protected function storeVariableProduct(Request $request, Business $business): \Illuminate\Http\RedirectResponse
@@ -427,12 +455,13 @@ class InventoryController extends Controller
     {
         $rules = [
             'name' => 'required|string|max:255',
+            'sku' => 'nullable|string|max:100|unique:products,sku' . ($ignoreProductId ? ',' . $ignoreProductId : ''),
             'brand_id' => 'nullable|exists:brands,id',
             'new_brand_name' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
             'measurement_unit' => 'required|string|max:50',
-            'stock_quantity' => 'required|numeric|min:0',
+            'stock_quantity' => 'nullable|numeric|min:0',
             'critical_threshold' => 'nullable|integer|min:0',
         ];
 
