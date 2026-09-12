@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\DebtEntryType;
 use App\Helpers\AuditLogger;
+use App\Models\Business;
 use App\Models\Customer;
 use App\Models\Product;
 use App\Models\Sale;
@@ -149,7 +150,7 @@ class SaleService
 
             $saleBranchId = $this->resolveSaleBranchId($user, $resolvedProducts);
 
-            $saleNumber = $this->generateSaleNumber($businessId, $saleBranchId);
+            $saleNumber = $this->generateSaleNumber($businessId);
 
             $sale = Sale::create([
                 'business_id' => $businessId,
@@ -257,15 +258,15 @@ class SaleService
         return (int) $branchIds->first();
     }
 
-    protected function generateSaleNumber(int $businessId, ?int $branchId = null): string
+    protected function generateSaleNumber(int $businessId): string
     {
-        $query = Sale::query()->withoutGlobalScope(BranchScope::class)->where('business_id', $businessId);
+        Business::query()->whereKey($businessId)->lockForUpdate()->first();
 
-        if ($branchId) {
-            $query->where('branch_id', $branchId);
-        }
-
-        $count = $query->count() + 1;
+        $count = Sale::query()
+            ->withoutGlobalScope(BranchScope::class)
+            ->withTrashed()
+            ->where('business_id', $businessId)
+            ->count() + 1;
 
         return 'SALE-' . str_pad((string) $businessId, 3, '0', STR_PAD_LEFT) . '-' . str_pad((string) $count, 6, '0', STR_PAD_LEFT);
     }
