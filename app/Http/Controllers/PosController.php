@@ -8,6 +8,7 @@ use App\Services\KitchenOrderService;
 use App\Services\LowStockAlertService;
 use App\Services\ProductBatchService;
 use App\Services\SaleService;
+use App\Support\SaleReceipt;
 use Illuminate\Http\Request;
 
 class PosController extends Controller
@@ -142,15 +143,28 @@ class PosController extends Controller
             $sale = $sale->fresh(['items']);
         }
 
+        $receiptUrl = tenant_route('tenant.sales.receipt', ['sale' => $sale->id]);
+        $customerPhone = null;
+
+        if (! empty($data['customer_id'])) {
+            $customer = Customer::find($data['customer_id']);
+            $customerPhone = $customer ? $customer->phone : null;
+        }
+
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
                 'sale' => $sale,
                 'message' => 'Sale completed successfully.',
+                'receipt_url' => $receiptUrl,
+                'receipt_message' => SaleReceipt::message($sale),
+                'customer_phone' => $customerPhone,
             ]);
         }
 
-        return redirect()->to(tenant_route('tenant.pos.index'))->with('success', 'Sale #' . $sale->sale_number . ' completed.');
+        return redirect()
+            ->to($receiptUrl)
+            ->with('success', 'Sale #' . $sale->sale_number . ' completed.');
     }
 
     public function sendToKitchen(Request $request)

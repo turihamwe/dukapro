@@ -6,7 +6,7 @@
 @section('content')
 @php use App\Enums\KitchenOrderStatus; @endphp
 
-<x-page-header title="Today's Orders" subtitle="Print receipts for paid orders or invoices for unpaid tabs." class="!mb-4" />
+<x-page-header title="Today's Orders" subtitle="E-receipts for paid orders; print invoices for unpaid tabs." class="!mb-4" />
 
 <div class="space-y-3">
     @forelse($orders as $order)
@@ -35,10 +35,17 @@
             </div>
             <div class="flex shrink-0 flex-col items-end gap-2">
                 <p class="text-lg font-bold text-gray-900">@money($order->subtotal)</p>
-                <a href="{{ tenant_route('tenant.restaurant-orders.print', ['kitchenOrder' => $order]) }}" target="_blank"
-                   class="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700">
-                    Print {{ $order->isPaid() ? 'receipt' : 'invoice' }}
-                </a>
+                @if($order->isPaid() && $order->sale_id)
+                    <a href="{{ tenant_route('tenant.sales.receipt', ['sale' => $order->sale_id]) }}" target="_blank"
+                       class="inline-flex items-center rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700">
+                        E-Receipt
+                    </a>
+                @else
+                    <a href="{{ tenant_route('tenant.restaurant-orders.print', ['kitchenOrder' => $order]) }}" target="_blank"
+                       class="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700">
+                        Print invoice
+                    </a>
+                @endif
                 @if($order->awaitsPayment())
                     <a href="{{ tenant_route('tenant.kitchen.settle', ['kitchenOrder' => $order]) }}" class="text-xs font-medium text-emerald-600 hover:text-emerald-700">Collect payment →</a>
                 @endif

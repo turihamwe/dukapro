@@ -110,7 +110,7 @@ class KitchenController extends Controller
         $sale = $this->kitchenOrderService->settleOrder($request->user(), $kitchenOrder, $payment);
 
         return redirect()
-            ->to(tenant_route('tenant.kitchen.ready'))
+            ->to(tenant_route('tenant.sales.receipt', ['sale' => $sale->id]))
             ->with('success', 'Payment collected. Sale #' . $sale->sale_number . ' recorded.');
     }
 

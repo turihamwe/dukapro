@@ -57,6 +57,12 @@
                     <div class="text-right">
                         <p class="text-sm font-bold text-emerald-700">@money($sale->total)</p>
                         <p class="text-xs text-gray-600">Cashier: {{ optional($sale->user)->name ?? '—' }}</p>
+                        @can('viewReceipt', $sale)
+                            <a href="{{ tenant_route('tenant.sales.receipt', ['sale' => $sale->id]) }}" target="_blank"
+                               class="mt-1 inline-block text-xs font-medium text-indigo-600 hover:text-indigo-700">
+                                View receipt →
+                            </a>
+                        @endcan
                     </div>
                 </div>
                 @if($sale->items->isNotEmpty())

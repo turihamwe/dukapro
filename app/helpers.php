@@ -361,6 +361,37 @@ if (! function_exists('whatsapp_support_url')) {
     }
 }
 
+if (! function_exists('normalize_whatsapp_phone')) {
+    function normalize_whatsapp_phone(?string $phone): ?string
+    {
+        $digits = preg_replace('/\D+/', '', (string) $phone);
+
+        if ($digits === '') {
+            return null;
+        }
+
+        if (strlen($digits) === 9) {
+            return '256' . $digits;
+        }
+
+        if (strlen($digits) === 10 && $digits[0] === '0') {
+            return '256' . substr($digits, 1);
+        }
+
+        return $digits;
+    }
+}
+
+if (! function_exists('whatsapp_share_url')) {
+    function whatsapp_share_url(?string $recipientPhone, string $message): string
+    {
+        $digits = normalize_whatsapp_phone($recipientPhone);
+        $base = $digits ? 'https://wa.me/' . $digits : 'https://wa.me/';
+
+        return $base . '?text=' . rawurlencode($message);
+    }
+}
+
 if (! function_exists('whatsapp_float_enabled')) {
     function whatsapp_float_enabled(): bool
     {

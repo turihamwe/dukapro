@@ -108,7 +108,7 @@
                     <x-select id="customerId" label="{{ ($waiterMode ?? false) ? 'Customer (optional for tabs)' : 'Credit Customer' }}">
                         <option value="">{{ ($waiterMode ?? false) ? 'Walk-in / no customer' : 'Select customer' }}</option>
                         @foreach($customers as $c)
-                            <option value="{{ $c->id }}">{{ $c->name }} (Bal: @money($c->outstanding_balance))</option>
+                            <option value="{{ $c->id }}" data-phone="{{ $c->phone }}">{{ $c->name }} (Bal: @money($c->outstanding_balance))</option>
                         @endforeach
                     </x-select>
                 </div>
@@ -135,6 +135,38 @@
         </x-card>
     </div>
 </div>
+
+<div id="saleReceiptModal" class="app-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="saleReceiptTitle">
+    <div class="app-modal-panel mx-auto w-full max-w-md rounded-t-2xl bg-white p-5 shadow-xl sm:rounded-2xl">
+        <div class="mb-1 flex items-start justify-between gap-3">
+            <div>
+                <p id="saleReceiptTitle" class="text-lg font-bold text-gray-900">Sale complete</p>
+                <p id="saleReceiptNumber" class="text-sm text-gray-500"></p>
+            </div>
+            <button type="button" class="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600" onclick="closeAppModal('saleReceiptModal')" aria-label="Close">&times;</button>
+        </div>
+        <p class="mt-3 text-sm text-gray-600">Send an e-receipt to the customer or print a copy.</p>
+        <div class="mt-4">
+            <label for="receiptCustomerPhone" class="mb-1 block text-xs font-medium text-gray-700">Customer WhatsApp (optional)</label>
+            <input type="tel" id="receiptCustomerPhone" placeholder="e.g. 0700123456"
+                   class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+        </div>
+        <div class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <button type="button" id="receiptPrintBtn"
+                    class="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50">
+                Print receipt
+            </button>
+            <a id="receiptWhatsAppBtn" href="#" target="_blank" rel="noopener noreferrer"
+               class="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-[#25D366] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1ebe5d]">
+                Send WhatsApp
+            </a>
+        </div>
+        <button type="button" id="receiptDoneBtn"
+                class="mt-3 w-full min-h-[44px] rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
+            New sale
+        </button>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -158,6 +190,53 @@
     function formatMoney(amount) {
         return currencySample.replace(/[\d,.]+/, Number(amount).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
     }
+
+    var pendingReceipt = { url: '', message: '' };
+
+    function normalizeWhatsAppPhone(value) {
+        var digits = (value || '').replace(/\D/g, '');
+        if (digits.length === 9) return '256' + digits;
+        if (digits.length === 10 && digits.charAt(0) === '0') return '256' + digits.slice(1);
+        return digits;
+    }
+
+    function buildWhatsAppUrl(phone, message) {
+        var digits = normalizeWhatsAppPhone(phone);
+        var base = digits ? 'https://wa.me/' + digits : 'https://wa.me/';
+        return base + '?text=' + encodeURIComponent(message);
+    }
+
+    function updateReceiptWhatsAppLink() {
+        var phoneEl = document.getElementById('receiptCustomerPhone');
+        var whatsappBtn = document.getElementById('receiptWhatsAppBtn');
+        if (!phoneEl || !whatsappBtn || !pendingReceipt.message) return;
+        whatsappBtn.href = buildWhatsAppUrl(phoneEl.value, pendingReceipt.message);
+    }
+
+    function showReceiptModal(data) {
+        pendingReceipt.url = data.receipt_url || '';
+        pendingReceipt.message = data.receipt_message || '';
+        document.getElementById('saleReceiptNumber').textContent = data.sale && data.sale.sale_number ? '#' + data.sale.sale_number : '';
+        var phoneEl = document.getElementById('receiptCustomerPhone');
+        var customerSelect = document.getElementById('customerId');
+        var phone = data.customer_phone || '';
+        if (!phone && customerSelect && customerSelect.value) {
+            var selected = customerSelect.options[customerSelect.selectedIndex];
+            phone = selected && selected.dataset.phone ? selected.dataset.phone : '';
+        }
+        phoneEl.value = phone || '';
+        updateReceiptWhatsAppLink();
+        openAppModal('saleReceiptModal');
+    }
+
+    document.getElementById('receiptCustomerPhone').addEventListener('input', updateReceiptWhatsAppLink);
+    document.getElementById('receiptPrintBtn').addEventListener('click', function () {
+        if (pendingReceipt.url) window.open(pendingReceipt.url, '_blank');
+    });
+    document.getElementById('receiptDoneBtn').addEventListener('click', function () {
+        closeAppModal('saleReceiptModal');
+        location.reload();
+    });
 
     function parseQty(val) {
         var qty = parseInt(String(val), 10);
@@ -529,8 +608,7 @@
             cart = [];
             expandedIdx = null;
             renderCart();
-            alert('Sale ' + data.sale.sale_number + ' completed!');
-            location.reload();
+            showReceiptModal(data);
         } catch (err) {
             alert(err.message);
         } finally {

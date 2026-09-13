@@ -22,6 +22,7 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ProductAttributeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SalesReportController;
+use App\Http\Controllers\SaleReceiptController;
 use App\Http\Controllers\SoldByUnitController;
 use App\Http\Controllers\SuperAdmin\AffiliateController as SuperAdminAffiliateController;
 use App\Http\Controllers\SuperAdmin\UserActionController;
@@ -322,6 +323,8 @@ Route::middleware(['maintenance'])->group(function () {
                         ->name('send-kitchen');
                     Route::post('/checkout', [PosController::class, 'checkout'])->name('checkout');
                 });
+
+                Route::get('/sales/{sale}/receipt', [SaleReceiptController::class, 'show'])->name('sales.receipt');
 
                 Route::middleware(['can:access-waiter-shift-balancing'])->prefix('waiter-shift')->name('waiter-shift.')->group(function () {
                     Route::get('/', [WaiterShiftController::class, 'index'])->name('index');
