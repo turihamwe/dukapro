@@ -45,7 +45,7 @@ class AffiliateRegistrationService
                 'email' => strtolower($data['email']),
                 'phone' => $data['phone'] ?? null,
                 'code' => $code,
-                'commission_rate' => config('affiliates.default_commission_rate', 0.10),
+                'commission_rate' => \App\Support\AffiliateCommissionRates::subsequentRate(),
                 'status' => AffiliateStatus::PENDING,
                 'is_active' => false,
                 'application_message' => $data['application_message'] ?? null,

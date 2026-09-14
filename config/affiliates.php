@@ -2,6 +2,8 @@
 
 return [
     'default_commission_rate' => 0.10,
+    'first_commission_rate' => 0.50,
+    'subsequent_commission_rate' => 0.10,
     'recruitment_open' => env('AFFILIATE_RECRUITMENT_OPEN', true),
     'referral_session_key' => 'affiliate_referral_code',
     'sub_referral_session_key' => 'affiliate_sub_referral_code',

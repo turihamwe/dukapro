@@ -80,7 +80,8 @@
             <input type="email" name="email" value="{{ old('email') }}" required placeholder="Email" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <input type="text" name="phone" value="{{ old('phone') }}" placeholder="Phone" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <input type="text" name="code" value="{{ old('code') }}" placeholder="Referral code (auto-generated if empty)" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
-            <input type="number" step="0.0001" min="0" max="1" name="commission_rate" value="{{ old('commission_rate', config('affiliates.default_commission_rate')) }}" placeholder="Commission rate (0.10 = 10%)" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <input type="number" step="0.0001" min="0" max="1" name="commission_rate" value="{{ old('commission_rate', config('affiliates.subsequent_commission_rate', 0.10)) }}" placeholder="Display rate (0.10 = 10%)" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <p class="text-xs text-gray-500">Payout rates are tiered per referred business (first payment vs renewals) — configure in <a href="{{ route('superadmin.settings') }}" class="font-medium text-violet-600 hover:text-violet-500">System Settings</a>.</p>
             <select name="status" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
                 @foreach($affiliateStatuses as $status)
                     <option value="{{ $status }}" @selected(old('status', 'pending') === $status)>{{ ucfirst($status) }}</option>

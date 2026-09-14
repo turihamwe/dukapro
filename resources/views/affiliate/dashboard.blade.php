@@ -37,7 +37,12 @@
             @else
                 Referral code: <strong>{{ $affiliate->code }}</strong>
             @endif
-            · Commission rate: {{ number_format(($primaryAffiliate->commission_rate ?? $affiliate->commission_rate) * 100, 0) }}%
+            @php
+                $firstCommissionRate = \App\Support\AffiliateCommissionRates::firstRate();
+                $subsequentCommissionRate = \App\Support\AffiliateCommissionRates::subsequentRate();
+            @endphp
+            · First payment per referred business: {{ number_format($firstCommissionRate * 100, 0) }}%
+            · Renewals: {{ number_format($subsequentCommissionRate * 100, 0) }}%
         </p>
     </div>
 

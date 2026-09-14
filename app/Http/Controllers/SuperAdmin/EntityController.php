@@ -314,7 +314,7 @@ class EntityController extends Controller
                     'email' => strtolower($data['email']),
                     'phone' => $data['phone'] ?? null,
                     'code' => $code,
-                    'commission_rate' => $data['commission_rate'] ?? config('affiliates.default_commission_rate', 0.10),
+                    'commission_rate' => $data['commission_rate'] ?? \App\Support\AffiliateCommissionRates::subsequentRate(),
                     'status' => $data['status'],
                     'is_active' => $request->boolean('is_active'),
                     'approved_at' => $data['status'] === AffiliateStatus::APPROVED ? now() : null,

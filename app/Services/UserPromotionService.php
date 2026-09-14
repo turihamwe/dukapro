@@ -73,7 +73,7 @@ class UserPromotionService
                 'email' => strtolower($user->email),
                 'phone' => $user->phone,
                 'code' => $this->referralCodeGenerator->generateUnique(),
-                'commission_rate' => config('affiliates.default_commission_rate', 0.10),
+                'commission_rate' => \App\Support\AffiliateCommissionRates::subsequentRate(),
                 'status' => \App\Enums\AffiliateStatus::PENDING,
                 'is_active' => false,
             ]);

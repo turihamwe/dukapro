@@ -88,6 +88,45 @@
 
     <div class="rounded-xl border border-gray-200 bg-white p-6 space-y-5">
         <div>
+            <h2 class="text-sm font-semibold text-gray-900">Affiliate commissions</h2>
+            <p class="mt-1 text-xs text-gray-500">Tiered rates per referred business — the first subscription payment earns the higher rate; renewals use the standard rate.</p>
+        </div>
+
+        @php
+            $firstCommissionPercent = old(
+                'affiliate_first_commission_percent',
+                isset($settings['affiliate_first_commission_rate'])
+                    ? round((float) $settings['affiliate_first_commission_rate'] * 100, 2)
+                    : round(config('affiliates.first_commission_rate', 0.50) * 100, 0)
+            );
+            $subsequentCommissionPercent = old(
+                'affiliate_subsequent_commission_percent',
+                isset($settings['affiliate_subsequent_commission_rate'])
+                    ? round((float) $settings['affiliate_subsequent_commission_rate'] * 100, 2)
+                    : round(config('affiliates.subsequent_commission_rate', 0.10) * 100, 0)
+            );
+        @endphp
+
+        <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+                <label for="affiliate_first_commission_percent" class="mb-1 block text-sm font-medium">First payment per business (%)</label>
+                <input type="number" step="0.01" min="0" max="100" name="affiliate_first_commission_percent" id="affiliate_first_commission_percent"
+                       value="{{ $firstCommissionPercent }}"
+                       class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-violet-500 focus:outline-none">
+                <p class="mt-1 text-xs text-gray-500">Applied when a referred business makes its first subscription payment.</p>
+            </div>
+            <div>
+                <label for="affiliate_subsequent_commission_percent" class="mb-1 block text-sm font-medium">Renewals (%)</label>
+                <input type="number" step="0.01" min="0" max="100" name="affiliate_subsequent_commission_percent" id="affiliate_subsequent_commission_percent"
+                       value="{{ $subsequentCommissionPercent }}"
+                       class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-violet-500 focus:outline-none">
+                <p class="mt-1 text-xs text-gray-500">Standard rate for every subscription renewal from that same business.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="rounded-xl border border-gray-200 bg-white p-6 space-y-5">
+        <div>
             <h2 class="text-sm font-semibold text-gray-900">Subscription billing</h2>
             <p class="mt-1 text-xs text-gray-500">Control whether tenants pay a single flat fee or base subscription plus module add-ons.</p>
         </div>

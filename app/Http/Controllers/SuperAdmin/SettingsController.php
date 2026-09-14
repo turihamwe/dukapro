@@ -44,6 +44,8 @@ class SettingsController extends Controller
             'billing_mode' => 'nullable|in:unified,addons',
             'module_prices' => 'nullable|array',
             'module_prices.*' => 'nullable|numeric|min:0',
+            'affiliate_first_commission_percent' => 'required|numeric|min:0|max:100',
+            'affiliate_subsequent_commission_percent' => 'required|numeric|min:0|max:100',
         ]);
 
         SystemSetting::set('default_currency_symbol', $data['default_currency_symbol']);
@@ -71,6 +73,14 @@ class SettingsController extends Controller
             $modulePrices[$moduleKey] = (float) ($data['module_prices'][$moduleKey] ?? 0);
         }
         SystemSetting::set('module_prices', json_encode($modulePrices));
+        SystemSetting::set(
+            'affiliate_first_commission_rate',
+            (string) round((float) $data['affiliate_first_commission_percent'] / 100, 4)
+        );
+        SystemSetting::set(
+            'affiliate_subsequent_commission_rate',
+            (string) round((float) $data['affiliate_subsequent_commission_percent'] / 100, 4)
+        );
 
         SystemAuditLogger::record(
             'settings_updated',
