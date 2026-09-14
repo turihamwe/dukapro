@@ -532,6 +532,7 @@ class EntityController extends Controller
                     'role' => 'required|in:' . implode(',', UserRole::staffRoles()),
                     'branch_id' => 'required|exists:branches,id',
                     'is_active' => 'nullable|boolean',
+                    'password' => 'nullable|string|min:8|confirmed',
                 ]);
                 abort_unless(
                     Branch::where('id', $data['branch_id'])->where('business_id', $item->business_id)->exists(),
@@ -539,7 +540,13 @@ class EntityController extends Controller
                     'Branch must belong to the staff member business.'
                 );
                 $data['is_active'] = $request->boolean('is_active', true);
+                unset($data['password']);
                 $item->update($data);
+
+                if ($request->filled('password')) {
+                    $item->update(['password' => Hash::make($request->input('password'))]);
+                    $this->logPasswordReset($request, $item);
+                }
                 break;
 
             case 'users':
@@ -548,9 +555,16 @@ class EntityController extends Controller
                     'email' => 'required|email|unique:users,email,' . $item->id,
                     'role' => 'required|in:' . implode(',', UserRole::all()),
                     'is_active' => 'nullable|boolean',
+                    'password' => 'nullable|string|min:8|confirmed',
                 ]);
                 $data['is_active'] = $request->boolean('is_active', true);
+                unset($data['password']);
                 $item->update($data);
+
+                if ($request->filled('password')) {
+                    $item->update(['password' => Hash::make($request->input('password'))]);
+                    $this->logPasswordReset($request, $item);
+                }
                 break;
 
             case 'products':
@@ -694,6 +708,17 @@ class EntityController extends Controller
         return redirect()
             ->route('superadmin.entities.index', $entity)
             ->with('success', 'Record soft-deleted successfully.');
+    }
+
+    protected function logPasswordReset(Request $request, User $user): void
+    {
+        SystemAuditLogger::record(
+            'user_password_reset',
+            'Superadmin reset password for user #' . $user->id . ' (' . $user->email . ')',
+            $user->business_id,
+            $request->user()->id,
+            ['user_id' => $user->id]
+        );
     }
 
     protected function uniqueBusinessSlug(string $base): string

@@ -42,6 +42,7 @@
                 @endforeach
             </select>
             <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_active" value="1" @checked(old('is_active', $item->is_active))> Active</label>
+            @include('superadmin.entities.partials.password-reset-fields')
         @elseif($entity === 'users')
             <input type="text" name="name" value="{{ old('name', $item->name) }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <input type="email" name="email" value="{{ old('email', $item->email) }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
@@ -51,6 +52,7 @@
                 @endforeach
             </select>
             <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_active" value="1" @checked(old('is_active', $item->is_active))> Active</label>
+            @include('superadmin.entities.partials.password-reset-fields')
         @elseif($entity === 'products')
             <input type="text" name="name" value="{{ old('name', $item->name) }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <input type="number" step="0.01" name="price" value="{{ old('price', $item->price) }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
