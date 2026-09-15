@@ -28,7 +28,7 @@
         <p class="mt-1 text-lg font-bold text-amber-900">@money($report['total_damages'])</p>
     </div>
     <div class="rounded-xl border border-sky-100 bg-sky-50 p-4">
-        <p class="text-xs uppercase text-sky-800">Extra cash</p>
+        <p class="text-xs uppercase text-sky-800">{{ ReconciliationVariance::extraCashLabel() }}</p>
         <p class="mt-1 text-lg font-bold text-sky-900">@money($reconciliation->extra_cash ?? 0)</p>
     </div>
 </div>
@@ -38,7 +38,7 @@
     <dl class="mt-4 space-y-2 text-sm">
         <div class="flex justify-between"><dt class="text-indigo-900/70">Expected cash</dt><dd class="font-semibold text-indigo-950">@money($reconciliation->expected_cash)</dd></div>
         <div class="flex justify-between"><dt class="text-indigo-900/70">Actual cash</dt><dd class="font-medium">@money($reconciliation->actual_cash)</dd></div>
-        <div class="flex justify-between"><dt class="text-indigo-900/70">Extra cash</dt><dd class="font-medium text-sky-800">@money($reconciliation->extra_cash ?? 0)</dd></div>
+        <div class="flex justify-between"><dt class="text-indigo-900/70">{{ ReconciliationVariance::extraCashLabel() }}</dt><dd class="font-medium text-sky-800">@money($reconciliation->extra_cash ?? 0)</dd></div>
         <div class="flex justify-between"><dt class="text-indigo-900/70">Mobile money</dt><dd class="font-medium">@money($reconciliation->actual_mobile_money)</dd></div>
         <div class="flex justify-between"><dt class="text-indigo-900/70">Bank &amp; other</dt><dd class="font-medium">@money($reconciliation->actual_bank_other ?? 0)</dd></div>
         <div class="flex justify-between"><dt class="text-indigo-900/70">Expenses</dt><dd class="font-medium text-red-700">@money($reconciliation->total_expenses ?? 0)</dd></div>
@@ -53,6 +53,9 @@
                 @endif
             </dd>
         </div>
+        @if($varianceTone !== 'neutral')
+            <p class="pt-2 text-xs text-indigo-900/60">{{ ReconciliationVariance::netBalanceHint() }}</p>
+        @endif
     </dl>
 </div>
 

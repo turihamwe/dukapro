@@ -46,7 +46,7 @@
                     <p class="font-semibold text-amber-700">@money($expected['total_damages'])</p>
                 </div>
                 <div>
-                    <p class="text-xs text-gray-500">Extra cash</p>
+                    <p class="text-xs text-gray-500">{{ \App\Support\ReconciliationVariance::extraCashLabel() }}</p>
                     <p class="font-semibold text-sky-700">@money($expected['total_extra_cash'] ?? 0)</p>
                 </div>
                 <div>
@@ -54,7 +54,7 @@
                     <p class="font-semibold {{ $expected['net_income'] >= 0 ? 'text-emerald-700' : 'text-red-600' }}">@money($expected['net_income'])</p>
                 </div>
             </div>
-            <p class="mt-2 text-xs text-gray-500">Extra cash is unexplained cash found today — recorded at close shift and kept for future audit offsets.</p>
+            <p class="mt-2 text-xs text-gray-500">{{ \App\Support\ReconciliationVariance::extraCashHint() }} Recorded at close shift for future audit offsets.</p>
             <div class="mt-3 flex flex-wrap gap-3 text-xs">
                 @can('create', App\Models\Expense::class)
                     <a href="{{ tenant_route('tenant.operations.index') }}" class="font-medium text-indigo-600 hover:text-indigo-700">Operations hub →</a>
@@ -65,9 +65,9 @@
         <x-input type="number" step="0.01" name="actual_cash" label="Actual cash in drawer" placeholder="Count physical cash" required large />
         <x-input type="number" step="0.01" name="actual_mobile_money" label="Actual mobile money balance" value="{{ old('actual_mobile_money', '') }}" placeholder="M-Pesa / till balance (optional)" large />
         <x-input type="number" step="0.01" name="actual_bank_other" label="Bank &amp; other methods received" value="{{ old('actual_bank_other', 0) }}" large />
-        <x-input type="number" step="0.01" name="extra_cash" label="Extra cash found" value="{{ old('extra_cash', 0) }}" placeholder="Unexplained cash (optional)" large />
-        <p class="-mt-2 text-xs text-gray-500">Record any unexpected cash found separately — it improves balancing and is kept on file for future shortage offsets.</p>
-        <x-textarea name="notes" label="Notes" rows="2" placeholder="Explain any missing money...">{{ old('notes') }}</x-textarea>
+        <x-input type="number" step="0.01" name="extra_cash" label="{{ \App\Support\ReconciliationVariance::extraCashLabel() }}" value="{{ old('extra_cash', 0) }}" placeholder="Optional" large />
+        <p class="-mt-2 text-xs text-gray-500">{{ \App\Support\ReconciliationVariance::extraCashHint() }}</p>
+        <x-textarea name="notes" label="Notes" rows="2" placeholder="Explain any missing money or surplus...">{{ old('notes') }}</x-textarea>
 
         @can('access-waiter-shift-balancing')
             <div class="rounded-xl border border-violet-200 bg-violet-50 p-4 text-sm">

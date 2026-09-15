@@ -42,7 +42,8 @@
         <x-input type="number" step="0.01" name="actual_cash" label="Actual cash in drawer" value="{{ old('actual_cash', $reconciliation->actual_cash) }}" required large />
         <x-input type="number" step="0.01" name="actual_mobile_money" label="Actual mobile money balance" value="{{ old('actual_mobile_money', $reconciliation->actual_mobile_money) }}" large />
         <x-input type="number" step="0.01" name="actual_bank_other" label="Bank &amp; other methods received" value="{{ old('actual_bank_other', $reconciliation->actual_bank_other ?? 0) }}" large />
-        <x-input type="number" step="0.01" name="extra_cash" label="Extra cash found" value="{{ old('extra_cash', $reconciliation->extra_cash ?? 0) }}" large />
+        <x-input type="number" step="0.01" name="extra_cash" label="{{ \App\Support\ReconciliationVariance::extraCashLabel() }}" value="{{ old('extra_cash', $reconciliation->extra_cash ?? 0) }}" large />
+        <p class="-mt-2 text-xs text-gray-500">{{ \App\Support\ReconciliationVariance::extraCashHint() }}</p>
         <x-textarea name="notes" label="Notes" rows="2">{{ old('notes', $reconciliation->notes) }}</x-textarea>
 
         @can('access-waiter-shift-balancing')

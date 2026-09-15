@@ -232,7 +232,7 @@ class ReconciliationService
             '• Bank & other: ' . format_money($reconciliation->actual_bank_other ?? 0, $business),
             '• Expenses: ' . format_money($reconciliation->total_expenses ?? 0, $business),
             '• Damages: ' . format_money($reconciliation->total_damages ?? 0, $business),
-            '• Extra cash: ' . format_money($reconciliation->extra_cash ?? 0, $business),
+            '• ' . ReconciliationVariance::extraCashLabel() . ': ' . format_money($reconciliation->extra_cash ?? 0, $business),
             ReconciliationVariance::whatsAppVarianceLine($reconciliation->missing_money ?? 0, $business),
         ]));
 

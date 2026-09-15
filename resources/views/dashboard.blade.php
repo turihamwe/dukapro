@@ -175,9 +175,9 @@
                             @if($varianceTone === 'neutral')
                                 <p class="text-gray-600">Balanced</p>
                             @elseif($varianceTone === 'danger')
-                                <p>Missing <span class="font-medium text-red-600">@money(ReconciliationVariance::displayAmount($variance))</span></p>
+                                <p>{{ ReconciliationVariance::shortLabel($variance) }} <span class="font-medium text-red-600">@money(ReconciliationVariance::displayAmount($variance))</span></p>
                             @else
-                                <p>Extra <span class="font-medium text-emerald-600">@money(ReconciliationVariance::displayAmount($variance))</span></p>
+                                <p>{{ ReconciliationVariance::shortLabel($variance) }} <span class="font-medium text-emerald-600">@money(ReconciliationVariance::displayAmount($variance))</span></p>
                             @endif
                         </div>
                     </li>

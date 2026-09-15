@@ -38,9 +38,9 @@
                             @if($varianceTone === 'neutral')
                                 <span class="text-gray-600">Balanced</span>
                             @elseif($varianceTone === 'danger')
-                                <span class="font-medium text-red-600">Missing @money(ReconciliationVariance::displayAmount($variance))</span>
+                                <span class="font-medium text-red-600">{{ ReconciliationVariance::shortLabel($variance) }} @money(ReconciliationVariance::displayAmount($variance))</span>
                             @else
-                                <span class="font-medium text-emerald-600">Extra @money(ReconciliationVariance::displayAmount($variance))</span>
+                                <span class="font-medium text-emerald-600">{{ ReconciliationVariance::shortLabel($variance) }} @money(ReconciliationVariance::displayAmount($variance))</span>
                             @endif
                         </p>
                     </div>
@@ -65,7 +65,7 @@
                     <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Expenses</th>
                     <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Damages</th>
                     <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Net Income</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Variance</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Drawer balance</th>
                     <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500"></th>
                 </tr>
             </thead>
@@ -86,9 +86,9 @@
                             @if($varianceTone === 'neutral')
                                 <span class="text-gray-600">Balanced</span>
                             @elseif($varianceTone === 'danger')
-                                <span class="text-red-600">Missing @money(ReconciliationVariance::displayAmount($variance))</span>
+                                <span class="text-red-600">{{ ReconciliationVariance::shortLabel($variance) }} @money(ReconciliationVariance::displayAmount($variance))</span>
                             @else
-                                <span class="text-emerald-600">Extra @money(ReconciliationVariance::displayAmount($variance))</span>
+                                <span class="text-emerald-600">{{ ReconciliationVariance::shortLabel($variance) }} @money(ReconciliationVariance::displayAmount($variance))</span>
                             @endif
                         </td>
                         <td class="px-6 py-4 text-right text-sm">
