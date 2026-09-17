@@ -47,6 +47,7 @@
         </div>
     </main>
 
+    @include('layouts.partials.tawk-chat')
     @stack('scripts')
     @include('layouts.partials.form-validation')
     <script>

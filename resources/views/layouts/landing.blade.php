@@ -70,6 +70,7 @@
     @yield('content')
 
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    @include('layouts.partials.tawk-chat')
     @stack('scripts')
 </body>
 </html>
