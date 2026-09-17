@@ -84,6 +84,17 @@
                 <p class="mt-0.5 text-xs text-sky-900/80">When enabled, business owners can turn on FIFO batch product tracking per business and branch. When disabled, all tenants use direct stock quantities only.</p>
             </div>
         </div>
+
+        <div class="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
+            <input type="hidden" name="variable_pricing_enabled" value="0">
+            <input type="checkbox" name="variable_pricing_enabled" id="variable_pricing_enabled" value="1"
+                   {{ old('variable_pricing_enabled', $settings['variable_pricing_enabled'] ?? '1') === '1' ? 'checked' : '' }}
+                   class="mt-0.5 rounded border-gray-300 text-amber-600 focus:ring-amber-500">
+            <div>
+                <label for="variable_pricing_enabled" class="block text-sm font-medium text-amber-950">Variable pricing</label>
+                <p class="mt-0.5 text-xs text-amber-900/80">When enabled, business owners can turn on negotiable POS pricing for markets and bargain-based shops. When disabled, variable pricing is hidden everywhere.</p>
+            </div>
+        </div>
     </div>
 
     <div class="rounded-xl border border-gray-200 bg-white p-6 space-y-5">

@@ -87,6 +87,7 @@
             </dl>
         </div>
 
+        @include('superadmin.businesses._variable-pricing-panel', ['business' => $item])
         @include('superadmin.businesses._efris-panel', ['business' => $item])
     @endif
 

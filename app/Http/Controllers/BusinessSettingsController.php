@@ -9,6 +9,7 @@ use App\Services\BusinessModuleService;
 use App\Services\BusinessPermissionService;
 use App\Support\BatchMode;
 use App\Support\EfrisCompliance;
+use App\Support\VariablePricingMode;
 use App\Support\WeafPlatformCredentials;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -57,6 +58,7 @@ class BusinessSettingsController extends Controller
             'floor.use_waiters' => 'nullable|boolean',
             'floor.use_tables' => 'nullable|boolean',
             'batch_mode' => 'nullable|boolean',
+            'variable_pricing_enabled' => 'nullable|boolean',
             'branch_batch_mode' => 'nullable|array',
             'role_permissions' => 'nullable|array',
             'efris.enabled' => 'nullable|boolean',
@@ -108,7 +110,7 @@ class BusinessSettingsController extends Controller
             }
         }
 
-        $business->update([
+        $businessPayload = [
             'name' => $data['name'],
             'slug' => $slug,
             'email' => $data['email'],
@@ -119,7 +121,13 @@ class BusinessSettingsController extends Controller
             'currency_position' => $data['currency_position'],
             'currency' => $data['currency_symbol'],
             'brand_color' => $data['brand_color'] ?? $business->brand_color,
-        ]);
+        ];
+
+        if (VariablePricingMode::platformEnabled()) {
+            $businessPayload['variable_pricing_enabled'] = $request->boolean('variable_pricing_enabled');
+        }
+
+        $business->update($businessPayload);
 
         app(BusinessModuleService::class)->updateCapabilities(
             $business->fresh(),

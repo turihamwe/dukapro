@@ -3,11 +3,13 @@
 @section('title', 'POS Checkout')
 
 @section('content')
-@php    $posCatalog = $products->map(function ($product) {
+@php
+    $posCatalog = $products->map(function ($product) {
         return [
             'id' => $product->id,
             'name' => $product->displayName(),
             'price' => (float) $product->fifo_price,
+            'base_price' => (float) $product->price,
             'stock_quantity' => (int) $product->available_stock,
         ];
     })->values();
@@ -179,6 +181,7 @@
     var waiterMode = @json($waiterMode ?? false);
     var restaurantMode = @json($restaurantMode ?? false);
     var useRestaurantTables = @json($useRestaurantTables ?? false);
+    var variablePricingMode = @json($variablePricingMode ?? false);
     var currencySample = @json(auth()->user()->business->formatMoney(0));
     var POS_CATALOG = JSON.parse(document.getElementById('pos-catalog-data').textContent);
     var productById = {};
@@ -269,6 +272,7 @@
                 product_id: product.id,
                 name: product.name,
                 unit_price: parseFloat(product.price),
+                base_price: parseFloat(product.base_price || product.price),
                 quantity: qty,
                 max_stock: maxStock,
                 notes: '',
@@ -288,14 +292,33 @@
         return String(item.product_id) + '|' + (item.notes || '').trim();
     }
 
-    function renderCart() {
-        var wrap = document.getElementById('cartItems');
+    function priceFieldHtml(item, idx) {
+        if (variablePricingMode) {
+            return '<label class="mt-1 block text-xs text-gray-500">' +
+                'Unit price' +
+                '<input type="number" min="0" step="0.01" value="' + item.unit_price + '" data-action="price" data-idx="' + idx + '" ' +
+                'class="mt-0.5 w-full min-h-[36px] rounded-lg border border-amber-200 bg-amber-50/40 px-2 py-1 text-sm font-semibold text-gray-900 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-400">' +
+                (item.base_price && item.base_price !== item.unit_price
+                    ? '<span class="mt-0.5 block font-normal text-gray-400">Catalog: ' + formatMoney(item.base_price) + '</span>'
+                    : '') +
+            '</label>';
+        }
+
+        return '<p class="text-xs text-gray-500">' + formatMoney(item.unit_price) + ' each · max ' + item.max_stock + '</p>';
+    }
+
+    function updateCartTotals() {
         var total = cart.reduce(function (s, i) { return s + i.quantity * i.unit_price; }, 0);
         var units = cart.reduce(function (s, i) { return s + i.quantity; }, 0);
-        var hasItems = cart.length > 0;
-
         document.getElementById('cartTotal').textContent = formatMoney(total);
         document.getElementById('cartCount').textContent = String(units);
+        return { total: total, units: units, hasItems: cart.length > 0 };
+    }
+
+    function renderCart() {
+        var wrap = document.getElementById('cartItems');
+        var totals = updateCartTotals();
+        var hasItems = totals.hasItems;
         if (!restaurantMode) {
             document.getElementById('checkoutBtn').disabled = !hasItems;
         }
@@ -328,7 +351,7 @@
                     '<div class="flex items-start justify-between gap-2">' +
                         '<div class="min-w-0 flex-1">' +
                             '<p class="truncate text-sm font-medium text-gray-900">' + esc(item.name) + '</p>' +
-                            '<p class="text-xs text-gray-500">' + formatMoney(item.unit_price) + ' each · max ' + item.max_stock + '</p>' +
+                            priceFieldHtml(item, idx) +
                         '</div>' +
                         (restaurantMode
                             ? '<button type="button" data-action="collapse" data-idx="' + idx + '" class="shrink-0 text-xs font-medium text-gray-500 hover:text-gray-700">Done</button>'
@@ -398,6 +421,19 @@
     });
 
     document.getElementById('cartItems').addEventListener('input', function (e) {
+        var priceInput = e.target.closest('[data-action="price"]');
+        if (priceInput) {
+            var priceIdx = parseInt(priceInput.getAttribute('data-idx'), 10);
+            var item = cart[priceIdx];
+            if (!item) return;
+            var price = parseFloat(priceInput.value);
+            if (!isNaN(price) && price >= 0) {
+                item.unit_price = Math.round(price * 100) / 100;
+                updateCartTotals();
+            }
+            return;
+        }
+
         var input = e.target.closest('[data-action="notes"]');
         if (!input) return;
         var idx = parseInt(input.getAttribute('data-idx'), 10);

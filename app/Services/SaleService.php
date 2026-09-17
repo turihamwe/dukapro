@@ -12,6 +12,7 @@ use App\Models\SaleItem;
 use App\Models\SaleItemBatchAllocation;
 use App\Models\User;
 use App\Scopes\BranchScope;
+use App\Support\VariablePricingMode;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -83,6 +84,7 @@ class SaleService
             }
 
             $staffBranchId = $this->branchResolver->forUser($user);
+            $variablePricing = $business && VariablePricingMode::active($business);
             $subtotal = 0;
             $lineItems = [];
             $resolvedProducts = collect();
@@ -117,13 +119,34 @@ class SaleService
                 }
 
                 $deduction = $this->batchService->applyFifoDeduction($product, $quantity);
-                $lineSubtotal = $deduction['subtotal'];
+
+                if ($variablePricing) {
+                    if (! isset($item['unit_price']) || ! is_numeric($item['unit_price'])) {
+                        throw ValidationException::withMessages([
+                            'items' => 'Each cart item must include a negotiated price when variable pricing is enabled.',
+                        ]);
+                    }
+
+                    $unitPrice = round((float) $item['unit_price'], 2);
+
+                    if ($unitPrice < 0) {
+                        throw ValidationException::withMessages([
+                            'items' => 'Item prices cannot be negative.',
+                        ]);
+                    }
+
+                    $lineSubtotal = round($quantity * $unitPrice, 2);
+                } else {
+                    $unitPrice = $deduction['unit_price'];
+                    $lineSubtotal = $deduction['subtotal'];
+                }
+
                 $subtotal += $lineSubtotal;
 
                 $lineItems[] = [
                     'product' => $product->fresh(),
                     'quantity' => $quantity,
-                    'unit_price' => $deduction['unit_price'],
+                    'unit_price' => $unitPrice,
                     'cost_price' => $deduction['cost_price'],
                     'subtotal' => $lineSubtotal,
                     'allocations' => $deduction['allocations'],

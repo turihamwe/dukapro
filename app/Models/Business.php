@@ -43,6 +43,7 @@ class Business extends Model
         'billing_grandfathered',
         'sole_proprietor',
         'employees_onboarding_complete',
+        'variable_pricing_enabled',
     ];
 
     protected $casts = [
@@ -50,6 +51,7 @@ class Business extends Model
         'is_active' => 'boolean',
         'sole_proprietor' => 'boolean',
         'employees_onboarding_complete' => 'boolean',
+        'variable_pricing_enabled' => 'boolean',
         'trial_ends_at' => 'datetime',
         'subscription_ends_at' => 'datetime',
         'subscription_amount' => 'float',
@@ -109,6 +111,11 @@ class Business extends Model
     public function usesEfris(): bool
     {
         return \App\Support\EfrisCompliance::isTransmissionAllowed($this);
+    }
+
+    public function usesVariablePricing(): bool
+    {
+        return \App\Support\VariablePricingMode::active($this);
     }
 
     public function clearModuleCache(): void

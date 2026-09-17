@@ -9,6 +9,7 @@ use App\Services\LowStockAlertService;
 use App\Services\ProductBatchService;
 use App\Services\SaleService;
 use App\Support\SaleReceipt;
+use App\Support\VariablePricingMode;
 use Illuminate\Http\Request;
 
 class PosController extends Controller
@@ -70,7 +71,9 @@ class PosController extends Controller
 
         $lowStockItems = $this->lowStockAlertService->lowStockProducts($business, $request->user(), 8);
 
-        return view('pos.checkout', compact('products', 'customers', 'waiterMode', 'restaurantMode', 'isHospitality', 'useRestaurantTables', 'restaurantTables', 'floorStaff', 'lowStockItems'));
+        $variablePricingMode = VariablePricingMode::active($business);
+
+        return view('pos.checkout', compact('products', 'customers', 'waiterMode', 'restaurantMode', 'isHospitality', 'useRestaurantTables', 'restaurantTables', 'floorStaff', 'lowStockItems', 'variablePricingMode'));
     }
 
     public function search(Request $request)
@@ -122,6 +125,13 @@ class PosController extends Controller
         ]);
 
         $business = $request->user()->business;
+
+        if (VariablePricingMode::active($business)) {
+            $request->validate([
+                'items.*.unit_price' => 'required|numeric|min:0',
+            ]);
+        }
+
         if ($business->usesWaiterAssignment()) {
             $request->validate(['waiter_id' => 'required|exists:users,id']);
             if (($data['payment_method'] ?? '') === 'mobile_money') {
