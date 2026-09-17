@@ -34,6 +34,7 @@ class Sale extends Model
         'notes',
         'completed_at',
         'credit_settled_at',
+        'invoice_due_at',
         'credit_settlement_method',
         'credit_settlement_notes',
         'efris_fdn',
@@ -52,6 +53,7 @@ class Sale extends Model
         'is_credit_sale' => 'boolean',
         'completed_at' => 'datetime',
         'credit_settled_at' => 'datetime',
+        'invoice_due_at' => 'datetime',
         'efris_submitted_at' => 'datetime',
     ];
 

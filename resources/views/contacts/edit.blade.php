@@ -23,7 +23,10 @@
             Credit customer
         </label>
 
-        <x-input type="number" step="0.01" name="credit_limit" label="Credit limit" value="{{ old('credit_limit', $customer->credit_limit) }}" />
+        <div class="grid gap-4 sm:grid-cols-2">
+            <x-input type="number" step="0.01" name="credit_limit" label="Credit limit" value="{{ old('credit_limit', $customer->credit_limit) }}" />
+            <x-input type="number" step="1" min="1" max="365" name="payment_terms_days" label="Payment terms (days)" value="{{ old('payment_terms_days', $customer->payment_terms_days ?? 30) }}" />
+        </div>
 
         <label class="flex items-center gap-2 text-sm text-gray-700">
             <input type="checkbox" name="is_active" value="1" class="rounded border-gray-300 text-indigo-600" {{ old('is_active', $customer->is_active) ? 'checked' : '' }}>

@@ -44,6 +44,7 @@ class Business extends Model
         'sole_proprietor',
         'employees_onboarding_complete',
         'variable_pricing_enabled',
+        'divisible_products_enabled',
     ];
 
     protected $casts = [
@@ -52,6 +53,7 @@ class Business extends Model
         'sole_proprietor' => 'boolean',
         'employees_onboarding_complete' => 'boolean',
         'variable_pricing_enabled' => 'boolean',
+        'divisible_products_enabled' => 'boolean',
         'trial_ends_at' => 'datetime',
         'subscription_ends_at' => 'datetime',
         'subscription_amount' => 'float',

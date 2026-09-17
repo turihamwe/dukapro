@@ -137,6 +137,8 @@
 
         @include('business._variable-pricing-settings', ['business' => $business])
 
+        @include('business._divisible-products-settings', ['business' => $business])
+
         @include('business._efris-settings', ['efrisSetting' => $efrisSetting ?? null, 'business' => $business])
 
         <x-button type="submit" variant="primary">Save business profile</x-button>

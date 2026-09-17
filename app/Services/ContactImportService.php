@@ -4,12 +4,20 @@ namespace App\Services;
 
 use App\Models\Business;
 use App\Models\Customer;
+use App\Services\CustomerService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
 class ContactImportService
 {
+    protected CustomerService $customerService;
+
+    public function __construct(CustomerService $customerService)
+    {
+        $this->customerService = $customerService;
+    }
+
     public const FIELDS = [
         'name' => 'Full name',
         'company_name' => 'Company',
@@ -116,17 +124,29 @@ class ContactImportService
 
             $data = $validator->validated();
             $isCredit = (bool) ($data['is_credit_customer'] ?? false);
+            $normalizedPhone = $this->customerService->preparePhoneForStorage($data['phone'] ?? null);
+
+            if ($normalizedPhone) {
+                $existing = $this->customerService->findByPhone((int) $business->id, $normalizedPhone);
+
+                if ($existing) {
+                    $skipped++;
+
+                    continue;
+                }
+            }
 
             Customer::create([
                 'business_id' => $business->id,
                 'name' => $data['name'],
                 'company_name' => $data['company_name'] ?? null,
-                'phone' => $data['phone'] ?? null,
+                'phone' => $normalizedPhone,
                 'email' => $data['email'] ?? null,
                 'address' => $data['address'] ?? null,
                 'notes' => $data['notes'] ?? null,
                 'is_credit_customer' => $isCredit,
                 'credit_limit' => $isCredit ? (float) ($data['credit_limit'] ?? 0) : 0,
+                'payment_terms_days' => 30,
                 'is_active' => true,
             ]);
 

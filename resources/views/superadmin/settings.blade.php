@@ -95,6 +95,17 @@
                 <p class="mt-0.5 text-xs text-amber-900/80">When enabled, business owners can turn on negotiable POS pricing for markets and bargain-based shops. When disabled, variable pricing is hidden everywhere.</p>
             </div>
         </div>
+
+        <div class="flex items-start gap-3 rounded-lg border border-violet-200 bg-violet-50 p-4">
+            <input type="hidden" name="divisible_products_enabled" value="0">
+            <input type="checkbox" name="divisible_products_enabled" id="divisible_products_enabled" value="1"
+                   {{ old('divisible_products_enabled', $settings['divisible_products_enabled'] ?? '1') === '1' ? 'checked' : '' }}
+                   class="mt-0.5 rounded border-gray-300 text-violet-600 focus:ring-violet-500">
+            <div>
+                <label for="divisible_products_enabled" class="block text-sm font-medium text-violet-950">Divisible products</label>
+                <p class="mt-0.5 text-xs text-violet-900/80">When enabled, business owners can allow fractional POS quantities (e.g. 0.5 m, 1.25 kg). When disabled, divisible products are hidden and POS enforces whole numbers only.</p>
+            </div>
+        </div>
     </div>
 
     <div class="rounded-xl border border-gray-200 bg-white p-6 space-y-5">

@@ -20,6 +20,7 @@
 @if(auth()->user()->can('view-sales-reports') || auth()->user()->can('view-all-reconciliations') || auth()->user()->can('view-expenses') || auth()->user()->can('view-reconciliation-shortages'))
     @php
         $reportsOpen = request()->routeIs('tenant.reports.*')
+            || request()->routeIs('tenant.sales.documents')
             || request()->routeIs('tenant.reconciliation.*')
             || request()->routeIs('tenant.reconciliation-shortages.*')
             || request()->routeIs('tenant.expenses.index');
@@ -39,6 +40,10 @@
             @can('view-sales-reports')
                 <a href="{{ tenant_route('tenant.reports.sales.index') }}"
                    class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('tenant.reports.sales.*') ? 'font-medium text-emerald-400 bg-white/10' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">Sales reports</a>
+            @endcan
+            @can('view-sales-documents')
+                <a href="{{ tenant_route('tenant.sales.documents') }}"
+                   class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('tenant.sales.documents') ? 'font-medium text-emerald-400 bg-white/10' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">Invoices & receipts</a>
             @endcan
             @can('view-all-reconciliations')
                 <a href="{{ tenant_route('tenant.reconciliation.index') }}"

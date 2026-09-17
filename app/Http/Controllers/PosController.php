@@ -2,14 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\AuditLogger;
 use App\Models\Customer;
 use App\Models\Product;
+use App\Services\CustomerService;
 use App\Services\KitchenOrderService;
 use App\Services\LowStockAlertService;
 use App\Services\ProductBatchService;
 use App\Services\ProductUnitService;
 use App\Services\SaleService;
-use App\Support\SaleReceipt;
+use App\Support\DivisibleProductsMode;
+use App\Support\SaleDocument;
 use App\Support\VariablePricingMode;
 use Illuminate\Http\Request;
 
@@ -25,18 +28,22 @@ class PosController extends Controller
 
     protected ProductUnitService $unitService;
 
+    protected CustomerService $customerService;
+
     public function __construct(
         SaleService $saleService,
         ProductBatchService $batchService,
         KitchenOrderService $kitchenOrderService,
         LowStockAlertService $lowStockAlertService,
-        ProductUnitService $unitService
+        ProductUnitService $unitService,
+        CustomerService $customerService
     ) {
         $this->saleService = $saleService;
         $this->batchService = $batchService;
         $this->kitchenOrderService = $kitchenOrderService;
         $this->lowStockAlertService = $lowStockAlertService;
         $this->unitService = $unitService;
+        $this->customerService = $customerService;
         $this->middleware('can:access-pos');
     }
 
@@ -69,8 +76,9 @@ class PosController extends Controller
         })->values();
 
         $customers = Customer::where('is_active', true)
+            ->where('is_credit_customer', true)
             ->orderBy('name')
-            ->get(['id', 'name', 'phone', 'outstanding_balance', 'credit_limit']);
+            ->get(['id', 'name', 'phone', 'outstanding_balance', 'credit_limit', 'payment_terms_days']);
 
         $floorStaff = $waiterMode
             ? app(\App\Services\WaiterShiftService::class)->activeFloorStaff($business, $request->user())
@@ -79,8 +87,9 @@ class PosController extends Controller
         $lowStockItems = $this->lowStockAlertService->lowStockProducts($business, $request->user(), 8);
 
         $variablePricingMode = VariablePricingMode::active($business);
+        $divisibleProductsMode = DivisibleProductsMode::active($business);
 
-        return view('pos.checkout', compact('products', 'customers', 'waiterMode', 'restaurantMode', 'isHospitality', 'useRestaurantTables', 'restaurantTables', 'floorStaff', 'lowStockItems', 'variablePricingMode'));
+        return view('pos.checkout', compact('products', 'customers', 'waiterMode', 'restaurantMode', 'isHospitality', 'useRestaurantTables', 'restaurantTables', 'floorStaff', 'lowStockItems', 'variablePricingMode', 'divisibleProductsMode'));
     }
 
     public function search(Request $request)
@@ -111,14 +120,60 @@ class PosController extends Controller
         return response()->json($products);
     }
 
+    public function quickStoreCustomer(Request $request)
+    {
+        $business = $request->user()->business;
+        $businessId = (int) $business->id;
+
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'phone' => 'required|string|max:30',
+            'credit_limit' => 'nullable|numeric|min:0',
+            'payment_terms_days' => 'nullable|integer|min:1|max:365',
+        ]);
+
+        $result = $this->customerService->findOrCreate($businessId, [
+            'name' => $data['name'],
+            'phone' => $data['phone'],
+            'credit_limit' => $data['credit_limit'] ?? 0,
+            'payment_terms_days' => $data['payment_terms_days'] ?? 30,
+            'is_credit_customer' => true,
+        ], $request->user(), true);
+
+        $customer = $result['customer'];
+
+        if ($result['created']) {
+            AuditLogger::record('contact_created', $customer, null, $customer->toArray());
+        }
+
+        return response()->json([
+            'success' => true,
+            'created' => $result['created'],
+            'message' => $result['created']
+                ? 'Credit customer saved.'
+                : 'Existing customer matched by phone number.',
+            'customer' => [
+                'id' => $customer->id,
+                'name' => $customer->name,
+                'phone' => $customer->phone,
+                'outstanding_balance' => (float) $customer->outstanding_balance,
+                'credit_limit' => (float) $customer->credit_limit,
+                'payment_terms_days' => (int) $customer->payment_terms_days,
+            ],
+        ], $result['created'] ? 201 : 200);
+    }
+
     public function checkout(Request $request)
     {
         $this->authorize('create', \App\Models\Sale::class);
 
+        $business = $request->user()->business;
+        $quantityRules = DivisibleProductsMode::quantityValidationRules($business);
+
         $data = $request->validate([
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity' => 'required|numeric|min:0.001',
+            'items.*.quantity' => $quantityRules,
             'items.*.product_unit_id' => 'nullable|integer|exists:product_units,id',
             'items.*.unit_price' => 'nullable|numeric|min:0',
             'items.*.notes' => 'nullable|string|max:500',
@@ -133,8 +188,6 @@ class PosController extends Controller
             'table_label' => 'nullable|string|max:50',
             'restaurant_table_id' => 'nullable|integer|exists:restaurant_tables,id',
         ]);
-
-        $business = $request->user()->business;
 
         if (VariablePricingMode::active($business)) {
             $request->validate([
@@ -163,27 +216,26 @@ class PosController extends Controller
             $sale = $sale->fresh(['items']);
         }
 
-        $receiptUrl = tenant_route('tenant.sales.receipt', ['sale' => $sale->id]);
-        $customerPhone = null;
-
-        if (! empty($data['customer_id'])) {
-            $customer = Customer::find($data['customer_id']);
-            $customerPhone = $customer ? $customer->phone : null;
-        }
+        $sale = $sale->fresh(['customer', 'items']);
+        $documentUrl = SaleDocument::url($sale);
+        $customerPhone = optional($sale->customer)->phone;
 
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
                 'sale' => $sale,
-                'message' => 'Sale completed successfully.',
-                'receipt_url' => $receiptUrl,
-                'receipt_message' => SaleReceipt::message($sale),
+                'message' => SaleDocument::isInvoice($sale)
+                    ? 'Credit sale recorded. Invoice generated.'
+                    : 'Sale completed successfully.',
+                'document_type' => SaleDocument::type($sale),
+                'receipt_url' => $documentUrl,
+                'receipt_message' => SaleDocument::message($sale),
                 'customer_phone' => $customerPhone,
             ]);
         }
 
         return redirect()
-            ->to($receiptUrl)
+            ->to($documentUrl)
             ->with('success', 'Sale #' . $sale->sale_number . ' completed.');
     }
 
@@ -192,10 +244,12 @@ class PosController extends Controller
         $business = $request->user()->business;
         abort_unless($business && $business->usesRestaurantMode(), 403);
 
+        $quantityRules = DivisibleProductsMode::quantityValidationRules($business);
+
         $data = $request->validate([
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity' => 'required|numeric|min:0.001',
+            'items.*.quantity' => $quantityRules,
             'items.*.notes' => 'nullable|string|max:500',
             'table_label' => 'nullable|string|max:50',
             'restaurant_table_id' => 'nullable|integer|exists:restaurant_tables,id',

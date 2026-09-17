@@ -23,13 +23,14 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ProductAttributeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SalesReportController;
-use App\Http\Controllers\SaleReceiptController;
+use App\Http\Controllers\SalesDocumentController;
 use App\Http\Controllers\SoldByUnitController;
 use App\Http\Controllers\SuperAdmin\AffiliateController as SuperAdminAffiliateController;
 use App\Http\Controllers\SuperAdmin\UserActionController;
 use App\Http\Controllers\SuperAdmin\AffiliateActionController;
 use App\Http\Controllers\SuperAdmin\BusinessEfrisController as SuperAdminBusinessEfrisController;
 use App\Http\Controllers\SuperAdmin\BusinessModuleController;
+use App\Http\Controllers\SuperAdmin\BusinessDivisibleProductsController;
 use App\Http\Controllers\SuperAdmin\BusinessVariablePricingController;
 use App\Http\Controllers\SuperAdmin\ShareholderActionController;
 use App\Http\Controllers\SuperAdmin\ActivityLogController;
@@ -322,13 +323,18 @@ Route::middleware(['maintenance'])->group(function () {
                 Route::middleware(['can:access-pos'])->prefix('pos')->name('pos.')->group(function () {
                     Route::get('/', [PosController::class, 'index'])->name('index');
                     Route::get('/search', [PosController::class, 'search'])->name('search');
+                    Route::post('/customers/quick', [PosController::class, 'quickStoreCustomer'])->name('customers.quick');
                     Route::post('/send-kitchen', [PosController::class, 'sendToKitchen'])
                         ->middleware('module:restaurant')
                         ->name('send-kitchen');
                     Route::post('/checkout', [PosController::class, 'checkout'])->name('checkout');
                 });
 
-                Route::get('/sales/{sale}/receipt', [SaleReceiptController::class, 'show'])->name('sales.receipt');
+                Route::get('/sales/documents', [SalesDocumentController::class, 'index'])
+                    ->middleware('can:view-sales-documents')
+                    ->name('sales.documents');
+                Route::get('/sales/{sale}/receipt', [SalesDocumentController::class, 'showReceipt'])->name('sales.receipt');
+                Route::get('/sales/{sale}/invoice', [SalesDocumentController::class, 'showInvoice'])->name('sales.invoice');
 
                 Route::middleware(['can:access-waiter-shift-balancing'])->prefix('waiter-shift')->name('waiter-shift.')->group(function () {
                     Route::get('/', [WaiterShiftController::class, 'index'])->name('index');
@@ -417,6 +423,7 @@ Route::prefix('superadmin')
             Route::post('/businesses/{businessId}/modules', [BusinessModuleController::class, 'update'])->whereNumber('businessId')->name('businesses.modules.update');
             Route::post('/businesses/{businessId}/efris/unlock', [SuperAdminBusinessEfrisController::class, 'updateUnlock'])->whereNumber('businessId')->name('businesses.efris.unlock');
             Route::post('/businesses/{businessId}/variable-pricing', [BusinessVariablePricingController::class, 'update'])->whereNumber('businessId')->name('businesses.variable-pricing.update');
+            Route::post('/businesses/{businessId}/divisible-products', [BusinessDivisibleProductsController::class, 'update'])->whereNumber('businessId')->name('businesses.divisible-products.update');
             Route::get('/settings', [SuperAdminSettingsController::class, 'edit'])->name('settings');
             Route::put('/settings', [SuperAdminSettingsController::class, 'update'])->name('settings.update');
         });

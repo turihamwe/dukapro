@@ -137,6 +137,10 @@ class AuthServiceProvider extends ServiceProvider
             return $user->isOwner() || $user->isManager() || $user->isSupervisor();
         });
 
+        Gate::define('view-sales-documents', function (User $user) {
+            return $user->can('view-sales-reports') || $user->can('access-pos');
+        });
+
         Gate::define('view-all-reconciliations', function (User $user) {
             if ($user->canSwitchToCashierMode() && CashierMode::isActive()) {
                 return false;

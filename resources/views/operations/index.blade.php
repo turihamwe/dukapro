@@ -44,5 +44,14 @@
             <span class="mt-1 text-xs text-gray-500">Log write-offs &amp; loss</span>
         </a>
     @endcan
+
+    @can('view-sales-documents')
+        <a href="{{ tenant_route('tenant.sales.documents') }}"
+           class="group flex min-h-[120px] flex-col items-center justify-center rounded-2xl border border-gray-200 bg-white p-6 text-center shadow-sm transition hover:border-indigo-300 hover:shadow-md">
+            <span class="mb-2 text-3xl leading-none">🧾</span>
+            <span class="text-base font-semibold text-gray-900 group-hover:text-indigo-700">Invoices &amp; receipts</span>
+            <span class="mt-1 text-xs text-gray-500">Search and reprint sales documents</span>
+        </a>
+    @endcan
 </div>
 @endsection

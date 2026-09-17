@@ -9,6 +9,7 @@ use App\Services\BusinessModuleService;
 use App\Services\BusinessPermissionService;
 use App\Support\BatchMode;
 use App\Support\EfrisCompliance;
+use App\Support\DivisibleProductsMode;
 use App\Support\VariablePricingMode;
 use App\Support\WeafPlatformCredentials;
 use Illuminate\Http\Request;
@@ -59,6 +60,7 @@ class BusinessSettingsController extends Controller
             'floor.use_tables' => 'nullable|boolean',
             'batch_mode' => 'nullable|boolean',
             'variable_pricing_enabled' => 'nullable|boolean',
+            'divisible_products_enabled' => 'nullable|boolean',
             'branch_batch_mode' => 'nullable|array',
             'role_permissions' => 'nullable|array',
             'efris.enabled' => 'nullable|boolean',
@@ -125,6 +127,10 @@ class BusinessSettingsController extends Controller
 
         if (VariablePricingMode::platformEnabled()) {
             $businessPayload['variable_pricing_enabled'] = $request->boolean('variable_pricing_enabled');
+        }
+
+        if (DivisibleProductsMode::platformEnabled()) {
+            $businessPayload['divisible_products_enabled'] = $request->boolean('divisible_products_enabled');
         }
 
         $business->update($businessPayload);

@@ -22,7 +22,10 @@
             Credit customer (can buy on account)
         </label>
 
-        <x-input type="number" step="0.01" name="credit_limit" label="Credit limit" value="{{ old('credit_limit', 0) }}" />
+        <div class="grid gap-4 sm:grid-cols-2">
+            <x-input type="number" step="0.01" name="credit_limit" label="Credit limit" value="{{ old('credit_limit', 0) }}" />
+            <x-input type="number" step="1" min="1" max="365" name="payment_terms_days" label="Payment terms (days)" value="{{ old('payment_terms_days', 30) }}" />
+        </div>
 
         <x-button variant="primary" type="submit">Save contact</x-button>
     </form>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\AuditLogger;
 use App\Models\Business;
 use App\Models\Customer;
+use App\Services\CustomerService;
 use App\Services\DebtLedgerService;
 use Illuminate\Http\Request;
 
@@ -12,9 +13,12 @@ class CustomerDebtController extends Controller
 {
     protected DebtLedgerService $debtLedgerService;
 
-    public function __construct(DebtLedgerService $debtLedgerService)
+    protected CustomerService $customerService;
+
+    public function __construct(DebtLedgerService $debtLedgerService, CustomerService $customerService)
     {
         $this->debtLedgerService = $debtLedgerService;
+        $this->customerService = $customerService;
         $this->middleware('can:view-customers')->only(['index', 'show', 'edit']);
         $this->middleware('can:manage-debts')->only(['create', 'store', 'update', 'recordPayment', 'destroy']);
     }
@@ -41,6 +45,8 @@ class CustomerDebtController extends Controller
 
     public function store(Request $request)
     {
+        $businessId = (int) $request->user()->business_id;
+
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'company_name' => 'nullable|string|max:255',
@@ -49,21 +55,36 @@ class CustomerDebtController extends Controller
             'address' => 'nullable|string',
             'notes' => 'nullable|string',
             'credit_limit' => 'nullable|numeric|min:0',
+            'payment_terms_days' => 'nullable|integer|min:1|max:365',
             'is_credit_customer' => 'nullable|boolean',
         ]);
 
         $this->authorize('create', Customer::class);
 
+        $normalizedPhone = $this->customerService->preparePhoneForStorage($data['phone'] ?? null);
+
+        if ($normalizedPhone) {
+            $existing = $this->customerService->findByPhone($businessId, $normalizedPhone);
+
+            if ($existing) {
+                return redirect()
+                    ->to(tenant_route('tenant.contacts.show', ['customer' => $existing]))
+                    ->with('info', 'A contact with this phone number already exists.');
+            }
+        }
+
         $isCredit = $request->boolean('is_credit_customer');
 
         $contact = Customer::create([
+            'business_id' => $businessId,
             'name' => $data['name'],
             'company_name' => $data['company_name'] ?? null,
-            'phone' => $data['phone'] ?? null,
+            'phone' => $normalizedPhone,
             'email' => $data['email'] ?? null,
             'address' => $data['address'] ?? null,
             'notes' => $data['notes'] ?? null,
             'credit_limit' => $isCredit ? ($data['credit_limit'] ?? 0) : 0,
+            'payment_terms_days' => (int) ($data['payment_terms_days'] ?? 30),
             'is_credit_customer' => $isCredit,
             'is_active' => true,
         ]);
@@ -93,6 +114,8 @@ class CustomerDebtController extends Controller
     {
         $this->authorize('update', $customer);
 
+        $businessId = (int) $business->id;
+
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'company_name' => 'nullable|string|max:255',
@@ -101,21 +124,34 @@ class CustomerDebtController extends Controller
             'address' => 'nullable|string',
             'notes' => 'nullable|string',
             'credit_limit' => 'nullable|numeric|min:0',
+            'payment_terms_days' => 'nullable|integer|min:1|max:365',
             'is_credit_customer' => 'nullable|boolean',
             'is_active' => 'nullable|boolean',
         ]);
 
         $isCredit = $request->boolean('is_credit_customer');
         $old = $customer->toArray();
+        $normalizedPhone = $this->customerService->preparePhoneForStorage($data['phone'] ?? null);
+
+        if ($normalizedPhone) {
+            $existing = $this->customerService->findByPhone($businessId, $normalizedPhone);
+
+            if ($existing && (int) $existing->id !== (int) $customer->id) {
+                return back()
+                    ->withInput()
+                    ->withErrors(['phone' => 'Another contact already uses this phone number.']);
+            }
+        }
 
         $customer->update([
             'name' => $data['name'],
             'company_name' => $data['company_name'] ?? null,
-            'phone' => $data['phone'] ?? null,
+            'phone' => $normalizedPhone,
             'email' => $data['email'] ?? null,
             'address' => $data['address'] ?? null,
             'notes' => $data['notes'] ?? null,
             'credit_limit' => $isCredit ? ($data['credit_limit'] ?? 0) : 0,
+            'payment_terms_days' => (int) ($data['payment_terms_days'] ?? 30),
             'is_credit_customer' => $isCredit,
             'is_active' => $request->boolean('is_active', true),
         ]);

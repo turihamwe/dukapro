@@ -4,14 +4,18 @@
 
 @section('content')
 @php
-    $posCatalog = $products->map(function ($product) {
+    $posCatalog = $products->map(function ($product) use ($divisibleProductsMode) {
         $baseStock = (float) $product->available_stock;
         $fifoBasePrice = (float) $product->fifo_price;
-        $units = collect($product->pos_units ?? [])->map(function ($unit) use ($baseStock, $fifoBasePrice) {
+        $units = collect($product->pos_units ?? [])->map(function ($unit) use ($baseStock, $fifoBasePrice, $divisibleProductsMode) {
             $factor = (float) ($unit['factor'] ?? 1);
             $unitPrice = isset($unit['price']) && $unit['price'] > 0
                 ? (float) $unit['price']
                 : round($fifoBasePrice * $factor, 2);
+            $maxStock = $factor > 0 ? round($baseStock / $factor, 3) : 0;
+            if (! $divisibleProductsMode) {
+                $maxStock = floor($maxStock);
+            }
 
             return [
                 'id' => $unit['id'],
@@ -19,7 +23,7 @@
                 'factor' => $factor,
                 'price' => $unitPrice,
                 'is_base' => (bool) ($unit['is_base'] ?? false),
-                'max_stock' => $factor > 0 ? round($baseStock / $factor, 3) : 0,
+                'max_stock' => $maxStock,
             ];
         })->values();
 
@@ -139,13 +143,17 @@
                 </div>
                 @endif
 
-                <div id="customerSelectWrap" class="hidden">
+                <div id="customerSelectWrap" class="hidden space-y-2">
                     <x-select id="customerId" label="{{ ($waiterMode ?? false) ? 'Customer (optional for tabs)' : 'Credit Customer' }}">
                         <option value="">{{ ($waiterMode ?? false) ? 'Walk-in / no customer' : 'Select customer' }}</option>
                         @foreach($customers as $c)
                             <option value="{{ $c->id }}" data-phone="{{ $c->phone }}">{{ $c->name }} (Bal: @money($c->outstanding_balance))</option>
                         @endforeach
                     </x-select>
+                    <button type="button" id="openNewCustomerBtn"
+                            class="w-full rounded-lg border border-dashed border-indigo-300 px-3 py-2 text-xs font-semibold text-indigo-700 hover:border-indigo-400 hover:bg-indigo-50">
+                        + New credit customer
+                    </button>
                 </div>
 
                 </div>
@@ -168,6 +176,53 @@
                 </div>
             </div>
         </x-card>
+    </div>
+</div>
+
+<div id="newCustomerModal" class="app-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="newCustomerTitle">
+    <div class="app-modal-panel mx-auto w-full max-w-md rounded-t-2xl bg-white p-5 shadow-xl sm:rounded-2xl">
+        <div class="mb-4 flex items-start justify-between gap-3">
+            <div>
+                <p id="newCustomerTitle" class="text-lg font-bold text-gray-900">New credit customer</p>
+                <p class="text-sm text-gray-500">Save and assign to this credit sale. Duplicate phones reuse the existing customer.</p>
+            </div>
+            <button type="button" class="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600" onclick="closeAppModal('newCustomerModal')" aria-label="Close">&times;</button>
+        </div>
+        <form id="newCustomerForm" class="space-y-3">
+            <div>
+                <label for="newCustomerName" class="mb-1 block text-xs font-medium text-gray-700">Full name</label>
+                <input type="text" id="newCustomerName" required maxlength="255"
+                       class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            </div>
+            <div>
+                <label for="newCustomerPhone" class="mb-1 block text-xs font-medium text-gray-700">Phone</label>
+                <input type="tel" id="newCustomerPhone" required maxlength="30" placeholder="e.g. 0700123456"
+                       class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label for="newCustomerCreditLimit" class="mb-1 block text-xs font-medium text-gray-700">Credit limit</label>
+                    <input type="number" id="newCustomerCreditLimit" min="0" step="0.01" value="0"
+                           class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label for="newCustomerTerms" class="mb-1 block text-xs font-medium text-gray-700">Terms (days)</label>
+                    <input type="number" id="newCustomerTerms" min="1" max="365" step="1" value="30"
+                           class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                </div>
+            </div>
+            <p id="newCustomerError" class="hidden text-xs text-red-600"></p>
+            <div class="grid grid-cols-2 gap-2 pt-2">
+                <button type="button" onclick="closeAppModal('newCustomerModal')"
+                        class="min-h-[44px] rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button type="submit" id="saveNewCustomerBtn"
+                        class="min-h-[44px] rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
+                    Save customer
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -210,11 +265,13 @@
 (function () {
     var csrf = document.querySelector('meta[name="csrf-token"]').content;
     var checkoutUrl = @json(tenant_route('tenant.pos.checkout'));
+    var quickCustomerUrl = @json(tenant_route('tenant.pos.customers.quick'));
     var sendKitchenUrl = @json(tenant_route('tenant.pos.send-kitchen'));
     var waiterMode = @json($waiterMode ?? false);
     var restaurantMode = @json($restaurantMode ?? false);
     var useRestaurantTables = @json($useRestaurantTables ?? false);
     var variablePricingMode = @json($variablePricingMode ?? false);
+    var divisibleProductsMode = @json($divisibleProductsMode ?? false);
     var currencySample = @json(auth()->user()->business->formatMoney(0));
     var POS_CATALOG = JSON.parse(document.getElementById('pos-catalog-data').textContent);
     var productById = {};
@@ -252,6 +309,8 @@
     function showReceiptModal(data) {
         pendingReceipt.url = data.receipt_url || '';
         pendingReceipt.message = data.receipt_message || '';
+        var isInvoice = data.document_type === 'invoice';
+        document.getElementById('saleReceiptTitle').textContent = isInvoice ? 'Credit sale — invoice ready' : 'Sale complete';
         document.getElementById('saleReceiptNumber').textContent = data.sale && data.sale.sale_number ? '#' + data.sale.sale_number : '';
         var phoneEl = document.getElementById('receiptCustomerPhone');
         var customerSelect = document.getElementById('customerId');
@@ -275,9 +334,28 @@
     });
 
     function parseQty(val) {
+        if (!divisibleProductsMode) {
+            var whole = parseInt(String(val), 10);
+            return isNaN(whole) ? 0 : Math.max(0, whole);
+        }
         var qty = parseFloat(String(val).replace(',', '.'));
         if (isNaN(qty)) return 0;
         return Math.round(qty * 1000) / 1000;
+    }
+
+    function qtyInputAttrs(item) {
+        if (divisibleProductsMode) {
+            return {
+                min: 0.001,
+                step: 0.001,
+                max: item.max_stock,
+            };
+        }
+        return {
+            min: 1,
+            step: 1,
+            max: Math.floor(item.max_stock),
+        };
     }
 
     function defaultUnit(product) {
@@ -301,8 +379,14 @@
 
     function formatQty(qty) {
         var n = parseQty(qty);
+        if (!divisibleProductsMode) return String(n);
         if (Math.abs(n - Math.round(n)) < 0.0001) return String(Math.round(n));
         return n.toFixed(3).replace(/\.?0+$/, '');
+    }
+
+    function normalizeMaxStock(stock) {
+        var n = parseQty(stock);
+        return divisibleProductsMode ? n : Math.floor(n);
     }
 
     function addToCart(product, qty, unitId) {
@@ -310,7 +394,7 @@
         if (!product || qty <= 0) return false;
 
         var unit = unitById(product, unitId);
-        var maxStock = parseQty(unit.max_stock);
+        var maxStock = normalizeMaxStock(unit.max_stock);
         var existing = cart.find(function (i) {
             if (i.product_id !== product.id) return false;
             if (String(i.product_unit_id || '') !== String(unit.id || '')) return false;
@@ -424,6 +508,7 @@
             var lineTotal = item.quantity * item.unit_price;
             var notePreview = (item.notes || '').trim();
             var isExpanded = !restaurantMode || expandedIdx === idx;
+            var qtyAttrs = qtyInputAttrs(item);
 
             if (isExpanded) {
                 return '<div class="border-b border-gray-100 py-3 last:border-0" data-idx="' + idx + '">' +
@@ -440,7 +525,7 @@
                     (restaurantMode ? '<input type="text" data-action="notes" data-idx="' + idx + '" value="' + esc(item.notes || '') + '" placeholder="Item note (e.g. spiced)" maxlength="500" class="mt-2 w-full rounded-lg border border-gray-200 px-2 py-1.5 text-xs focus:border-emerald-500 focus:outline-none">' : '') +
                     '<div class="mt-2 flex items-center gap-2">' +
                         '<button type="button" data-action="minus" data-idx="' + idx + '" class="min-h-[40px] min-w-[40px] rounded-lg border border-gray-300 text-sm hover:bg-gray-50">−</button>' +
-                        '<input type="number" min="0.001" step="0.001" max="' + item.max_stock + '" value="' + formatQty(item.quantity) + '" data-action="qty" data-idx="' + idx + '" ' +
+                        '<input type="number" min="' + qtyAttrs.min + '" step="' + qtyAttrs.step + '" max="' + qtyAttrs.max + '" value="' + formatQty(item.quantity) + '" data-action="qty" data-idx="' + idx + '" ' +
                             'class="w-24 min-h-[40px] rounded-lg border-gray-300 text-center text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">' +
                         '<span class="text-xs text-gray-500">' + esc(item.unit_name || '') + '</span>' +
                         '<button type="button" data-action="plus" data-idx="' + idx + '" class="min-h-[40px] min-w-[40px] rounded-lg border border-gray-300 text-sm hover:bg-gray-50">+</button>' +
@@ -464,7 +549,10 @@
     function changeQty(idx, delta) {
         var item = cart[idx];
         if (!item) return;
-        var step = (item.unit_name && item.unit_name !== 'piece') ? 0.5 : 1;
+        var step = 1;
+        if (divisibleProductsMode && item.unit_name && item.unit_name !== 'piece') {
+            step = 0.5;
+        }
         setQty(idx, parseQty(item.quantity + (delta > 0 ? step : -step)));
     }
 
@@ -484,7 +572,7 @@
 
         item.product_unit_id = unit.id;
         item.unit_name = unit.name;
-        item.max_stock = parseQty(unit.max_stock);
+        item.max_stock = normalizeMaxStock(unit.max_stock);
         if (!variablePricingMode) {
             item.unit_price = parseFloat(unit.price);
         }
@@ -609,6 +697,72 @@
         });
     });
 
+    function appendCustomerOption(customer) {
+        var select = document.getElementById('customerId');
+        if (!select) return;
+        var existing = select.querySelector('option[value="' + customer.id + '"]');
+        var label = customer.name + ' (Bal: ' + formatMoney(customer.outstanding_balance || 0) + ')';
+        if (existing) {
+            existing.textContent = label;
+            existing.dataset.phone = customer.phone || '';
+            select.value = String(customer.id);
+            return;
+        }
+        var option = document.createElement('option');
+        option.value = customer.id;
+        option.dataset.phone = customer.phone || '';
+        option.textContent = label;
+        select.appendChild(option);
+        select.value = String(customer.id);
+    }
+
+    function openNewCustomerModal() {
+        document.getElementById('newCustomerError').classList.add('hidden');
+        document.getElementById('newCustomerError').textContent = '';
+        openAppModal('newCustomerModal');
+        document.getElementById('newCustomerName').focus();
+    }
+
+    document.getElementById('openNewCustomerBtn').addEventListener('click', openNewCustomerModal);
+
+    document.getElementById('newCustomerForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        var saveBtn = document.getElementById('saveNewCustomerBtn');
+        var errorEl = document.getElementById('newCustomerError');
+        errorEl.classList.add('hidden');
+        saveBtn.disabled = true;
+        try {
+            var res = await fetch(quickCustomerUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: document.getElementById('newCustomerName').value.trim(),
+                    phone: document.getElementById('newCustomerPhone').value.trim(),
+                    credit_limit: parseFloat(document.getElementById('newCustomerCreditLimit').value) || 0,
+                    payment_terms_days: parseInt(document.getElementById('newCustomerTerms').value, 10) || 30,
+                }),
+            });
+            var data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.message || (data.errors ? Object.values(data.errors).flat().join(', ') : 'Could not save customer'));
+            }
+            appendCustomerOption(data.customer);
+            closeAppModal('newCustomerModal');
+            if (!data.created) {
+                alert('Existing customer matched by phone number and selected for this sale.');
+            }
+        } catch (err) {
+            errorEl.textContent = err.message;
+            errorEl.classList.remove('hidden');
+        } finally {
+            saveBtn.disabled = false;
+        }
+    });
+
     document.getElementById('paymentMethod').addEventListener('change', function () {
         var method = this.value;
         document.getElementById('customerSelectWrap').classList.toggle('hidden', method !== 'credit');
@@ -709,7 +863,7 @@
             return;
         }
         if (paymentMethod === 'credit' && !waiterMode && !customerId) {
-            alert('Select a customer for credit sale');
+            openNewCustomerModal();
             return;
         }
         if (waiterMode && paymentMethod === 'mobile_money' && !mobileProvider) {

@@ -69,7 +69,7 @@ class WaiterOrderController extends Controller
             'notes' => 'nullable|string|max:500',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|integer|exists:products,id',
-            'items.*.quantity' => 'required|numeric|min:0.001',
+            'items.*.quantity' => \App\Support\DivisibleProductsMode::quantityValidationRules($request->user()->business),
             'items.*.notes' => 'nullable|string|max:500',
         ]);
 

@@ -21,7 +21,8 @@ class OperationsController extends Controller
         abort_unless(
             $user->can('view-inventory')
                 || $user->can('record-expenses')
-                || $user->can('log-damages'),
+                || $user->can('log-damages')
+                || $user->can('view-sales-documents'),
             403
         );
 

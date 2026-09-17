@@ -12,6 +12,7 @@ use App\Models\SaleItem;
 use App\Models\SaleItemBatchAllocation;
 use App\Models\User;
 use App\Scopes\BranchScope;
+use App\Support\DivisibleProductsMode;
 use App\Support\VariablePricingMode;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -114,6 +115,7 @@ class SaleService
                 $resolvedProducts->push($product);
 
                 $soldQuantity = round((float) $item['quantity'], 3);
+                DivisibleProductsMode::assertWholeQuantity($business, $soldQuantity, $product->displayName());
                 $productUnit = $this->unitService->resolveUnit($product, $item['product_unit_id'] ?? null);
                 $baseQuantity = $this->unitService->toBaseQuantity($productUnit, $soldQuantity);
                 $available = $this->batchService->availableStock($product);
@@ -169,17 +171,23 @@ class SaleService
             $discountAmount = (float) ($payload['discount_amount'] ?? 0);
             $total = round($subtotal + $taxAmount - $discountAmount, 2);
 
+            $creditCustomer = null;
+            $invoiceDueAt = null;
+
             if ($isCreditSale && $customerId) {
-                $customer = Customer::where('business_id', $businessId)
+                $creditCustomer = Customer::where('business_id', $businessId)
                     ->where('id', $customerId)
                     ->lockForUpdate()
                     ->firstOrFail();
 
-                if (($customer->outstanding_balance + $total) > $customer->credit_limit) {
+                if (($creditCustomer->outstanding_balance + $total) > $creditCustomer->credit_limit) {
                     throw ValidationException::withMessages([
                         'customer_id' => 'Credit limit exceeded for this customer.',
                     ]);
                 }
+
+                $termsDays = max(1, (int) ($creditCustomer->payment_terms_days ?? 30));
+                $invoiceDueAt = Carbon::now()->addDays($termsDays);
             }
 
             $saleBranchId = $this->resolveSaleBranchId($user, $resolvedProducts);
@@ -204,6 +212,7 @@ class SaleService
                 'status' => 'completed',
                 'notes' => $payload['notes'] ?? null,
                 'completed_at' => Carbon::now(),
+                'invoice_due_at' => $invoiceDueAt,
             ]);
 
             foreach ($lineItems as $line) {
@@ -257,13 +266,14 @@ class SaleService
                 );
             }
 
-            if ($isCreditSale && $customerId) {
+            if ($isCreditSale && $creditCustomer) {
                 $this->debtLedgerService->recordDebit(
-                    Customer::find($customerId),
+                    $creditCustomer->fresh(),
                     $total,
                     $user,
                     $sale,
-                    ($waiterMode ? 'Waiter tab' : 'Hardware credit sale') . ' #' . $saleNumber
+                    ($waiterMode ? 'Waiter tab' : 'Hardware credit sale') . ' #' . $saleNumber,
+                    $invoiceDueAt
                 );
             }
 

@@ -12,9 +12,15 @@ use Illuminate\Support\Facades\DB;
 
 class DebtLedgerService
 {
-    public function recordDebit(Customer $customer, float $amount, User $user, ?Sale $sale = null, ?string $description = null): DebtLedgerEntry
-    {
-        return $this->recordEntry($customer, DebtEntryType::DEBIT, $amount, $user, $sale, $description);
+    public function recordDebit(
+        Customer $customer,
+        float $amount,
+        User $user,
+        ?Sale $sale = null,
+        ?string $description = null,
+        ?\Carbon\Carbon $dueDate = null
+    ): DebtLedgerEntry {
+        return $this->recordEntry($customer, DebtEntryType::DEBIT, $amount, $user, $sale, $description, $dueDate);
     }
 
     public function recordPayment(Customer $customer, float $amount, User $user, ?string $description = null): DebtLedgerEntry
@@ -28,9 +34,10 @@ class DebtLedgerService
         float $amount,
         User $user,
         ?Sale $sale = null,
-        ?string $description = null
+        ?string $description = null,
+        ?\Carbon\Carbon $dueDate = null
     ): DebtLedgerEntry {
-        return DB::transaction(function () use ($customer, $type, $amount, $user, $sale, $description) {
+        return DB::transaction(function () use ($customer, $type, $amount, $user, $sale, $description, $dueDate) {
             $customer = Customer::where('id', $customer->id)->lockForUpdate()->firstOrFail();
             $oldBalance = $customer->outstanding_balance;
 
@@ -51,6 +58,7 @@ class DebtLedgerService
                 'amount' => $amount,
                 'balance_after' => $newBalance,
                 'description' => $description ?? ucfirst($type) . ' entry',
+                'due_date' => $type === DebtEntryType::DEBIT ? optional($dueDate)->toDateString() : null,
             ]);
 
             AuditLogger::record(

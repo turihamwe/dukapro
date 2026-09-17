@@ -22,11 +22,13 @@ has-cashier-bottom-nav
 @php
     $showOperationsNav = auth()->user()->can('view-inventory')
         || auth()->user()->can('record-expenses')
-        || auth()->user()->can('log-damages');
+        || auth()->user()->can('log-damages')
+        || auth()->user()->can('view-sales-documents');
     $operationsActive = request()->routeIs('tenant.operations.*')
         || request()->routeIs('tenant.inventory.*')
         || request()->routeIs('tenant.expenses.*')
-        || request()->routeIs('tenant.damages.*');
+        || request()->routeIs('tenant.damages.*')
+        || request()->routeIs('tenant.sales.*');
     $navCols = 0;
     if (auth()->user()->can('access-pos')) {
         $navCols++;

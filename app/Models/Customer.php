@@ -22,6 +22,7 @@ class Customer extends Model
         'address',
         'notes',
         'credit_limit',
+        'payment_terms_days',
         'outstanding_balance',
         'is_active',
         'is_credit_customer',
@@ -29,6 +30,7 @@ class Customer extends Model
 
     protected $casts = [
         'credit_limit' => 'float',
+        'payment_terms_days' => 'integer',
         'outstanding_balance' => 'float',
         'is_active' => 'boolean',
         'is_credit_customer' => 'boolean',
