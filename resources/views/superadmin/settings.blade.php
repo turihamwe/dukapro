@@ -242,6 +242,62 @@
         </div>
     </div>
 
+    @php
+        $useEfris = old('use_efris', $settings['use_efris'] ?? '0') === '1';
+    @endphp
+
+    <div class="rounded-xl border border-emerald-200 bg-emerald-50/50 p-6 space-y-5">
+        <div>
+            <h2 class="text-sm font-semibold text-gray-900">URA EFRIS compliance</h2>
+            <p class="mt-1 text-xs text-gray-600">Master control for fiscal receipt integration. When off, EFRIS is completely hidden and dormant across the entire platform.</p>
+        </div>
+
+        <label class="flex items-start gap-3 rounded-lg border border-emerald-300 bg-white p-4 text-sm">
+            <input type="hidden" name="use_efris" value="0">
+            <input type="checkbox" name="use_efris" id="use_efris" value="1" class="mt-0.5 rounded border-gray-300 text-emerald-600"
+                   {{ $useEfris ? 'checked' : '' }}>
+            <span>
+                <span class="font-semibold text-gray-900">Use EFRIS</span>
+                <span class="block text-xs text-gray-500">Enable platform-wide EFRIS. Required before you can unlock EFRIS for individual businesses or allow owner toggles.</span>
+            </span>
+        </label>
+
+        <div id="efris-platform-options" class="space-y-5 {{ $useEfris ? '' : 'hidden' }}">
+            <div>
+                <p class="text-xs font-medium text-gray-900">WEAF account provisioning</p>
+                <p class="mt-1 text-xs text-gray-500">Control how DukaPro registers WEAF accounts for business owners.</p>
+            </div>
+
+            <label class="flex items-start gap-3 text-sm">
+                <input type="hidden" name="efris_auto_provision_enabled" value="0">
+                <input type="checkbox" name="efris_auto_provision_enabled" value="1" class="mt-0.5 rounded border-gray-300 text-emerald-600"
+                       {{ old('efris_auto_provision_enabled', $settings['efris_auto_provision_enabled'] ?? '1') === '1' ? 'checked' : '' }}>
+                <span>
+                    <span class="font-medium text-gray-900">Allow automatic WEAF registration</span>
+                    <span class="block text-xs text-gray-500">Owners see a Connect EFRIS button instead of signing up at weafcompany.com manually.</span>
+                </span>
+            </label>
+
+            <div class="rounded-lg border border-emerald-100 bg-white p-4 space-y-4">
+                <p class="text-xs font-medium text-gray-900">Optional: platform WEAF account (reseller mode)</p>
+                <p class="text-xs text-gray-500">When set, all tenants share this WEAF login for API tokens. Leave blank to create a separate WEAF account per business using the owner&apos;s email.</p>
+                <div>
+                    <label for="efris_platform_email" class="mb-1 block text-sm font-medium">Platform WEAF email</label>
+                    <input type="email" name="efris_platform_email" id="efris_platform_email" autocomplete="off"
+                           value="{{ old('efris_platform_email', $settings['efris_platform_email'] ?? '') }}"
+                           placeholder="Optional — DukaPro master WEAF account"
+                           class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-violet-500 focus:outline-none">
+                </div>
+                <div>
+                    <label for="efris_platform_password" class="mb-1 block text-sm font-medium">Platform WEAF password</label>
+                    <input type="password" name="efris_platform_password" id="efris_platform_password" autocomplete="new-password"
+                           placeholder="{{ \App\Support\WeafPlatformCredentials::hasStoredPassword() ? '•••••••• (leave blank to keep current)' : 'Required when platform email is set' }}"
+                           class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-violet-500 focus:outline-none">
+                </div>
+            </div>
+        </div>
+    </div>
+
     <button type="submit" class="rounded-lg bg-violet-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-violet-500">
         Save Settings
     </button>
@@ -252,6 +308,13 @@ document.getElementById('billing_mode')?.addEventListener('change', function () 
     const section = document.getElementById('module-prices-section');
     if (section) {
         section.classList.toggle('hidden', this.value !== 'addons');
+    }
+});
+
+document.getElementById('use_efris')?.addEventListener('change', function () {
+    const section = document.getElementById('efris-platform-options');
+    if (section) {
+        section.classList.toggle('hidden', !this.checked);
     }
 });
 </script>

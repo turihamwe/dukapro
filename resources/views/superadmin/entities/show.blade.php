@@ -86,6 +86,8 @@
                 </div>
             </dl>
         </div>
+
+        @include('superadmin.businesses._efris-panel', ['business' => $item])
     @endif
 
     @if($entity === 'affiliates')

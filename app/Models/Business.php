@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Business extends Model
@@ -98,6 +99,16 @@ class Business extends Model
     public function businessModules(): HasMany
     {
         return $this->hasMany(BusinessModule::class);
+    }
+
+    public function efrisSetting(): HasOne
+    {
+        return $this->hasOne(EfrisSetting::class);
+    }
+
+    public function usesEfris(): bool
+    {
+        return \App\Support\EfrisCompliance::isTransmissionAllowed($this);
     }
 
     public function clearModuleCache(): void

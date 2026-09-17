@@ -37,7 +37,7 @@ class SaleService
 
     public function completeSale(User $user, array $payload): Sale
     {
-        return DB::transaction(function () use ($user, $payload) {
+        $sale = DB::transaction(function () use ($user, $payload) {
             $businessId = $user->business_id;
             $items = $payload['items'];
             $paymentMethod = $payload['payment_method'] ?? 'cash';
@@ -239,6 +239,14 @@ class SaleService
 
             return $sale->load('items');
         });
+
+        $sale->load('business.efrisSetting');
+
+        if ($sale->business && $sale->business->usesEfris()) {
+            app(EfrisService::class)->queueSaleSubmission($sale);
+        }
+
+        return $sale;
     }
 
     protected function resolveSaleBranchId(User $user, Collection $products): int

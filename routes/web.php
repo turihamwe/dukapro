@@ -13,6 +13,7 @@ use App\Http\Controllers\Shareholder\DashboardController as ShareholderDashboard
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\BrandController;
+use App\Http\Controllers\BusinessEfrisController;
 use App\Http\Controllers\BusinessSettingsController;
 use App\Http\Controllers\CashierModeController;
 use App\Http\Controllers\ContactImportController;
@@ -27,6 +28,7 @@ use App\Http\Controllers\SoldByUnitController;
 use App\Http\Controllers\SuperAdmin\AffiliateController as SuperAdminAffiliateController;
 use App\Http\Controllers\SuperAdmin\UserActionController;
 use App\Http\Controllers\SuperAdmin\AffiliateActionController;
+use App\Http\Controllers\SuperAdmin\BusinessEfrisController as SuperAdminBusinessEfrisController;
 use App\Http\Controllers\SuperAdmin\BusinessModuleController;
 use App\Http\Controllers\SuperAdmin\ShareholderActionController;
 use App\Http\Controllers\SuperAdmin\ActivityLogController;
@@ -169,6 +171,7 @@ Route::middleware(['maintenance'])->group(function () {
                     Route::middleware(['can:manage-settings'])->group(function () {
                         Route::get('/business', [BusinessSettingsController::class, 'edit'])->name('business.edit');
                         Route::put('/business', [BusinessSettingsController::class, 'update'])->name('business.update');
+                        Route::post('/business/efris/connect', [BusinessEfrisController::class, 'connect'])->name('business.efris.connect');
                         Route::post('/onboarding/sole-proprietor', [OnboardingController::class, 'soleProprietor'])->name('onboarding.sole-proprietor');
                     });
 
@@ -411,6 +414,7 @@ Route::prefix('superadmin')
             Route::post('/users/{user}/promote-shareholder', [UserActionController::class, 'promoteShareholder'])->whereNumber('user')->name('users.promote-shareholder');
             Route::post('/businesses/{businessId}/impersonate', [ImpersonationController::class, 'start'])->whereNumber('businessId')->name('impersonate.start');
             Route::post('/businesses/{businessId}/modules', [BusinessModuleController::class, 'update'])->whereNumber('businessId')->name('businesses.modules.update');
+            Route::post('/businesses/{businessId}/efris/unlock', [SuperAdminBusinessEfrisController::class, 'updateUnlock'])->whereNumber('businessId')->name('businesses.efris.unlock');
             Route::get('/settings', [SuperAdminSettingsController::class, 'edit'])->name('settings');
             Route::put('/settings', [SuperAdminSettingsController::class, 'update'])->name('settings.update');
         });

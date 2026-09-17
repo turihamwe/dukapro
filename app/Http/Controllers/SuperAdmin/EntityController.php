@@ -418,6 +418,7 @@ class EntityController extends Controller
         if ($entity === 'businesses') {
             $item->load([
                 'businessModules',
+                'efrisSetting',
                 'sponsor.parent',
                 'referringAffiliate.parent',
             ]);

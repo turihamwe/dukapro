@@ -71,6 +71,14 @@ class SaleReceipt
         $lines[] = 'Total: ' . format_money($sale->total, $business);
         $lines[] = 'Payment: ' . self::paymentLabel($sale);
 
+        if ($sale->efris_fdn) {
+            $lines[] = 'EFRIS FDN: ' . $sale->efris_fdn;
+        }
+
+        if ($sale->efris_qr_code) {
+            $lines[] = 'Verify: ' . $sale->efris_qr_code;
+        }
+
         if ($sale->is_credit_sale && ! $sale->credit_settled_at) {
             $lines[] = 'Status: Credit — payment pending';
         }

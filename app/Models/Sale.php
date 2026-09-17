@@ -36,6 +36,12 @@ class Sale extends Model
         'credit_settled_at',
         'credit_settlement_method',
         'credit_settlement_notes',
+        'efris_fdn',
+        'efris_antifake_code',
+        'efris_qr_code',
+        'efris_status',
+        'efris_error',
+        'efris_submitted_at',
     ];
 
     protected $casts = [
@@ -46,7 +52,13 @@ class Sale extends Model
         'is_credit_sale' => 'boolean',
         'completed_at' => 'datetime',
         'credit_settled_at' => 'datetime',
+        'efris_submitted_at' => 'datetime',
     ];
+
+    public function hasEfrisReceipt(): bool
+    {
+        return filled($this->efris_fdn) || filled($this->efris_qr_code);
+    }
 
     public function business(): BelongsTo
     {

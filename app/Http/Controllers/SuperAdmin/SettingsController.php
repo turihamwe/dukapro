@@ -8,6 +8,7 @@ use App\Models\SystemSetting;
 use App\Modules\ModuleRegistry;
 use App\Services\ModuleBillingService;
 use App\Support\BillingMode;
+use App\Support\WeafPlatformCredentials;
 use Illuminate\Http\Request;
 
 class SettingsController extends Controller
@@ -46,6 +47,10 @@ class SettingsController extends Controller
             'module_prices.*' => 'nullable|numeric|min:0',
             'affiliate_first_commission_percent' => 'required|numeric|min:0|max:100',
             'affiliate_subsequent_commission_percent' => 'required|numeric|min:0|max:100',
+            'use_efris' => 'nullable|boolean',
+            'efris_auto_provision_enabled' => 'nullable|boolean',
+            'efris_platform_email' => 'nullable|email|max:255',
+            'efris_platform_password' => 'nullable|string|max:255',
         ]);
 
         SystemSetting::set('default_currency_symbol', $data['default_currency_symbol']);
@@ -81,6 +86,12 @@ class SettingsController extends Controller
             'affiliate_subsequent_commission_rate',
             (string) round((float) $data['affiliate_subsequent_commission_percent'] / 100, 4)
         );
+        SystemSetting::set('use_efris', $request->boolean('use_efris') ? '1' : '0');
+        SystemSetting::set('efris_auto_provision_enabled', $request->boolean('efris_auto_provision_enabled') ? '1' : '0');
+        SystemSetting::set('efris_platform_email', $data['efris_platform_email'] ?? '');
+        if ($request->filled('efris_platform_password')) {
+            WeafPlatformCredentials::storePassword($data['efris_platform_password']);
+        }
 
         SystemAuditLogger::record(
             'settings_updated',
