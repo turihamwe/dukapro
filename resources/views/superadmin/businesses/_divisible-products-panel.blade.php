@@ -1,10 +1,10 @@
 @php
     use App\Support\DivisibleProductsMode;
 
+    $platformEnabled = DivisibleProductsMode::platformEnabled();
     $enabled = (bool) $business->divisible_products_enabled;
 @endphp
 
-@if(DivisibleProductsMode::platformEnabled())
 <div class="mb-6 rounded-xl border border-violet-200 bg-violet-50/60 p-5">
     <div class="flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -13,14 +13,20 @@
                 Allow cashiers at this business to sell fractional quantities at POS (e.g. 0.5 meters, 1.25 kg).
             </p>
         </div>
-        @if($enabled)
+        @if(! $platformEnabled)
+            <span class="rounded-full bg-gray-200 px-2.5 py-1 text-xs font-semibold text-gray-700">Platform off</span>
+        @elseif($enabled)
             <span class="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-900">Enabled</span>
         @else
             <span class="rounded-full bg-gray-200 px-2.5 py-1 text-xs font-semibold text-gray-700">Disabled</span>
         @endif
     </div>
 
-    @can('platform-full-access')
+    @if(! $platformEnabled)
+        <p class="mt-4 rounded-lg border border-violet-200 bg-white px-4 py-3 text-xs text-gray-600">
+            Turn on <strong>Divisible products</strong> under Superadmin → System Settings → <strong>POS &amp; inventory features</strong> to unlock this for businesses.
+        </p>
+    @elseif(Gate::check('platform-full-access'))
         <form method="POST" action="{{ route('superadmin.businesses.divisible-products.update', $business->id) }}" class="mt-4">
             @csrf
             <input type="hidden" name="divisible_products_enabled" value="0">
@@ -39,6 +45,5 @@
         </form>
     @else
         <p class="mt-4 text-xs text-gray-500">Full superadmin access is required to change divisible products.</p>
-    @endcan
+    @endif
 </div>
-@endif

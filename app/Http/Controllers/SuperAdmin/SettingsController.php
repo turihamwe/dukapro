@@ -15,7 +15,11 @@ class SettingsController extends Controller
 {
     public function edit()
     {
-        $settings = SystemSetting::allCached();
+        $settings = array_merge([
+            'batch_mode_enabled' => '0',
+            'variable_pricing_enabled' => '1',
+            'divisible_products_enabled' => '1',
+        ], SystemSetting::allCached());
         $yoPaymentsConfigured = app(\App\Services\YoPaymentsService::class)->isConfigured();
         $moduleRegistry = app(ModuleRegistry::class);
         $modulePrices = app(ModuleBillingService::class)->modulePrices();

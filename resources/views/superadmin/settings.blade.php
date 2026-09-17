@@ -74,6 +74,14 @@
             </div>
         </div>
 
+    </div>
+
+    <div class="rounded-xl border border-gray-200 bg-white p-6 space-y-5">
+        <div>
+            <h2 class="text-sm font-semibold text-gray-900">POS &amp; inventory features</h2>
+            <p class="mt-1 text-xs text-gray-500">Platform-wide master switches. When off, the feature is hidden from all businesses.</p>
+        </div>
+
         <div class="flex items-start gap-3 rounded-lg border border-sky-200 bg-sky-50 p-4">
             <input type="hidden" name="batch_mode_enabled" value="0">
             <input type="checkbox" name="batch_mode_enabled" id="batch_mode_enabled" value="1"
