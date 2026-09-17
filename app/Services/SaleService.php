@@ -26,14 +26,18 @@ class SaleService
 
     protected BranchResolver $branchResolver;
 
+    protected ProductUnitService $unitService;
+
     public function __construct(
         DebtLedgerService $debtLedgerService,
         ProductBatchService $batchService,
-        BranchResolver $branchResolver
+        BranchResolver $branchResolver,
+        ProductUnitService $unitService
     ) {
         $this->debtLedgerService = $debtLedgerService;
         $this->batchService = $batchService;
         $this->branchResolver = $branchResolver;
+        $this->unitService = $unitService;
     }
 
     public function completeSale(User $user, array $payload): Sale
@@ -109,16 +113,19 @@ class SaleService
 
                 $resolvedProducts->push($product);
 
-                $quantity = (float) $item['quantity'];
+                $soldQuantity = round((float) $item['quantity'], 3);
+                $productUnit = $this->unitService->resolveUnit($product, $item['product_unit_id'] ?? null);
+                $baseQuantity = $this->unitService->toBaseQuantity($productUnit, $soldQuantity);
                 $available = $this->batchService->availableStock($product);
 
-                if ($available < $quantity) {
+                if ($available < $baseQuantity) {
+                    $maxInUnit = $productUnit->maxSellableQuantity($available);
                     throw ValidationException::withMessages([
-                        'items' => "Insufficient stock for {$product->displayName()}. Available: {$available}",
+                        'items' => "Insufficient stock for {$product->displayName()}. Available: {$maxInUnit} {$productUnit->unit_name}",
                     ]);
                 }
 
-                $deduction = $this->batchService->applyFifoDeduction($product, $quantity);
+                $deduction = $this->batchService->applyFifoDeduction($product, $baseQuantity);
 
                 if ($variablePricing) {
                     if (! isset($item['unit_price']) || ! is_numeric($item['unit_price'])) {
@@ -135,17 +142,21 @@ class SaleService
                         ]);
                     }
 
-                    $lineSubtotal = round($quantity * $unitPrice, 2);
+                    $lineSubtotal = round($soldQuantity * $unitPrice, 2);
                 } else {
-                    $unitPrice = $deduction['unit_price'];
                     $lineSubtotal = $deduction['subtotal'];
+                    $unitPrice = $soldQuantity > 0
+                        ? round($lineSubtotal / $soldQuantity, 2)
+                        : $deduction['unit_price'];
                 }
 
                 $subtotal += $lineSubtotal;
 
                 $lineItems[] = [
                     'product' => $product->fresh(),
-                    'quantity' => $quantity,
+                    'product_unit' => $productUnit,
+                    'quantity' => $soldQuantity,
+                    'base_quantity' => $baseQuantity,
                     'unit_price' => $unitPrice,
                     'cost_price' => $deduction['cost_price'],
                     'subtotal' => $lineSubtotal,
@@ -199,14 +210,19 @@ class SaleService
                 /** @var Product $product */
                 $product = $line['product'];
 
+                /** @var \App\Models\ProductUnit|null $productUnit */
+                $productUnit = $line['product_unit'] ?? null;
+
                 $saleItem = SaleItem::create([
                     'sale_id' => $sale->id,
                     'product_id' => $product->id,
+                    'product_unit_id' => $productUnit ? $productUnit->id : null,
                     'product_name' => $product->displayName(),
                     'sku' => $product->sku,
                     'variant_attributes' => $product->attribute_values ?? $product->variant_attributes,
-                    'measurement_unit' => $product->measurement_unit,
+                    'measurement_unit' => $productUnit ? $productUnit->unit_name : $product->measurement_unit,
                     'quantity' => $line['quantity'],
+                    'base_quantity' => $line['base_quantity'],
                     'unit_price' => $line['unit_price'],
                     'cost_price' => $line['cost_price'],
                     'discount_amount' => 0,

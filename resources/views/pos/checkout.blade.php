@@ -5,12 +5,45 @@
 @section('content')
 @php
     $posCatalog = $products->map(function ($product) {
+        $baseStock = (float) $product->available_stock;
+        $fifoBasePrice = (float) $product->fifo_price;
+        $units = collect($product->pos_units ?? [])->map(function ($unit) use ($baseStock, $fifoBasePrice) {
+            $factor = (float) ($unit['factor'] ?? 1);
+            $unitPrice = isset($unit['price']) && $unit['price'] > 0
+                ? (float) $unit['price']
+                : round($fifoBasePrice * $factor, 2);
+
+            return [
+                'id' => $unit['id'],
+                'name' => $unit['name'],
+                'factor' => $factor,
+                'price' => $unitPrice,
+                'is_base' => (bool) ($unit['is_base'] ?? false),
+                'max_stock' => $factor > 0 ? round($baseStock / $factor, 3) : 0,
+            ];
+        })->values();
+
+        if ($units->isEmpty()) {
+            $units = collect([[
+                'id' => null,
+                'name' => $product->measurement_unit,
+                'factor' => 1,
+                'price' => $fifoBasePrice,
+                'is_base' => true,
+                'max_stock' => $baseStock,
+            ]]);
+        }
+
+        $defaultUnit = $units->firstWhere('is_base', true) ?? $units->first();
+
         return [
             'id' => $product->id,
             'name' => $product->displayName(),
-            'price' => (float) $product->fifo_price,
+            'price' => (float) $defaultUnit['price'],
             'base_price' => (float) $product->price,
-            'stock_quantity' => (int) $product->available_stock,
+            'base_stock' => $baseStock,
+            'measurement_unit' => $product->measurement_unit,
+            'units' => $units->all(),
         ];
     })->values();
 @endphp
@@ -242,24 +275,51 @@
     });
 
     function parseQty(val) {
-        var qty = parseInt(String(val), 10);
-        return isNaN(qty) ? 0 : qty;
+        var qty = parseFloat(String(val).replace(',', '.'));
+        if (isNaN(qty)) return 0;
+        return Math.round(qty * 1000) / 1000;
     }
 
-    function addToCart(product, qty) {
+    function defaultUnit(product) {
+        if (!product.units || !product.units.length) {
+            return {
+                id: null,
+                name: product.measurement_unit || 'unit',
+                factor: 1,
+                price: parseFloat(product.price),
+                max_stock: parseFloat(product.base_stock),
+            };
+        }
+        return product.units.find(function (u) { return u.is_base; }) || product.units[0];
+    }
+
+    function unitById(product, unitId) {
+        if (!product.units || !product.units.length) return defaultUnit(product);
+        var match = product.units.find(function (u) { return String(u.id) === String(unitId); });
+        return match || defaultUnit(product);
+    }
+
+    function formatQty(qty) {
+        var n = parseQty(qty);
+        if (Math.abs(n - Math.round(n)) < 0.0001) return String(Math.round(n));
+        return n.toFixed(3).replace(/\.?0+$/, '');
+    }
+
+    function addToCart(product, qty, unitId) {
         qty = parseQty(qty);
         if (!product || qty <= 0) return false;
 
-        var maxStock = parseQty(product.stock_quantity);
+        var unit = unitById(product, unitId);
+        var maxStock = parseQty(unit.max_stock);
         var existing = cart.find(function (i) {
-            return restaurantMode
-                ? lineKey(i) === String(product.id) + '|'
-                : i.product_id === product.id;
+            if (i.product_id !== product.id) return false;
+            if (String(i.product_unit_id || '') !== String(unit.id || '')) return false;
+            return restaurantMode ? lineKey(i) === lineKey({ product_id: product.id, product_unit_id: unit.id, notes: '' }) : true;
         });
-        var nextQty = existing ? existing.quantity + qty : qty;
+        var nextQty = existing ? parseQty(existing.quantity + qty) : qty;
 
         if (nextQty > maxStock) {
-            alert('Insufficient stock for ' + product.name + '. Available: ' + maxStock);
+            alert('Insufficient stock for ' + product.name + '. Available: ' + formatQty(maxStock) + ' ' + unit.name);
             return false;
         }
 
@@ -270,8 +330,11 @@
         } else {
             cart.push({
                 product_id: product.id,
+                product_unit_id: unit.id,
+                unit_name: unit.name,
+                units: product.units || [],
                 name: product.name,
-                unit_price: parseFloat(product.price),
+                unit_price: parseFloat(unit.price),
                 base_price: parseFloat(product.base_price || product.price),
                 quantity: qty,
                 max_stock: maxStock,
@@ -289,7 +352,23 @@
     }
 
     function lineKey(item) {
-        return String(item.product_id) + '|' + (item.notes || '').trim();
+        return String(item.product_id) + '|' + String(item.product_unit_id || '') + '|' + (item.notes || '').trim();
+    }
+
+    function unitSelectorHtml(item, idx) {
+        if (!item.units || item.units.length <= 1) {
+            return item.unit_name
+                ? '<p class="text-xs text-gray-500">Sold by ' + esc(item.unit_name) + ' · max ' + formatQty(item.max_stock) + '</p>'
+                : '<p class="text-xs text-gray-500">max ' + formatQty(item.max_stock) + '</p>';
+        }
+        var options = item.units.map(function (u) {
+            var selected = String(u.id) === String(item.product_unit_id) ? ' selected' : '';
+            return '<option value="' + u.id + '"' + selected + '>' + esc(u.name) + ' (max ' + formatQty(u.max_stock) + ')</option>';
+        }).join('');
+        return '<label class="mt-1 block text-xs text-gray-500">Unit' +
+            '<select data-action="unit" data-idx="' + idx + '" class="mt-0.5 w-full min-h-[36px] rounded-lg border border-gray-200 bg-white px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">' +
+            options +
+            '</select></label>';
     }
 
     function priceFieldHtml(item, idx) {
@@ -304,7 +383,7 @@
             '</label>';
         }
 
-        return '<p class="text-xs text-gray-500">' + formatMoney(item.unit_price) + ' each · max ' + item.max_stock + '</p>';
+        return '<p class="text-xs text-gray-500">' + formatMoney(item.unit_price) + ' / ' + esc(item.unit_name || 'unit') + ' · max ' + formatQty(item.max_stock) + '</p>';
     }
 
     function updateCartTotals() {
@@ -351,6 +430,7 @@
                     '<div class="flex items-start justify-between gap-2">' +
                         '<div class="min-w-0 flex-1">' +
                             '<p class="truncate text-sm font-medium text-gray-900">' + esc(item.name) + '</p>' +
+                            unitSelectorHtml(item, idx) +
                             priceFieldHtml(item, idx) +
                         '</div>' +
                         (restaurantMode
@@ -360,8 +440,9 @@
                     (restaurantMode ? '<input type="text" data-action="notes" data-idx="' + idx + '" value="' + esc(item.notes || '') + '" placeholder="Item note (e.g. spiced)" maxlength="500" class="mt-2 w-full rounded-lg border border-gray-200 px-2 py-1.5 text-xs focus:border-emerald-500 focus:outline-none">' : '') +
                     '<div class="mt-2 flex items-center gap-2">' +
                         '<button type="button" data-action="minus" data-idx="' + idx + '" class="min-h-[40px] min-w-[40px] rounded-lg border border-gray-300 text-sm hover:bg-gray-50">−</button>' +
-                        '<input type="number" min="1" step="1" max="' + item.max_stock + '" value="' + item.quantity + '" data-action="qty" data-idx="' + idx + '" ' +
-                            'class="w-20 min-h-[40px] rounded-lg border-gray-300 text-center text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">' +
+                        '<input type="number" min="0.001" step="0.001" max="' + item.max_stock + '" value="' + formatQty(item.quantity) + '" data-action="qty" data-idx="' + idx + '" ' +
+                            'class="w-24 min-h-[40px] rounded-lg border-gray-300 text-center text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">' +
+                        '<span class="text-xs text-gray-500">' + esc(item.unit_name || '') + '</span>' +
                         '<button type="button" data-action="plus" data-idx="' + idx + '" class="min-h-[40px] min-w-[40px] rounded-lg border border-gray-300 text-sm hover:bg-gray-50">+</button>' +
                         '<span class="ml-auto text-sm font-semibold text-gray-900">' + formatMoney(lineTotal) + '</span>' +
                     '</div>' +
@@ -371,7 +452,7 @@
 
             return '<button type="button" data-action="expand" data-idx="' + idx + '" class="flex w-full items-start justify-between gap-2 border-b border-gray-100 py-3 text-left last:border-0 hover:bg-gray-50/80">' +
                 '<div class="min-w-0 flex-1">' +
-                    '<p class="truncate text-sm font-medium text-gray-900">' + item.quantity + '× ' + esc(item.name) + '</p>' +
+                    '<p class="truncate text-sm font-medium text-gray-900">' + formatQty(item.quantity) + ' ' + esc(item.unit_name || '') + ' · ' + esc(item.name) + '</p>' +
                     (notePreview ? '<p class="mt-0.5 truncate text-xs text-orange-700">' + esc(notePreview) + '</p>' : '') +
                     '<p class="mt-0.5 text-xs text-gray-500">' + formatMoney(item.unit_price) + ' each</p>' +
                 '</div>' +
@@ -383,7 +464,41 @@
     function changeQty(idx, delta) {
         var item = cart[idx];
         if (!item) return;
-        setQty(idx, item.quantity + delta);
+        var step = (item.unit_name && item.unit_name !== 'piece') ? 0.5 : 1;
+        setQty(idx, parseQty(item.quantity + (delta > 0 ? step : -step)));
+    }
+
+    function setCartUnit(idx, unitId) {
+        var item = cart[idx];
+        if (!item || !item.units || !item.units.length) return;
+
+        var unit = item.units.find(function (u) { return String(u.id) === String(unitId); });
+        if (!unit) return;
+
+        var duplicate = cart.findIndex(function (row, i) {
+            return i !== idx
+                && row.product_id === item.product_id
+                && String(row.product_unit_id || '') === String(unit.id || '')
+                && (!restaurantMode || lineKey(row) === lineKey({ product_id: item.product_id, product_unit_id: unit.id, notes: item.notes }));
+        });
+
+        item.product_unit_id = unit.id;
+        item.unit_name = unit.name;
+        item.max_stock = parseQty(unit.max_stock);
+        if (!variablePricingMode) {
+            item.unit_price = parseFloat(unit.price);
+        }
+        if (item.quantity > item.max_stock) {
+            item.quantity = item.max_stock;
+        }
+
+        if (duplicate >= 0) {
+            cart[duplicate].quantity = parseQty(cart[duplicate].quantity + item.quantity);
+            cart.splice(idx, 1);
+            expandedIdx = duplicate;
+        }
+
+        renderCart();
     }
 
     function setQty(idx, val) {
@@ -476,6 +591,11 @@
     });
 
     document.getElementById('cartItems').addEventListener('change', function (e) {
+        var unitSelect = e.target.closest('[data-action="unit"]');
+        if (unitSelect) {
+            setCartUnit(parseInt(unitSelect.getAttribute('data-idx'), 10), unitSelect.value);
+            return;
+        }
         var input = e.target.closest('[data-action="qty"]');
         if (!input) return;
         setQty(parseInt(input.getAttribute('data-idx'), 10), input.value);
@@ -543,7 +663,12 @@
                     },
                     body: JSON.stringify(Object.assign({
                         items: cart.map(function (i) {
-                            return { product_id: i.product_id, quantity: i.quantity, notes: i.notes || null };
+                            return {
+                                product_id: i.product_id,
+                                product_unit_id: i.product_unit_id || null,
+                                quantity: i.quantity,
+                                notes: i.notes || null,
+                            };
                         }),
                         notes: document.getElementById('orderNotes').value.trim() || null,
                         waiter_id: waiterId || null,
@@ -613,6 +738,7 @@
                 items: cart.map(function (i) {
                     return {
                         product_id: i.product_id,
+                        product_unit_id: i.product_unit_id || null,
                         quantity: i.quantity,
                         unit_price: i.unit_price,
                         notes: i.notes || null,

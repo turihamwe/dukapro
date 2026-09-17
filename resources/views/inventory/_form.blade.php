@@ -185,6 +185,59 @@
         </div>
         <p id="unit_message" class="mt-2 hidden text-xs text-emerald-600"></p>
         <p id="unit_error" class="mt-2 hidden text-xs text-red-600"></p>
+        <p class="mt-2 text-xs text-gray-500">The unit above is the <strong>base unit</strong> — stock is tracked in this unit (e.g. meters, kg, bottles).</p>
+    </div>
+
+    @php
+        $secondaryUnits = old('secondary_units');
+        if ($secondaryUnits === null && $isEdit && ! $isVariable) {
+            $secondaryUnits = ($product->units ?? collect())
+                ->where('is_base_unit', false)
+                ->sortBy('sort_order')
+                ->map(fn ($u) => [
+                    'unit_name' => $u->unit_name,
+                    'conversion_factor' => $u->conversion_factor,
+                    'price' => $u->price,
+                ])
+                ->values()
+                ->all();
+        }
+        $secondaryUnits = is_array($secondaryUnits) ? $secondaryUnits : [];
+    @endphp
+    <div id="secondary-units-section" class="rounded-xl border border-gray-200 bg-white p-4 {{ $variantsEnabled ? 'hidden' : '' }}">
+        <div class="mb-3">
+            <h3 class="text-sm font-semibold text-gray-900">Packaging units <span class="font-normal text-gray-400">(optional)</span></h3>
+            <p class="mt-1 text-xs text-gray-500">Add larger units sold at the POS (e.g. 1 roll = 50 meters). Stock is always deducted in the base unit.</p>
+        </div>
+        <div id="secondary-units-rows" class="space-y-3">
+            @forelse($secondaryUnits as $idx => $row)
+                <div class="secondary-unit-row grid gap-3 sm:grid-cols-12 sm:items-end">
+                    <div class="sm:col-span-4">
+                        <label class="mb-1 block text-xs font-medium text-gray-600">Unit name</label>
+                        <input type="text" name="secondary_units[{{ $idx }}][unit_name]" value="{{ $row['unit_name'] ?? '' }}" placeholder="e.g. roll, crate"
+                               class="block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    </div>
+                    <div class="sm:col-span-3">
+                        <label class="mb-1 block text-xs font-medium text-gray-600">= base units</label>
+                        <input type="number" step="0.001" min="0.001" name="secondary_units[{{ $idx }}][conversion_factor]" value="{{ $row['conversion_factor'] ?? '' }}" placeholder="50"
+                               class="block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    </div>
+                    <div class="sm:col-span-3">
+                        <label class="mb-1 block text-xs font-medium text-gray-600">Price <span class="font-normal text-gray-400">(optional)</span></label>
+                        <input type="number" step="0.01" min="0" name="secondary_units[{{ $idx }}][price]" value="{{ $row['price'] ?? '' }}" placeholder="Auto from base price"
+                               class="block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <button type="button" class="remove-secondary-unit w-full rounded-lg border border-red-200 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50">Remove</button>
+                    </div>
+                </div>
+            @empty
+            @endforelse
+        </div>
+        <button type="button" id="add-secondary-unit-btn" class="mt-3 rounded-lg border border-dashed border-gray-300 px-3 py-2 text-xs font-semibold text-gray-700 hover:border-indigo-300 hover:text-indigo-700">+ Add packaging unit</button>
+        @error('product_units')
+            <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
+        @enderror
     </div>
 
     <x-input type="number" step="1" name="critical_threshold" label="Low-stock alert" value="{{ old('critical_threshold', $product->critical_threshold ?? 5) }}" />
@@ -303,6 +356,7 @@
     var toggle = document.getElementById('enable_variants_toggle');
     var simple = document.getElementById('simple-product-fields');
     var variant = document.getElementById('variant-product-fields');
+    var secondaryUnitsSection = document.getElementById('secondary-units-section');
     var typeInput = document.getElementById('product_type_input');
 
     function syncVariantMode() {
@@ -310,6 +364,7 @@
         var on = toggle.checked;
         simple.classList.toggle('hidden', on);
         variant.classList.toggle('hidden', !on);
+        if (secondaryUnitsSection) secondaryUnitsSection.classList.toggle('hidden', on);
         typeInput.value = on ? 'variable' : 'simple';
         simple.querySelectorAll('.simple-field').forEach(function (field) {
             field.disabled = on;
@@ -325,6 +380,35 @@
     if (toggle) {
         toggle.addEventListener('change', syncVariantMode);
         syncVariantMode();
+    }
+
+    // --- Secondary packaging units ---
+    var secondaryRows = document.getElementById('secondary-units-rows');
+    var addSecondaryBtn = document.getElementById('add-secondary-unit-btn');
+    var secondaryRowIndex = secondaryRows ? secondaryRows.querySelectorAll('.secondary-unit-row').length : 0;
+
+    function secondaryUnitRowHtml(idx) {
+        return '<div class="secondary-unit-row grid gap-3 sm:grid-cols-12 sm:items-end">' +
+            '<div class="sm:col-span-4"><label class="mb-1 block text-xs font-medium text-gray-600">Unit name</label>' +
+            '<input type="text" name="secondary_units[' + idx + '][unit_name]" placeholder="e.g. roll, crate" class="block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></div>' +
+            '<div class="sm:col-span-3"><label class="mb-1 block text-xs font-medium text-gray-600">= base units</label>' +
+            '<input type="number" step="0.001" min="0.001" name="secondary_units[' + idx + '][conversion_factor]" placeholder="50" class="block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></div>' +
+            '<div class="sm:col-span-3"><label class="mb-1 block text-xs font-medium text-gray-600">Price <span class="font-normal text-gray-400">(optional)</span></label>' +
+            '<input type="number" step="0.01" min="0" name="secondary_units[' + idx + '][price]" placeholder="Auto from base price" class="block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></div>' +
+            '<div class="sm:col-span-2"><button type="button" class="remove-secondary-unit w-full rounded-lg border border-red-200 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50">Remove</button></div>' +
+        '</div>';
+    }
+
+    if (addSecondaryBtn && secondaryRows) {
+        addSecondaryBtn.addEventListener('click', function () {
+            secondaryRows.insertAdjacentHTML('beforeend', secondaryUnitRowHtml(secondaryRowIndex++));
+        });
+        secondaryRows.addEventListener('click', function (e) {
+            var btn = e.target.closest('.remove-secondary-unit');
+            if (!btn) return;
+            var row = btn.closest('.secondary-unit-row');
+            if (row) row.remove();
+        });
     }
 
     // --- Brand quick-add ---

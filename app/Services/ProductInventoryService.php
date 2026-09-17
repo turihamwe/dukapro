@@ -12,16 +12,28 @@ use Illuminate\Validation\ValidationException;
 
 class ProductInventoryService
 {
-    public function createSimple(array $data, int $businessId): Product
+    protected ProductUnitService $unitService;
+
+    public function __construct(ProductUnitService $unitService)
+    {
+        $this->unitService = $unitService;
+    }
+
+    public function createSimple(array $data, int $businessId, array $secondaryUnits = []): Product
     {
         $data['sku'] = $this->resolveSku($data['sku'] ?? null, $data['name'], $businessId);
 
-        return Product::create(array_merge($data, [
+        $product = Product::create(array_merge($data, [
             'business_id' => $businessId,
             'is_active' => true,
             'is_sellable' => true,
             'parent_id' => null,
         ]));
+
+        $this->unitService->ensureBaseUnit($product);
+        $this->unitService->syncSecondaryUnits($product, $secondaryUnits);
+
+        return $product->fresh(['units']);
     }
 
     public function createWithVariants(array $parentData, array $variants, int $businessId): Product
@@ -53,7 +65,7 @@ class ProductInventoryService
         });
     }
 
-    public function updateSimple(Product $product, array $data): Product
+    public function updateSimple(Product $product, array $data, array $secondaryUnits = []): Product
     {
         if ($product->isVariableParent()) {
             throw ValidationException::withMessages([
@@ -70,9 +82,11 @@ class ProductInventoryService
         $old = $product->toArray();
         unset($data['sku']);
         $product->update($data);
+        $this->unitService->ensureBaseUnit($product->fresh());
+        $this->unitService->syncSecondaryUnits($product->fresh(), $secondaryUnits);
         AuditLogger::record('product_updated', $product, $old, $product->fresh()->toArray());
 
-        return $product->fresh();
+        return $product->fresh(['units']);
     }
 
     public function updateVariableParent(Product $product, array $parentData, array $variants): Product

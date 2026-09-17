@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Services\KitchenOrderService;
 use App\Services\LowStockAlertService;
 use App\Services\ProductBatchService;
+use App\Services\ProductUnitService;
 use App\Services\SaleService;
 use App\Support\SaleReceipt;
 use App\Support\VariablePricingMode;
@@ -22,16 +23,20 @@ class PosController extends Controller
 
     protected LowStockAlertService $lowStockAlertService;
 
+    protected ProductUnitService $unitService;
+
     public function __construct(
         SaleService $saleService,
         ProductBatchService $batchService,
         KitchenOrderService $kitchenOrderService,
-        LowStockAlertService $lowStockAlertService
+        LowStockAlertService $lowStockAlertService,
+        ProductUnitService $unitService
     ) {
         $this->saleService = $saleService;
         $this->batchService = $batchService;
         $this->kitchenOrderService = $kitchenOrderService;
         $this->lowStockAlertService = $lowStockAlertService;
+        $this->unitService = $unitService;
         $this->middleware('can:access-pos');
     }
 
@@ -48,15 +53,17 @@ class PosController extends Controller
 
         $products = Product::sellable()
             ->where('is_active', true)
-            ->with('activeBatches')
+            ->with(['activeBatches', 'units'])
             ->orderBy('name')
             ->get(['id', 'name', 'sku', 'price', 'stock_quantity', 'measurement_unit', 'attribute_values', 'brand_id', 'parent_id']);
 
         $products = $products->filter(function (Product $product) {
             return $this->batchService->availableStock($product) > 0;
         })->map(function (Product $product) {
-            $product->setAttribute('available_stock', $this->batchService->availableStock($product));
+            $baseStock = $this->batchService->availableStock($product);
+            $product->setAttribute('available_stock', $baseStock);
             $product->setAttribute('fifo_price', $this->batchService->fifoSellingPrice($product));
+            $product->setAttribute('pos_units', $this->unitService->posCatalogUnits($product));
 
             return $product;
         })->values();
@@ -82,7 +89,7 @@ class PosController extends Controller
 
         $products = Product::sellable()
             ->where('is_active', true)
-            ->with('activeBatches')
+            ->with(['activeBatches', 'units'])
             ->where(function ($q) use ($query) {
                 $q->where('name', 'like', "%{$query}%")
                     ->orWhere('sku', 'like', "%{$query}%");
@@ -93,8 +100,10 @@ class PosController extends Controller
         $products = $products->filter(function (Product $product) {
             return $this->batchService->availableStock($product) > 0;
         })->map(function (Product $product) {
-            $product->setAttribute('available_stock', $this->batchService->availableStock($product));
+            $baseStock = $this->batchService->availableStock($product);
+            $product->setAttribute('available_stock', $baseStock);
             $product->setAttribute('fifo_price', $this->batchService->fifoSellingPrice($product));
+            $product->setAttribute('pos_units', $this->unitService->posCatalogUnits($product));
 
             return $product;
         })->values();
@@ -110,6 +119,7 @@ class PosController extends Controller
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.quantity' => 'required|numeric|min:0.001',
+            'items.*.product_unit_id' => 'nullable|integer|exists:product_units,id',
             'items.*.unit_price' => 'nullable|numeric|min:0',
             'items.*.notes' => 'nullable|string|max:500',
             'payment_method' => 'required|in:cash,mobile_money,credit,bank',

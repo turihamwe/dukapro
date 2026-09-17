@@ -75,6 +75,11 @@ class Product extends Model
         return $this->hasMany(Damage::class);
     }
 
+    public function units(): HasMany
+    {
+        return $this->hasMany(ProductUnit::class)->orderBy('sort_order');
+    }
+
     public function batches(): HasMany
     {
         return $this->hasMany(ProductBatch::class);

@@ -288,10 +288,12 @@ class InventoryController extends Controller
         $data['brand_id'] = $this->resolveBrandId($request, $businessId);
         $data['measurement_unit'] = $this->resolveMeasurementUnit($request, $businessId, $data['measurement_unit'] ?? 'piece');
 
+        $secondaryUnits = $this->parseSecondaryUnits($request);
+
         $product = $this->inventoryService->createSimple(array_merge($data, [
             'is_active' => true,
             'branch_id' => $data['branch_id'] ?? $this->resolveBranchIdForOwner($request, $business),
-        ]), $businessId);
+        ]), $businessId, $secondaryUnits);
 
         AuditLogger::record('product_created', $product, null, $product->toArray());
 
@@ -304,7 +306,7 @@ class InventoryController extends Controller
             return redirect()->to(tenant_route('tenant.inventory.edit', ['product' => $product->parent_id]));
         }
 
-        $product->load(['brand', 'variants']);
+        $product->load(['brand', 'variants', 'units']);
 
         return view('inventory.edit', array_merge(
             ['product' => $product],
@@ -346,7 +348,9 @@ class InventoryController extends Controller
             unset($data['cost_price']);
         }
 
-        $this->inventoryService->updateSimple($product, $data);
+        $secondaryUnits = $this->parseSecondaryUnits($request);
+
+        $this->inventoryService->updateSimple($product, $data, $secondaryUnits);
 
         return redirect()->to(tenant_route('tenant.inventory.index'))->with('success', 'Product updated.');
     }
@@ -463,6 +467,10 @@ class InventoryController extends Controller
             'measurement_unit' => 'required|string|max:50',
             'stock_quantity' => 'nullable|numeric|min:0',
             'critical_threshold' => 'nullable|integer|min:0',
+            'secondary_units' => 'nullable|array',
+            'secondary_units.*.unit_name' => 'nullable|string|max:50',
+            'secondary_units.*.conversion_factor' => 'nullable|numeric|min:0.000001',
+            'secondary_units.*.price' => 'nullable|numeric|min:0',
         ];
 
         if ($request->user()->can('view-cost-prices')) {
@@ -668,6 +676,25 @@ class InventoryController extends Controller
         throw ValidationException::withMessages([
             'product_type' => 'Product variants are not enabled for this business.',
         ]);
+    }
+
+    protected function parseSecondaryUnits(Request $request): array
+    {
+        $rows = $request->input('secondary_units', []);
+
+        if (! is_array($rows)) {
+            return [];
+        }
+
+        return array_values(array_filter($rows, function ($row) {
+            if (! is_array($row)) {
+                return false;
+            }
+
+            $name = trim((string) ($row['unit_name'] ?? ''));
+
+            return $name !== '' && (float) ($row['conversion_factor'] ?? 0) > 0;
+        }));
     }
 
     protected function storeRedirect(Request $request, string $message): \Illuminate\Http\RedirectResponse

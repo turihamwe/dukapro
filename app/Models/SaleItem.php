@@ -13,11 +13,13 @@ class SaleItem extends Model
     protected $fillable = [
         'sale_id',
         'product_id',
+        'product_unit_id',
         'product_name',
         'sku',
         'variant_attributes',
         'measurement_unit',
         'quantity',
+        'base_quantity',
         'unit_price',
         'cost_price',
         'discount_amount',
@@ -28,6 +30,7 @@ class SaleItem extends Model
     protected $casts = [
         'variant_attributes' => 'array',
         'quantity' => 'float',
+        'base_quantity' => 'float',
         'unit_price' => 'float',
         'cost_price' => 'float',
         'discount_amount' => 'float',
@@ -42,6 +45,11 @@ class SaleItem extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function productUnit(): BelongsTo
+    {
+        return $this->belongsTo(ProductUnit::class);
     }
 
     public function batchAllocations(): \Illuminate\Database\Eloquent\Relations\HasMany
