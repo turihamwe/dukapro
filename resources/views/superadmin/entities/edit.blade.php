@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="mb-6">
-    <h1 class="text-2xl font-bold tracking-tight">Edit {{ rtrim($config['label'], 's') }} #{{ $item->id }}</h1>
+    <h1 class="text-2xl font-bold tracking-tight">Edit {{ Str::singular($config['label']) }} #{{ $item->id }}</h1>
 </div>
 
 <div class="max-w-xl rounded-xl border border-gray-200 bg-white p-6">

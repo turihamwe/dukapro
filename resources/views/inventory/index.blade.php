@@ -143,10 +143,10 @@
                                 <a href="{{ tenant_route('tenant.inventory.edit', ['product' => $product]) }}" class="text-xs font-medium text-indigo-600 hover:text-indigo-700">Edit</a>
                             @endcan
                             @can('delete', $product)
-                                <form method="POST" action="{{ tenant_route('tenant.inventory.destroy', ['product' => $product]) }}" class="inline" onsubmit="return confirm('Archive this product? It will be hidden from inventory but sales history is preserved.')">
+                                <form method="POST" action="{{ tenant_route('tenant.inventory.destroy', ['product' => $product]) }}" class="inline" onsubmit="return confirm('Delete this product?')">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="text-xs font-medium text-rose-600 hover:text-rose-700">Archive</button>
+                                    <button type="submit" class="text-xs font-medium text-rose-600 hover:text-rose-700">Delete</button>
                                 </form>
                             @endcan
                         </div>
@@ -266,10 +266,10 @@
                                     <a href="{{ tenant_route('tenant.inventory.edit', ['product' => $product]) }}" class="ml-3 text-sm font-medium text-indigo-600 hover:text-indigo-700">Edit</a>
                                 @endcan
                                 @can('delete', $product)
-                                    <form method="POST" action="{{ tenant_route('tenant.inventory.destroy', ['product' => $product]) }}" class="ml-3 inline" onsubmit="return confirm('Archive this product? It will be hidden from inventory but sales history is preserved.')">
+                                    <form method="POST" action="{{ tenant_route('tenant.inventory.destroy', ['product' => $product]) }}" class="ml-3 inline" onsubmit="return confirm('Delete this product?')">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="text-sm font-medium text-rose-600 hover:text-rose-700">Archive</button>
+                                        <button type="submit" class="text-sm font-medium text-rose-600 hover:text-rose-700">Delete</button>
                                     </form>
                                 @endcan
                             </td>

@@ -1,10 +1,10 @@
 @extends('layouts.superadmin')
 
-@section('title', 'Add ' . rtrim($config['label'], 's'))
+@section('title', 'Add ' . Str::singular($config['label']))
 
 @section('content')
 <div class="mb-6">
-    <h1 class="text-2xl font-bold tracking-tight">Add {{ rtrim($config['label'], 's') }}</h1>
+    <h1 class="text-2xl font-bold tracking-tight">Add {{ Str::singular($config['label']) }}</h1>
 </div>
 
 <div class="max-w-xl rounded-xl border border-gray-200 bg-white p-6">

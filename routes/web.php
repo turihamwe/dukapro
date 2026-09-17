@@ -408,6 +408,7 @@ Route::prefix('superadmin')
                 Route::get('/{record}/edit', [SuperAdminEntityController::class, 'edit'])->whereNumber('record')->name('edit');
                 Route::put('/{record}', [SuperAdminEntityController::class, 'update'])->whereNumber('record')->name('update');
                 Route::delete('/{record}', [SuperAdminEntityController::class, 'destroy'])->whereNumber('record')->name('destroy');
+                Route::post('/{record}/restore', [SuperAdminEntityController::class, 'restore'])->whereNumber('record')->name('restore');
             });
         });
 

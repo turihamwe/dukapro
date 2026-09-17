@@ -367,7 +367,7 @@ class InventoryController extends Controller
 
         AuditLogger::record('product_deleted', $product, $old, null);
 
-        return redirect()->to(tenant_route('tenant.inventory.index'))->with('success', 'Product archived. Historical sales data is preserved.');
+        return redirect()->to(tenant_route('tenant.inventory.index'))->with('success', 'Product deleted successfully.');
     }
 
     protected function storeVariableProduct(Request $request, Business $business): \Illuminate\Http\RedirectResponse

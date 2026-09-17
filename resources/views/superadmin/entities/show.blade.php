@@ -14,15 +14,21 @@
     <div class="flex gap-2">
         <a href="{{ route('superadmin.entities.index', $entity) }}" class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50">Back</a>
         @if(! empty($supportsSoftDeletes) && method_exists($item, 'trashed') && $item->trashed())
+            @can('platform-full-access')
+                <form method="POST" action="{{ route('superadmin.entities.restore', [$entity, $item->id]) }}" onsubmit="return confirm('Restore this record?')">
+                    @csrf
+                    <button type="submit" class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500">Restore</button>
+                </form>
+            @endcan
             <a href="{{ route('superadmin.entities.index', [$entity, 'trashed' => 1]) }}" class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100">View archived</a>
         @else
             @can('platform-full-access')
                 <a href="{{ route('superadmin.entities.edit', [$entity, $item->id]) }}" class="rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500">Edit</a>
                 @if($config['deletable'] ?? true)
-                    <form method="POST" action="{{ route('superadmin.entities.destroy', [$entity, $item->id]) }}" onsubmit="return confirm('Archive this record? It will be hidden but kept for historical data such as sales reports.')">
+                    <form method="POST" action="{{ route('superadmin.entities.destroy', [$entity, $item->id]) }}" onsubmit="return confirm('Delete this record?')">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50">Archive</button>
+                        <button type="submit" class="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50">Delete</button>
                     </form>
                 @endif
             @endcan

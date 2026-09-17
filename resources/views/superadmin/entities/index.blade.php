@@ -11,7 +11,7 @@
     @if(($config['creatable'] ?? false))
         <a href="{{ route('superadmin.entities.create', $entity) }}"
            class="inline-flex items-center justify-center rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-500">
-            + Add {{ rtrim($config['label'], 's') }}
+            + Add {{ Str::singular($config['label']) }}
         </a>
     @endif
 </div>
@@ -161,12 +161,20 @@
                             @endif
                             <a href="{{ route('superadmin.entities.show', [$entity, $record->id]) }}" class="ml-3 text-violet-600 hover:text-violet-800">View</a>
                             @can('platform-full-access')
-                                <a href="{{ route('superadmin.entities.edit', [$entity, $record->id]) }}" class="ml-3 text-gray-600 hover:text-gray-900">Edit</a>
+                                @if(empty($showTrashed))
+                                    <a href="{{ route('superadmin.entities.edit', [$entity, $record->id]) }}" class="ml-3 text-gray-600 hover:text-gray-900">Edit</a>
+                                @endif
                                 @if(($config['deletable'] ?? true) && empty($showTrashed))
-                                    <form method="POST" action="{{ route('superadmin.entities.destroy', [$entity, $record->id]) }}" class="ml-3 inline" onsubmit="return confirm('Archive this record? It will be hidden but kept for historical data such as sales reports.')">
+                                    <form method="POST" action="{{ route('superadmin.entities.destroy', [$entity, $record->id]) }}" class="ml-3 inline" onsubmit="return confirm('Delete this record?')">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="text-red-600 hover:text-red-800">Archive</button>
+                                        <button type="submit" class="text-red-600 hover:text-red-800">Delete</button>
+                                    </form>
+                                @endif
+                                @if(! empty($showTrashed) && ! empty($supportsSoftDeletes))
+                                    <form method="POST" action="{{ route('superadmin.entities.restore', [$entity, $record->id]) }}" class="ml-3 inline" onsubmit="return confirm('Restore this record?')">
+                                        @csrf
+                                        <button type="submit" class="text-emerald-600 hover:text-emerald-800">Restore</button>
                                     </form>
                                 @endif
                             @endcan

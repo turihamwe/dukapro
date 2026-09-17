@@ -708,7 +708,36 @@ class EntityController extends Controller
 
         return redirect()
             ->route('superadmin.entities.index', $entity)
-            ->with('success', 'Record soft-deleted successfully.');
+            ->with('success', 'Record deleted successfully.');
+    }
+
+    public function restore(Request $request, string $entity, int $record)
+    {
+        abort_unless(auth()->user()->isSuperAdmin(), 403);
+
+        $config = EntityRegistry::get($entity);
+        abort_unless($config, 404);
+        abort_unless(EntityRegistry::usesSoftDeletes($entity), 404);
+
+        $modelClass = $config['model'];
+        $item = $modelClass::onlyTrashed()->findOrFail($record);
+
+        if ($entity === 'products' && $item instanceof Product && $item->isVariableParent()) {
+            Product::onlyTrashed()->where('parent_id', $item->id)->restore();
+        }
+
+        $businessId = $item->business_id ?? null;
+        $itemId = $item->id;
+        $item->restore();
+
+        SystemAuditLogger::record(
+            'platform_entity_restored',
+            'Restored ' . $entity . ' #' . $itemId,
+            $businessId,
+            $request->user()->id
+        );
+
+        return back()->with('success', 'Record restored successfully.');
     }
 
     protected function logPasswordReset(Request $request, User $user): void
