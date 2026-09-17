@@ -11,21 +11,42 @@ class SaleDocument
         return (bool) $sale->is_credit_sale && ! $sale->credit_settled_at;
     }
 
+    public static function hasCompanionReceipt(Sale $sale): bool
+    {
+        return (bool) ($sale->companion_receipt_issued ?? false);
+    }
+
     public static function type(Sale $sale): string
     {
+        if (self::hasCompanionReceipt($sale)) {
+            return 'invoice_pair';
+        }
+
         return self::isInvoice($sale) ? 'invoice' : 'receipt';
     }
 
     public static function title(Sale $sale): string
     {
+        if (self::hasCompanionReceipt($sale)) {
+            return 'Invoice & Receipt';
+        }
+
         return self::isInvoice($sale) ? 'Invoice' : 'Receipt';
     }
 
     public static function url(Sale $sale): string
     {
-        $route = self::isInvoice($sale) ? 'tenant.sales.invoice' : 'tenant.sales.receipt';
+        return self::isInvoice($sale) ? self::invoiceUrl($sale) : self::receiptUrl($sale);
+    }
 
-        return tenant_route($route, ['sale' => $sale->id]);
+    public static function receiptUrl(Sale $sale): string
+    {
+        return tenant_route('tenant.sales.receipt', ['sale' => $sale->id]);
+    }
+
+    public static function invoiceUrl(Sale $sale): string
+    {
+        return tenant_route('tenant.sales.invoice', ['sale' => $sale->id]);
     }
 
     public static function load(Sale $sale): Sale
@@ -37,6 +58,10 @@ class SaleDocument
     {
         $sale = self::load($sale);
 
+        if (self::hasCompanionReceipt($sale)) {
+            return self::pairedMessage($sale);
+        }
+
         if (self::isInvoice($sale)) {
             return self::invoiceMessage($sale);
         }
@@ -47,6 +72,17 @@ class SaleDocument
     public static function whatsAppUrl(Sale $sale, ?string $phone = null): string
     {
         return whatsapp_share_url($phone, self::message($sale));
+    }
+
+    public static function pairedMessage(Sale $sale): string
+    {
+        $sale = self::load($sale);
+
+        return implode("\n\n", array_filter([
+            self::invoiceMessage($sale),
+            '──────────────',
+            SaleReceipt::companionMessage($sale),
+        ]));
     }
 
     protected static function invoiceMessage(Sale $sale): string
@@ -81,15 +117,12 @@ class SaleDocument
         }
 
         $lines[] = '';
-        $lines[] = 'Total due: ' . format_money($sale->total, $business);
+        $lines[] = 'Amount: ' . format_money($sale->total, $business);
 
         if ($sale->customer) {
             $lines[] = 'Account balance after this invoice: '
                 . format_money($sale->customer->outstanding_balance, $business);
         }
-
-        $lines[] = '';
-        $lines[] = 'Please settle this invoice by the due date.';
 
         if ($business->phone) {
             $lines[] = 'Contact: ' . $business->phone;

@@ -291,7 +291,7 @@
             <input type="tel" id="receiptCustomerPhone" placeholder="e.g. 0700123456"
                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
         </div>
-        <div class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div id="singlePrintActions" class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
             <button type="button" id="receiptPrintBtn"
                     class="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50">
                 Print receipt
@@ -299,6 +299,26 @@
             <a id="receiptWhatsAppBtn" href="#" target="_blank" rel="noopener noreferrer"
                class="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-[#25D366] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1ebe5d]">
                 Send to WhatsApp
+            </a>
+        </div>
+        <div id="pairedPrintActions" class="mt-4 hidden space-y-2">
+            <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <button type="button" id="receiptPrintInvoiceBtn"
+                        class="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-100">
+                    Print invoice
+                </button>
+                <button type="button" id="receiptPrintReceiptBtn"
+                        class="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50">
+                    Print receipt
+                </button>
+            </div>
+            <button type="button" id="receiptPrintBothBtn"
+                    class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-800 hover:bg-indigo-100">
+                Print both
+            </button>
+            <a id="pairedWhatsAppBtn" href="#" target="_blank" rel="noopener noreferrer"
+               class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-[#25D366] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1ebe5d]">
+                Send invoice &amp; receipt to WhatsApp
             </a>
         </div>
         <button type="button" id="receiptDoneBtn"
@@ -334,7 +354,7 @@
         return currencySample.replace(/[\d,.]+/, Number(amount).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
     }
 
-    var pendingReceipt = { url: '', message: '', isInvoice: false };
+    var pendingReceipt = { url: '', invoiceUrl: '', receiptUrl: '', message: '', isInvoice: false, isPaired: false };
     var invoiceCustomerId = null;
     var checkoutInProgress = false;
 
@@ -361,25 +381,45 @@
 
     function updateReceiptWhatsAppLink() {
         var phoneEl = document.getElementById('receiptCustomerPhone');
+        if (!phoneEl || !pendingReceipt.message) return;
+        var url = buildWhatsAppUrl(phoneEl.value, pendingReceipt.message);
         var whatsappBtn = document.getElementById('receiptWhatsAppBtn');
-        if (!phoneEl || !whatsappBtn || !pendingReceipt.message) return;
-        whatsappBtn.href = buildWhatsAppUrl(phoneEl.value, pendingReceipt.message);
+        var pairedWhatsAppBtn = document.getElementById('pairedWhatsAppBtn');
+        if (whatsappBtn) whatsappBtn.href = url;
+        if (pairedWhatsAppBtn) pairedWhatsAppBtn.href = url;
     }
 
     function showReceiptModal(data) {
-        pendingReceipt.url = data.invoice_url || data.receipt_url || '';
+        pendingReceipt.invoiceUrl = data.invoice_url || '';
+        pendingReceipt.receiptUrl = data.receipt_url || '';
+        pendingReceipt.url = pendingReceipt.invoiceUrl || pendingReceipt.receiptUrl || '';
         pendingReceipt.message = data.receipt_message || '';
-        pendingReceipt.isInvoice = data.document_type === 'invoice';
-        var isInvoice = pendingReceipt.isInvoice;
-        document.getElementById('saleReceiptTitle').textContent = isInvoice ? 'Invoice ready' : 'Sale complete';
+        pendingReceipt.isPaired = !!(data.is_paired_documents || data.document_type === 'invoice_pair');
+        pendingReceipt.isInvoice = pendingReceipt.isPaired || data.document_type === 'invoice';
+
+        var isPaired = pendingReceipt.isPaired;
+        var isInvoiceOnly = !isPaired && data.document_type === 'invoice';
+
+        document.getElementById('saleReceiptTitle').textContent = isPaired
+            ? 'Invoice & receipt ready'
+            : (isInvoiceOnly ? 'Invoice ready' : 'Sale complete');
         document.getElementById('saleReceiptNumber').textContent = data.sale && data.sale.sale_number
-            ? (isInvoice ? 'Invoice #' : '#') + data.sale.sale_number
+            ? '#' + data.sale.sale_number
             : '';
-        document.getElementById('saleReceiptSubtitle').textContent = isInvoice
-            ? 'Print the invoice or send it to the customer on WhatsApp.'
-            : 'Send an e-receipt to the customer or print a copy.';
-        document.getElementById('receiptPrintBtn').textContent = isInvoice ? 'Print invoice' : 'Print receipt';
-        document.getElementById('receiptWhatsAppBtn').textContent = isInvoice ? 'Send to WhatsApp' : 'Send WhatsApp';
+        document.getElementById('saleReceiptSubtitle').textContent = isPaired
+            ? 'Print both documents or send the combined invoice and receipt confirmation to the customer on WhatsApp.'
+            : (isInvoiceOnly
+                ? 'Print the invoice or send it to the customer on WhatsApp.'
+                : 'Send an e-receipt to the customer or print a copy.');
+
+        document.getElementById('singlePrintActions').classList.toggle('hidden', isPaired);
+        document.getElementById('pairedPrintActions').classList.toggle('hidden', !isPaired);
+
+        if (!isPaired) {
+            document.getElementById('receiptPrintBtn').textContent = isInvoiceOnly ? 'Print invoice' : 'Print receipt';
+            document.getElementById('receiptWhatsAppBtn').textContent = isInvoiceOnly ? 'Send to WhatsApp' : 'Send WhatsApp';
+        }
+
         var phoneEl = document.getElementById('receiptCustomerPhone');
         var phoneWrap = document.getElementById('receiptPhoneWrap');
         var customerSelect = document.getElementById('customerId');
@@ -389,10 +429,10 @@
             phone = selected && selected.dataset.phone ? selected.dataset.phone : '';
         }
         phoneEl.value = phone || '';
-        phoneWrap.classList.toggle('hidden', isInvoice && !!phone);
+        phoneWrap.classList.remove('hidden');
         updateReceiptWhatsAppLink();
         openAppModal('saleReceiptModal');
-        if (!phone && isInvoice) {
+        if (!phone && (isPaired || isInvoiceOnly)) {
             phoneEl.focus();
         }
     }
@@ -400,6 +440,16 @@
     document.getElementById('receiptCustomerPhone').addEventListener('input', updateReceiptWhatsAppLink);
     document.getElementById('receiptPrintBtn').addEventListener('click', function () {
         if (pendingReceipt.url) window.open(pendingReceipt.url, '_blank');
+    });
+    document.getElementById('receiptPrintInvoiceBtn').addEventListener('click', function () {
+        if (pendingReceipt.invoiceUrl) window.open(pendingReceipt.invoiceUrl, '_blank');
+    });
+    document.getElementById('receiptPrintReceiptBtn').addEventListener('click', function () {
+        if (pendingReceipt.receiptUrl) window.open(pendingReceipt.receiptUrl, '_blank');
+    });
+    document.getElementById('receiptPrintBothBtn').addEventListener('click', function () {
+        if (pendingReceipt.receiptUrl) window.open(pendingReceipt.receiptUrl, '_blank');
+        if (pendingReceipt.invoiceUrl) window.open(pendingReceipt.invoiceUrl, '_blank');
     });
     document.getElementById('receiptDoneBtn').addEventListener('click', function () {
         closeAppModal('saleReceiptModal');

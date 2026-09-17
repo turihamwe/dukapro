@@ -6,6 +6,7 @@ use App\Models\Business;
 use App\Models\Sale;
 use App\Scopes\BranchScope;
 use App\Support\SaleDocument;
+use App\Support\SaleReceipt;
 use Illuminate\Http\Request;
 
 class SalesDocumentController extends Controller
@@ -75,17 +76,20 @@ class SalesDocumentController extends Controller
         abort_unless((int) $sale->business_id === (int) $business->id, 404);
         $this->authorize('viewReceipt', $sale);
 
-        if (SaleDocument::isInvoice($sale)) {
+        if (SaleDocument::isInvoice($sale) && ! SaleDocument::hasCompanionReceipt($sale)) {
             return redirect()->to(tenant_route('tenant.sales.invoice', ['sale' => $sale->id]));
         }
 
         $sale = SaleDocument::load($sale);
         $defaultPhone = $request->query('phone') ?: optional($sale->customer)->phone;
+        $receiptMessage = SaleDocument::hasCompanionReceipt($sale)
+            ? SaleReceipt::companionMessage($sale)
+            : SaleReceipt::message($sale);
 
         return view('sales.receipt', [
             'business' => $business,
             'sale' => $sale,
-            'receiptMessage' => SaleDocument::message($sale),
+            'receiptMessage' => $receiptMessage,
             'whatsAppUrl' => SaleDocument::whatsAppUrl($sale, $defaultPhone),
             'defaultPhone' => $defaultPhone,
         ]);
@@ -106,7 +110,9 @@ class SalesDocumentController extends Controller
         return view('sales.invoice', [
             'business' => $business,
             'sale' => $sale,
-            'invoiceMessage' => SaleDocument::message($sale),
+            'invoiceMessage' => SaleDocument::hasCompanionReceipt($sale)
+                ? SaleDocument::pairedMessage($sale)
+                : SaleDocument::message($sale),
             'whatsAppUrl' => SaleDocument::whatsAppUrl($sale, $defaultPhone),
             'defaultPhone' => $defaultPhone,
         ]);

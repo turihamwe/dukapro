@@ -19,6 +19,50 @@ class SaleReceipt
         ]);
     }
 
+    public static function companionMessage(Sale $sale): string
+    {
+        $sale = self::load($sale);
+        $business = $sale->business;
+
+        $lines = [
+            "Receipt confirmation — {$business->name}",
+            "Receipt #{$sale->sale_number}",
+        ];
+
+        if ($sale->completed_at) {
+            $lines[] = 'Date: ' . $sale->completed_at->format('M j, Y g:i A');
+        }
+
+        if ($sale->customer) {
+            $lines[] = "Customer: {$sale->customer->name}";
+        }
+
+        $lines[] = '';
+
+        foreach ($sale->items as $item) {
+            $line = self::formatQuantity($item->quantity) . ' x ' . $item->product_name
+                . ' — ' . format_money($item->subtotal, $business);
+            if ($item->notes) {
+                $line .= ' (' . $item->notes . ')';
+            }
+            $lines[] = $line;
+        }
+
+        $lines[] = '';
+        $lines[] = 'Total: ' . format_money($sale->total, $business);
+        $lines[] = 'Payment: Invoice (on account)';
+        $lines[] = 'This receipt confirms the sale. Refer to the invoice above for payment details.';
+
+        if ($business->phone) {
+            $lines[] = 'Contact: ' . $business->phone;
+        }
+
+        $lines[] = '';
+        $lines[] = 'Thank you for your purchase!';
+
+        return implode("\n", $lines);
+    }
+
     public static function message(Sale $sale): string
     {
         $sale = self::load($sale);
@@ -79,7 +123,7 @@ class SaleReceipt
             $lines[] = 'Verify: ' . $sale->efris_qr_code;
         }
 
-        if ($sale->is_credit_sale && ! $sale->credit_settled_at) {
+        if ($sale->is_credit_sale && ! $sale->credit_settled_at && ! SaleDocument::hasCompanionReceipt($sale)) {
             $lines[] = 'Status: Credit — payment pending';
         }
 

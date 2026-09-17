@@ -99,7 +99,9 @@
         </div>
     </div>
 
-    @if($sale->is_credit_sale && ! $sale->credit_settled_at)
+    @if(\App\Support\SaleDocument::hasCompanionReceipt($sale))
+        <p class="mt-4 text-center text-sm font-medium text-gray-700">Sale confirmation — invoice issued for payment.</p>
+    @elseif($sale->is_credit_sale && ! $sale->credit_settled_at)
         <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
             Credit sale — payment pending
         </div>
@@ -146,6 +148,18 @@
             WhatsApp
         </a>
     </div>
+    @if(\App\Support\SaleDocument::hasCompanionReceipt($sale))
+        <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <a href="{{ \App\Support\SaleDocument::invoiceUrl($sale) }}" target="_blank"
+               class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50">
+                View invoice
+            </a>
+            <button type="button" onclick="window.print()"
+                    class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50">
+                Print receipt
+            </button>
+        </div>
+    @endif
 </div>
 @endsection
 

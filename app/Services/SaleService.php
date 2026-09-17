@@ -210,6 +210,7 @@ class SaleService
                 'payment_method' => $isCreditSale ? 'credit' : $paymentMethod,
                 'mobile_money_provider' => (! $isCreditSale && $paymentMethod === 'mobile_money') ? $mobileProvider : null,
                 'is_credit_sale' => $isCreditSale,
+                'companion_receipt_issued' => (bool) ($payload['companion_receipt_issued'] ?? false),
                 'status' => 'completed',
                 'notes' => $payload['notes'] ?? null,
                 'completed_at' => Carbon::now(),

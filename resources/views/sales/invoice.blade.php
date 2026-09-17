@@ -87,7 +87,7 @@
             </div>
         @endif
         <div class="flex justify-between text-base font-bold text-gray-900">
-            <span>Amount due</span>
+            <span>Amount</span>
             <span>@money($sale->total)</span>
         </div>
         @if($sale->customer)
@@ -100,11 +100,6 @@
                 <span>@money($sale->customer->credit_limit)</span>
             </div>
         @endif
-    </div>
-
-    <div class="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
-        <p class="font-semibold">INVOICE — Payment pending</p>
-        <p class="mt-1">This sale was placed on credit. Please settle by the due date above.</p>
     </div>
 
     @if($sale->notes)
@@ -123,9 +118,22 @@
             WhatsApp
         </a>
     </div>
-    <button type="button" onclick="window.print()" class="mt-3 w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50">
-        Print invoice
-    </button>
+    <div class="mt-3 grid grid-cols-1 gap-2 {{ \App\Support\SaleDocument::hasCompanionReceipt($sale) ? 'sm:grid-cols-3' : '' }}">
+        <button type="button" onclick="window.print()"
+                class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50">
+            Print invoice
+        </button>
+        @if(\App\Support\SaleDocument::hasCompanionReceipt($sale))
+            <a href="{{ \App\Support\SaleDocument::receiptUrl($sale) }}" target="_blank"
+               class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50">
+                Print receipt
+            </a>
+            <button type="button" id="printBothDocumentsBtn"
+                    class="rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-800 hover:bg-indigo-100">
+                Print both
+            </button>
+        @endif
+    </div>
 </div>
 @endsection
 
@@ -151,6 +159,14 @@
 
     phoneInput.addEventListener('input', updateWhatsAppLink);
     updateWhatsAppLink();
+
+    var printBothBtn = document.getElementById('printBothDocumentsBtn');
+    if (printBothBtn) {
+        printBothBtn.addEventListener('click', function () {
+            window.open(@json(\App\Support\SaleDocument::receiptUrl($sale)), '_blank');
+            window.print();
+        });
+    }
 })();
 </script>
 @endpush

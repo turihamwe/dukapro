@@ -223,7 +223,9 @@ class PosController extends Controller
             ], 422);
         }
 
-        if (($data['payment_method'] ?? '') === 'invoice') {
+        $isPosInvoiceCheckout = ($data['payment_method'] ?? '') === 'invoice';
+        if ($isPosInvoiceCheckout) {
+            $data['companion_receipt_issued'] = true;
             $data['payment_method'] = 'credit';
         }
 
@@ -235,24 +237,29 @@ class PosController extends Controller
         }
 
         $sale = $sale->fresh(['customer', 'items']);
-        $documentUrl = SaleDocument::url($sale);
         $customerPhone = optional($sale->customer)->phone;
+        $hasPairedDocuments = SaleDocument::hasCompanionReceipt($sale);
 
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
                 'sale' => $sale,
-                'message' => SaleDocument::isInvoice($sale)
-                    ? 'Credit sale recorded. Invoice generated.'
-                    : 'Sale completed successfully.',
-                'document_type' => SaleDocument::type($sale),
-                'receipt_url' => $documentUrl,
-                'invoice_url' => SaleDocument::isInvoice($sale) ? $documentUrl : null,
+                'message' => $hasPairedDocuments
+                    ? 'Invoice and receipt generated.'
+                    : (SaleDocument::isInvoice($sale)
+                        ? 'Credit sale recorded. Invoice generated.'
+                        : 'Sale completed successfully.'),
+                'document_type' => $hasPairedDocuments ? 'invoice_pair' : SaleDocument::type($sale),
+                'is_paired_documents' => $hasPairedDocuments,
+                'receipt_url' => SaleDocument::receiptUrl($sale),
+                'invoice_url' => SaleDocument::isInvoice($sale) ? SaleDocument::invoiceUrl($sale) : null,
                 'receipt_message' => SaleDocument::message($sale),
                 'customer_phone' => $customerPhone,
                 'customer_name' => optional($sale->customer)->name,
             ]);
         }
+
+        $documentUrl = SaleDocument::url($sale);
 
         return redirect()
             ->to($documentUrl)
