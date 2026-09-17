@@ -42,6 +42,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\HomeRedirectController;
+use App\Http\Controllers\LandingController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\KitchenController;
 use App\Http\Controllers\OnboardingController;
@@ -67,7 +68,7 @@ Route::middleware(['maintenance'])->group(function () {
         ->name('affiliate.referral');
 
     Route::middleware('guest')->group(function () {
-        Route::get('/', [AuthController::class, 'showRegister'])->name('home');
+        Route::get('/', [LandingController::class, 'index'])->name('home');
         Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
         Route::post('/login', [AuthController::class, 'login']);
         Route::get('/portal', [AuthController::class, 'showPortal'])->name('portal');
