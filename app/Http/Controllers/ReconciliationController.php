@@ -111,7 +111,7 @@ class ReconciliationController extends Controller
             Carbon::parse($date),
             $request->user()->can('view-profit-margins')
         );
-        $executiveSummary = old('executive_summary', $tradingReport['executive_summary']);
+        $executiveSummary = $tradingReport['executive_summary'];
 
         return view('reconciliation.create', compact('expected', 'date', 'waiterShift', 'waiterBalances', 'business', 'tradingReport', 'executiveSummary'));
     }
@@ -139,14 +139,14 @@ class ReconciliationController extends Controller
             Carbon::parse($date),
             $request->user()->can('view-profit-margins')
         );
-        $executiveSummary = old('executive_summary', $reconciliation->executive_summary ?? $tradingReport['executive_summary']);
+        $executiveSummary = $tradingReport['executive_summary'];
 
         return view('reconciliation.edit', compact('reconciliation', 'expected', 'date', 'waiterShift', 'waiterBalances', 'business', 'tradingReport', 'executiveSummary'));
     }
 
     public function store(Request $request)
     {
-        $data = $this->validatedSubmission($request);
+        $data = $this->submissionPayload($request, $this->validatedSubmission($request));
         $this->assertEditableDate(Carbon::parse($data['reconciliation_date']));
 
         $reconciliation = $request->user()->business->usesPerWaiterShiftBalancing()
@@ -163,7 +163,7 @@ class ReconciliationController extends Controller
     {
         $this->authorizeEditableReconciliation($request, $reconciliation);
 
-        $data = $this->validatedSubmission($request);
+        $data = $this->submissionPayload($request, $this->validatedSubmission($request));
         $this->assertEditableDate(Carbon::parse($data['reconciliation_date']));
 
         $old = $reconciliation->toArray();
@@ -187,9 +187,21 @@ class ReconciliationController extends Controller
             'actual_bank_other' => 'nullable|numeric|min:0',
             'extra_cash' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
-            'executive_summary' => 'required|string|max:2000',
             'bundle_waiter_balances' => 'nullable|boolean',
         ]);
+    }
+
+    protected function submissionPayload(Request $request, array $data): array
+    {
+        $tradingReport = $this->reconciliationService->buildDailyTradingReport(
+            $request->user()->business,
+            Carbon::parse($data['reconciliation_date']),
+            $request->user()->can('view-profit-margins')
+        );
+
+        $data['executive_summary'] = $tradingReport['executive_summary'];
+
+        return $data;
     }
 
     protected function assertEditableDate(Carbon $date): void
