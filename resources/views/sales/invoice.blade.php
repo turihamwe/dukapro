@@ -37,12 +37,6 @@
                 @endif
             </div>
         @endif
-        @if($sale->invoice_due_at)
-            <div class="col-span-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
-                <p class="uppercase text-amber-800">Payment due</p>
-                <p class="font-semibold text-amber-900">{{ $sale->invoice_due_at->format('M j, Y') }}</p>
-            </div>
-        @endif
     </div>
 
     <table class="mb-4 w-full text-xs">
