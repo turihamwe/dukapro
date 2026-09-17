@@ -14,6 +14,13 @@
     <p class="text-sm text-gray-600">{{ $reconciliation->reconciliation_date->format('l, F j, Y') }} · {{ $reconciliation->user->name }}</p>
 </div>
 
+@if(! ($hideExecutiveSummary ?? false) && filled($reconciliation->executive_summary))
+    <div class="mb-6 rounded-xl border border-indigo-200 bg-indigo-50/70 p-4">
+        <p class="text-xs font-semibold uppercase tracking-wide text-indigo-800/70">Executive summary</p>
+        <p class="mt-2 text-sm leading-relaxed text-indigo-950">{{ $reconciliation->executive_summary }}</p>
+    </div>
+@endif
+
 <div class="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
     <div class="rounded-xl border border-gray-200 p-4">
         <p class="text-xs uppercase text-gray-500">Total sales</p>

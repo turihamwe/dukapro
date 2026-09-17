@@ -2,12 +2,16 @@
 
 namespace App\Services;
 
+use App\Models\Business;
 use App\Models\EndOfDayReconciliation;
 use App\Models\Expense;
 use App\Models\Sale;
+use App\Models\SaleItem;
 use App\Models\User;
 use App\Support\ReconciliationVariance;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class ReconciliationService
 {
@@ -161,6 +165,7 @@ class ReconciliationService
                 'extra_cash' => $extraCash,
                 'net_income' => $dailySummary['net_income'],
                 'notes' => $data['notes'] ?? null,
+                'executive_summary' => $data['executive_summary'] ?? null,
                 'status' => 'submitted',
             ]
         );
@@ -200,6 +205,132 @@ class ReconciliationService
         ]);
     }
 
+    public function buildDailyTradingReport(Business $business, Carbon $date, bool $includeProfit = true): array
+    {
+        $summary = $this->calculateDailySummary($business->id, $date);
+
+        $saleIds = Sale::query()
+            ->where('business_id', $business->id)
+            ->where('status', 'completed')
+            ->whereDate('completed_at', $date)
+            ->pluck('id');
+
+        $topItems = SaleItem::query()
+            ->whereIn('sale_id', $saleIds)
+            ->select(
+                'product_name',
+                'measurement_unit',
+                DB::raw('SUM(quantity) as total_quantity'),
+                DB::raw('SUM(subtotal) as total_revenue')
+            )
+            ->groupBy('product_name', 'measurement_unit')
+            ->orderByDesc('total_quantity')
+            ->limit(5)
+            ->get();
+
+        $grossProfit = 0.0;
+        if ($includeProfit && $saleIds->isNotEmpty()) {
+            $grossProfit = round((float) SaleItem::query()
+                ->whereIn('sale_id', $saleIds)
+                ->get(['quantity', 'subtotal', 'cost_price'])
+                ->sum(function (SaleItem $item) {
+                    $cost = (float) ($item->cost_price ?? 0) * (float) $item->quantity;
+
+                    return (float) $item->subtotal - $cost;
+                }), 2);
+        }
+
+        $sales = Sale::query()
+            ->with([
+                'customer:id,name,phone',
+                'user:id,name',
+                'items:id,sale_id,product_name,quantity,measurement_unit',
+            ])
+            ->where('business_id', $business->id)
+            ->where('status', 'completed')
+            ->whereDate('completed_at', $date)
+            ->orderByDesc('completed_at')
+            ->get();
+
+        return [
+            'date' => $date,
+            'total_revenue' => $summary['total_sales'],
+            'gross_profit' => $grossProfit,
+            'top_items' => $topItems,
+            'executive_summary' => $this->formatExecutiveSummary(
+                $business,
+                $date,
+                $topItems,
+                $summary['total_sales'],
+                $includeProfit ? $grossProfit : null
+            ),
+            'sales' => $sales,
+            'sale_count' => $sales->count(),
+        ];
+    }
+
+    protected function formatExecutiveSummary(
+        Business $business,
+        Carbon $date,
+        Collection $topItems,
+        float $revenue,
+        ?float $grossProfit
+    ): string {
+        $dateLabel = $date->isToday() ? 'Today' : 'On ' . $date->format('M j, Y');
+
+        if ($topItems->isEmpty()) {
+            return "{$dateLabel}, there were no completed sales.";
+        }
+
+        $parts = $topItems->take(3)->map(function ($item) {
+            $quantity = $this->formatQuantityLabel((float) $item->total_quantity);
+            $unit = filled($item->measurement_unit) ? $item->measurement_unit : 'units';
+
+            return "{$quantity} {$unit} of {$item->product_name}";
+        })->all();
+
+        $itemsText = $this->joinNaturalLanguage($parts);
+        $revenueText = format_money($revenue, $business);
+
+        if ($grossProfit === null) {
+            return "{$dateLabel}, you sold {$itemsText}, and total revenue is {$revenueText}.";
+        }
+
+        $profitText = format_money($grossProfit, $business);
+
+        return "{$dateLabel}, you sold {$itemsText}, and total revenue is {$revenueText} with a total profit of {$profitText}.";
+    }
+
+    protected function joinNaturalLanguage(array $parts): string
+    {
+        $count = count($parts);
+
+        if ($count === 0) {
+            return '';
+        }
+
+        if ($count === 1) {
+            return $parts[0];
+        }
+
+        if ($count === 2) {
+            return $parts[0] . ' and ' . $parts[1];
+        }
+
+        $last = array_pop($parts);
+
+        return implode(', ', $parts) . ', and ' . $last;
+    }
+
+    protected function formatQuantityLabel(float $quantity): string
+    {
+        if (abs($quantity - round($quantity)) < 0.0001) {
+            return (string) (int) round($quantity);
+        }
+
+        return rtrim(rtrim(number_format($quantity, 2, '.', ''), '0'), '.');
+    }
+
     public function whatsAppShareUrl(EndOfDayReconciliation $reconciliation, ?string $recipientPhone = null): ?string
     {
         if (! $recipientPhone) {
@@ -224,6 +355,8 @@ class ReconciliationService
             "EOD Report - {$business->name}",
             "Date: {$dateLabel}",
             "Cashier: {$reconciliation->user->name}",
+            filled($reconciliation->executive_summary) ? '' : null,
+            filled($reconciliation->executive_summary) ? $reconciliation->executive_summary : null,
             '',
             'Balancing:',
             '• Expected cash: ' . format_money($reconciliation->expected_cash, $business),

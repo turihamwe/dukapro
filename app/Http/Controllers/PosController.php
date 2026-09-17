@@ -125,20 +125,27 @@ class PosController extends Controller
         $business = $request->user()->business;
         $businessId = (int) $business->id;
 
+        $forInvoice = $request->boolean('for_invoice');
+
         $data = $request->validate([
             'name' => 'required|string|max:255',
-            'phone' => 'required|string|max:30',
+            'phone' => ($forInvoice ? 'nullable' : 'required') . '|string|max:30',
             'credit_limit' => 'nullable|numeric|min:0',
             'payment_terms_days' => 'nullable|integer|min:1|max:365',
+            'for_invoice' => 'nullable|boolean',
         ]);
 
-        $result = $this->customerService->findOrCreate($businessId, [
+        $payload = [
             'name' => $data['name'],
-            'phone' => $data['phone'],
+            'phone' => $data['phone'] ?? null,
             'credit_limit' => $data['credit_limit'] ?? 0,
             'payment_terms_days' => $data['payment_terms_days'] ?? 30,
             'is_credit_customer' => true,
-        ], $request->user(), true);
+        ];
+
+        $result = $forInvoice
+            ? $this->customerService->findOrCreateForInvoice($businessId, $payload, $request->user())
+            : $this->customerService->findOrCreate($businessId, $payload, $request->user(), true);
 
         $customer = $result['customer'];
 
@@ -177,7 +184,7 @@ class PosController extends Controller
             'items.*.product_unit_id' => 'nullable|integer|exists:product_units,id',
             'items.*.unit_price' => 'nullable|numeric|min:0',
             'items.*.notes' => 'nullable|string|max:500',
-            'payment_method' => 'required|in:cash,mobile_money,credit,bank',
+            'payment_method' => 'required|in:cash,mobile_money,credit,bank,invoice',
             'mobile_money_provider' => 'nullable|in:airtel,mtn',
             'is_credit_sale' => 'boolean',
             'customer_id' => 'nullable|exists:customers,id',
@@ -207,7 +214,18 @@ class PosController extends Controller
             );
         }
 
-        $data['is_credit_sale'] = ($data['payment_method'] ?? '') === 'credit';
+        $data['is_credit_sale'] = in_array($data['payment_method'] ?? '', ['credit', 'invoice'], true);
+
+        if ($data['is_credit_sale'] && ! $business->usesWaiterAssignment() && empty($data['customer_id'])) {
+            return response()->json([
+                'message' => 'Select or create a customer for this invoice.',
+                'errors' => ['customer_id' => ['Customer is required for invoice sales.']],
+            ], 422);
+        }
+
+        if (($data['payment_method'] ?? '') === 'invoice') {
+            $data['payment_method'] = 'credit';
+        }
 
         $sale = $this->saleService->completeSale($request->user(), $data);
 
@@ -229,8 +247,10 @@ class PosController extends Controller
                     : 'Sale completed successfully.',
                 'document_type' => SaleDocument::type($sale),
                 'receipt_url' => $documentUrl,
+                'invoice_url' => SaleDocument::isInvoice($sale) ? $documentUrl : null,
                 'receipt_message' => SaleDocument::message($sale),
                 'customer_phone' => $customerPhone,
+                'customer_name' => optional($sale->customer)->name,
             ]);
         }
 

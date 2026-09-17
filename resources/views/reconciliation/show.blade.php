@@ -22,7 +22,20 @@
     </x-slot>
 </x-page-header>
 
-@include('reconciliation.partials.report-body', ['reconciliation' => $reconciliation, 'report' => $report, 'business' => $business, 'shortages' => $shortages ?? collect()])
+@include('reconciliation.partials.daily-trading-summary', [
+    'tradingReport' => $tradingReport,
+    'business' => $business,
+    'showDatePicker' => auth()->user()->can('view-all-reconciliations'),
+    'datePickerAction' => tenant_route('tenant.reconciliation.daily'),
+])
+
+@include('reconciliation.partials.report-body', [
+    'reconciliation' => $reconciliation,
+    'report' => $report,
+    'business' => $business,
+    'shortages' => $shortages ?? collect(),
+    'hideExecutiveSummary' => filled($reconciliation->executive_summary),
+])
 
 @if(!$whatsAppUrl && $bossPhone === null)
     <x-card class="mt-4">

@@ -351,6 +351,10 @@ Route::middleware(['maintenance'])->group(function () {
                         ->middleware(['can:view-reconciliation-history', 'management.access'])
                         ->name('index');
 
+                    Route::get('/daily', [ReconciliationController::class, 'daily'])
+                        ->middleware(['can:view-reconciliation-history', 'can:view-all-reconciliations', 'management.access'])
+                        ->name('daily');
+
                     Route::middleware(['can:submit-reconciliation'])->group(function () {
                         Route::get('/create', [ReconciliationController::class, 'create'])->name('create');
                         Route::post('/', [ReconciliationController::class, 'store'])->name('store');

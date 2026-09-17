@@ -32,6 +32,7 @@ class EndOfDayReconciliation extends Model
         'extra_cash',
         'net_income',
         'notes',
+        'executive_summary',
         'status',
     ];
 

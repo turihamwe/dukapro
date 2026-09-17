@@ -11,11 +11,14 @@
 <x-page-header
     title="{{ auth()->user()->usesCashierExperience() ? 'My Shift History' : 'Cashier EOD Reports' }}"
     subtitle="{{ auth()->user()->usesCashierExperience() ? 'Your submitted shift reconciliations' : 'Submitted shift reconciliations from all cashiers' }}">
-    @can('submit-reconciliation')
-        <x-slot name="actions">
+    <x-slot name="actions">
+        @can('view-all-reconciliations')
+            <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.reconciliation.daily') }}">Daily summary</x-button>
+        @endcan
+        @can('submit-reconciliation')
             <x-button variant="primary" size="sm" href="{{ tenant_route('tenant.reconciliation.create') }}">Close Shift</x-button>
-        </x-slot>
-    @endcan
+        @endcan
+    </x-slot>
 </x-page-header>
 
 {{-- Mobile cards --}}

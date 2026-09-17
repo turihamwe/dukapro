@@ -18,7 +18,8 @@ class ReconciliationController extends Controller
     public function __construct(ReconciliationService $reconciliationService)
     {
         $this->reconciliationService = $reconciliationService;
-        $this->middleware('can:view-reconciliation-history')->only(['index', 'show', 'print']);
+        $this->middleware('can:view-reconciliation-history')->only(['index', 'show', 'print', 'daily']);
+        $this->middleware('can:view-all-reconciliations')->only(['daily']);
         $this->middleware('can:submit-reconciliation')->only(['create', 'store', 'edit', 'update']);
     }
 
@@ -41,12 +42,40 @@ class ReconciliationController extends Controller
 
         $reconciliation->load('user', 'business');
         $report = $this->reconciliationService->buildReportDetails($reconciliation);
+        $tradingReport = $this->reconciliationService->buildDailyTradingReport(
+            $business,
+            Carbon::parse($reconciliation->reconciliation_date),
+            $request->user()->can('view-profit-margins')
+        );
+        if (filled($reconciliation->executive_summary)) {
+            $tradingReport['executive_summary'] = $reconciliation->executive_summary;
+        }
         $shortages = $reconciliation->shortages()->with('user')->get();
         $bossPhone = $this->resolveBossPhone($business);
         $whatsAppUrl = $this->reconciliationService->whatsAppShareUrl($reconciliation, $bossPhone);
         $canEdit = $this->canEditReconciliation($request, $reconciliation);
 
-        return view('reconciliation.show', compact('business', 'reconciliation', 'report', 'whatsAppUrl', 'bossPhone', 'shortages', 'canEdit'));
+        return view('reconciliation.show', compact('business', 'reconciliation', 'report', 'tradingReport', 'whatsAppUrl', 'bossPhone', 'shortages', 'canEdit'));
+    }
+
+    public function daily(Request $request)
+    {
+        $date = Carbon::parse($request->get('date', Carbon::today()->toDateString()));
+        $business = $request->user()->business;
+        $tradingReport = $this->reconciliationService->buildDailyTradingReport(
+            $business,
+            $date,
+            $request->user()->can('view-profit-margins')
+        );
+
+        $reconciliations = EndOfDayReconciliation::query()
+            ->with('user:id,name')
+            ->where('business_id', $business->id)
+            ->whereDate('reconciliation_date', $date)
+            ->orderBy('user_id')
+            ->get();
+
+        return view('reconciliation.daily', compact('business', 'tradingReport', 'date', 'reconciliations'));
     }
 
     public function print(Business $business, EndOfDayReconciliation $reconciliation)
@@ -77,7 +106,14 @@ class ReconciliationController extends Controller
             $waiterBalances = app(\App\Services\WaiterShiftService::class)->balancesForDate($business->id, Carbon::parse($date));
         }
 
-        return view('reconciliation.create', compact('expected', 'date', 'waiterShift', 'waiterBalances', 'business'));
+        $tradingReport = $this->reconciliationService->buildDailyTradingReport(
+            $business,
+            Carbon::parse($date),
+            $request->user()->can('view-profit-margins')
+        );
+        $executiveSummary = old('executive_summary', $tradingReport['executive_summary']);
+
+        return view('reconciliation.create', compact('expected', 'date', 'waiterShift', 'waiterBalances', 'business', 'tradingReport', 'executiveSummary'));
     }
 
     public function edit(Request $request, Business $business, EndOfDayReconciliation $reconciliation)
@@ -98,7 +134,14 @@ class ReconciliationController extends Controller
             $waiterBalances = app(\App\Services\WaiterShiftService::class)->balancesForDate($business->id, Carbon::parse($date));
         }
 
-        return view('reconciliation.edit', compact('reconciliation', 'expected', 'date', 'waiterShift', 'waiterBalances', 'business'));
+        $tradingReport = $this->reconciliationService->buildDailyTradingReport(
+            $business,
+            Carbon::parse($date),
+            $request->user()->can('view-profit-margins')
+        );
+        $executiveSummary = old('executive_summary', $reconciliation->executive_summary ?? $tradingReport['executive_summary']);
+
+        return view('reconciliation.edit', compact('reconciliation', 'expected', 'date', 'waiterShift', 'waiterBalances', 'business', 'tradingReport', 'executiveSummary'));
     }
 
     public function store(Request $request)
@@ -144,6 +187,7 @@ class ReconciliationController extends Controller
             'actual_bank_other' => 'nullable|numeric|min:0',
             'extra_cash' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
+            'executive_summary' => 'required|string|max:2000',
             'bundle_waiter_balances' => 'nullable|boolean',
         ]);
     }

@@ -131,7 +131,12 @@
                     <option value="cash">Cash</option>
                     <option value="mobile_money">Mobile Money</option>
                     <option value="bank">{{ ($waiterMode ?? false) ? 'Merchant Code / Bank' : 'Bank Transfer' }}</option>
-                    <option value="credit">{{ ($waiterMode ?? false) ? 'Credit Tab (unpaid)' : 'Credit (Hardware)' }}</option>
+                    @if($waiterMode ?? false)
+                        <option value="credit">Credit Tab (unpaid)</option>
+                    @else
+                        <option value="invoice">Invoice</option>
+                        <option value="credit">Credit (on account)</option>
+                    @endif
                 </x-select>
 
                 @if($waiterMode ?? false)
@@ -176,6 +181,51 @@
                 </div>
             </div>
         </x-card>
+    </div>
+</div>
+
+<div id="invoiceCustomerModal" class="app-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="invoiceCustomerTitle">
+    <div class="app-modal-panel mx-auto w-full max-w-md rounded-t-2xl bg-white p-5 shadow-xl sm:rounded-2xl">
+        <div class="mb-4 flex items-start justify-between gap-3">
+            <div>
+                <p id="invoiceCustomerTitle" class="text-lg font-bold text-gray-900">Invoice customer</p>
+                <p class="text-sm text-gray-500">Enter billing details. Matching phone numbers reuse the existing customer.</p>
+            </div>
+            <button type="button" class="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600" onclick="closeAppModal('invoiceCustomerModal')" aria-label="Close">&times;</button>
+        </div>
+        <form id="invoiceCustomerForm" class="space-y-3">
+            <div>
+                <label for="invoiceExistingCustomerId" class="mb-1 block text-xs font-medium text-gray-700">Existing customer (optional)</label>
+                <select id="invoiceExistingCustomerId"
+                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                    <option value="">New customer</option>
+                    @foreach($customers as $c)
+                        <option value="{{ $c->id }}" data-name="{{ $c->name }}" data-phone="{{ $c->phone }}">{{ $c->name }}@if($c->phone) · {{ $c->phone }}@endif</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label for="invoiceCustomerName" class="mb-1 block text-xs font-medium text-gray-700">Customer name <span class="text-red-600">*</span></label>
+                <input type="text" id="invoiceCustomerName" required maxlength="255"
+                       class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            </div>
+            <div>
+                <label for="invoiceCustomerPhone" class="mb-1 block text-xs font-medium text-gray-700">Phone / WhatsApp (optional)</label>
+                <input type="tel" id="invoiceCustomerPhone" maxlength="30" placeholder="e.g. 0700123456"
+                       class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            </div>
+            <p id="invoiceCustomerError" class="hidden text-xs text-red-600"></p>
+            <div class="grid grid-cols-2 gap-2 pt-2">
+                <button type="button" onclick="closeAppModal('invoiceCustomerModal')"
+                        class="min-h-[44px] rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button type="submit" id="invoiceCustomerSubmitBtn"
+                        class="min-h-[44px] rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700">
+                    Create invoice
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -235,8 +285,8 @@
             </div>
             <button type="button" class="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600" onclick="closeAppModal('saleReceiptModal')" aria-label="Close">&times;</button>
         </div>
-        <p class="mt-3 text-sm text-gray-600">Send an e-receipt to the customer or print a copy.</p>
-        <div class="mt-4">
+        <p id="saleReceiptSubtitle" class="mt-3 text-sm text-gray-600">Send an e-receipt to the customer or print a copy.</p>
+        <div id="receiptPhoneWrap" class="mt-4">
             <label for="receiptCustomerPhone" class="mb-1 block text-xs font-medium text-gray-700">Customer WhatsApp (optional)</label>
             <input type="tel" id="receiptCustomerPhone" placeholder="e.g. 0700123456"
                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
@@ -248,7 +298,7 @@
             </button>
             <a id="receiptWhatsAppBtn" href="#" target="_blank" rel="noopener noreferrer"
                class="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-[#25D366] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1ebe5d]">
-                Send WhatsApp
+                Send to WhatsApp
             </a>
         </div>
         <button type="button" id="receiptDoneBtn"
@@ -284,7 +334,9 @@
         return currencySample.replace(/[\d,.]+/, Number(amount).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
     }
 
-    var pendingReceipt = { url: '', message: '' };
+    var pendingReceipt = { url: '', message: '', isInvoice: false };
+    var invoiceCustomerId = null;
+    var checkoutInProgress = false;
 
     function normalizeWhatsAppPhone(value) {
         var digits = (value || '').replace(/\D/g, '');
@@ -299,6 +351,14 @@
         return base + '?text=' + encodeURIComponent(message);
     }
 
+    function formatApiError(data, fallback) {
+        if (data && data.errors) {
+            return Object.values(data.errors).flat().join(', ');
+        }
+
+        return (data && data.message) ? data.message : fallback;
+    }
+
     function updateReceiptWhatsAppLink() {
         var phoneEl = document.getElementById('receiptCustomerPhone');
         var whatsappBtn = document.getElementById('receiptWhatsAppBtn');
@@ -307,12 +367,21 @@
     }
 
     function showReceiptModal(data) {
-        pendingReceipt.url = data.receipt_url || '';
+        pendingReceipt.url = data.invoice_url || data.receipt_url || '';
         pendingReceipt.message = data.receipt_message || '';
-        var isInvoice = data.document_type === 'invoice';
-        document.getElementById('saleReceiptTitle').textContent = isInvoice ? 'Credit sale — invoice ready' : 'Sale complete';
-        document.getElementById('saleReceiptNumber').textContent = data.sale && data.sale.sale_number ? '#' + data.sale.sale_number : '';
+        pendingReceipt.isInvoice = data.document_type === 'invoice';
+        var isInvoice = pendingReceipt.isInvoice;
+        document.getElementById('saleReceiptTitle').textContent = isInvoice ? 'Invoice ready' : 'Sale complete';
+        document.getElementById('saleReceiptNumber').textContent = data.sale && data.sale.sale_number
+            ? (isInvoice ? 'Invoice #' : '#') + data.sale.sale_number
+            : '';
+        document.getElementById('saleReceiptSubtitle').textContent = isInvoice
+            ? 'Print the invoice or send it to the customer on WhatsApp.'
+            : 'Send an e-receipt to the customer or print a copy.';
+        document.getElementById('receiptPrintBtn').textContent = isInvoice ? 'Print invoice' : 'Print receipt';
+        document.getElementById('receiptWhatsAppBtn').textContent = isInvoice ? 'Send to WhatsApp' : 'Send WhatsApp';
         var phoneEl = document.getElementById('receiptCustomerPhone');
+        var phoneWrap = document.getElementById('receiptPhoneWrap');
         var customerSelect = document.getElementById('customerId');
         var phone = data.customer_phone || '';
         if (!phone && customerSelect && customerSelect.value) {
@@ -320,8 +389,12 @@
             phone = selected && selected.dataset.phone ? selected.dataset.phone : '';
         }
         phoneEl.value = phone || '';
+        phoneWrap.classList.toggle('hidden', isInvoice && !!phone);
         updateReceiptWhatsAppLink();
         openAppModal('saleReceiptModal');
+        if (!phone && isInvoice) {
+            phoneEl.focus();
+        }
     }
 
     document.getElementById('receiptCustomerPhone').addEventListener('input', updateReceiptWhatsAppLink);
@@ -330,8 +403,52 @@
     });
     document.getElementById('receiptDoneBtn').addEventListener('click', function () {
         closeAppModal('saleReceiptModal');
+        invoiceCustomerId = null;
         location.reload();
     });
+
+    function updateCheckoutButtonLabel() {
+        var paymentMethod = document.getElementById('paymentMethod').value;
+        var checkoutBtn = document.getElementById('checkoutBtn');
+        if (!checkoutBtn || restaurantMode) return;
+        if (paymentMethod === 'invoice') {
+            checkoutBtn.textContent = 'Invoice customer…';
+        } else if (paymentMethod === 'credit') {
+            checkoutBtn.textContent = 'Complete credit sale';
+        } else {
+            checkoutBtn.textContent = 'Complete Sale';
+        }
+    }
+
+    function openInvoiceCustomerModal() {
+        document.getElementById('invoiceCustomerError').classList.add('hidden');
+        document.getElementById('invoiceCustomerError').textContent = '';
+        var existingSelect = document.getElementById('invoiceExistingCustomerId');
+        if (invoiceCustomerId && existingSelect) {
+            existingSelect.value = String(invoiceCustomerId);
+        } else if (existingSelect) {
+            existingSelect.value = '';
+        }
+        syncInvoiceCustomerFieldsFromSelect();
+        openAppModal('invoiceCustomerModal');
+        document.getElementById('invoiceCustomerName').focus();
+    }
+
+    function syncInvoiceCustomerFieldsFromSelect() {
+        var existingSelect = document.getElementById('invoiceExistingCustomerId');
+        var nameEl = document.getElementById('invoiceCustomerName');
+        var phoneEl = document.getElementById('invoiceCustomerPhone');
+        if (!existingSelect || !existingSelect.value) {
+            return;
+        }
+        var option = existingSelect.options[existingSelect.selectedIndex];
+        if (option && option.dataset.name) {
+            nameEl.value = option.dataset.name;
+            phoneEl.value = option.dataset.phone || '';
+        }
+    }
+
+    document.getElementById('invoiceExistingCustomerId').addEventListener('change', syncInvoiceCustomerFieldsFromSelect);
 
     function parseQty(val) {
         if (!divisibleProductsMode) {
@@ -748,7 +865,7 @@
             });
             var data = await res.json();
             if (!res.ok) {
-                throw new Error(data.message || (data.errors ? Object.values(data.errors).flat().join(', ') : 'Could not save customer'));
+                throw new Error(formatApiError(data, 'Could not save customer'));
             }
             appendCustomerOption(data.customer);
             closeAppModal('newCustomerModal');
@@ -766,13 +883,89 @@
     document.getElementById('paymentMethod').addEventListener('change', function () {
         var method = this.value;
         document.getElementById('customerSelectWrap').classList.toggle('hidden', method !== 'credit');
+        if (method === 'invoice') {
+            invoiceCustomerId = null;
+        } else if (method !== 'credit') {
+            invoiceCustomerId = null;
+        }
         if (waiterMode) {
             var mobileWrap = document.getElementById('mobileProviderWrap');
             if (mobileWrap) {
                 mobileWrap.classList.toggle('hidden', method !== 'mobile_money');
             }
         }
+        updateCheckoutButtonLabel();
     });
+
+    document.getElementById('invoiceCustomerForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        if (checkoutInProgress) return;
+
+        var submitBtn = document.getElementById('invoiceCustomerSubmitBtn');
+        var errorEl = document.getElementById('invoiceCustomerError');
+        var existingSelect = document.getElementById('invoiceExistingCustomerId');
+        errorEl.classList.add('hidden');
+
+        if (existingSelect && existingSelect.value) {
+            invoiceCustomerId = parseInt(existingSelect.value, 10);
+            closeAppModal('invoiceCustomerModal');
+            await processCheckout();
+            return;
+        }
+
+        submitBtn.disabled = true;
+        try {
+            var res = await fetch(quickCustomerUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: document.getElementById('invoiceCustomerName').value.trim(),
+                    phone: document.getElementById('invoiceCustomerPhone').value.trim() || null,
+                    for_invoice: true,
+                }),
+            });
+            var data = await res.json();
+            if (!res.ok) {
+                throw new Error(formatApiError(data, 'Could not save customer'));
+            }
+            appendCustomerOption(data.customer);
+            appendInvoiceCustomerOption(data.customer);
+            invoiceCustomerId = data.customer.id;
+            closeAppModal('invoiceCustomerModal');
+            if (!data.created && data.customer.phone) {
+                alert('Existing customer matched by phone number.');
+            }
+            await processCheckout();
+        } catch (err) {
+            errorEl.textContent = err.message;
+            errorEl.classList.remove('hidden');
+        } finally {
+            submitBtn.disabled = false;
+        }
+    });
+
+    function appendInvoiceCustomerOption(customer) {
+        var select = document.getElementById('invoiceExistingCustomerId');
+        if (!select) return;
+        var existing = select.querySelector('option[value="' + customer.id + '"]');
+        var label = customer.name + (customer.phone ? ' · ' + customer.phone : '');
+        if (existing) {
+            existing.textContent = label;
+            existing.dataset.name = customer.name;
+            existing.dataset.phone = customer.phone || '';
+            return;
+        }
+        var option = document.createElement('option');
+        option.value = customer.id;
+        option.dataset.name = customer.name;
+        option.dataset.phone = customer.phone || '';
+        option.textContent = label;
+        select.appendChild(option);
+    }
 
     if (restaurantMode) {
         document.getElementById('togglePayNowBtn').addEventListener('click', function () {
@@ -851,15 +1044,26 @@
         });
     }
 
-    document.getElementById('checkoutBtn').addEventListener('click', async function () {
+    async function processCheckout() {
+        if (checkoutInProgress) return;
+
         var paymentMethod = document.getElementById('paymentMethod').value;
         var customerId = document.getElementById('customerId').value;
         var waiterId = waiterMode ? document.getElementById('waiterId').value : null;
         var mobileProviderEl = document.getElementById('mobileMoneyProvider');
         var mobileProvider = mobileProviderEl ? mobileProviderEl.value : null;
+        var checkoutBtn = document.getElementById('checkoutBtn');
 
+        if (!paymentMethod) {
+            alert('Select a payment method');
+            return;
+        }
         if (waiterMode && !waiterId) {
             alert('Select the waiter or floor staff for this order');
+            return;
+        }
+        if (paymentMethod === 'invoice' && !invoiceCustomerId) {
+            openInvoiceCustomerModal();
             return;
         }
         if (paymentMethod === 'credit' && !waiterMode && !customerId) {
@@ -886,8 +1090,12 @@
             }
         }
 
-        this.disabled = true;
+        checkoutInProgress = true;
+        if (checkoutBtn) checkoutBtn.disabled = true;
         try {
+            var resolvedCustomerId = paymentMethod === 'invoice'
+                ? invoiceCustomerId
+                : (customerId || null);
             var checkoutPayload = {
                 items: cart.map(function (i) {
                     return {
@@ -900,9 +1108,9 @@
                 }),
                 payment_method: paymentMethod,
                 mobile_money_provider: paymentMethod === 'mobile_money' ? mobileProvider : null,
-                customer_id: customerId || null,
+                customer_id: resolvedCustomerId,
                 waiter_id: waiterId || null,
-                is_credit_sale: paymentMethod === 'credit',
+                is_credit_sale: paymentMethod === 'credit' || paymentMethod === 'invoice',
             };
             if (restaurantMode) {
                 checkoutPayload.notes = document.getElementById('orderNotes').value.trim() || null;
@@ -919,18 +1127,26 @@
             });
             var data = await res.json();
             if (!res.ok) {
-                throw new Error(data.message || (data.errors ? Object.values(data.errors).flat().join(', ') : 'Checkout failed'));
+                throw new Error(formatApiError(data, 'Checkout failed'));
             }
             cart = [];
             expandedIdx = null;
+            invoiceCustomerId = null;
             renderCart();
             showReceiptModal(data);
         } catch (err) {
             alert(err.message);
         } finally {
-            document.getElementById('checkoutBtn').disabled = cart.length === 0;
+            checkoutInProgress = false;
+            if (checkoutBtn) checkoutBtn.disabled = cart.length === 0;
         }
+    }
+
+    document.getElementById('checkoutBtn').addEventListener('click', function () {
+        processCheckout();
     });
+
+    updateCheckoutButtonLabel();
 })();
 </script>
 @endpush

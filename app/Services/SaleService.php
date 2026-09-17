@@ -180,7 +180,8 @@ class SaleService
                     ->lockForUpdate()
                     ->firstOrFail();
 
-                if (($creditCustomer->outstanding_balance + $total) > $creditCustomer->credit_limit) {
+                $creditLimit = (float) $creditCustomer->credit_limit;
+                if ($creditLimit > 0 && ($creditCustomer->outstanding_balance + $total) > $creditLimit) {
                     throw ValidationException::withMessages([
                         'customer_id' => 'Credit limit exceeded for this customer.',
                     ]);

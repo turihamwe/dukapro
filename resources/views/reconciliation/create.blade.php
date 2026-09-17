@@ -62,6 +62,11 @@
             </div>
         </div>
 
+        @include('reconciliation.partials.executive-summary-field', [
+            'tradingReport' => $tradingReport,
+            'executiveSummary' => $executiveSummary,
+        ])
+
         <x-input type="number" step="0.01" name="actual_cash" label="Actual cash in drawer" placeholder="Count physical cash" required large />
         <x-input type="number" step="0.01" name="actual_mobile_money" label="Actual mobile money balance" value="{{ old('actual_mobile_money', '') }}" placeholder="M-Pesa / till balance (optional)" large />
         <x-input type="number" step="0.01" name="actual_bank_other" label="Bank &amp; other methods received" value="{{ old('actual_bank_other', 0) }}" large />

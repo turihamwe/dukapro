@@ -45,6 +45,32 @@ class CustomerService
             ->first();
     }
 
+    public function findOrCreateForInvoice(int $businessId, array $data, User $user): array
+    {
+        $normalizedPhone = $this->normalizePhone($data['phone'] ?? null);
+
+        if ($normalizedPhone !== null) {
+            return $this->findOrCreate($businessId, array_merge($data, [
+                'phone' => $normalizedPhone,
+            ]), $user, true);
+        }
+
+        $customer = Customer::create([
+            'business_id' => $businessId,
+            'name' => trim((string) $data['name']),
+            'phone' => null,
+            'credit_limit' => (float) ($data['credit_limit'] ?? 0),
+            'payment_terms_days' => isset($data['payment_terms_days']) ? (int) $data['payment_terms_days'] : 30,
+            'is_credit_customer' => true,
+            'is_active' => true,
+        ]);
+
+        return [
+            'customer' => $customer,
+            'created' => true,
+        ];
+    }
+
     public function findOrCreate(int $businessId, array $data, User $user, bool $forceCredit = false): array
     {
         $normalizedPhone = $this->normalizePhone($data['phone'] ?? null);
