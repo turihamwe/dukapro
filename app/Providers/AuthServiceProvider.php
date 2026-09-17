@@ -300,5 +300,9 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('platform-full-access', function (User $user) {
             return $user->isSuperAdmin();
         });
+
+        Gate::define('approve-affiliates', function (User $user) {
+            return $user->isPlatformAdmin();
+        });
     }
 }

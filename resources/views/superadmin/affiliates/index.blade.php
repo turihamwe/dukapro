@@ -130,7 +130,7 @@
                                         data-url="{{ route('superadmin.affiliates.show', ['affiliate' => $affiliate, 'period' => $filters['period'] ?? 'all']) }}">
                                     View
                                 </button>
-                                @can('platform-full-access')
+                                @can('approve-affiliates')
                                     @if($affiliate->status === AffiliateStatus::PENDING)
                                         <form method="POST" action="{{ route('superadmin.affiliates.approve', $affiliate) }}" class="inline">
                                             @csrf
@@ -140,15 +140,18 @@
                                             @csrf
                                             <button type="submit" class="rounded-lg bg-rose-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-rose-500">Reject</button>
                                         </form>
-                                    @elseif($affiliate->status === AffiliateStatus::APPROVED && $affiliate->is_active)
-                                        <form method="POST" action="{{ route('superadmin.affiliates.toggle-active', $affiliate) }}" class="inline" onsubmit="return confirm('Suspend this affiliate?')">
-                                            @csrf
-                                            <button type="submit" class="rounded-lg bg-rose-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-rose-500">Suspend</button>
-                                        </form>
                                     @elseif($affiliate->status === AffiliateStatus::REJECTED || $affiliate->status === AffiliateStatus::SUSPENDED || ! $affiliate->is_active)
                                         <form method="POST" action="{{ route('superadmin.affiliates.approve', $affiliate) }}" class="inline">
                                             @csrf
                                             <button type="submit" class="rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500">Approve</button>
+                                        </form>
+                                    @endif
+                                @endcan
+                                @can('platform-full-access')
+                                    @if($affiliate->status === AffiliateStatus::APPROVED && $affiliate->is_active)
+                                        <form method="POST" action="{{ route('superadmin.affiliates.toggle-active', $affiliate) }}" class="inline" onsubmit="return confirm('Suspend this affiliate?')">
+                                            @csrf
+                                            <button type="submit" class="rounded-lg bg-rose-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-rose-500">Suspend</button>
                                         </form>
                                     @endif
                                 @endcan

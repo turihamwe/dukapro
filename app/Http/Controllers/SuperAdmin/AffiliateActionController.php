@@ -19,7 +19,7 @@ class AffiliateActionController extends Controller
 
     public function approve(Request $request, Affiliate $affiliate)
     {
-        abort_unless($request->user()->isSuperAdmin(), 403);
+        abort_unless($request->user()->can('approve-affiliates'), 403);
 
         $this->registrationService->approve($affiliate, $request->user());
 
@@ -35,7 +35,7 @@ class AffiliateActionController extends Controller
 
     public function reject(Request $request, Affiliate $affiliate)
     {
-        abort_unless($request->user()->isSuperAdmin(), 403);
+        abort_unless($request->user()->can('approve-affiliates'), 403);
 
         $this->registrationService->reject($affiliate, $request->user());
 

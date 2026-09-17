@@ -107,26 +107,38 @@
                 <p class="mt-1 break-all text-xs text-violet-700">{{ $item->referralUrl() }}</p>
             </div>
         </div>
+        @can('approve-affiliates')
+            @if(in_array($item->status, ['pending', 'rejected'], true) || ! $item->is_active)
+                <div class="mb-6 flex flex-wrap gap-2">
+                    @if($item->status === 'pending')
+                        <form method="POST" action="{{ route('superadmin.affiliates.approve', $item) }}">
+                            @csrf
+                            <button type="submit" class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500">Approve</button>
+                        </form>
+                        <form method="POST" action="{{ route('superadmin.affiliates.reject', $item) }}">
+                            @csrf
+                            <button type="submit" class="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50">Reject</button>
+                        </form>
+                    @else
+                        <form method="POST" action="{{ route('superadmin.affiliates.approve', $item) }}">
+                            @csrf
+                            <button type="submit" class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500">Approve</button>
+                        </form>
+                    @endif
+                </div>
+            @endif
+        @endcan
         @can('platform-full-access')
-            <div class="mb-6 flex flex-wrap gap-2">
-                @if($item->status === 'pending')
-                    <form method="POST" action="{{ route('superadmin.affiliates.approve', $item) }}">
-                        @csrf
-                        <button type="submit" class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500">Approve</button>
-                    </form>
-                    <form method="POST" action="{{ route('superadmin.affiliates.reject', $item) }}">
-                        @csrf
-                        <button type="submit" class="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50">Reject</button>
-                    </form>
-                @elseif($item->status === 'approved' || $item->status === 'suspended')
+            @if(in_array($item->status, ['approved', 'suspended'], true))
+                <div class="mb-6 flex flex-wrap gap-2">
                     <form method="POST" action="{{ route('superadmin.affiliates.toggle-active', $item) }}">
                         @csrf
                         <button type="submit" class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50">
                             {{ $item->is_active ? 'Deactivate' : 'Activate' }}
                         </button>
                     </form>
-                @endif
-            </div>
+                </div>
+            @endif
         @endcan
 
         @if(! $item->isSubAffiliate())
