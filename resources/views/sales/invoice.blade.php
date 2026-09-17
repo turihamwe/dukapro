@@ -102,6 +102,8 @@
         @endif
     </div>
 
+    <p class="mt-4 text-center text-sm font-semibold text-gray-800">Thank you for supporting us</p>
+
     @if($sale->notes)
         <p class="mt-3 text-xs text-gray-500">Note: {{ $sale->notes }}</p>
     @endif
@@ -118,7 +120,7 @@
             WhatsApp
         </a>
     </div>
-    <div class="mt-3 grid grid-cols-1 gap-2 {{ \App\Support\SaleDocument::hasCompanionReceipt($sale) ? 'sm:grid-cols-3' : '' }}">
+    <div class="mt-3 grid grid-cols-1 gap-2 {{ \App\Support\SaleDocument::hasCompanionReceipt($sale) ? 'sm:grid-cols-2' : '' }}">
         <button type="button" onclick="window.print()"
                 class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50">
             Print invoice
@@ -128,10 +130,6 @@
                class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50">
                 Print receipt
             </a>
-            <button type="button" id="printBothDocumentsBtn"
-                    class="rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-800 hover:bg-indigo-100">
-                Print both
-            </button>
         @endif
     </div>
 </div>
@@ -159,14 +157,6 @@
 
     phoneInput.addEventListener('input', updateWhatsAppLink);
     updateWhatsAppLink();
-
-    var printBothBtn = document.getElementById('printBothDocumentsBtn');
-    if (printBothBtn) {
-        printBothBtn.addEventListener('click', function () {
-            window.open(@json(\App\Support\SaleDocument::receiptUrl($sale)), '_blank');
-            window.print();
-        });
-    }
 })();
 </script>
 @endpush

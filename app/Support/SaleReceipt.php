@@ -51,14 +51,13 @@ class SaleReceipt
         $lines[] = '';
         $lines[] = 'Total: ' . format_money($sale->total, $business);
         $lines[] = 'Payment: Invoice (on account)';
-        $lines[] = 'This receipt confirms the sale. Refer to the invoice above for payment details.';
 
         if ($business->phone) {
             $lines[] = 'Contact: ' . $business->phone;
         }
 
         $lines[] = '';
-        $lines[] = 'Thank you for your purchase!';
+        $lines[] = 'PAID — Thank you!';
 
         return implode("\n", $lines);
     }

@@ -99,9 +99,7 @@
         </div>
     </div>
 
-    @if(\App\Support\SaleDocument::hasCompanionReceipt($sale))
-        <p class="mt-4 text-center text-sm font-medium text-gray-700">Sale confirmation — invoice issued for payment.</p>
-    @elseif($sale->is_credit_sale && ! $sale->credit_settled_at)
+    @if($sale->is_credit_sale && ! $sale->credit_settled_at && ! \App\Support\SaleDocument::hasCompanionReceipt($sale))
         <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
             Credit sale — payment pending
         </div>

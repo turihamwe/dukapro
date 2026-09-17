@@ -128,6 +128,9 @@ class SaleDocument
             $lines[] = 'Contact: ' . $business->phone;
         }
 
+        $lines[] = '';
+        $lines[] = 'Thank you for supporting us';
+
         return implode("\n", $lines);
     }
 

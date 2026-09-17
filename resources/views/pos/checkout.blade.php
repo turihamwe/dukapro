@@ -312,10 +312,6 @@
                     Print receipt
                 </button>
             </div>
-            <button type="button" id="receiptPrintBothBtn"
-                    class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-800 hover:bg-indigo-100">
-                Print both
-            </button>
             <a id="pairedWhatsAppBtn" href="#" target="_blank" rel="noopener noreferrer"
                class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-[#25D366] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1ebe5d]">
                 Send invoice &amp; receipt to WhatsApp
@@ -407,7 +403,7 @@
             ? '#' + data.sale.sale_number
             : '';
         document.getElementById('saleReceiptSubtitle').textContent = isPaired
-            ? 'Print both documents or send the combined invoice and receipt confirmation to the customer on WhatsApp.'
+            ? 'Print the invoice or receipt, or send both to the customer on WhatsApp.'
             : (isInvoiceOnly
                 ? 'Print the invoice or send it to the customer on WhatsApp.'
                 : 'Send an e-receipt to the customer or print a copy.');
@@ -446,10 +442,6 @@
     });
     document.getElementById('receiptPrintReceiptBtn').addEventListener('click', function () {
         if (pendingReceipt.receiptUrl) window.open(pendingReceipt.receiptUrl, '_blank');
-    });
-    document.getElementById('receiptPrintBothBtn').addEventListener('click', function () {
-        if (pendingReceipt.receiptUrl) window.open(pendingReceipt.receiptUrl, '_blank');
-        if (pendingReceipt.invoiceUrl) window.open(pendingReceipt.invoiceUrl, '_blank');
     });
     document.getElementById('receiptDoneBtn').addEventListener('click', function () {
         closeAppModal('saleReceiptModal');
