@@ -24,17 +24,9 @@ class AffiliateController extends Controller
 
     public function index(Request $request)
     {
-        $filters = [
-            'period' => $request->query('period', 'all'),
-            'search' => $request->query('search', ''),
-            'status' => $request->query('status', 'all'),
-        ];
+        $url = route('superadmin.platform-overview', $request->query());
 
-        $summary = $this->performanceService->platformSummary($filters);
-        $rows = $this->performanceService->affiliateRows($filters);
-        $projectionSummary = $this->targetTrackingService->projectionSummary();
-
-        return view('affiliates.index', compact('summary', 'rows', 'filters', 'projectionSummary'));
+        return redirect()->to($url . '#affiliate-performance');
     }
 
     public function updateTarget(Request $request, Affiliate $affiliate)

@@ -26,6 +26,7 @@ use App\Http\Controllers\SalesReportController;
 use App\Http\Controllers\SalesDocumentController;
 use App\Http\Controllers\SoldByUnitController;
 use App\Http\Controllers\SuperAdmin\AffiliateController as SuperAdminAffiliateController;
+use App\Http\Controllers\SuperAdmin\PlatformOverviewController;
 use App\Http\Controllers\SuperAdmin\UserActionController;
 use App\Http\Controllers\SuperAdmin\AffiliateActionController;
 use App\Http\Controllers\SuperAdmin\BusinessEfrisController as SuperAdminBusinessEfrisController;
@@ -385,13 +386,15 @@ Route::middleware(['maintenance'])->group(function () {
         });
 });
 
-Route::redirect('/admin/affiliates', '/superadmin/affiliates');
+Route::redirect('/admin/affiliates', '/superadmin/platform-overview#affiliate-performance');
+Route::redirect('/admin/platform-overview', '/superadmin/platform-overview');
 
 Route::prefix('superadmin')
     ->middleware(['auth', 'superadmin'])
     ->name('superadmin.')
     ->group(function () {
         Route::get('/', [SuperAdminDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/platform-overview', [PlatformOverviewController::class, 'index'])->name('platform-overview');
         Route::get('/affiliates', [SuperAdminAffiliateController::class, 'index'])->name('affiliates.index');
         Route::get('/affiliates/{affiliate}', [SuperAdminAffiliateController::class, 'show'])->whereNumber('affiliate')->name('affiliates.show');
 

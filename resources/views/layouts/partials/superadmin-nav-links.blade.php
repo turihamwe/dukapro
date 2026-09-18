@@ -14,8 +14,12 @@
         Global Search
     </a>
 @endcan
-<a href="{{ route('superadmin.affiliates.index') }}"
-   class="{{ $navLink }} {{ request()->routeIs('superadmin.affiliates.*') ? $navActive : $navIdle }}">
+<a href="{{ route('superadmin.platform-overview') }}"
+   class="{{ $navLink }} {{ request()->routeIs('superadmin.platform-overview') ? $navActive : $navIdle }}">
+    Business Overview
+</a>
+<a href="{{ route('superadmin.platform-overview') }}#affiliate-performance"
+   class="{{ $navLink }} {{ $navIdle }}">
     Affiliate Performance
 </a>
 @foreach(\App\Support\SuperAdmin\EntityRegistry::all() as $key => $entity)
