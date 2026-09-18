@@ -74,7 +74,7 @@
                 Built for African businesses
             </div>
             <h1 class="text-4xl font-extrabold leading-[1.1] tracking-tight text-white sm:text-5xl lg:text-[3.25rem]">
-                Stop Using Paper Books.<br>
+                Stop Using Book Records.<br>
                 <span class="bg-gradient-to-r from-emerald-300 to-teal-200 bg-clip-text text-transparent">Manage Your Shop with <span class="text-white">{{ $brand }}.</span></span>
             </h1>
             <p class="mt-6 max-w-xl text-lg leading-relaxed text-slate-300">
@@ -245,7 +245,7 @@
         <div class="grid gap-12 lg:grid-cols-2 lg:items-center">
             <div>
                 <h2 class="text-3xl font-extrabold tracking-tight text-ink-900 sm:text-4xl">
-                    Your paper rcords can't tell you what you earned today. <span class="text-brand-600">We Can.</span>
+                    Your paper records can't tell you what you earned today. <span class="text-brand-600">We Can.</span>
                 </h2>
                 <p class="mt-4 text-lg text-slate-600">
                     Paper records hide shrinkage, slow down checkout, and make end-of-day reconciliation a guessing game. {{ $brand }} gives owners real numbers in real-time.
