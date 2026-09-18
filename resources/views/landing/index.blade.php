@@ -191,10 +191,10 @@
         <div class="mx-auto max-w-2xl text-center">
             <p class="text-sm font-semibold uppercase tracking-wider text-brand-600">Platform capabilities</p>
             <h2 class="mt-3 text-3xl font-extrabold tracking-tight text-ink-900 sm:text-4xl">
-                Everything you need to run a modern shop
+                Everything you need to run a modern shop in Africa
             </h2>
             <p class="mt-4 text-lg text-slate-600">
-                From the counter to the back office - {{ $brand }} replaces scattered notebooks with one reliable system built for how African businesses actually operate.
+                From the cashier's counter to the dashboard, {{ $brand }} replaces scattered notebooks with one reliable system built for how African businesses actually operate.
             </p>
         </div>
 
@@ -245,7 +245,7 @@
         <div class="grid gap-12 lg:grid-cols-2 lg:items-center">
             <div>
                 <h2 class="text-3xl font-extrabold tracking-tight text-ink-900 sm:text-4xl">
-                    Your logbook can't tell you what you earned today.
+                    Your black book can't tell you what you earned today. <span class="text-brand-600">We Can.</span>
                 </h2>
                 <p class="mt-4 text-lg text-slate-600">
                     Paper records hide shrinkage, slow down checkout, and make end-of-day reconciliation a guessing game. {{ $brand }} gives owners real numbers - live.
@@ -268,13 +268,13 @@
             </div>
             <div class="rounded-2xl border border-slate-200 bg-white p-8 shadow-soft">
                 <blockquote class="text-lg font-medium leading-relaxed text-ink-900">
-                    "We moved off paper in one afternoon. Sales are faster, stock is accurate, and I finally know my daily profit without staying up until midnight."
+                    "We moved off paper in one afternoon. Sales are faster, stock is accurate, and I finally know my daily profit without staying up with my staff until midnight."
                 </blockquote>
                 <footer class="mt-6 flex items-center gap-4">
                     <div class="flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-sm font-bold text-brand-700">JM</div>
                     <div>
                         <p class="font-semibold text-ink-900">James M.</p>
-                        <p class="text-sm text-slate-500">Retail owner, Kampala</p>
+                        <p class="text-sm text-slate-500">Retail owner, Kiyembe Lane, Kampala</p>
                     </div>
                 </footer>
             </div>
@@ -299,7 +299,7 @@
             <div class="rounded-2xl border border-slate-200 bg-white p-8 shadow-soft">
                 <p class="text-sm font-semibold uppercase tracking-wider text-slate-500">Starter</p>
                 <p class="mt-4 text-4xl font-extrabold text-ink-900">Start for FREE</p>
-                <p class="mt-2 text-slate-600">Full access to core POS and inventory during your trial period.</p>
+                <p class="mt-2 text-slate-600">Start selling today with full access to POS and inventory during your trial period.</p>
                 <ul class="mt-6 space-y-3 text-sm text-slate-700">
                     <li class="flex items-center gap-2"><svg class="h-4 w-4 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Point of sale &amp; receipts</li>
                     <li class="flex items-center gap-2"><svg class="h-4 w-4 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Inventory management</li>
@@ -322,7 +322,7 @@
                 </ul>
                 <a href="{{ route('register') }}"
                    class="mt-8 block w-full rounded-xl border-2 border-brand-600 py-3 text-center text-sm font-semibold text-brand-700 transition hover:bg-brand-50">
-                    Get Started
+                    Contact sales
                 </a>
             </div>
         </div>
@@ -334,10 +334,10 @@
     <div class="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
         <p class="text-sm font-semibold uppercase tracking-wider text-brand-600">About {{ $brand }}</p>
         <h2 class="mt-3 text-3xl font-extrabold tracking-tight text-ink-900 sm:text-4xl">
-            Enterprise-grade tools, built for everyday shop owners
+            Enterprise-grade tools, built for everyday shop owners in Africa
         </h2>
         <p class="mt-6 text-lg leading-relaxed text-slate-600">
-            {{ $brand }} is retail and business management software designed for African markets - where connectivity varies, teams wear many hats, and owners need clarity without complexity. We help you go digital without losing control of your business.
+            <span class="text-brand-600">{{ $brand }}</span> is retail and business management software designed for African markets - where connectivity varies, teams wear many hats, and owners need clarity without complexity. <span class="text-brand-600">We help you go digital</span> without losing control of your business.
         </p>
     </div>
 </section>
@@ -349,15 +349,15 @@
             <div class="pointer-events-none absolute inset-0 hero-grid opacity-30"></div>
             <div class="relative">
                 <h2 class="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-                    Ready to make the digital move?
+                    Ready to make the move to digital?
                 </h2>
                 <p class="mx-auto mt-4 max-w-2xl text-lg text-slate-300">
-                    Join business owners who stopped guessing and started growing with real-time data. Your free trial takes minutes - not days.
+                    Join 5000+ business owners who <span class="text-orange-200">stopped using black books</span> and <span class="text-brand-600">started growing with real-time data</span> on their smartphones. Getting a free account takes minutes - not days.
                 </p>
                 <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
                     <a href="{{ route('register') }}"
-                       class="inline-flex w-full items-center justify-center rounded-xl bg-white px-8 py-3.5 text-sm font-bold text-ink-900 transition hover:bg-slate-100 sm:w-auto">
-                        Start for FREE
+                       class="inline-flex w-full items-center justify-center rounded-xl bg-brand-600 px-8 py-3.5 text-sm font-bold text-white transition hover:bg-orange-400 sm:w-auto">
+                        Get Free Account
                     </a>
                     <a href="{{ route('login') }}"
                        class="inline-flex w-full items-center justify-center rounded-xl border border-white/20 px-8 py-3.5 text-sm font-semibold text-white transition hover:bg-white/10 sm:w-auto">
@@ -376,7 +376,7 @@
             <div class="md:col-span-2">
                 <x-dukapro-logo size="md" />
                 <p class="mt-4 max-w-sm text-sm leading-relaxed text-slate-600">
-                    {{ platform_brand('tagline') }}. Modern POS, inventory, and business management for retailers who are done with paper books.
+                    {{ platform_brand('tagline') }} <span class="text-brand-600">{{ $brand }}</span> is a modern POS, inventory, and business management for retailers who are done with paper books and are ready to <span class="text-brand-600">Switch to Digital</span>.
                 </p>
             </div>
             <div>
