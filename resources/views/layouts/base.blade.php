@@ -206,6 +206,7 @@
         document.querySelectorAll('.app-modal-overlay').forEach(window.mountAppModal);
     })();
     </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     @stack('scripts')
     @include('layouts.partials.form-validation')
     <script>

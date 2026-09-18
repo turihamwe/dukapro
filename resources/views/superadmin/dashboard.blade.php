@@ -61,16 +61,33 @@
     </div>
 </div>
 
-<a href="{{ route('superadmin.platform-overview') }}"
-   class="mb-8 flex flex-col gap-3 rounded-xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-white p-5 transition hover:border-emerald-300 hover:shadow-sm sm:flex-row sm:items-center sm:justify-between">
-    <div>
-        <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Platform Command Center</p>
-        <p class="mt-1 text-sm text-gray-700">Business-wide sales volume, revenue, gross profit, and affiliate target tracking in one view.</p>
-    </div>
-    <span class="inline-flex shrink-0 items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">
-        Open overview →
-    </span>
-</a>
+<div class="mb-8 grid gap-4 lg:grid-cols-2">
+    <a href="{{ route('superadmin.platform-overview') }}"
+       class="flex flex-col gap-3 rounded-xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-white p-5 transition hover:border-emerald-300 hover:shadow-sm sm:flex-row sm:items-center sm:justify-between">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Platform Command Center</p>
+            <p class="mt-1 text-sm text-gray-700">Business-wide sales volume, revenue, gross profit, and affiliate target tracking in one view.</p>
+        </div>
+        <span class="inline-flex shrink-0 items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">
+            Open overview →
+        </span>
+    </a>
+    <a href="{{ route('superadmin.business-sales.index') }}"
+       class="flex flex-col gap-3 rounded-xl border border-violet-200 bg-gradient-to-r from-violet-50 to-white p-5 transition hover:border-violet-300 hover:shadow-sm sm:flex-row sm:items-center sm:justify-between">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wide text-violet-700">Business Sales / Subscriptions</p>
+            <p class="mt-1 text-sm text-gray-700">
+                {{ number_format($businessSales['registered']['count']) }} signups ·
+                {{ number_format($businessSales['catalog']['count']) }} with catalog ·
+                {{ number_format($businessSales['subscribed']['count']) }} subscribed
+                ({{ number_format($businessSales['conversions']['registered_to_subscribed'], 1) }}% conversion)
+            </p>
+        </div>
+        <span class="inline-flex shrink-0 items-center justify-center rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white">
+            Open sales →
+        </span>
+    </a>
+</div>
 
 <div class="mb-8">
     <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">Global entity management</h2>

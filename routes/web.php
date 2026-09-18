@@ -27,6 +27,7 @@ use App\Http\Controllers\SalesDocumentController;
 use App\Http\Controllers\SoldByUnitController;
 use App\Http\Controllers\SuperAdmin\AffiliateController as SuperAdminAffiliateController;
 use App\Http\Controllers\SuperAdmin\PlatformOverviewController;
+use App\Http\Controllers\SuperAdmin\BusinessSalesController;
 use App\Http\Controllers\SuperAdmin\UserActionController;
 use App\Http\Controllers\SuperAdmin\AffiliateActionController;
 use App\Http\Controllers\SuperAdmin\BusinessEfrisController as SuperAdminBusinessEfrisController;
@@ -395,6 +396,8 @@ Route::prefix('superadmin')
     ->group(function () {
         Route::get('/', [SuperAdminDashboardController::class, 'index'])->name('dashboard');
         Route::get('/platform-overview', [PlatformOverviewController::class, 'index'])->name('platform-overview');
+        Route::get('/business-sales', [BusinessSalesController::class, 'index'])->name('business-sales.index');
+        Route::get('/business-sales/businesses', [BusinessSalesController::class, 'businesses'])->name('business-sales.businesses');
         Route::get('/affiliates', [SuperAdminAffiliateController::class, 'index'])->name('affiliates.index');
         Route::get('/affiliates/{affiliate}', [SuperAdminAffiliateController::class, 'show'])->whereNumber('affiliate')->name('affiliates.show');
 

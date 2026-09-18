@@ -11,10 +11,18 @@ use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SystemAuditLog;
 use App\Models\User;
+use App\Services\BusinessSalesMetricsService;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
+    protected BusinessSalesMetricsService $businessSalesMetrics;
+
+    public function __construct(BusinessSalesMetricsService $businessSalesMetrics)
+    {
+        $this->businessSalesMetrics = $businessSalesMetrics;
+    }
+
     public function index()
     {
         $stats = [
@@ -60,6 +68,8 @@ class DashboardController extends Controller
             ->orderByDesc('created_at')
             ->paginate(10, ['*'], 'businesses_page');
 
-        return view('superadmin.dashboard', compact('stats', 'businesses'));
+        $businessSales = $this->businessSalesMetrics->funnel();
+
+        return view('superadmin.dashboard', compact('stats', 'businesses', 'businessSales'));
     }
 }

@@ -18,6 +18,10 @@
    class="{{ $navLink }} {{ request()->routeIs('superadmin.platform-overview') ? $navActive : $navIdle }}">
     Business Overview
 </a>
+<a href="{{ route('superadmin.business-sales.index') }}"
+   class="{{ $navLink }} {{ request()->routeIs('superadmin.business-sales*') ? $navActive : $navIdle }}">
+    Business Sales
+</a>
 <a href="{{ route('superadmin.platform-overview') }}#affiliate-performance"
    class="{{ $navLink }} {{ $navIdle }}">
     Affiliate Performance
