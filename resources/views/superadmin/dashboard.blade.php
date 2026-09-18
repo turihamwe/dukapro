@@ -61,6 +61,17 @@
     </div>
 </div>
 
+<a href="{{ route('superadmin.affiliates.index') }}"
+   class="mb-8 flex flex-col gap-3 rounded-xl border border-violet-200 bg-gradient-to-r from-violet-50 to-white p-5 transition hover:border-violet-300 hover:shadow-sm sm:flex-row sm:items-center sm:justify-between">
+    <div>
+        <p class="text-xs font-semibold uppercase tracking-wide text-violet-700">Affiliate Performance</p>
+        <p class="mt-1 text-sm text-gray-700">Track shop registrations, daily targets, and multi-horizon projections for every affiliate.</p>
+    </div>
+    <span class="inline-flex shrink-0 items-center justify-center rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white">
+        Open dashboard →
+    </span>
+</a>
+
 <div class="mb-8">
     <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">Global entity management</h2>
     <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">

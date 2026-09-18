@@ -161,7 +161,7 @@
                                             data-url="{{ route('superadmin.affiliates.show', ['affiliate' => $affiliate, 'period' => $filters['period'] ?? 'all']) }}">
                                         View
                                     </button>
-                                    @can('platform-full-access')
+                                    @can('approve-affiliates')
                                         <button type="button"
                                                 class="rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-100"
                                                 @click="openTargetModal({{ $affiliate->id }}, {{ json_encode($affiliate->name) }}, {{ json_encode($tracking) }})">

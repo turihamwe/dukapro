@@ -39,7 +39,7 @@ class AffiliateController extends Controller
 
     public function updateTarget(Request $request, Affiliate $affiliate)
     {
-        abort_unless($request->user()->isSuperAdmin(), 403);
+        abort_unless($request->user()->can('approve-affiliates'), 403);
 
         $data = $request->validate([
             'daily_shop_target' => 'required|numeric|min:0|max:9999',

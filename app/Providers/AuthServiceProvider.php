@@ -304,5 +304,9 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('approve-affiliates', function (User $user) {
             return $user->isPlatformAdmin();
         });
+
+        Gate::define('view-affiliate-performance', function (User $user) {
+            return $user->isPlatformAdmin();
+        });
     }
 }
