@@ -13,6 +13,7 @@ return [
     'system_default_code' => 'admin',
     'system_default_name' => 'DukaPro Direct',
     'system_default_email' => 'admin@dukapro.com',
+    'default_daily_shop_target' => 1,
     'onboarding_targets' => [
         1 => ['label' => 'Target 1', 'min' => 10],
         2 => ['label' => 'Target 2', 'min' => 50],

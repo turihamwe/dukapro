@@ -21,6 +21,7 @@ class Affiliate extends Model
         'phone',
         'code',
         'commission_rate',
+        'daily_shop_target',
         'wallet_balance',
         'status',
         'is_active',
@@ -31,6 +32,7 @@ class Affiliate extends Model
 
     protected $casts = [
         'commission_rate' => 'float',
+        'daily_shop_target' => 'float',
         'wallet_balance' => 'float',
         'is_active' => 'boolean',
         'approved_at' => 'datetime',
@@ -79,6 +81,11 @@ class Affiliate extends Model
     public function referredBusinesses(): HasMany
     {
         return $this->hasMany(Business::class, 'sponsor_id');
+    }
+
+    public function referrals(): HasMany
+    {
+        return $this->hasMany(AffiliateReferral::class);
     }
 
     public function subscribedBusinesses(): HasMany

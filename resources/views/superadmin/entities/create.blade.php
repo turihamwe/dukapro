@@ -82,6 +82,8 @@
             <input type="text" name="code" value="{{ old('code') }}" placeholder="Referral code (auto-generated if empty)" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <input type="number" step="0.0001" min="0" max="1" name="commission_rate" value="{{ old('commission_rate', config('affiliates.subsequent_commission_rate', 0.10)) }}" placeholder="Display rate (0.10 = 10%)" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <p class="text-xs text-gray-500">Payout rates are tiered per referred business (first payment vs renewals) — configure in <a href="{{ route('superadmin.settings') }}" class="font-medium text-violet-600 hover:text-violet-500">System Settings</a>.</p>
+            <label class="mt-3 block text-sm font-medium text-gray-700">Daily shop target</label>
+            <input type="number" step="0.1" min="0" max="9999" name="daily_shop_target" value="{{ old('daily_shop_target', config('affiliates.default_daily_shop_target', 1)) }}" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <select name="status" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
                 @foreach($affiliateStatuses as $status)
                     <option value="{{ $status }}" @selected(old('status', 'pending') === $status)>{{ ucfirst($status) }}</option>

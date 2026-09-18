@@ -16,9 +16,14 @@ class AffiliatePerformanceService
 {
     protected SystemAffiliateService $systemAffiliateService;
 
-    public function __construct(SystemAffiliateService $systemAffiliateService)
-    {
+    protected AffiliateTargetTrackingService $targetTrackingService;
+
+    public function __construct(
+        SystemAffiliateService $systemAffiliateService,
+        AffiliateTargetTrackingService $targetTrackingService
+    ) {
         $this->systemAffiliateService = $systemAffiliateService;
+        $this->targetTrackingService = $targetTrackingService;
     }
 
     public function dateRange(?string $period): ?array
@@ -139,9 +144,17 @@ class AffiliatePerformanceService
             ->orderBy('name')
             ->get();
 
-        return $affiliates->map(function (Affiliate $affiliate) {
+        $referralCounts = $this->targetTrackingService->batchReferralCounts($affiliates->pluck('id'));
+
+        return $affiliates->map(function (Affiliate $affiliate) use ($referralCounts) {
             $onboarded = (int) ($affiliate->businesses_onboarded_count ?? 0);
             $active = (int) ($affiliate->active_subscribers_count ?? 0);
+            $actuals = $referralCounts[$affiliate->id] ?? [
+                'daily' => 0,
+                'weekly' => 0,
+                'monthly' => 0,
+                'annual' => 0,
+            ];
 
             return [
                 'affiliate' => $affiliate,
@@ -150,6 +163,7 @@ class AffiliatePerformanceService
                 'conversion_rate' => $onboarded > 0 ? round(($active / $onboarded) * 100, 1) : 0.0,
                 'target_status' => AffiliateTargets::labelForCount($onboarded),
                 'target_tiers_hit' => AffiliateTargets::statusForCount($onboarded)['hit_tiers'],
+                'tracking' => $this->targetTrackingService->trackingPayload($affiliate, $actuals),
                 'total_earnings' => (float) ($affiliate->total_earnings ?? 0),
                 'paid_earnings' => (float) ($affiliate->paid_earnings ?? 0),
                 'pending_earnings' => (float) ($affiliate->pending_earnings ?? 0),
@@ -187,6 +201,7 @@ class AffiliatePerformanceService
             'active_subscribers' => $active,
             'conversion_rate' => $onboarded > 0 ? round(($active / $onboarded) * 100, 1) : 0.0,
             'target_status' => AffiliateTargets::labelForCount($onboarded),
+            'tracking' => $this->targetTrackingService->trackingPayload($affiliate),
             'total_earnings' => (float) $affiliate->commissions()->when($range, fn ($q) => $q->whereBetween('created_at', $range))->sum('commission_amount'),
             'paid_earnings' => (float) $affiliate->commissions()->where('status', 'paid')->when($range, fn ($q) => $q->whereBetween('created_at', $range))->sum('commission_amount'),
             'pending_earnings' => (float) $affiliate->commissions()->where('status', 'pending')->when($range, fn ($q) => $q->whereBetween('created_at', $range))->sum('commission_amount'),

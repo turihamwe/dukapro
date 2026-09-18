@@ -76,6 +76,8 @@ class TenantRegistrationService
                 'use_tables' => false,
             ]);
 
+            app(AffiliateReferralService::class)->recordFromBusiness($business);
+
             return User::create([
                 'business_id' => $business->id,
                 'name' => $data['name'],

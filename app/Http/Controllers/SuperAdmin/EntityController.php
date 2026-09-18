@@ -300,6 +300,7 @@ class EntityController extends Controller
                     'phone' => 'nullable|string|max:30',
                     'code' => 'nullable|string|max:32|unique:affiliates,code',
                     'commission_rate' => 'nullable|numeric|min:0|max:1',
+                    'daily_shop_target' => 'nullable|numeric|min:0|max:9999',
                     'status' => 'required|in:' . implode(',', AffiliateStatus::all()),
                     'is_active' => 'nullable|boolean',
                 ]);
@@ -315,6 +316,7 @@ class EntityController extends Controller
                     'phone' => $data['phone'] ?? null,
                     'code' => $code,
                     'commission_rate' => $data['commission_rate'] ?? \App\Support\AffiliateCommissionRates::subsequentRate(),
+                    'daily_shop_target' => $data['daily_shop_target'] ?? config('affiliates.default_daily_shop_target', 1),
                     'status' => $data['status'],
                     'is_active' => $request->boolean('is_active'),
                     'approved_at' => $data['status'] === AffiliateStatus::APPROVED ? now() : null,
@@ -610,6 +612,7 @@ class EntityController extends Controller
                     'phone' => 'nullable|string|max:30',
                     'code' => 'required|string|max:32|unique:affiliates,code,' . $item->id,
                     'commission_rate' => 'required|numeric|min:0|max:1',
+                    'daily_shop_target' => 'required|numeric|min:0|max:9999',
                     'status' => 'required|in:' . implode(',', AffiliateStatus::all()),
                     'is_active' => 'nullable|boolean',
                 ]);

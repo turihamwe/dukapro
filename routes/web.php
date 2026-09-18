@@ -419,6 +419,7 @@ Route::prefix('superadmin')
         });
 
         Route::middleware('platform.full')->group(function () {
+            Route::patch('/affiliates/{affiliate}/target', [SuperAdminAffiliateController::class, 'updateTarget'])->whereNumber('affiliate')->name('affiliates.update-target');
             Route::post('/affiliates/{affiliate}/toggle-active', [AffiliateActionController::class, 'toggleActive'])->whereNumber('affiliate')->name('affiliates.toggle-active');
             Route::post('/affiliates/{affiliate}/team', [AffiliateNetworkController::class, 'storeSubAffiliate'])->whereNumber('affiliate')->name('affiliates.team.store');
             Route::post('/affiliate-withdrawals/{withdrawal}/process', [AffiliateNetworkController::class, 'processWithdrawal'])->whereNumber('withdrawal')->name('affiliate-withdrawals.process');
