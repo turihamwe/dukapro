@@ -104,7 +104,7 @@
                 </li>
                 <li class="flex items-center gap-2 text-sm text-slate-400">
                     <svg class="h-5 w-5 shrink-0 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                    Sales history preserved
+                    Data safety 100% guaranteed
                 </li>
             </ul>
         </div>
@@ -194,7 +194,7 @@
                 Everything you need to run a modern shop in Africa
             </h2>
             <p class="mt-4 text-lg text-slate-600">
-                From the cashier's counter to the dashboard, {{ $brand }} replaces scattered notebooks with one reliable system built for how African businesses actually operate.
+                From the cashier's counter to your owner's dashboard, <span class="text-brand-600">{{ $brand }}</span> replaces scattered notebooks with one <span class="text-brand-600">reliable system</span> built for how African businesses actually operate.
             </p>
         </div>
 
@@ -202,19 +202,19 @@
             @foreach([
                 [
                     'title' => 'Real-Time POS',
-                    'desc' => 'Ring up sales in seconds. Accept cash, mobile money, and invoice payments - with receipts your customers can trust.',
+                    'desc' => 'Make sales in seconds. Accept cash, mobile money, and credit with receipts your customers can trust.',
                     'icon' => 'M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z',
                     'icon_class' => 'bg-emerald-50 text-emerald-600 ring-emerald-100',
                 ],
                 [
                     'title' => 'Multi-Unit & Fractional Sales',
-                    'desc' => 'Sell by piece, carton, kilogram, or fraction. No more manual conversions - stock updates automatically with every sale.',
+                    'desc' => 'Sell by piece, kilogram, or fraction. No more doing conversions in your head. Stock updates automatically with every sale.',
                     'icon' => 'M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7c-2 0-3 1-3 3zM9 11h6M12 8v6',
                     'icon_class' => 'bg-indigo-50 text-indigo-600 ring-indigo-100',
                 ],
                 [
                     'title' => 'Automated EOD Reports',
-                    'desc' => 'Close the day with confidence. Cash reconciliation, executive summaries, and shortage tracking - without late-night math.',
+                    'desc' => 'Close the day with confidence. Cash reconciliation, executive summaries, and shortage tracking without late-night math.',
                     'icon' => 'M9 17v-2m3 2v-4m3 4v-6m2 5H7a2 2 0 01-2-2V7a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
                     'icon_class' => 'bg-violet-50 text-violet-600 ring-violet-100',
                 ],
@@ -245,17 +245,18 @@
         <div class="grid gap-12 lg:grid-cols-2 lg:items-center">
             <div>
                 <h2 class="text-3xl font-extrabold tracking-tight text-ink-900 sm:text-4xl">
-                    Your black book can't tell you what you earned today. <span class="text-brand-600">We Can.</span>
+                    Your paper rcords can't tell you what you earned today. <span class="text-brand-600">We Can.</span>
                 </h2>
                 <p class="mt-4 text-lg text-slate-600">
-                    Paper records hide shrinkage, slow down checkout, and make end-of-day reconciliation a guessing game. {{ $brand }} gives owners real numbers - live.
+                    Paper records hide shrinkage, slow down checkout, and make end-of-day reconciliation a guessing game. {{ $brand }} gives owners real numbers in real-time.
                 </p>
                 <ul class="mt-8 space-y-4">
                     @foreach([
-                        'Eliminate manual calculation errors at the till',
-                        'Know exact stock levels before you run out',
-                        'Track staff sales and cash handovers transparently',
-                        'Generate professional receipts and invoices instantly',
+                        'Eliminate manual calculation errors at the cashier\'s desk.',
+                        'Know exact stock levels before you run out.',
+                        'Track staff sales and cash handovers transparently.',
+                        'Generate professional receipts and invoices instantly.',
+                        'Get an executive summary in your daily sales report.',
                     ] as $point)
                         <li class="flex items-start gap-3">
                             <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-700">
@@ -268,7 +269,7 @@
             </div>
             <div class="rounded-2xl border border-slate-200 bg-white p-8 shadow-soft">
                 <blockquote class="text-lg font-medium leading-relaxed text-ink-900">
-                    "We moved off paper in one afternoon. Sales are faster, stock is accurate, and I finally know my daily profit without staying up with my staff until midnight."
+                    "We moved off paper in one afternoon. Our sales are faster, stock is accurate, and I finally know my daily profit without staying up with my staff until midnight."
                 </blockquote>
                 <footer class="mt-6 flex items-center gap-4">
                     <div class="flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-sm font-bold text-brand-700">JM</div>
@@ -288,20 +289,20 @@
         <div class="mx-auto max-w-2xl text-center">
             <p class="text-sm font-semibold uppercase tracking-wider text-brand-600">Simple pricing</p>
             <h2 class="mt-3 text-3xl font-extrabold tracking-tight text-ink-900 sm:text-4xl">
-                Start free. Scale as you grow.
+                Start for <span class="text-brand-600">FREE.</span> Scale as you grow.
             </h2>
             <p class="mt-4 text-lg text-slate-600">
-                No hidden fees. Choose the modules you need - pay only for what your business uses.
+                No hidden fees. Choose the modules you need. Pay only for what your business uses.
             </p>
         </div>
 
         <div class="mx-auto mt-14 grid max-w-4xl gap-6 md:grid-cols-2">
             <div class="rounded-2xl border border-slate-200 bg-white p-8 shadow-soft">
                 <p class="text-sm font-semibold uppercase tracking-wider text-slate-500">Starter</p>
-                <p class="mt-4 text-4xl font-extrabold text-ink-900">Start for FREE</p>
+                <p class="mt-4 text-4xl font-extrabold text-ink-900">Start for <span class="text-brand-600">FREE</span></p>
                 <p class="mt-2 text-slate-600">Start selling today with full access to POS and inventory during your trial period.</p>
                 <ul class="mt-6 space-y-3 text-sm text-slate-700">
-                    <li class="flex items-center gap-2"><svg class="h-4 w-4 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Point of sale &amp; receipts</li>
+                    <li class="flex items-center gap-2"><svg class="h-4 w-4 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Point of sale, receipts &amp; invoices</li>
                     <li class="flex items-center gap-2"><svg class="h-4 w-4 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Inventory management</li>
                     <li class="flex items-center gap-2"><svg class="h-4 w-4 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Sales reports</li>
                 </ul>
@@ -357,7 +358,7 @@
                 <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
                     <a href="{{ route('register') }}"
                        class="inline-flex w-full items-center justify-center rounded-xl bg-brand-600 px-8 py-3.5 text-sm font-bold text-white transition hover:bg-orange-400 sm:w-auto">
-                        Get Free Account
+                        Get my Free Account
                     </a>
                     <a href="{{ route('login') }}"
                        class="inline-flex w-full items-center justify-center rounded-xl border border-white/20 px-8 py-3.5 text-sm font-semibold text-white transition hover:bg-white/10 sm:w-auto">
@@ -376,7 +377,7 @@
             <div class="md:col-span-2">
                 <x-dukapro-logo size="md" />
                 <p class="mt-4 max-w-sm text-sm leading-relaxed text-slate-600">
-                    {{ platform_brand('tagline') }} <span class="text-brand-600">{{ $brand }}</span> is a modern POS, inventory, and business management for retailers who are done with paper books and are ready to <span class="text-brand-600">Switch to Digital</span>.
+                    {{-- {{ platform_brand('tagline') }} --}} <span class="text-brand-600">{{ $brand }}</span> is a modern POS, inventory, and business management software for African retailers who are done with paper records and are ready to <span class="text-brand-600">Switch to Digital</span>.
                 </p>
             </div>
             <div>
