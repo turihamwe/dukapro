@@ -12,6 +12,9 @@
             @csrf
             <x-input type="text" name="login" label="Username or email" value="{{ old('login') }}" required autofocus large autocomplete="username" />
             <x-input type="password" name="password" label="Password" required large />
+            <div class="-mt-1 text-right">
+                <a href="{{ route('password.request', ['portal' => 'superadmin']) }}" class="text-sm font-medium text-indigo-600 hover:text-indigo-700">Forgot password?</a>
+            </div>
             <label class="flex items-center gap-2 text-sm text-gray-600">
                 <input type="checkbox" name="remember" value="1" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" {{ old('remember') ? 'checked' : '' }}>
                 Remember me

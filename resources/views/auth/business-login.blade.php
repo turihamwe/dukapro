@@ -24,6 +24,7 @@
         @include('auth.partials.login-form', [
             'action' => route('business.login', ['portal' => $business->portal_slug]),
             'brandColor' => $brandColor,
+            'forgotPasswordUrl' => route('password.request', ['portal' => 'business', 'business' => $business->portal_slug]),
         ])
         <p class="mt-4 text-center text-xs text-gray-500">
             <a href="{{ route('portal') }}" class="text-indigo-600 hover:text-indigo-700">Use a different business portal</a>

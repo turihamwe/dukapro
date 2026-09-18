@@ -16,6 +16,7 @@
 
         @include('auth.partials.login-form', [
             'action' => route('login'),
+            'forgotPasswordUrl' => route('password.request', ['portal' => 'default']),
         ])
         @include('auth.partials.login-footer-global')
     </x-card>

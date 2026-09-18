@@ -11,6 +11,7 @@ use App\Http\Controllers\ShareholderApplicationController;
 use App\Http\Controllers\ShareholderAuthController;
 use App\Http\Controllers\Shareholder\DashboardController as ShareholderDashboardController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\BusinessEfrisController;
@@ -81,6 +82,10 @@ Route::middleware(['maintenance'])->group(function () {
         Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
         Route::get('/register/check-username', [AuthController::class, 'checkUsername'])->name('register.check-username');
         Route::post('/register', [AuthController::class, 'register']);
+        Route::get('/forgot-password', [PasswordResetController::class, 'create'])->name('password.request');
+        Route::post('/forgot-password', [PasswordResetController::class, 'store'])->middleware('throttle:6,1')->name('password.email');
+        Route::get('/reset-password/{token}', [PasswordResetController::class, 'edit'])->name('password.reset');
+        Route::post('/reset-password', [PasswordResetController::class, 'update'])->middleware('throttle:6,1')->name('password.update');
     });
 
     Route::get('/affiliate/apply', [AffiliateApplicationController::class, 'showApply'])->name('affiliate.apply');

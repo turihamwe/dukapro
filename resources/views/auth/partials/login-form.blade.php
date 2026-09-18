@@ -16,6 +16,11 @@
         {{-- hint="Enter your username or email address." --}}
     />
     <x-input type="password" name="password" label="Password" required large />
+    @if(!empty($forgotPasswordUrl))
+        <div class="-mt-1 text-right">
+            <a href="{{ $forgotPasswordUrl }}" class="text-sm font-medium text-indigo-600 hover:text-indigo-700">Forgot password?</a>
+        </div>
+    @endif
     <label class="flex items-center gap-2 text-sm text-gray-600">
         <input type="checkbox" name="remember" value="1" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" {{ old('remember') ? 'checked' : '' }}>
         Remember me
