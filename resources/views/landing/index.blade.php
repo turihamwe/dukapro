@@ -71,14 +71,14 @@
         <div>
             <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-emerald-300">
                 <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
-                Built for African retailers
+                Built for African businesses
             </div>
             <h1 class="text-4xl font-extrabold leading-[1.1] tracking-tight text-white sm:text-5xl lg:text-[3.25rem]">
                 Stop Using Paper Books.<br>
-                <span class="bg-gradient-to-r from-emerald-300 to-teal-200 bg-clip-text text-transparent">Manage Your Shop with <span class="text-white">{{ $brand }}.</span></span>
+                <span class="bg-gradient-to-r from-emerald-300 to-teal-200 bg-clip-text text-transparent">Manage Your Business with <span class="text-white">{{ $brand }}.</span></span>
             </h1>
             <p class="mt-6 max-w-xl text-lg leading-relaxed text-slate-300">
-                Replace manual logbooks, eliminate calculation errors, and take total control of sales, stock, and daily cash - from one professional platform your whole team can trust.
+                Replace manual black books, eliminate calculation errors, and take total control of sales, stock, and daily cash - from one professional platform your whole team can trust.
             </p>
             <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <a href="{{ route('register') }}"
