@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\SystemAuditLogger;
+use App\Mail\WelcomeUserEmail;
 use App\Models\Business;
 use App\Services\AuthLoginService;
 use App\Services\AffiliateReferralService;
@@ -11,6 +12,8 @@ use App\Support\CashierMode;
 use App\Support\LoginPortal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class AuthController extends Controller
 {
@@ -231,6 +234,16 @@ class AuthController extends Controller
         $user = $this->registrationService->register($data);
         $this->affiliateReferralService->clearSession($request);
         $user->load('business');
+
+        try {
+            Mail::to($user->email)->queue(new WelcomeUserEmail($user, $user->business));
+        } catch (\Throwable $exception) {
+            Log::warning('Welcome email could not be queued after registration', [
+                'user_id' => $user->id,
+                'business_id' => $user->business_id,
+                'error' => $exception->getMessage(),
+            ]);
+        }
 
         Auth::login($user);
         $request->session()->regenerate();

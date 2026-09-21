@@ -5,12 +5,17 @@ namespace App\Mail;
 use App\Models\Business;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-class WelcomeOwnerMail extends Mailable
+class WelcomeUserEmail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
+
+    public $tries = 3;
+
+    public $backoff = [60, 180, 300];
 
     public User $user;
 
@@ -24,7 +29,7 @@ class WelcomeOwnerMail extends Mailable
 
     public function build()
     {
-        return $this->subject('Welcome to ' . platform_brand('name') . ' - ' . $this->business->name)
+        return $this->subject('Welcome to '.platform_brand('name').' - '.$this->business->name)
             ->view('emails.welcome-owner');
     }
 }

@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Enums\BusinessType;
 use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
-use App\Mail\WelcomeOwnerMail;
 use App\Models\Business;
 use App\Models\User;
 use App\Services\BranchService;
@@ -14,8 +13,6 @@ use App\Services\SystemAffiliateService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class TenantRegistrationService
@@ -91,22 +88,8 @@ class TenantRegistrationService
         });
 
         $user->load('business');
-        $this->sendWelcomeEmail($user);
 
         return $user;
-    }
-
-    protected function sendWelcomeEmail(User $user): void
-    {
-        try {
-            Mail::to($user->email)->send(new WelcomeOwnerMail($user, $user->business));
-        } catch (\Throwable $e) {
-            Log::warning('Welcome email failed after registration', [
-                'user_id' => $user->id,
-                'business_id' => $user->business_id,
-                'error' => $e->getMessage(),
-            ]);
-        }
     }
 
     protected function uniqueSlug(string $name): string
