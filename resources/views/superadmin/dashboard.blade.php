@@ -138,6 +138,7 @@
             </tbody>
         </table>
     </div>
+    @include('superadmin.partials.pagination', ['paginator' => $businesses])
 </div>
 
 @if($stats['recent_activity']->isNotEmpty())

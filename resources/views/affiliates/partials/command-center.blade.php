@@ -139,6 +139,7 @@
                 </tbody>
             </table>
         </div>
+        @include('superadmin.partials.pagination', ['paginator' => $rows])
     </div>
 
     {{-- Target modal --}}

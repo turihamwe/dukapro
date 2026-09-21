@@ -113,7 +113,7 @@ class EntityController extends Controller
             $query->latest('id');
         }
 
-        $records = $query->paginate(20)->appends($request->only(['q', 'trashed']));
+        $records = $query->paginate(20)->withQueryString();
 
         $shareStats = null;
         if ($entity === 'shareholders') {

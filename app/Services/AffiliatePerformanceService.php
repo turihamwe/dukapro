@@ -9,6 +9,7 @@ use App\Models\AffiliateCommission;
 use App\Models\Business;
 use App\Support\AffiliateTargets;
 use Carbon\Carbon;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
@@ -79,7 +80,7 @@ class AffiliatePerformanceService
         ];
     }
 
-    public function affiliateRows(array $filters = []): Collection
+    public function affiliateRows(array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
         $range = $this->dateRange($filters['period'] ?? null);
         $search = trim((string) ($filters['search'] ?? ''));
@@ -138,15 +139,15 @@ class AffiliatePerformanceService
 
         $this->applyStatusFilter($query, $status);
 
-        $affiliates = $query
+        $paginator = $query
             ->orderByRaw('CASE WHEN LOWER(code) = ? THEN 0 ELSE 1 END', [$systemCode])
             ->orderByDesc('businesses_onboarded_count')
             ->orderBy('name')
-            ->get();
+            ->paginate($perPage);
 
-        $referralCounts = $this->targetTrackingService->batchReferralCounts($affiliates->pluck('id'));
+        $referralCounts = $this->targetTrackingService->batchReferralCounts($paginator->getCollection()->pluck('id'));
 
-        return $affiliates->map(function (Affiliate $affiliate) use ($referralCounts) {
+        $paginator->setCollection($paginator->getCollection()->map(function (Affiliate $affiliate) use ($referralCounts) {
             $onboarded = (int) ($affiliate->businesses_onboarded_count ?? 0);
             $active = (int) ($affiliate->active_subscribers_count ?? 0);
             $actuals = $referralCounts[$affiliate->id] ?? [
@@ -169,7 +170,9 @@ class AffiliatePerformanceService
                 'pending_earnings' => (float) ($affiliate->pending_earnings ?? 0),
                 'is_system_default' => $this->systemAffiliateService->isSystemDefault($affiliate),
             ];
-        });
+        }));
+
+        return $paginator;
     }
 
     public function affiliateBreakdown(Affiliate $affiliate, ?array $range = null): array

@@ -60,8 +60,6 @@
             </tbody>
         </table>
     </div>
-    @if($logs->hasPages())
-        <div class="border-t border-gray-200 px-6 py-4">{{ $logs->links() }}</div>
-    @endif
+    @include('superadmin.partials.pagination', ['paginator' => $logs])
 </div>
 @endsection

@@ -188,8 +188,6 @@
             </tbody>
         </table>
     </div>
-    @if($records->hasPages())
-        <div class="border-t border-gray-200 px-4 py-3">{{ $records->links() }}</div>
-    @endif
+    @include('superadmin.partials.pagination', ['paginator' => $records])
 </div>
 @endsection

@@ -110,10 +110,6 @@
             </tbody>
         </table>
     </div>
-    @if($businesses->hasPages())
-        <div class="border-t border-gray-200 px-6 py-4">
-            {{ $businesses->links() }}
-        </div>
-    @endif
+    @include('superadmin.partials.pagination', ['paginator' => $businesses])
 </div>
 @endsection

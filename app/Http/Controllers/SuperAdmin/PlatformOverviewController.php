@@ -34,10 +34,13 @@ class PlatformOverviewController extends Controller
             'status' => $request->query('status', 'all'),
         ];
 
+        $rows = $this->affiliatePerformance->affiliateRows($filters);
+        $rows->appends($filters)->fragment('affiliate-performance');
+
         return view('platform.overview', [
             'platform' => $this->platformMetrics->overview(),
             'summary' => $this->affiliatePerformance->platformSummary($filters),
-            'rows' => $this->affiliatePerformance->affiliateRows($filters),
+            'rows' => $rows,
             'filters' => $filters,
             'projectionSummary' => $this->targetTracking->projectionSummary(),
         ]);
