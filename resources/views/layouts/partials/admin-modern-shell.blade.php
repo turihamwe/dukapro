@@ -32,6 +32,9 @@
                     <span class="inline-block h-2 w-2 rounded-full bg-emerald-400"></span>
                     Cloud-Based · Online
                 </div>
+                @include('layouts.partials.pwa-install', [
+                    'buttonClass' => 'flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-emerald-300 transition hover:bg-white/5 hover:text-white',
+                ])
                 <a href="{{ route('logout.get') }}" class="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/5 hover:text-white">
                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
                     Log out
@@ -64,6 +67,9 @@
         </nav>
         <div class="absolute bottom-0 left-0 right-0 border-t border-white/10 p-4">
             <p class="mb-3 text-xs text-emerald-400">Cloud-Based · Online</p>
+            @include('layouts.partials.pwa-install', [
+                'buttonClass' => 'mb-2 flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-emerald-300 transition hover:bg-white/5 hover:text-white',
+            ])
             <a href="{{ route('logout.get') }}" class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5">Log out</a>
         </div>
     </aside>

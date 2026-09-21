@@ -16,6 +16,9 @@
         </nav>
         <div class="mt-auto border-t border-gray-200 p-4">
             <p class="truncate text-xs text-gray-500">{{ auth()->user()->email }}</p>
+            @include('layouts.partials.pwa-install', [
+                'buttonClass' => 'mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 transition hover:bg-emerald-100',
+            ])
             <a href="{{ route('logout.get') }}" class="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50">
                 Logout
             </a>
@@ -38,6 +41,9 @@
             @include('layouts.partials.admin-nav-links', ['navLink' => $navLink, 'navActive' => $navActive, 'navIdle' => $navIdle, 'mobile' => true])
         </nav>
         <div class="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white p-4">
+            @include('layouts.partials.pwa-install', [
+                'buttonClass' => 'mb-2 flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800',
+            ])
             <a href="{{ route('logout.get') }}" class="flex w-full items-center justify-center rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700">Logout</a>
         </div>
     </aside>

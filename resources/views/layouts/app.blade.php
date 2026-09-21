@@ -24,6 +24,7 @@
     <style>
         [x-cloak] { display: none !important; }
     </style>
+    @include('layouts.partials.pwa-head')
     @stack('styles')
 </head>
 <body class="h-full bg-gray-50 text-gray-900 antialiased">

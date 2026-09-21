@@ -154,6 +154,7 @@
             pointer-events: none;
         }
     </style>
+    @include('layouts.partials.pwa-head')
     @stack('styles')
 </head>
 <body class="h-full bg-gray-50 text-gray-900 antialiased @stack('body-class')">
