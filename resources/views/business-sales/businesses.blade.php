@@ -3,9 +3,10 @@
 @section('title', $stageLabel)
 
 @section('content')
+@include('business-sales.partials.subnav')
 <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
     <div>
-        <a href="{{ route('superadmin.business-sales.index') }}" class="text-sm text-violet-600 hover:text-violet-800">← Business Sales</a>
+        <a href="{{ route('superadmin.business-sales.index') }}" class="text-sm text-violet-600 hover:text-violet-800">← Funnel overview</a>
         <h1 class="mt-2 text-2xl font-bold tracking-tight">{{ $stageLabel }}</h1>
         <p class="mt-1 text-sm text-gray-500">
             @if($periodLabel)

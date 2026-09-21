@@ -37,6 +37,7 @@ class Business extends Model
         'settings',
         'is_active',
         'trial_ends_at',
+        'last_active_at',
         'subscription_status',
         'subscription_ends_at',
         'subscription_amount',
@@ -55,6 +56,7 @@ class Business extends Model
         'variable_pricing_enabled' => 'boolean',
         'divisible_products_enabled' => 'boolean',
         'trial_ends_at' => 'datetime',
+        'last_active_at' => 'datetime',
         'subscription_ends_at' => 'datetime',
         'subscription_amount' => 'float',
         'billing_grandfathered' => 'boolean',
@@ -385,5 +387,20 @@ class Business extends Model
     public function staffUsers()
     {
         return $this->users()->where('role', '!=', \App\Enums\UserRole::OWNER);
+    }
+
+    public function engagementReferenceAt(): ?Carbon
+    {
+        return $this->last_active_at ?? $this->created_at;
+    }
+
+    public function engagementTier(): string
+    {
+        return app(\App\Services\BusinessEngagementService::class)->engagementTierFor($this);
+    }
+
+    public function trialDaysRemaining(): ?int
+    {
+        return app(\App\Services\BusinessEngagementService::class)->trialDaysRemaining($this);
     }
 }

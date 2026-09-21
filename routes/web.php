@@ -410,6 +410,7 @@ Route::prefix('superadmin')
         Route::get('/platform-overview', [PlatformOverviewController::class, 'index'])->name('platform-overview');
         Route::get('/business-sales', [BusinessSalesController::class, 'index'])->name('business-sales.index');
         Route::get('/business-sales/businesses', [BusinessSalesController::class, 'businesses'])->name('business-sales.businesses');
+        Route::get('/business-sales/engagement', [BusinessSalesController::class, 'engagement'])->name('business-sales.engagement');
         Route::get('/affiliates', [SuperAdminAffiliateController::class, 'index'])->name('affiliates.index');
         Route::get('/affiliates/{affiliate}', [SuperAdminAffiliateController::class, 'show'])->whereNumber('affiliate')->name('affiliates.show');
 

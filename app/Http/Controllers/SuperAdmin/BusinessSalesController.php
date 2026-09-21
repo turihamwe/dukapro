@@ -3,16 +3,21 @@
 namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
+use App\Services\BusinessEngagementService;
 use App\Services\BusinessSalesMetricsService;
+use App\Support\BusinessEngagementTier;
 use Illuminate\Http\Request;
 
 class BusinessSalesController extends Controller
 {
     protected BusinessSalesMetricsService $metrics;
 
-    public function __construct(BusinessSalesMetricsService $metrics)
+    protected BusinessEngagementService $engagement;
+
+    public function __construct(BusinessSalesMetricsService $metrics, BusinessEngagementService $engagement)
     {
         $this->metrics = $metrics;
+        $this->engagement = $engagement;
     }
 
     public function index(Request $request)
@@ -49,6 +54,29 @@ class BusinessSalesController extends Controller
             'search' => $search,
             'stageLabel' => $this->metrics->stageLabel($stage),
             'periodLabel' => $this->metrics->periodLabel($period),
+        ]);
+    }
+
+    public function engagement(Request $request)
+    {
+        $filter = $request->query('filter', 'all');
+        $search = trim((string) $request->query('search', ''));
+
+        $allowed = array_merge(['all', 'priority'], BusinessEngagementTier::all());
+        if (! in_array($filter, $allowed, true)) {
+            $filter = 'all';
+        }
+
+        $businesses = $this->engagement
+            ->trialBusinessesQuery($filter, $search)
+            ->paginate(25)
+            ->withQueryString();
+
+        return view('business-sales.engagement', [
+            'businesses' => $businesses,
+            'filter' => $filter,
+            'search' => $search,
+            'summary' => $this->engagement->summaryCounts(),
         ]);
     }
 }

@@ -3,6 +3,7 @@
 @section('title', 'Business Sales & Subscriptions')
 
 @section('content')
+@include('business-sales.partials.subnav')
 <div class="space-y-10" x-data="{ focusHorizon: '{{ $sales['focus_horizon'] ?? 'monthly' }}' }">
     <div>
         <h1 class="text-2xl font-bold tracking-tight">Business Sales &amp; Subscriptions</h1>

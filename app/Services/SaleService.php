@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\DebtEntryType;
 use App\Helpers\AuditLogger;
+use App\Services\BusinessActivityService;
 use App\Models\Business;
 use App\Models\Customer;
 use App\Models\Product;
@@ -290,6 +291,8 @@ class SaleService
 
             return $sale->load('items');
         });
+
+        app(BusinessActivityService::class)->recordFromId($businessId);
 
         $sale->load('business.efrisSetting');
 

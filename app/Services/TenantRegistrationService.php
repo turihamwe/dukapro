@@ -8,6 +8,7 @@ use App\Enums\UserRole;
 use App\Models\Business;
 use App\Models\User;
 use App\Services\BranchService;
+use App\Services\BusinessActivityService;
 use App\Services\BusinessModuleService;
 use App\Services\SystemAffiliateService;
 use Carbon\Carbon;
@@ -88,6 +89,7 @@ class TenantRegistrationService
         });
 
         $user->load('business');
+        app(BusinessActivityService::class)->record($user->business, true);
 
         return $user;
     }
