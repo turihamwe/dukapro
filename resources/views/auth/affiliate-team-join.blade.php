@@ -4,17 +4,17 @@
 
 @section('content')
     @include('layouts.partials.auth-brand', [
-        'subtitle' => 'Join ' . $parent->name . '\'s sales team',
+        'subtitle' => 'Team agent registration',
     ])
 
     <x-card class="shadow-sm">
         <div class="mb-4 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-950">
-            You are registering as a <strong>team agent</strong> under
-            <strong>{{ $parent->name }}</strong> (code: {{ $parent->code }}).
+            You are registering as a <strong>team agent</strong> under invite code
+            <strong>{{ $inviteCode }}</strong>.
             After sign-up you can refer businesses and earn through the team program.
         </div>
 
-        <form method="POST" action="{{ route('affiliate.team.join.store', $parent->code) }}" class="space-y-3 sm:space-y-4" id="affiliate-team-join-form">
+        <form method="POST" action="{{ route('affiliate.team.join.store', $inviteCode) }}" class="space-y-3 sm:space-y-4" id="affiliate-team-join-form">
             @csrf
             <x-input type="text" name="name" label="Full name" value="{{ old('name') }}" required autofocus />
             <div>
@@ -35,7 +35,7 @@
             Already an affiliate? <a href="{{ route('affiliate.login') }}" class="font-medium text-indigo-600 hover:text-indigo-700">Sign in</a>
         </p>
         <p class="mt-2 text-center text-xs text-gray-500">
-            Registering a business instead? <a href="{{ route('affiliate.referral', $parent->code) }}" class="font-medium text-indigo-600 hover:text-indigo-700">Business sign up</a>
+            Registering a business instead? <a href="{{ route('affiliate.referral', $inviteCode) }}" class="font-medium text-indigo-600 hover:text-indigo-700">Business sign up</a>
         </p>
     </x-card>
 @endsection

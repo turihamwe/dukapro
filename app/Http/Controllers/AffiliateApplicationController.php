@@ -85,7 +85,7 @@ class AffiliateApplicationController extends Controller
         }
 
         return view('auth.affiliate-team-join', [
-            'parent' => $parent,
+            'inviteCode' => $parent->code,
         ]);
     }
 
@@ -119,6 +119,6 @@ class AffiliateApplicationController extends Controller
 
         return redirect()
             ->route('affiliate.login')
-            ->with('success', 'Welcome to ' . $parent->name . '\'s team! Your agent code is ' . $affiliate->code . '. Sign in to start referring businesses.');
+            ->with('success', 'Team registration complete. Your agent code is ' . $affiliate->code . '. Sign in to start referring businesses.');
     }
 }
