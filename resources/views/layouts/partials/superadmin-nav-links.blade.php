@@ -37,6 +37,10 @@
        class="{{ $navLink }} {{ request()->routeIs('superadmin.activity') ? $navActive : $navIdle }}">
         Activity Log
     </a>
+    <a href="{{ route('superadmin.errors.index') }}"
+       class="{{ $navLink }} {{ request()->routeIs('superadmin.errors*') ? $navActive : $navIdle }}">
+        Error Telemetry
+    </a>
     <a href="{{ route('superadmin.settings') }}"
        class="{{ $navLink }} {{ request()->routeIs('superadmin.settings*') ? $navActive : $navIdle }}">
         Settings &amp; API Keys

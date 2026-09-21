@@ -2,6 +2,7 @@
 
 namespace App\Exceptions;
 
+use App\Services\ErrorLogService;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Throwable;
 
@@ -34,8 +35,26 @@ class Handler extends ExceptionHandler
      */
     public function register()
     {
-        $this->reportable(function (Throwable $e) {
-            //
-        });
+        //
+    }
+
+    /**
+     * Log user-impacting failures before Laravel skips HttpException reporting.
+     *
+     * @return void
+     *
+     * @throws \Throwable
+     */
+    public function report(Throwable $e)
+    {
+        $e = $this->mapException($e);
+
+        try {
+            app(ErrorLogService::class)->logBackendException($e, request());
+        } catch (Throwable $loggingFailure) {
+            // Never break Laravel's default exception reporting.
+        }
+
+        parent::report($e);
     }
 }

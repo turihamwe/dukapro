@@ -37,6 +37,15 @@ class SystemSetting extends Model
         return (bool) (int) static::get('maintenance_mode', 0);
     }
 
+    public static function isErrorTrackingEnabled(): bool
+    {
+        if (! config('error_tracking.enabled', true)) {
+            return false;
+        }
+
+        return (bool) (int) static::get('error_tracking_enabled', 1);
+    }
+
     public static function clearCache(): void
     {
         $keys = static::pluck('key');

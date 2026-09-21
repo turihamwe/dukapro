@@ -37,6 +37,8 @@ use App\Http\Controllers\SuperAdmin\BusinessDivisibleProductsController;
 use App\Http\Controllers\SuperAdmin\BusinessVariablePricingController;
 use App\Http\Controllers\SuperAdmin\ShareholderActionController;
 use App\Http\Controllers\SuperAdmin\ActivityLogController;
+use App\Http\Controllers\SuperAdmin\ErrorLogController;
+use App\Http\Controllers\ClientErrorReportController;
 use App\Http\Controllers\SuperAdmin\DashboardController as SuperAdminDashboardController;
 use App\Http\Controllers\SuperAdmin\EntityController as SuperAdminEntityController;
 use App\Http\Controllers\SuperAdmin\GlobalSearchController as SuperAdminGlobalSearchController;
@@ -66,6 +68,10 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->n
 Route::get('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout.get');
 
 Route::middleware(['maintenance'])->group(function () {
+    Route::post('/telemetry/client-errors', [ClientErrorReportController::class, 'store'])
+        ->middleware('throttle:60,1')
+        ->name('telemetry.client-errors');
+
     Route::get('/ref/{code}', [AffiliateReferralController::class, 'redirect'])
         ->where('code', '[A-Za-z0-9]+')
         ->name('affiliate.referral');
@@ -394,6 +400,7 @@ Route::middleware(['maintenance'])->group(function () {
 
 Route::redirect('/admin/affiliates', '/superadmin/platform-overview#affiliate-performance');
 Route::redirect('/admin/platform-overview', '/superadmin/platform-overview');
+Route::redirect('/admin/errors', '/superadmin/errors');
 
 Route::prefix('superadmin')
     ->middleware(['auth', 'superadmin'])
@@ -409,6 +416,9 @@ Route::prefix('superadmin')
         Route::middleware('platform.full')->group(function () {
             Route::get('/search', [SuperAdminGlobalSearchController::class, 'index'])->name('search');
             Route::get('/activity', [ActivityLogController::class, 'index'])->name('activity');
+            Route::get('/errors', [ErrorLogController::class, 'index'])->name('errors.index');
+            Route::post('/errors/settings', [ErrorLogController::class, 'updateSettings'])->name('errors.settings');
+            Route::get('/errors/{errorLog}', [ErrorLogController::class, 'show'])->whereNumber('errorLog')->name('errors.show');
         });
 
         Route::prefix('entities/{entity}')->where(['entity' => 'businesses|branches|users|staff|products|customers|sales|expenses|affiliates|affiliate_commissions|shareholders|shareholder_earnings'])->name('entities.')->group(function () {

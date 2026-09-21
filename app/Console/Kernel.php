@@ -15,7 +15,9 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')->hourly();
+        $schedule->command('error-logs:prune --force')
+            ->dailyAt('03:00')
+            ->when(fn () => (int) config('error_tracking.retention_days', 90) > 0);
     }
 
     /**

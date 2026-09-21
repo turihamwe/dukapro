@@ -118,6 +118,7 @@
     @endauth
 
     @stack('scripts')
+    @include('layouts.partials.client-error-tracker')
     @include('layouts.partials.form-validation')
     <script>
     (function () {
