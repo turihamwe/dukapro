@@ -139,6 +139,7 @@ class ProductInventoryService
     {
         return Product::create(array_merge($this->variantPayload($parent, $variant, $index), [
             'business_id' => $businessId,
+            'branch_id' => $parent->branch_id,
             'parent_id' => $parent->id,
             'brand_id' => $parent->brand_id,
             'name' => $parent->name,

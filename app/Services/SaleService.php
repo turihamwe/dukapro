@@ -310,15 +310,28 @@ class SaleService
             return (int) $user->branch_id;
         }
 
-        $branchIds = $products->pluck('branch_id')->filter()->unique()->values();
+        $branchIds = $products->pluck('branch_id')
+            ->filter(function ($id) {
+                return $id !== null && $id !== '';
+            })
+            ->map(function ($id) {
+                return (int) $id;
+            })
+            ->unique()
+            ->values();
 
-        if ($branchIds->count() !== 1) {
+        if ($branchIds->count() > 1) {
             throw ValidationException::withMessages([
                 'items' => 'All products in one sale must belong to the same branch.',
             ]);
         }
 
-        return (int) $branchIds->first();
+        if ($branchIds->count() === 1) {
+            return $branchIds->first();
+        }
+
+        // Products may pre-date branch assignment (null branch_id) on single-branch accounts.
+        return $this->branchResolver->requiredForUser($user);
     }
 
     protected function generateSaleNumber(int $businessId): string

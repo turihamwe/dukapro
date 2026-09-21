@@ -12,6 +12,7 @@ use App\Models\ProductAttribute;
 use App\Models\SoldByUnit;
 use App\Support\BatchMode;
 use App\Scopes\BranchScope;
+use App\Services\BranchResolver;
 use App\Services\CatalogDiscoveryService;
 use App\Services\LowStockAlertService;
 use App\Services\ProductBatchService;
@@ -511,7 +512,18 @@ class InventoryController extends Controller
     protected function resolveBranchIdForOwner(Request $request, Business $business): ?int
     {
         if (! $request->user()->isOwner()) {
-            return null;
+            $resolver = app(BranchResolver::class);
+            $staffBranchId = $resolver->forUser($request->user());
+            if ($staffBranchId) {
+                return $staffBranchId;
+            }
+
+            $hasBranches = Branch::query()
+                ->where('business_id', $business->id)
+                ->where('is_active', true)
+                ->exists();
+
+            return $hasBranches ? $resolver->requiredForUser($request->user()) : null;
         }
 
         $hasBranches = Branch::query()
