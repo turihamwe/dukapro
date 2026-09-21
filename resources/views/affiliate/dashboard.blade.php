@@ -26,7 +26,13 @@
     @endphp
     <div class="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
         <p class="text-xs font-medium uppercase tracking-wide text-emerald-700">Business referral link</p>
-        <p class="mt-1 text-xs text-emerald-800/80">Share this so shops register under you{{ $affiliate->isSubAffiliate() ? ' on ' . ($primaryAffiliate->name ?? 'your team') : '' }}.</p>
+        <p class="mt-1 text-xs text-emerald-800/80">
+            @if($affiliate->isSubAffiliate())
+                Share this so shops register under your team using your agent code.
+            @else
+                Share this so shops register under you.
+            @endif
+        </p>
         <div class="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
             <code class="flex-1 break-all rounded-lg bg-white px-3 py-2 text-sm text-emerald-900">{{ $businessReferralUrl }}</code>
             <button type="button" data-copy-text="{{ $businessReferralUrl }}" data-copy-label="Copy link"
@@ -36,7 +42,7 @@
         </div>
         <p class="mt-2 text-xs text-emerald-700">
             @if($affiliate->isSubAffiliate())
-                Team link for <strong>{{ $primaryAffiliate->name ?? 'parent' }}</strong> · Your agent code: <strong>{{ $affiliate->code }}</strong>
+                Team code: <strong>{{ $primaryAffiliate->code ?? '—' }}</strong> · Your agent code: <strong>{{ $affiliate->code }}</strong>
             @else
                 Referral code: <strong>{{ $affiliate->code }}</strong>
             @endif
