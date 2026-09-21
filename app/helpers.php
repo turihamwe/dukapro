@@ -318,6 +318,117 @@ if (! function_exists('show_subscription_expired_overlay')) {
     }
 }
 
+if (! function_exists('error_page_home_url')) {
+    function error_page_home_url(): string
+    {
+        try {
+            if (auth()->check()) {
+                $user = auth()->user();
+
+                if ($user->isSuperAdmin()) {
+                    return route('superadmin.dashboard');
+                }
+
+                if ($user->business_id && $user->business) {
+                    if ($user->can('view-dashboard')) {
+                        return route('tenant.dashboard', ['business' => $user->business->slug]);
+                    }
+
+                    if ($user->can('access-pos')) {
+                        return tenant_route('tenant.pos.index');
+                    }
+
+                    return route('home.dashboard');
+                }
+
+                if ($user->isDedicatedAffiliateAccount()) {
+                    return route('affiliate.dashboard');
+                }
+
+                if ($user->isShareholder()) {
+                    return route('shareholder.dashboard');
+                }
+            }
+        } catch (\Throwable $exception) {
+            // Fall through to safe defaults when routes or auth are unavailable.
+        }
+
+        if (\Illuminate\Support\Facades\Route::has('login')) {
+            return route('login');
+        }
+
+        return url('/');
+    }
+}
+
+if (! function_exists('error_page_home_label')) {
+    function error_page_home_label(): string
+    {
+        try {
+            if (auth()->check()) {
+                $user = auth()->user();
+
+                if ($user->isSuperAdmin()) {
+                    return 'Return to admin dashboard';
+                }
+
+                if ($user->business_id) {
+                    if ($user->can('access-pos') && ! $user->can('view-dashboard')) {
+                        return 'Return to POS';
+                    }
+
+                    return 'Return to your dashboard';
+                }
+            }
+        } catch (\Throwable $exception) {
+            //
+        }
+
+        return 'Return to DukaPro';
+    }
+}
+
+if (! function_exists('error_page_back_url')) {
+    function error_page_back_url(): string
+    {
+        try {
+            $previous = url()->previous();
+            $current = url()->current();
+
+            if ($previous && $previous !== $current) {
+                return $previous;
+            }
+        } catch (\Throwable $exception) {
+            //
+        }
+
+        return error_page_home_url();
+    }
+}
+
+if (! function_exists('error_page_can_go_back')) {
+    function error_page_can_go_back(): bool
+    {
+        try {
+            $previous = url()->previous();
+            $current = url()->current();
+
+            return (bool) ($previous && $previous !== $current);
+        } catch (\Throwable $exception) {
+            return false;
+        }
+    }
+}
+
+if (! function_exists('error_page_support_url')) {
+    function error_page_support_url(): string
+    {
+        $message = 'Hi DukaPro support, I need help after seeing an error page on '.platform_brand('name').'.';
+
+        return whatsapp_support_url($message);
+    }
+}
+
 if (! function_exists('format_unit_quantity')) {
     function format_unit_quantity(float $quantity, string $unit, ?int $businessId = null): string
     {
