@@ -396,9 +396,25 @@ class EntityController extends Controller
             ? $modelClass::withTrashed()->findOrFail($record)
             : $modelClass::query()->findOrFail($record);
 
+        $affiliateAttribution = null;
+
         if ($entity === 'affiliates') {
-            $item->loadCount('referredBusinesses', 'commissions');
-            $item->load(['user', 'approver', 'teamMembers.user', 'parent']);
+            $item->loadCount([
+                'referredBusinesses',
+                'directReferredBusinesses',
+                'subAffiliateReferredBusinesses',
+                'commissions',
+            ]);
+            $item->load([
+                'user',
+                'approver',
+                'teamMembers.user',
+                'teamMembers' => function ($query) {
+                    $query->withCount('attributedBusinesses');
+                },
+                'parent',
+            ]);
+            $affiliateAttribution = app(\App\Services\AffiliateAttributionService::class)->breakdownBySubAffiliate($item);
         }
 
         if ($entity === 'affiliate_commissions') {
@@ -445,6 +461,7 @@ class EntityController extends Controller
             'capabilities' => $entity === 'businesses' ? ($capabilities ?? []) : [],
             'floor' => $entity === 'businesses' ? ($floor ?? []) : [],
             'businessTab' => $entity === 'businesses' ? request('tab', 'details') : 'details',
+            'affiliateAttribution' => $affiliateAttribution,
         ]);
     }
 

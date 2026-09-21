@@ -21,13 +21,16 @@
         Your affiliate account is currently inactive. Referral links are disabled until reactivated.
     </div>
 @else
+    @php
+        $businessReferralUrl = $affiliate->referralUrl($affiliate->isSubAffiliate() ? $affiliate->code : null);
+    @endphp
     <div class="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
         <p class="text-xs font-medium uppercase tracking-wide text-emerald-700">Business referral link</p>
         <p class="mt-1 text-xs text-emerald-800/80">Share this so shops register under you{{ $affiliate->isSubAffiliate() ? ' on ' . ($primaryAffiliate->name ?? 'your team') : '' }}.</p>
         <div class="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
-            <code class="flex-1 break-all rounded-lg bg-white px-3 py-2 text-sm text-emerald-900">{{ $affiliate->referralUrl($affiliate->isSubAffiliate() ? $affiliate->code : null) }}</code>
-            <button type="button" onclick="navigator.clipboard.writeText(@json($affiliate->referralUrl($affiliate->isSubAffiliate() ? $affiliate->code : null)))"
-                    class="shrink-0 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500">
+            <code class="flex-1 break-all rounded-lg bg-white px-3 py-2 text-sm text-emerald-900">{{ $businessReferralUrl }}</code>
+            <button type="button" data-copy-text="{{ $businessReferralUrl }}" data-copy-label="Copy link"
+                    class="js-copy-to-clipboard shrink-0 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500">
                 Copy link
             </button>
         </div>
@@ -50,10 +53,11 @@
         <div class="mb-6 rounded-xl border border-violet-200 bg-violet-50 p-4">
             <p class="text-xs font-medium uppercase tracking-wide text-violet-700">Team invite link</p>
             <p class="mt-1 text-xs text-violet-800/80">Share this so agents can register under your affiliate team.</p>
+            @php $teamInviteUrl = $affiliate->teamInviteUrl(); @endphp
             <div class="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
-                <code class="flex-1 break-all rounded-lg bg-white px-3 py-2 text-sm text-violet-900">{{ $affiliate->teamInviteUrl() }}</code>
-                <button type="button" onclick="navigator.clipboard.writeText(@json($affiliate->teamInviteUrl()))"
-                        class="shrink-0 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500">
+                <code class="flex-1 break-all rounded-lg bg-white px-3 py-2 text-sm text-violet-900">{{ $teamInviteUrl }}</code>
+                <button type="button" data-copy-text="{{ $teamInviteUrl }}" data-copy-label="Copy link"
+                        class="js-copy-to-clipboard shrink-0 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500">
                     Copy link
                 </button>
             </div>
@@ -65,6 +69,9 @@
     <div class="rounded-xl border border-gray-200 bg-white p-4">
         <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Businesses onboarded</p>
         <p class="mt-2 text-3xl font-bold text-gray-900">{{ number_format($stats['onboarded_count']) }}</p>
+        @if($referralAttribution && ($referralAttribution['direct'] + $referralAttribution['sub']) > 0)
+            <p class="mt-1 text-xs text-gray-500">{{ number_format($referralAttribution['direct']) }} direct · {{ number_format($referralAttribution['sub']) }} via sub-affiliates</p>
+        @endif
     </div>
     <div class="rounded-xl border border-gray-200 bg-white p-4">
         <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Total commission</p>
@@ -120,7 +127,7 @@
                     <div class="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
                         <div>
                             <p class="font-medium text-gray-900">{{ $member->name }}</p>
-                            <p class="text-xs text-gray-500">{{ $member->code }} · Wallet UGX {{ number_format($member->wallet_balance, 0) }}</p>
+                            <p class="text-xs text-gray-500">{{ $member->code }} · {{ $member->attributed_businesses_count ?? 0 }} shops · Wallet UGX {{ number_format($member->wallet_balance, 0) }}</p>
                         </div>
                         <form method="POST" action="{{ route('affiliate.team.payout') }}" class="flex flex-wrap items-end gap-2">
                             @csrf
@@ -137,14 +144,42 @@
 
 <div class="mb-8 overflow-hidden rounded-xl border border-gray-200 bg-white">
     <div class="border-b border-gray-200 px-6 py-4">
-        <h2 class="font-semibold text-gray-900">Referred businesses</h2>
-        <p class="mt-1 text-xs text-gray-500">Contact details for businesses you onboarded</p>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+                <h2 class="font-semibold text-gray-900">Referred businesses</h2>
+                <p class="mt-1 text-xs text-gray-500">
+                    @if($affiliate->isSubAffiliate())
+                        Businesses you brought in with your agent link
+                    @else
+                        Contact details for shops credited to your team
+                    @endif
+                </p>
+            </div>
+            @if($referralAttribution && ($referralAttribution['sub'] > 0 || $referralAttribution['direct'] > 0))
+                <div class="flex flex-wrap items-center gap-1.5">
+                    @foreach(['all' => 'All', 'direct' => 'Direct signups', 'sub' => 'Sub-affiliate signups'] as $key => $label)
+                        <a href="{{ route('affiliate.dashboard', ['referrals' => $key]) }}#referred-businesses"
+                           class="rounded-full px-3 py-1 text-xs font-semibold {{ ($referralFilter ?? 'all') === $key ? 'bg-violet-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+                            {{ $label }}
+                            @if($key === 'direct')
+                                <span class="opacity-80">({{ $referralAttribution['direct'] }})</span>
+                            @elseif($key === 'sub')
+                                <span class="opacity-80">({{ $referralAttribution['sub'] }})</span>
+                            @endif
+                        </a>
+                    @endforeach
+                </div>
+            @endif
+        </div>
     </div>
-    <div class="overflow-x-auto">
+    <div class="overflow-x-auto" id="referred-businesses">
         <table class="w-full text-left text-sm">
             <thead class="border-b border-gray-200 bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                 <tr>
                     <th class="px-4 py-3">Business</th>
+                    @if(! $affiliate->isSubAffiliate())
+                        <th class="px-4 py-3">Source</th>
+                    @endif
                     <th class="px-4 py-3">Phone</th>
                     <th class="px-4 py-3">Email</th>
                     <th class="px-4 py-3">Joined</th>
@@ -155,6 +190,16 @@
                 @forelse($referredBusinesses as $business)
                     <tr>
                         <td class="px-4 py-3 font-medium text-gray-900">{{ $business->name }}</td>
+                        @if(! $affiliate->isSubAffiliate())
+                            <td class="px-4 py-3 text-gray-600">
+                                @if($business->referringAffiliate)
+                                    <span class="font-medium text-gray-900">{{ $business->referringAffiliate->name }}</span>
+                                    <span class="block text-xs text-gray-500">{{ $business->referringAffiliate->code }}</span>
+                                @else
+                                    <span class="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800">Direct (you)</span>
+                                @endif
+                            </td>
+                        @endif
                         <td class="px-4 py-3">
                             @if($business->phone)
                                 <a href="tel:{{ $business->phone }}" class="text-violet-600 hover:text-violet-800">{{ $business->phone }}</a>
@@ -170,7 +215,13 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="px-4 py-10 text-center text-gray-500">No businesses referred yet. Share your link to get started.</td>
+                        <td colspan="{{ $affiliate->isSubAffiliate() ? 5 : 6 }}" class="px-4 py-10 text-center text-gray-500">
+                            @if(($referralFilter ?? 'all') !== 'all')
+                                No businesses match this filter.
+                            @else
+                                No businesses referred yet. Share your link to get started.
+                            @endif
+                        </td>
                     </tr>
                 @endforelse
             </tbody>
@@ -213,3 +264,46 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+(function () {
+    function copyText(text) {
+        if (navigator.clipboard && window.isSecureContext) {
+            return navigator.clipboard.writeText(text);
+        }
+        return new Promise(function (resolve, reject) {
+            var ta = document.createElement('textarea');
+            ta.value = text;
+            ta.setAttribute('readonly', '');
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+                document.execCommand('copy') ? resolve() : reject(new Error('copy failed'));
+            } catch (e) {
+                reject(e);
+            } finally {
+                document.body.removeChild(ta);
+            }
+        });
+    }
+
+    document.querySelectorAll('.js-copy-to-clipboard').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var text = btn.getAttribute('data-copy-text');
+            if (!text) return;
+            var label = btn.getAttribute('data-copy-label') || btn.textContent.trim();
+            copyText(text).then(function () {
+                btn.textContent = 'Copied!';
+                window.setTimeout(function () { btn.textContent = label; }, 2000);
+            }).catch(function () {
+                btn.textContent = 'Copy failed';
+                window.setTimeout(function () { btn.textContent = label; }, 2000);
+            });
+        });
+    });
+})();
+</script>
+@endpush

@@ -19,12 +19,16 @@ class AffiliatePerformanceService
 
     protected AffiliateTargetTrackingService $targetTrackingService;
 
+    protected AffiliateAttributionService $attributionService;
+
     public function __construct(
         SystemAffiliateService $systemAffiliateService,
-        AffiliateTargetTrackingService $targetTrackingService
+        AffiliateTargetTrackingService $targetTrackingService,
+        AffiliateAttributionService $attributionService
     ) {
         $this->systemAffiliateService = $systemAffiliateService;
         $this->targetTrackingService = $targetTrackingService;
+        $this->attributionService = $attributionService;
     }
 
     public function dateRange(?string $period): ?array
@@ -95,6 +99,16 @@ class AffiliatePerformanceService
                         $builder->whereBetween('created_at', $range);
                     }
                 },
+                'directReferredBusinesses as direct_referrals_count' => function (Builder $builder) use ($range) {
+                    if ($range) {
+                        $builder->whereBetween('created_at', $range);
+                    }
+                },
+                'subAffiliateReferredBusinesses as sub_referrals_count' => function (Builder $builder) use ($range) {
+                    if ($range) {
+                        $builder->whereBetween('created_at', $range);
+                    }
+                },
                 'referredBusinesses as active_subscribers_count' => function (Builder $builder) use ($range) {
                     $builder->where('subscription_status', SubscriptionStatus::ACTIVE);
                     if ($range) {
@@ -160,6 +174,8 @@ class AffiliatePerformanceService
             return [
                 'affiliate' => $affiliate,
                 'onboarded_count' => $onboarded,
+                'direct_referrals_count' => (int) ($affiliate->direct_referrals_count ?? 0),
+                'sub_referrals_count' => (int) ($affiliate->sub_referrals_count ?? 0),
                 'active_subscribers' => $active,
                 'conversion_rate' => $onboarded > 0 ? round(($active / $onboarded) * 100, 1) : 0.0,
                 'target_status' => AffiliateTargets::labelForCount($onboarded),
@@ -184,23 +200,30 @@ class AffiliatePerformanceService
             $businessQuery->whereBetween('created_at', $range);
         }
 
-        $businesses = $businessQuery->get([
-            'id',
-            'name',
-            'email',
-            'phone',
-            'subscription_status',
-            'subscription_ends_at',
-            'created_at',
-        ]);
+        $businesses = $businessQuery
+            ->with('referringAffiliate:id,name,code')
+            ->get([
+                'id',
+                'name',
+                'email',
+                'phone',
+                'subscription_status',
+                'subscription_ends_at',
+                'created_at',
+                'referring_affiliate_id',
+            ]);
 
         $onboarded = $businesses->count();
         $active = $businesses->where('subscription_status', SubscriptionStatus::ACTIVE)->count();
+        $referralCounts = $this->attributionService->referralCounts($affiliate, $range);
 
         return [
             'affiliate' => $affiliate->loadMissing('user:id,username,name,email'),
             'businesses' => $businesses,
             'onboarded_count' => $onboarded,
+            'direct_referrals_count' => $referralCounts['direct'],
+            'sub_referrals_count' => $referralCounts['sub'],
+            'by_sub_affiliate' => $this->attributionService->breakdownBySubAffiliate($affiliate, $range),
             'active_subscribers' => $active,
             'conversion_rate' => $onboarded > 0 ? round(($active / $onboarded) * 100, 1) : 0.0,
             'target_status' => AffiliateTargets::labelForCount($onboarded),

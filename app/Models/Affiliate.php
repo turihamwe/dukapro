@@ -83,6 +83,16 @@ class Affiliate extends Model
         return $this->hasMany(Business::class, 'sponsor_id');
     }
 
+    public function directReferredBusinesses(): HasMany
+    {
+        return $this->hasMany(Business::class, 'sponsor_id')->whereNull('referring_affiliate_id');
+    }
+
+    public function subAffiliateReferredBusinesses(): HasMany
+    {
+        return $this->hasMany(Business::class, 'sponsor_id')->whereNotNull('referring_affiliate_id');
+    }
+
     public function referrals(): HasMany
     {
         return $this->hasMany(AffiliateReferral::class);

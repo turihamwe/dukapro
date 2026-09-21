@@ -88,6 +88,9 @@
                     <tr>
                         <th class="px-4 py-3">Affiliate</th>
                         <th class="px-4 py-3">Status</th>
+                        <th class="px-4 py-3 text-right">Shops</th>
+                        <th class="px-4 py-3 text-right">Direct</th>
+                        <th class="px-4 py-3 text-right">Sub-aff.</th>
                         <th class="px-4 py-3 text-right">Daily Target</th>
                         <th class="px-4 py-3">Daily</th>
                         <th class="px-4 py-3">Weekly</th>
@@ -112,6 +115,9 @@
                             <td class="px-4 py-3">
                                 <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $badge['classes'] }}">{{ $badge['label'] }}</span>
                             </td>
+                            <td class="px-4 py-3 text-right font-semibold text-gray-900">{{ number_format($row['onboarded_count']) }}</td>
+                            <td class="px-4 py-3 text-right text-emerald-700">{{ number_format($row['direct_referrals_count'] ?? 0) }}</td>
+                            <td class="px-4 py-3 text-right text-violet-700">{{ number_format($row['sub_referrals_count'] ?? 0) }}</td>
                             <td class="px-4 py-3 text-right">
                                 <span class="font-semibold text-gray-900 affiliate-daily-target">{{ rtrim(rtrim(number_format($tracking['daily_target'], 2), '0'), '.') }}</span>
                             </td>
@@ -134,7 +140,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="9" class="px-4 py-10 text-center text-sm text-gray-500">No affiliates match your filters.</td></tr>
+                        <tr><td colspan="12" class="px-4 py-10 text-center text-sm text-gray-500">No affiliates match your filters.</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -249,15 +255,29 @@ function affiliateTargetDashboard() {
         var affiliate = data.affiliate || {};
         title.textContent = affiliate.name || 'Affiliate breakdown';
         subtitle.textContent = (affiliate.code || '');
+        function sourceLabel(business) {
+            if (business.referring_affiliate) {
+                return esc(business.referring_affiliate.name) + ' (' + esc(business.referring_affiliate.code) + ')';
+            }
+            return '<span class="text-emerald-700">Direct</span>';
+        }
         var rows = (data.businesses || []).map(function (business) {
-            return '<tr><td class="px-3 py-2">' + esc(business.name) + '</td><td class="px-3 py-2">' + esc(business.email || '—') + '</td><td class="px-3 py-2">' + esc(business.subscription_status) + '</td><td class="px-3 py-2">' + esc((business.created_at || '').substring(0, 10)) + '</td></tr>';
+            return '<tr><td class="px-3 py-2">' + esc(business.name) + '</td><td class="px-3 py-2">' + sourceLabel(business) + '</td><td class="px-3 py-2">' + esc(business.email || '—') + '</td><td class="px-3 py-2">' + esc(business.subscription_status) + '</td><td class="px-3 py-2">' + esc((business.created_at || '').substring(0, 10)) + '</td></tr>';
         }).join('');
-        body.innerHTML = '<div class="mb-4 grid gap-3 sm:grid-cols-3">' +
+        var bySub = (data.by_sub_affiliate || []).map(function (group) {
+            var sub = group.sub_affiliate || {};
+            var name = sub.name ? esc(sub.name) + ' <span class="text-gray-400">(' + esc(sub.code) + ')</span>' : 'Unknown';
+            return '<div class="rounded-lg border border-gray-100 bg-gray-50 p-3"><p class="text-xs font-semibold text-gray-900">' + name + '</p><p class="mt-1 text-[11px] text-gray-500">' + esc(group.count) + ' shops · ' + esc(group.active_count) + ' active</p></div>';
+        }).join('');
+        body.innerHTML = '<div class="mb-4 grid gap-3 sm:grid-cols-5">' +
             '<div class="rounded-lg bg-gray-50 p-3"><p class="text-[11px] uppercase text-gray-500">Onboarded</p><p class="text-lg font-bold">' + esc(data.onboarded_count) + '</p></div>' +
+            '<div class="rounded-lg bg-emerald-50 p-3"><p class="text-[11px] uppercase text-emerald-700">Direct</p><p class="text-lg font-bold text-emerald-800">' + esc(data.direct_referrals_count || 0) + '</p></div>' +
+            '<div class="rounded-lg bg-violet-50 p-3"><p class="text-[11px] uppercase text-violet-700">Sub-affiliate</p><p class="text-lg font-bold text-violet-800">' + esc(data.sub_referrals_count || 0) + '</p></div>' +
             '<div class="rounded-lg bg-gray-50 p-3"><p class="text-[11px] uppercase text-gray-500">Active subs</p><p class="text-lg font-bold">' + esc(data.active_subscribers) + '</p></div>' +
             '<div class="rounded-lg bg-gray-50 p-3"><p class="text-[11px] uppercase text-gray-500">Conversion</p><p class="text-lg font-bold">' + esc(data.conversion_rate) + '%</p></div></div>' +
-            '<table class="min-w-full text-xs"><thead><tr><th class="px-3 py-2 text-left">Business</th><th class="px-3 py-2 text-left">Email</th><th class="px-3 py-2 text-left">Status</th><th class="px-3 py-2 text-left">Joined</th></tr></thead><tbody>' +
-            (rows || '<tr><td colspan="4" class="px-3 py-6 text-center text-gray-500">No referred businesses.</td></tr>') + '</tbody></table>';
+            (bySub ? '<div class="mb-4"><p class="mb-2 text-[11px] font-semibold uppercase text-gray-500">Downline attribution</p><div class="grid gap-2 sm:grid-cols-2">' + bySub + '</div></div>' : '') +
+            '<table class="min-w-full text-xs"><thead><tr><th class="px-3 py-2 text-left">Business</th><th class="px-3 py-2 text-left">Source</th><th class="px-3 py-2 text-left">Email</th><th class="px-3 py-2 text-left">Status</th><th class="px-3 py-2 text-left">Joined</th></tr></thead><tbody>' +
+            (rows || '<tr><td colspan="5" class="px-3 py-6 text-center text-gray-500">No referred businesses.</td></tr>') + '</tbody></table>';
     }
 
     document.querySelectorAll('.affiliate-breakdown-btn').forEach(function (btn) {
