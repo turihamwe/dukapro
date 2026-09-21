@@ -19,6 +19,7 @@ class SettingsController extends Controller
             'batch_mode_enabled' => '0',
             'variable_pricing_enabled' => '1',
             'divisible_products_enabled' => '1',
+            'pos_offline_enabled' => '1',
         ], SystemSetting::allCached());
         $yoPaymentsConfigured = app(\App\Services\YoPaymentsService::class)->isConfigured();
         $moduleRegistry = app(ModuleRegistry::class);
@@ -48,6 +49,7 @@ class SettingsController extends Controller
             'batch_mode_enabled' => 'nullable|boolean',
             'variable_pricing_enabled' => 'nullable|boolean',
             'divisible_products_enabled' => 'nullable|boolean',
+            'pos_offline_enabled' => 'nullable|boolean',
             'billing_mode' => 'nullable|in:unified,addons',
             'module_prices' => 'nullable|array',
             'module_prices.*' => 'nullable|numeric|min:0',
@@ -79,6 +81,7 @@ class SettingsController extends Controller
         SystemSetting::set('batch_mode_enabled', $request->boolean('batch_mode_enabled') ? '1' : '0');
         SystemSetting::set('variable_pricing_enabled', $request->boolean('variable_pricing_enabled') ? '1' : '0');
         SystemSetting::set('divisible_products_enabled', $request->boolean('divisible_products_enabled', true) ? '1' : '0');
+        SystemSetting::set('pos_offline_enabled', $request->boolean('pos_offline_enabled', true) ? '1' : '0');
         SystemSetting::set('billing_mode', $data['billing_mode'] ?? BillingMode::UNIFIED);
 
         $modulePrices = [];

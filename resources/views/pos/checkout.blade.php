@@ -326,11 +326,18 @@
 @endsection
 
 @push('scripts')
+@if($posOfflineEnabled ?? false)
+<script src="{{ asset('js/pos-offline-store.js') }}"></script>
+<script src="{{ asset('js/pos-offline-sync.js') }}"></script>
+@endif
 <script id="pos-catalog-data" type="application/json">@json($posCatalog)</script>
 <script>
 (function () {
     var csrf = document.querySelector('meta[name="csrf-token"]').content;
+    var posOfflineEnabled = @json($posOfflineEnabled ?? false);
+    var businessId = @json(auth()->user()->business_id);
     var checkoutUrl = @json(tenant_route('tenant.pos.checkout'));
+    var offlineSyncUrl = @json(tenant_route('tenant.pos.sync-offline'));
     var quickCustomerUrl = @json(tenant_route('tenant.pos.customers.quick'));
     var sendKitchenUrl = @json(tenant_route('tenant.pos.send-kitchen'));
     var waiterMode = @json($waiterMode ?? false);
@@ -353,6 +360,30 @@
     var pendingReceipt = { url: '', invoiceUrl: '', receiptUrl: '', message: '', isInvoice: false, isPaired: false };
     var invoiceCustomerId = null;
     var checkoutInProgress = false;
+
+    function whenOfflineReady(fn) {
+        if (window.DukaProOfflineStore && window.DukaProOfflinePOS) {
+            fn();
+            return;
+        }
+        window.setTimeout(function () { whenOfflineReady(fn); }, 30);
+    }
+
+    if (posOfflineEnabled) {
+        whenOfflineReady(function () {
+            window.DukaProOfflineStore.saveCatalog(businessId, POS_CATALOG).catch(function () {});
+            window.DukaProOfflinePOS.init({
+                businessId: businessId,
+                syncUrl: offlineSyncUrl,
+                csrf: csrf,
+                statusElementId: 'pos-network-status',
+            });
+        });
+    }
+
+    function isPosOffline() {
+        return posOfflineEnabled && window.DukaProOfflinePOS && !window.DukaProOfflinePOS.isOnline();
+    }
 
     function normalizeWhatsAppPhone(value) {
         var digits = (value || '').replace(/\D/g, '');
@@ -431,6 +462,26 @@
         if (!phone && (isPaired || isInvoiceOnly)) {
             phoneEl.focus();
         }
+    }
+
+    function showOfflineReceiptModal(localId, total, lineCount) {
+        pendingReceipt.invoiceUrl = '';
+        pendingReceipt.receiptUrl = '';
+        pendingReceipt.url = '';
+        pendingReceipt.message = 'Offline sale saved locally (' + localId + '). It will sync when you are back online.';
+        pendingReceipt.isPaired = false;
+        pendingReceipt.isInvoice = false;
+
+        document.getElementById('saleReceiptTitle').textContent = 'Offline sale saved';
+        document.getElementById('saleReceiptNumber').textContent = localId;
+        document.getElementById('saleReceiptSubtitle').textContent =
+            lineCount + ' item(s) · ' + formatMoney(total) + ' — queued for automatic sync when connectivity returns.';
+
+        document.getElementById('singlePrintActions').classList.add('hidden');
+        document.getElementById('pairedPrintActions').classList.add('hidden');
+        document.getElementById('receiptPhoneWrap').classList.add('hidden');
+
+        openAppModal('saleReceiptModal');
     }
 
     document.getElementById('receiptCustomerPhone').addEventListener('input', updateReceiptWhatsAppLink);
@@ -1086,6 +1137,50 @@
         });
     }
 
+    function buildCheckoutPayload(paymentMethod, resolvedCustomerId, waiterId, mobileProvider, tablePayload) {
+        return {
+            items: cart.map(function (i) {
+                return {
+                    product_id: i.product_id,
+                    product_unit_id: i.product_unit_id || null,
+                    quantity: i.quantity,
+                    unit_price: i.unit_price,
+                    notes: i.notes || null,
+                };
+            }),
+            payment_method: paymentMethod,
+            mobile_money_provider: paymentMethod === 'mobile_money' ? mobileProvider : null,
+            customer_id: resolvedCustomerId,
+            waiter_id: waiterId || null,
+            is_credit_sale: paymentMethod === 'credit' || paymentMethod === 'invoice',
+            notes: restaurantMode ? (document.getElementById('orderNotes').value.trim() || null) : null,
+            table_label: tablePayload.table_label || null,
+            restaurant_table_id: tablePayload.restaurant_table_id || null,
+        };
+    }
+
+    async function processOfflineCheckout(checkoutPayload, totals) {
+        if (!window.DukaProOfflineStore) {
+            throw new Error('Offline storage is not ready.');
+        }
+
+        var lineCount = cart.length;
+        var localId = window.DukaProOfflineStore.generateLocalId();
+        await window.DukaProOfflineStore.queuePendingSale({
+            local_id: localId,
+            businessId: businessId,
+            payload: checkoutPayload,
+            synced: false,
+            createdAt: Date.now(),
+        });
+
+        cart = [];
+        expandedIdx = null;
+        invoiceCustomerId = null;
+        renderCart();
+        showOfflineReceiptModal(localId, totals.total, lineCount);
+    }
+
     async function processCheckout() {
         if (checkoutInProgress) return;
 
@@ -1132,32 +1227,36 @@
             }
         }
 
+        if (isPosOffline()) {
+            if (paymentMethod !== 'cash') {
+                alert('Offline mode supports cash sales only. Choose Cash or reconnect to use other payment methods.');
+                return;
+            }
+        } else if (!posOfflineEnabled && !navigator.onLine) {
+            alert('You are offline and offline POS is disabled. Reconnect to complete this sale.');
+            return;
+        }
+
         checkoutInProgress = true;
         if (checkoutBtn) checkoutBtn.disabled = true;
         try {
             var resolvedCustomerId = paymentMethod === 'invoice'
                 ? invoiceCustomerId
                 : (customerId || null);
-            var checkoutPayload = {
-                items: cart.map(function (i) {
-                    return {
-                        product_id: i.product_id,
-                        product_unit_id: i.product_unit_id || null,
-                        quantity: i.quantity,
-                        unit_price: i.unit_price,
-                        notes: i.notes || null,
-                    };
-                }),
-                payment_method: paymentMethod,
-                mobile_money_provider: paymentMethod === 'mobile_money' ? mobileProvider : null,
-                customer_id: resolvedCustomerId,
-                waiter_id: waiterId || null,
-                is_credit_sale: paymentMethod === 'credit' || paymentMethod === 'invoice',
-            };
-            if (restaurantMode) {
-                checkoutPayload.notes = document.getElementById('orderNotes').value.trim() || null;
-                Object.assign(checkoutPayload, tablePayload);
+            var checkoutPayload = buildCheckoutPayload(
+                paymentMethod,
+                resolvedCustomerId,
+                waiterId,
+                mobileProvider,
+                tablePayload
+            );
+            var totals = updateCartTotals();
+
+            if (isPosOffline()) {
+                await processOfflineCheckout(checkoutPayload, totals);
+                return;
             }
+
             var res = await fetch(checkoutUrl, {
                 method: 'POST',
                 headers: {

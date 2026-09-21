@@ -23,6 +23,7 @@ class Sale extends Model
         'customer_id',
         'kitchen_order_id',
         'sale_number',
+        'offline_local_id',
         'subtotal',
         'tax_amount',
         'discount_amount',

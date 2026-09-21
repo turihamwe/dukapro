@@ -114,6 +114,17 @@
                 <p class="mt-0.5 text-xs text-violet-900/80">When enabled, business owners can allow fractional POS quantities (e.g. 0.5 m, 1.25 kg). When disabled, divisible products are hidden and POS enforces whole numbers only.</p>
             </div>
         </div>
+
+        <div class="flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+            <input type="hidden" name="pos_offline_enabled" value="0">
+            <input type="checkbox" name="pos_offline_enabled" id="pos_offline_enabled" value="1"
+                   {{ old('pos_offline_enabled', $settings['pos_offline_enabled'] ?? '1') === '1' ? 'checked' : '' }}
+                   class="mt-0.5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500">
+            <div>
+                <label for="pos_offline_enabled" class="block text-sm font-medium text-emerald-950">Offline POS (IndexedDB)</label>
+                <p class="mt-0.5 text-xs text-emerald-900/80">When enabled, cashiers can complete cash sales while offline; sales sync when connectivity returns. When disabled, POS requires a live connection and the offline indicator is hidden.</p>
+            </div>
+        </div>
     </div>
 
     <div class="rounded-xl border border-gray-200 bg-white p-6 space-y-5">

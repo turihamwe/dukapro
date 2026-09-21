@@ -204,6 +204,7 @@ class SaleService
                 'customer_id' => $customerId,
                 'kitchen_order_id' => $payload['kitchen_order_id'] ?? null,
                 'sale_number' => $saleNumber,
+                'offline_local_id' => isset($payload['offline_local_id']) ? (string) $payload['offline_local_id'] : null,
                 'subtotal' => $subtotal,
                 'tax_amount' => $taxAmount,
                 'discount_amount' => $discountAmount,

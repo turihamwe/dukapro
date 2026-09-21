@@ -342,6 +342,9 @@ Route::middleware(['maintenance'])->group(function () {
                         ->middleware('module:restaurant')
                         ->name('send-kitchen');
                     Route::post('/checkout', [PosController::class, 'checkout'])->name('checkout');
+                    Route::post('/sync-offline', [PosController::class, 'syncOfflineSales'])
+                        ->middleware('throttle:30,1')
+                        ->name('sync-offline');
                 });
 
                 Route::get('/sales/documents', [SalesDocumentController::class, 'index'])

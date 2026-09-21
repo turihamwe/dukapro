@@ -10,8 +10,10 @@ use App\Services\KitchenOrderService;
 use App\Services\LowStockAlertService;
 use App\Services\ProductBatchService;
 use App\Services\ProductUnitService;
+use App\Services\PosOfflineSyncService;
 use App\Services\SaleService;
 use App\Support\DivisibleProductsMode;
+use App\Support\PosOfflineMode;
 use App\Support\SaleDocument;
 use App\Support\VariablePricingMode;
 use Illuminate\Http\Request;
@@ -30,13 +32,16 @@ class PosController extends Controller
 
     protected CustomerService $customerService;
 
+    protected PosOfflineSyncService $offlineSyncService;
+
     public function __construct(
         SaleService $saleService,
         ProductBatchService $batchService,
         KitchenOrderService $kitchenOrderService,
         LowStockAlertService $lowStockAlertService,
         ProductUnitService $unitService,
-        CustomerService $customerService
+        CustomerService $customerService,
+        PosOfflineSyncService $offlineSyncService
     ) {
         $this->saleService = $saleService;
         $this->batchService = $batchService;
@@ -44,6 +49,7 @@ class PosController extends Controller
         $this->lowStockAlertService = $lowStockAlertService;
         $this->unitService = $unitService;
         $this->customerService = $customerService;
+        $this->offlineSyncService = $offlineSyncService;
         $this->middleware('can:access-pos');
     }
 
@@ -89,7 +95,22 @@ class PosController extends Controller
         $variablePricingMode = VariablePricingMode::active($business);
         $divisibleProductsMode = DivisibleProductsMode::active($business);
 
-        return view('pos.checkout', compact('products', 'customers', 'waiterMode', 'restaurantMode', 'isHospitality', 'useRestaurantTables', 'restaurantTables', 'floorStaff', 'lowStockItems', 'variablePricingMode', 'divisibleProductsMode'));
+        $posOfflineEnabled = PosOfflineMode::enabled();
+
+        return view('pos.checkout', compact(
+            'products',
+            'customers',
+            'waiterMode',
+            'restaurantMode',
+            'isHospitality',
+            'useRestaurantTables',
+            'restaurantTables',
+            'floorStaff',
+            'lowStockItems',
+            'variablePricingMode',
+            'divisibleProductsMode',
+            'posOfflineEnabled'
+        ));
     }
 
     public function search(Request $request)
@@ -264,6 +285,31 @@ class PosController extends Controller
         return redirect()
             ->to($documentUrl)
             ->with('success', 'Sale #' . $sale->sale_number . ' completed.');
+    }
+
+    public function syncOfflineSales(Request $request)
+    {
+        $this->authorize('create', \App\Models\Sale::class);
+
+        if (! PosOfflineMode::enabled()) {
+            return response()->json([
+                'message' => 'Offline POS is disabled platform-wide.',
+            ], 403);
+        }
+
+        $data = $request->validate([
+            'sales' => 'required|array|max:25',
+            'sales.*.local_id' => 'required|string|max:80',
+            'sales.*.payload' => 'required|array',
+        ]);
+
+        $result = $this->offlineSyncService->syncBatch($request->user(), $data['sales']);
+
+        return response()->json([
+            'success' => count($result['failed']) === 0,
+            'acknowledged' => $result['acknowledged'],
+            'failed' => $result['failed'],
+        ]);
     }
 
     public function sendToKitchen(Request $request)
