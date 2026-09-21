@@ -293,7 +293,7 @@ class SaleService
             return $sale->load('items');
         });
 
-        app(BusinessActivityService::class)->recordFromId($businessId);
+        app(BusinessActivityService::class)->recordFromId((int) $sale->business_id);
 
         $sale->load('business.efrisSetting');
 
