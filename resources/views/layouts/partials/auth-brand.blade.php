@@ -4,6 +4,21 @@
     </div>
     {{-- Reserve space for the fixed mobile logo bar --}}
     <div class="h-[calc(10.5rem+env(safe-area-inset-top))] w-full shrink-0 sm:hidden" aria-hidden="true"></div>
+
+    @php
+        $hasAuthFlash = session('success')
+            || session('warning')
+            || session('error')
+            || session('welcome_message')
+            || (session('import_errors') && count(session('import_errors')))
+            || (isset($errors) && $errors->any());
+    @endphp
+    @if($hasAuthFlash)
+        <div class="auth-flash-messages sticky z-30 mb-4 w-full max-sm:top-[calc(3.25rem+env(safe-area-inset-top))] sm:static sm:top-auto">
+            @include('layouts.partials.flash')
+        </div>
+    @endif
+
     @if(!empty($subtitle))
         <p class="mt-1 text-sm text-gray-500 sm:mt-4">{{ $subtitle }}</p>
     @endif

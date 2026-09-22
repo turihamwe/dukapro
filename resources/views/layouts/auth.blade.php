@@ -27,22 +27,6 @@
 
     <main class="mx-auto flex w-full max-w-lg flex-col items-stretch px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] sm:px-6 sm:py-8 md:min-h-[100dvh] md:justify-center md:py-10">
         <div class="@yield('container_class', 'w-full')">
-            @if(session('success'))
-                <x-alert type="success" class="mb-6">{{ session('success') }}</x-alert>
-            @endif
-            @if(session('warning'))
-                <x-alert type="warning" class="mb-6">{{ session('warning') }}</x-alert>
-            @endif
-            @if(isset($errors) && $errors->any())
-                <x-alert type="error" class="mb-6">
-                    <ul class="list-inside list-disc space-y-1">
-                        @foreach($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </x-alert>
-            @endif
-
             @yield('content')
         </div>
     </main>
@@ -52,6 +36,13 @@
     @include('layouts.partials.form-validation')
     <script>
     (function () {
+        document.querySelectorAll('.alert-dismiss').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var banner = btn.closest('.alert-banner');
+                if (banner) banner.remove();
+            });
+        });
+
         document.querySelectorAll('.password-toggle').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 var input = btn.parentElement.querySelector('input');
