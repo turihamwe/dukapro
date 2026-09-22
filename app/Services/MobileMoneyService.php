@@ -161,11 +161,21 @@ class MobileMoneyService
             return ['success' => false, 'message' => 'Missing payment reference'];
         }
 
+        if (Str::startsWith((string) $reference, 'SHR-')) {
+            return app(ShareholderPaymentService::class)->handleWebhook($payload);
+        }
+
         $payment = SubscriptionPayment::withoutGlobalScope(TenantScope::class)
             ->where('reference', $reference)
             ->first();
 
         if (! $payment) {
+            $shareholderResult = app(ShareholderPaymentService::class)->handleWebhook($payload);
+            if (($shareholderResult['message'] ?? '') !== 'Missing or invalid shareholder payment reference'
+                && ($shareholderResult['message'] ?? '') !== 'Shareholder payment not found') {
+                return $shareholderResult;
+            }
+
             return ['success' => false, 'message' => 'Payment not found'];
         }
 

@@ -57,6 +57,21 @@ class Shareholder extends Model
         return $this->hasMany(ShareholderEarning::class);
     }
 
+    public function payments(): HasMany
+    {
+        return $this->hasMany(ShareholderPayment::class);
+    }
+
+    public function hasCompletedDeposit(): bool
+    {
+        return $this->payments()->where('status', 'completed')->exists();
+    }
+
+    public function pendingDepositPayment(): ?ShareholderPayment
+    {
+        return $this->payments()->where('status', 'pending')->latest('id')->first();
+    }
+
     public function earningsCap(): float
     {
         return round((float) $this->capital_invested * config('shareholders.earnings_cap_multiplier', 3), 2);

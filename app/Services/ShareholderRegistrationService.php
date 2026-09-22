@@ -79,9 +79,19 @@ class ShareholderRegistrationService
 
     public function approve(Shareholder $shareholder, User $approver): Shareholder
     {
+        return $this->approveInternal($shareholder, $approver->id);
+    }
+
+    public function approveFromPayment(Shareholder $shareholder): Shareholder
+    {
+        return $this->approveInternal($shareholder, null);
+    }
+
+    public function assertPendingApplicationValid(Shareholder $shareholder): void
+    {
         if ($shareholder->status !== ShareholderStatus::PENDING) {
             throw ValidationException::withMessages([
-                'status' => 'Only pending applications can be approved.',
+                'status' => 'Only pending applications can receive a share deposit.',
             ]);
         }
 
@@ -90,12 +100,27 @@ class ShareholderRegistrationService
             $shareholder->id,
             $this->activeShareholderCountExcluding($shareholder) === 0
         );
+    }
+
+    protected function approveInternal(Shareholder $shareholder, ?int $approvedByUserId): Shareholder
+    {
+        if (in_array($shareholder->status, ShareholderStatus::allocated(), true)) {
+            return $shareholder->fresh();
+        }
+
+        if ($shareholder->status !== ShareholderStatus::PENDING) {
+            throw ValidationException::withMessages([
+                'status' => 'Only pending applications can be approved.',
+            ]);
+        }
+
+        $this->assertPendingApplicationValid($shareholder);
 
         $shareholder->update([
             'status' => ShareholderStatus::ACTIVE,
             'is_active' => true,
             'approved_at' => now(),
-            'approved_by' => $approver->id,
+            'approved_by' => $approvedByUserId,
             'registered_at' => $shareholder->registered_at ?? now(),
         ]);
 

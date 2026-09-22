@@ -10,6 +10,7 @@ use App\Http\Controllers\SuperAdmin\AffiliateNetworkController;
 use App\Http\Controllers\ShareholderApplicationController;
 use App\Http\Controllers\ShareholderAuthController;
 use App\Http\Controllers\Shareholder\DashboardController as ShareholderDashboardController;
+use App\Http\Controllers\Shareholder\DepositController as ShareholderDepositController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\BranchController;
@@ -149,6 +150,9 @@ Route::middleware(['maintenance'])->group(function () {
         ->name('shareholder.')
         ->group(function () {
             Route::get('/dashboard', [ShareholderDashboardController::class, 'index'])->name('dashboard');
+            Route::post('/deposit/initiate', [ShareholderDepositController::class, 'initiate'])->name('deposit.initiate');
+            Route::get('/deposit/simulate/{reference}', [ShareholderDepositController::class, 'simulate'])->name('deposit.simulate');
+            Route::post('/deposit/simulate/{reference}/complete', [ShareholderDepositController::class, 'simulateComplete'])->name('deposit.simulate.complete');
             Route::post('/logout', [ShareholderAuthController::class, 'logout'])->name('logout');
         });
 
