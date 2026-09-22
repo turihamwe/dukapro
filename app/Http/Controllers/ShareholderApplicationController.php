@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Services\ShareAllocationService;
 use App\Services\ShareholderRegistrationService;
+use App\Support\LoginPortal;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ShareholderApplicationController extends Controller
 {
@@ -65,8 +67,12 @@ class ShareholderApplicationController extends Controller
 
         $shareholder = $this->registrationService->apply($data);
 
+        Auth::login($shareholder->user);
+        $request->session()->regenerate();
+        LoginPortal::set($request, LoginPortal::SHAREHOLDER);
+
         return redirect()
-            ->route('shareholder.login')
-            ->with('success', 'Application submitted for ' . number_format($shareholder->shares_owned, 2) . ' share(s). Sign in to track approval status.');
+            ->route('shareholder.dashboard')
+            ->with('success', 'Application submitted for ' . number_format($shareholder->shares_owned, 2) . ' share(s). Track approval status on your dashboard.');
     }
 }

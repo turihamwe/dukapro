@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Services\AffiliateNetworkService;
 use App\Services\AffiliateReferralService;
 use App\Services\AffiliateRegistrationService;
+use App\Support\LoginPortal;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class AffiliateApplicationController extends Controller
 {
@@ -60,9 +62,13 @@ class AffiliateApplicationController extends Controller
 
         $affiliate = $this->registrationService->apply($data);
 
+        Auth::login($affiliate->user);
+        $request->session()->regenerate();
+        LoginPortal::set($request, LoginPortal::AFFILIATE);
+
         return redirect()
-            ->route('affiliate.login')
-            ->with('success', 'Application submitted! Your referral code will be ' . $affiliate->code . ' once approved. Sign in to check your status.');
+            ->route('affiliate.dashboard')
+            ->with('success', 'Application submitted! Your referral code is ' . $affiliate->code . '. You can track approval status here.');
     }
 
     public function showTeamJoin(string $code)
@@ -117,8 +123,12 @@ class AffiliateApplicationController extends Controller
 
         $affiliate = $this->networkService->createSubAffiliate($parent, $data);
 
+        Auth::login($affiliate->user);
+        $request->session()->regenerate();
+        LoginPortal::set($request, LoginPortal::AFFILIATE);
+
         return redirect()
-            ->route('affiliate.login')
-            ->with('success', 'Team registration complete. Your agent code is ' . $affiliate->code . '. Sign in to start referring businesses.');
+            ->route('affiliate.dashboard')
+            ->with('success', 'Welcome! Your agent code is ' . $affiliate->code . '. Share your referral link to start onboarding businesses.');
     }
 }
