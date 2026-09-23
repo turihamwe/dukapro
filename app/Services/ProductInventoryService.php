@@ -6,6 +6,7 @@ use App\Helpers\AuditLogger;
 use App\Models\Brand;
 use App\Models\Business;
 use App\Models\Product;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -21,19 +22,45 @@ class ProductInventoryService
 
     public function createSimple(array $data, int $businessId, array $secondaryUnits = []): Product
     {
-        $data['sku'] = $this->resolveSku($data['sku'] ?? null, $data['name'], $businessId);
+        $providedSku = isset($data['sku']) ? trim((string) $data['sku']) : '';
+        $attempts = 0;
 
-        $product = Product::create(array_merge($data, [
-            'business_id' => $businessId,
-            'is_active' => true,
-            'is_sellable' => true,
-            'parent_id' => null,
-        ]));
+        while ($attempts < 3) {
+            $payload = $data;
+            $payload['sku'] = $this->resolveSku(
+                $attempts > 0 && $providedSku === '' ? null : ($data['sku'] ?? null),
+                $data['name'],
+                $businessId
+            );
 
-        $this->unitService->ensureBaseUnit($product);
-        $this->unitService->syncSecondaryUnits($product, $secondaryUnits);
+            try {
+                $product = Product::create(array_merge($payload, [
+                    'business_id' => $businessId,
+                    'is_active' => true,
+                    'is_sellable' => true,
+                    'parent_id' => null,
+                ]));
 
-        return $product->fresh(['units']);
+                $this->unitService->ensureBaseUnit($product);
+                $this->unitService->syncSecondaryUnits($product, $secondaryUnits);
+
+                return $product->fresh(['units']);
+            } catch (QueryException $exception) {
+                if (! $this->isDuplicateSkuException($exception) || $providedSku !== '' || ++$attempts >= 3) {
+                    if ($this->isDuplicateSkuException($exception) && $providedSku !== '') {
+                        throw ValidationException::withMessages([
+                            'sku' => 'This SKU is already used by another product in your catalog.',
+                        ]);
+                    }
+
+                    throw $exception;
+                }
+            }
+        }
+
+        throw ValidationException::withMessages([
+            'sku' => 'Could not assign a unique SKU. Try again or enter a different SKU.',
+        ]);
     }
 
     public function createWithVariants(array $parentData, array $variants, int $businessId): Product
@@ -193,10 +220,39 @@ class ProductInventoryService
 
         $provided = strtoupper(trim((string) $sku));
         if ($provided !== '') {
+            if ($this->skuExists($provided, $businessId, $ignoreProductId)) {
+                throw ValidationException::withMessages([
+                    'sku' => 'This SKU is already used by another product in your catalog.',
+                ]);
+            }
+
             return $provided;
         }
 
         return $this->nextSequenceSku($businessId, $ignoreProductId);
+    }
+
+    protected function skuExists(string $sku, int $businessId, ?int $ignoreProductId = null): bool
+    {
+        return Product::withTrashed()
+            ->where('business_id', $businessId)
+            ->where('sku', $sku)
+            ->when($ignoreProductId, fn ($query) => $query->where('id', '!=', $ignoreProductId))
+            ->exists();
+    }
+
+    protected function isDuplicateSkuException(QueryException $exception): bool
+    {
+        $errorCode = (int) ($exception->errorInfo[1] ?? 0);
+
+        if ($errorCode !== 1062) {
+            return false;
+        }
+
+        $message = $exception->getMessage();
+
+        return str_contains($message, 'products_business_id_sku_unique')
+            || str_contains($message, 'Duplicate entry');
     }
 
     protected function businessSkuPrefix(int $businessId): string
@@ -214,7 +270,7 @@ class ProductInventoryService
         $prefix = $this->businessSkuPrefix($businessId);
         $pattern = $prefix . '-%';
 
-        $existingSkus = Product::query()
+        $existingSkus = Product::withTrashed()
             ->where('business_id', $businessId)
             ->where('sku', 'like', $pattern)
             ->when($ignoreProductId, fn ($query) => $query->where('id', '!=', $ignoreProductId))
@@ -237,11 +293,7 @@ class ProductInventoryService
         $sku = $base;
         $counter = 1;
 
-        while (Product::query()
-            ->where('business_id', $businessId)
-            ->where('sku', $sku)
-            ->when($ignoreProductId, fn ($query) => $query->where('id', '!=', $ignoreProductId))
-            ->exists()) {
+        while ($this->skuExists($sku, $businessId, $ignoreProductId)) {
             $sku = $base . '-' . $counter++;
         }
 

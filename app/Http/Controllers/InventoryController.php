@@ -460,7 +460,14 @@ class InventoryController extends Controller
     {
         $rules = [
             'name' => 'required|string|max:255',
-            'sku' => 'nullable|string|max:100|unique:products,sku' . ($ignoreProductId ? ',' . $ignoreProductId : ''),
+            'sku' => [
+                'nullable',
+                'string',
+                'max:100',
+                Rule::unique('products', 'sku')
+                    ->where(fn ($query) => $query->where('business_id', $businessId))
+                    ->ignore($ignoreProductId),
+            ],
             'brand_id' => 'nullable|exists:brands,id',
             'new_brand_name' => 'nullable|string|max:255',
             'description' => 'nullable|string',
