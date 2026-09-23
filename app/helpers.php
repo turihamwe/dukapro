@@ -406,17 +406,40 @@ if (! function_exists('error_page_back_url')) {
     }
 }
 
-if (! function_exists('error_page_can_go_back')) {
-    function error_page_can_go_back(): bool
+if (! function_exists('error_page_previous_url')) {
+    /**
+     * Safe in-app URL to use for "Go back" on error pages (not browser history).
+     */
+    function error_page_previous_url(): ?string
     {
         try {
             $previous = url()->previous();
-            $current = url()->current();
+            if (! is_string($previous) || $previous === '') {
+                return null;
+            }
 
-            return (bool) ($previous && $previous !== $current);
+            $current = url()->full();
+            if ($previous === $current) {
+                return null;
+            }
+
+            $appHost = parse_url((string) config('app.url'), PHP_URL_HOST);
+            $previousHost = parse_url($previous, PHP_URL_HOST);
+            if ($appHost && $previousHost && strcasecmp($appHost, $previousHost) !== 0) {
+                return null;
+            }
+
+            return $previous;
         } catch (\Throwable $exception) {
-            return false;
+            return null;
         }
+    }
+}
+
+if (! function_exists('error_page_can_go_back')) {
+    function error_page_can_go_back(): bool
+    {
+        return error_page_previous_url() !== null;
     }
 }
 
@@ -426,6 +449,44 @@ if (! function_exists('error_page_support_url')) {
         $message = 'Hi DukaPro support, I need help after seeing an error page on '.platform_brand('name').'.';
 
         return whatsapp_support_url($message);
+    }
+}
+
+if (! function_exists('error_page_layout')) {
+    /**
+     * Blade layout for HTTP error pages (guest auth shell vs logged-in app shells).
+     */
+    function error_page_layout(): string
+    {
+        if (! auth()->check()) {
+            return 'errors.shell-guest';
+        }
+
+        try {
+            $user = auth()->user();
+
+            if ($user->isSuperAdmin() || $user->isSubAdmin()) {
+                return 'errors.shell-superadmin';
+            }
+
+            if ($user->isDedicatedAffiliateAccount()) {
+                return 'errors.shell-affiliate';
+            }
+
+            if ($user->isShareholder() && ! $user->business_id) {
+                return 'errors.shell-shareholder';
+            }
+
+            if ($user->business_id && $user->usesCashierExperience()
+                && \App\Support\CashierMode::isActive()
+                && ! $user->can('view-dashboard')) {
+                return 'errors.shell-cashier';
+            }
+        } catch (\Throwable $exception) {
+            //
+        }
+
+        return 'errors.shell-admin';
     }
 }
 

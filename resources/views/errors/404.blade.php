@@ -1,4 +1,4 @@
-@extends('errors.layout')
+@extends(error_page_layout())
 
 @section('title', 'Page not found — '.platform_brand('name'))
 

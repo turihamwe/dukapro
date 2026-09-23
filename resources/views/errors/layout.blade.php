@@ -142,9 +142,9 @@
 
             <div class="actions">
                 @if(error_page_can_go_back())
-                    <button type="button" class="btn btn-primary" onclick="if (window.history.length > 1) { history.back(); } else { location.href=@json(error_page_home_url()); }">
+                    <a href="{{ error_page_previous_url() }}" class="btn btn-primary">
                         Go back
-                    </button>
+                    </a>
                     <a href="{{ error_page_home_url() }}" class="btn btn-secondary">{{ error_page_home_label() }}</a>
                 @else
                     <a href="{{ error_page_home_url() }}" class="btn btn-primary">{{ error_page_home_label() }}</a>

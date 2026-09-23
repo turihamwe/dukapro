@@ -1,8 +1,8 @@
-@extends('errors.layout')
+@extends(error_page_layout())
 
 @section('title', 'Access not available — '.platform_brand('name'))
 
-@section('badge_class', 'badge badge-warn')
+@section('badge_class', 'inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800')
 @section('badge')
     No access
 @endsection
