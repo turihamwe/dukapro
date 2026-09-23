@@ -18,6 +18,7 @@ use App\Models\Product;
 use App\Models\Shareholder;
 use App\Models\ShareholderEarning;
 use App\Models\User;
+use App\Services\AffiliatePerformanceService;
 use App\Services\AffiliateReferralCodeGenerator;
 use App\Services\BranchService;
 use App\Services\BusinessModuleService;
@@ -44,13 +45,16 @@ class EntityController extends Controller
 
     protected BranchService $branchService;
 
+    protected AffiliatePerformanceService $affiliatePerformanceService;
+
     public function __construct(
         ShareAllocationService $allocationService,
         ShareholderRegistrationService $shareholderRegistrationService,
         ShareholderEarningsService $shareholderEarningsService,
         UserPromotionService $userPromotionService,
         AffiliateReferralCodeGenerator $referralCodeGenerator,
-        BranchService $branchService
+        BranchService $branchService,
+        AffiliatePerformanceService $affiliatePerformanceService
     ) {
         $this->allocationService = $allocationService;
         $this->shareholderRegistrationService = $shareholderRegistrationService;
@@ -58,6 +62,7 @@ class EntityController extends Controller
         $this->userPromotionService = $userPromotionService;
         $this->referralCodeGenerator = $referralCodeGenerator;
         $this->branchService = $branchService;
+        $this->affiliatePerformanceService = $affiliatePerformanceService;
     }
 
     public function index(Request $request, string $entity)
@@ -81,6 +86,12 @@ class EntityController extends Controller
                     $q->{$method}($column, 'like', '%' . $term . '%');
                 }
             });
+        }
+
+        $affiliateStatusFilter = 'all';
+        if ($entity === 'affiliates') {
+            $affiliateStatusFilter = (string) $request->query('status', 'all');
+            $this->affiliatePerformanceService->applyStatusFilter($query, $affiliateStatusFilter);
         }
 
         if (in_array($entity, ['users', 'staff', 'products', 'customers', 'expenses', 'branches', 'brands'], true)) {
@@ -137,6 +148,7 @@ class EntityController extends Controller
             'shareStats' => $shareStats,
             'defaultPromotionShares' => config('shareholders.default_promotion_shares', 1),
             'remainingShares' => $this->allocationService->remainingShares(),
+            'affiliateStatusFilter' => $affiliateStatusFilter,
         ]);
     }
 

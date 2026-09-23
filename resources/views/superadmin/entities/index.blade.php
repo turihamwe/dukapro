@@ -50,9 +50,26 @@
     </div>
 @endif
 
+@if($entity === 'affiliates')
+    <div class="mb-4">
+        @include('affiliates.partials.status-filter-pills', [
+            'statusFilterBaseUrl' => route('superadmin.entities.index', $entity),
+            'affiliateStatusFilter' => $affiliateStatusFilter ?? 'all',
+            'statusQueryParams' => array_filter([
+                'q' => request('q'),
+                'trashed' => request('trashed') ? 1 : null,
+            ]),
+        ])
+    </div>
+    @include('affiliates.partials.bulk-approve-toolbar')
+@endif
+
 <form method="GET" class="mb-4 flex gap-2">
     @if(!empty($showTrashed))
         <input type="hidden" name="trashed" value="1">
+    @endif
+    @if($entity === 'affiliates' && ! empty($affiliateStatusFilter) && $affiliateStatusFilter !== 'all')
+        <input type="hidden" name="status" value="{{ $affiliateStatusFilter }}">
     @endif
     <input type="search" name="q" value="{{ request('q') }}" placeholder="Search {{ strtolower($config['label']) }}…"
            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
@@ -70,6 +87,17 @@
         <table class="w-full text-left text-sm">
             <thead class="border-b border-gray-200 bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                 <tr>
+                    @if($entity === 'affiliates')
+                        @can('approve-affiliates')
+                            <th class="w-10 px-4 py-3">
+                                <input type="checkbox"
+                                       id="affiliate-select-all-pending"
+                                       class="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                                       aria-label="Select all affiliates on this page"
+                                       title="Select all on this page">
+                            </th>
+                        @endcan
+                    @endif
                     <th class="px-4 py-3">ID</th>
                     @foreach($config['list'] as $column)
                         <th class="px-4 py-3">{{ str_replace('_', ' ', $column) }}</th>
@@ -80,6 +108,17 @@
             <tbody class="divide-y divide-gray-100">
                 @forelse($records as $record)
                     <tr class="hover:bg-gray-50 {{ ! empty($showTrashed) ? 'bg-amber-50/40' : '' }}">
+                        @if($entity === 'affiliates')
+                            @can('approve-affiliates')
+                                <td class="px-4 py-3 align-top">
+                                    <input type="checkbox"
+                                           class="affiliate-row-checkbox h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                                           value="{{ $record->id }}"
+                                           data-pending="{{ $record->status === \App\Enums\AffiliateStatus::PENDING ? '1' : '0' }}"
+                                           aria-label="Select {{ $record->name }}">
+                                </td>
+                            @endcan
+                        @endif
                         <td class="px-4 py-3 text-gray-500">
                             #{{ $record->id }}
                             @if(! empty($showTrashed) && $record->deleted_at)
@@ -108,6 +147,9 @@
                                     @else
                                         <span class="text-gray-400">—</span>
                                     @endif
+                                @elseif($entity === 'affiliates' && $column === 'status')
+                                    @php $affiliateBadge = \App\Support\AffiliateStatusPresenter::for($record); @endphp
+                                    <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $affiliateBadge['classes'] }}">{{ $affiliateBadge['label'] }}</span>
                                 @elseif($column === 'business_type' && $value)
                                     {{ \App\Enums\BusinessType::label($value) }}
                                 @elseif($column === 'shareholder_id' && $record->relationLoaded('shareholder') && $record->shareholder)
@@ -159,6 +201,15 @@
                                     </form>
                                 @endcan
                             @endif
+                            @if($entity === 'affiliates' && $record->status === \App\Enums\AffiliateStatus::PENDING)
+                                @can('approve-affiliates')
+                                    <form method="POST" action="{{ route('superadmin.affiliates.approve', $record) }}" class="inline"
+                                          onsubmit="return confirm('Approve {{ $record->name }}?');">
+                                        @csrf
+                                        <button type="submit" class="text-emerald-600 hover:text-emerald-800">Approve</button>
+                                    </form>
+                                @endcan
+                            @endif
                             <a href="{{ route('superadmin.entities.show', [$entity, $record->id]) }}" class="ml-3 text-violet-600 hover:text-violet-800">View</a>
                             @can('platform-full-access')
                                 @if(empty($showTrashed))
@@ -182,7 +233,13 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="{{ count($config['list']) + 2 }}" class="px-4 py-10 text-center text-gray-500">No records found.</td>
+                        @php
+                            $emptyColspan = count($config['list']) + 2;
+                            if ($entity === 'affiliates' && auth()->user()->can('approve-affiliates')) {
+                                $emptyColspan++;
+                            }
+                        @endphp
+                        <td colspan="{{ $emptyColspan }}" class="px-4 py-10 text-center text-gray-500">No records found.</td>
                     </tr>
                 @endforelse
             </tbody>

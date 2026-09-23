@@ -35,6 +35,8 @@
                 </a>
             @endforeach
         </div>
+
+        @include('affiliates.partials.bulk-approve-toolbar')
     </div>
 
     <div class="rounded-xl border border-violet-200 bg-gradient-to-r from-violet-50 to-white p-5 sm:p-6">
@@ -86,6 +88,15 @@
             <table class="min-w-full divide-y divide-gray-200 text-sm">
                 <thead class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                     <tr>
+                        @can('approve-affiliates')
+                            <th class="w-10 px-4 py-3">
+                                <input type="checkbox"
+                                       id="affiliate-select-all-pending"
+                                       class="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                                       aria-label="Select all affiliates on this page"
+                                       title="Select all on this page">
+                            </th>
+                        @endcan
                         <th class="px-4 py-3">Affiliate</th>
                         <th class="px-4 py-3">Status</th>
                         <th class="px-4 py-3 text-right">Shops</th>
@@ -108,6 +119,15 @@
                             $tracking = $row['tracking'];
                         @endphp
                         <tr class="{{ $row['is_system_default'] ? 'bg-violet-50/60' : '' }}" id="affiliate-row-{{ $affiliate->id }}">
+                            @can('approve-affiliates')
+                                <td class="px-4 py-3 align-top">
+                                    <input type="checkbox"
+                                           class="affiliate-row-checkbox h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                                           value="{{ $affiliate->id }}"
+                                           data-pending="{{ $affiliate->status === AffiliateStatus::PENDING ? '1' : '0' }}"
+                                           aria-label="Select {{ $affiliate->name }}">
+                                </td>
+                            @endcan
                             <td class="px-4 py-3">
                                 <div class="font-medium text-gray-900">{{ $affiliate->name }}</div>
                                 <div class="text-xs text-gray-500">{{ $affiliate->code }}</div>
@@ -133,14 +153,22 @@
                                     <button type="button" class="affiliate-breakdown-btn rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
                                             data-url="{{ route('superadmin.affiliates.show', ['affiliate' => $affiliate, 'period' => $filters['period'] ?? 'all']) }}">View</button>
                                     @can('approve-affiliates')
-                                        <button type="button" class="rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-100"
-                                                @click="openTargetModal({{ $affiliate->id }}, {{ json_encode($affiliate->name) }}, {{ json_encode($tracking) }})">Set Target</button>
+                                        @if($affiliate->status === AffiliateStatus::PENDING)
+                                            <form method="POST" action="{{ route('superadmin.affiliates.approve', $affiliate) }}" class="inline"
+                                                  onsubmit="return confirm('Approve {{ $affiliate->name }}?');">
+                                                @csrf
+                                                <button type="submit" class="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100">Approve</button>
+                                            </form>
+                                        @else
+                                            <button type="button" class="rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-100"
+                                                    @click="openTargetModal({{ $affiliate->id }}, {{ json_encode($affiliate->name) }}, {{ json_encode($tracking) }})">Set Target</button>
+                                        @endif
                                     @endcan
                                 </div>
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="12" class="px-4 py-10 text-center text-sm text-gray-500">No affiliates match your filters.</td></tr>
+                        <tr><td colspan="{{ auth()->user()->can('approve-affiliates') ? 13 : 12 }}" class="px-4 py-10 text-center text-sm text-gray-500">No affiliates match your filters.</td></tr>
                     @endforelse
                 </tbody>
             </table>

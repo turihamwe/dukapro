@@ -8,6 +8,7 @@ use App\Http\Controllers\Affiliate\TeamController as AffiliateTeamController;
 use App\Http\Controllers\Affiliate\WithdrawalController as AffiliateWithdrawalController;
 use App\Http\Controllers\SuperAdmin\AffiliateNetworkController;
 use App\Http\Controllers\ShareholderApplicationController;
+use App\Http\Controllers\ShareholderProgramController;
 use App\Http\Controllers\ShareholderAuthController;
 use App\Http\Controllers\Shareholder\DashboardController as ShareholderDashboardController;
 use App\Http\Controllers\Shareholder\DepositController as ShareholderDepositController;
@@ -105,6 +106,9 @@ Route::middleware(['maintenance'])->group(function () {
         ->name('affiliate.team.join.store');
     Route::get('/affiliate/login', [AffiliateAuthController::class, 'showLogin'])->name('affiliate.login');
     Route::post('/affiliate/login', [AffiliateAuthController::class, 'login'])->name('affiliate.login.store');
+
+    Route::get('/shareholders', [ShareholderProgramController::class, 'index'])->name('shareholders.index');
+    Route::post('/shareholders/start', [ShareholderProgramController::class, 'start'])->middleware('throttle:10,1')->name('shareholders.start');
 
     Route::get('/shareholder/apply', [ShareholderApplicationController::class, 'showApply'])->name('shareholder.apply');
     Route::post('/shareholder/apply', [ShareholderApplicationController::class, 'apply'])->name('shareholder.apply.store');
@@ -443,6 +447,7 @@ Route::prefix('superadmin')
         });
 
         Route::middleware('can:approve-affiliates')->group(function () {
+            Route::post('/affiliates/bulk-approve', [AffiliateActionController::class, 'bulkApprove'])->name('affiliates.bulk-approve');
             Route::post('/affiliates/{affiliate}/approve', [AffiliateActionController::class, 'approve'])->whereNumber('affiliate')->name('affiliates.approve');
             Route::post('/affiliates/{affiliate}/reject', [AffiliateActionController::class, 'reject'])->whereNumber('affiliate')->name('affiliates.reject');
             Route::patch('/affiliates/{affiliate}/target', [SuperAdminAffiliateController::class, 'updateTarget'])->whereNumber('affiliate')->name('affiliates.update-target');

@@ -234,7 +234,7 @@ class AffiliatePerformanceService
         ];
     }
 
-    protected function applyStatusFilter(Builder $query, string $status): void
+    public function applyStatusFilter(Builder $query, string $status): void
     {
         switch ($status) {
             case AffiliateStatus::APPROVED:

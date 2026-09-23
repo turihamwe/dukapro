@@ -33,12 +33,15 @@ class ShareholderApplicationController extends Controller
             return view('auth.shareholder-apply-closed');
         }
 
+        $lead = session('shareholder_lead', []);
+
         return view('auth.shareholder-apply', [
             'remainingShares' => $this->allocationService->remainingShares(),
             'totalShares' => $this->allocationService->totalShares(),
             'pricePerShare' => $this->allocationService->pricePerShare(),
             'shareholderCount' => $this->allocationService->activeShareholderCount(),
             'maxShareholders' => $this->allocationService->maxShareholders(),
+            'lead' => is_array($lead) ? $lead : [],
         ]);
     }
 

@@ -15,18 +15,18 @@
 
         <form method="POST" action="{{ route('shareholder.apply.store') }}" class="space-y-3 sm:space-y-4" id="shareholder-apply-form">
             @csrf
-            <x-input type="text" name="name" label="Full name" value="{{ old('name') }}" required autofocus />
+            <x-input type="text" name="name" label="Full name" value="{{ old('name', $lead['name'] ?? '') }}" required autofocus />
             <div>
                 <x-input type="text" name="username" id="username" label="Username" value="{{ old('username') }}" required
                          hint="Choose a simple, memorable login name (letters, numbers, dashes)." pattern="[A-Za-z0-9_-]+" />
                 <p id="username-status" class="mt-1 hidden text-xs"></p>
             </div>
-            <x-input type="email" name="email" label="Email" value="{{ old('email') }}" required />
-            <x-input type="tel" name="phone" label="Phone number" value="{{ old('phone') }}" required />
+            <x-input type="email" name="email" label="Email" value="{{ old('email', $lead['email'] ?? '') }}" required />
+            <x-input type="tel" name="phone" label="Phone number" value="{{ old('phone', $lead['phone'] ?? '') }}" required />
             <x-input type="text" name="national_id" label="National ID (optional)" value="{{ old('national_id') }}" />
             <div>
                 <label class="mb-1 block text-sm font-medium text-gray-700">Number of shares <span class="text-red-500">*</span></label>
-                <input type="number" step="0.01" min="0.01" max="{{ $remainingShares }}" name="shares" value="{{ old('shares', 1) }}" required
+                <input type="number" step="0.01" min="0.01" max="{{ $remainingShares }}" name="shares" value="{{ old('shares', $lead['shares'] ?? 1) }}" required
                        class="block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                 <p class="mt-1 text-xs text-gray-500">Investment preview: UGX <span id="investment-preview">{{ number_format(old('shares', 1) * $pricePerShare, 0) }}</span></p>
             </div>
