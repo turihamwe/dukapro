@@ -20,6 +20,8 @@ use App\Models\ShareholderEarning;
 use App\Models\User;
 use App\Services\AffiliatePerformanceService;
 use App\Services\AffiliateReferralCodeGenerator;
+use App\Services\AffiliateReferralService;
+use App\Services\SystemAffiliateService;
 use App\Services\BranchService;
 use App\Services\BusinessModuleService;
 use App\Services\ShareAllocationService;
@@ -47,6 +49,8 @@ class EntityController extends Controller
 
     protected AffiliatePerformanceService $affiliatePerformanceService;
 
+    protected AffiliateReferralService $affiliateReferralService;
+
     public function __construct(
         ShareAllocationService $allocationService,
         ShareholderRegistrationService $shareholderRegistrationService,
@@ -54,7 +58,8 @@ class EntityController extends Controller
         UserPromotionService $userPromotionService,
         AffiliateReferralCodeGenerator $referralCodeGenerator,
         BranchService $branchService,
-        AffiliatePerformanceService $affiliatePerformanceService
+        AffiliatePerformanceService $affiliatePerformanceService,
+        AffiliateReferralService $affiliateReferralService
     ) {
         $this->allocationService = $allocationService;
         $this->shareholderRegistrationService = $shareholderRegistrationService;
@@ -63,6 +68,7 @@ class EntityController extends Controller
         $this->referralCodeGenerator = $referralCodeGenerator;
         $this->branchService = $branchService;
         $this->affiliatePerformanceService = $affiliatePerformanceService;
+        $this->affiliateReferralService = $affiliateReferralService;
     }
 
     public function index(Request $request, string $entity)
@@ -487,11 +493,29 @@ class EntityController extends Controller
         $modelClass = $config['model'];
         $item = $modelClass::query()->findOrFail($record);
 
+        $affiliatesForBusiness = collect();
+        if ($entity === 'businesses') {
+            $item->load(['sponsor', 'referringAffiliate']);
+            $affiliatesForBusiness = Affiliate::query()
+                ->with('parent:id,name,code')
+                ->where(function ($query) use ($item) {
+                    $query->where(function ($active) {
+                        $active->where('status', AffiliateStatus::APPROVED)->where('is_active', true);
+                    })->orWhereIn('id', array_filter([
+                        $item->sponsor_id,
+                        $item->referring_affiliate_id,
+                    ]));
+                })
+                ->orderBy('name')
+                ->get(['id', 'name', 'code', 'parent_affiliate_id', 'status', 'is_active']);
+        }
+
         return view('superadmin.entities.edit', [
             'entity' => $entity,
             'config' => $config,
             'item' => $item,
             'businesses' => Business::orderBy('name')->get(['id', 'name']),
+            'affiliatesForBusiness' => $affiliatesForBusiness,
             'roles' => $entity === 'staff' ? UserRole::staffRoles() : UserRole::all(),
             'categories' => \App\Services\ExpenseService::CATEGORIES,
             'affiliateStatuses' => AffiliateStatus::all(),
@@ -521,9 +545,28 @@ class EntityController extends Controller
                     'phone' => 'nullable|string|max:30',
                     'is_active' => 'nullable|boolean',
                     'subscription_status' => 'required|string|max:50',
+                    'referral_affiliate_id' => 'nullable|integer|exists:affiliates,id',
                 ]);
                 $data['is_active'] = $request->boolean('is_active', true);
-                $item->update($data);
+
+                $referralAffiliate = null;
+                if ($request->filled('referral_affiliate_id')) {
+                    $referralAffiliate = Affiliate::query()->findOrFail((int) $data['referral_affiliate_id']);
+                    $allowedIds = array_filter([$item->sponsor_id, $item->referring_affiliate_id]);
+                    if (! $referralAffiliate->canRefer() && ! in_array($referralAffiliate->id, $allowedIds, true)) {
+                        throw \Illuminate\Validation\ValidationException::withMessages([
+                            'referral_affiliate_id' => 'Choose an active, approved affiliate.',
+                        ]);
+                    }
+                } else {
+                    $referralAffiliate = app(SystemAffiliateService::class)->default();
+                }
+
+                $attribution = $this->affiliateReferralService->businessAttributionForAffiliate($referralAffiliate);
+                unset($data['referral_affiliate_id']);
+
+                $item->update(array_merge($data, $attribution));
+                $this->affiliateReferralService->syncFromBusiness($item->fresh());
                 break;
 
             case 'branches':

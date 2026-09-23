@@ -134,15 +134,45 @@ class AffiliateReferralService
 
     public function recordFromBusiness(Business $business): ?AffiliateReferral
     {
+        return $this->syncFromBusiness($business);
+    }
+
+    /**
+     * Map a selected affiliate (direct or sub) to business sponsor / sub-attribution columns.
+     *
+     * @return array{sponsor_id: int, referring_affiliate_id: ?int}
+     */
+    public function businessAttributionForAffiliate(Affiliate $affiliate): array
+    {
+        if ($affiliate->isSubAffiliate() && $affiliate->parent_affiliate_id) {
+            return [
+                'sponsor_id' => (int) $affiliate->parent_affiliate_id,
+                'referring_affiliate_id' => (int) $affiliate->id,
+            ];
+        }
+
+        return [
+            'sponsor_id' => (int) $affiliate->id,
+            'referring_affiliate_id' => null,
+        ];
+    }
+
+    public function syncFromBusiness(Business $business): ?AffiliateReferral
+    {
         if (! $business->sponsor_id) {
+            AffiliateReferral::query()->where('business_id', $business->id)->delete();
+
             return null;
         }
 
-        return AffiliateReferral::query()->firstOrCreate(
+        $existing = AffiliateReferral::query()->where('business_id', $business->id)->first();
+        $referredAt = $existing ? $existing->referred_at : ($business->created_at ?? now());
+
+        return AffiliateReferral::query()->updateOrCreate(
             ['business_id' => $business->id],
             [
                 'affiliate_id' => $business->sponsor_id,
-                'referred_at' => $business->created_at ?? now(),
+                'referred_at' => $referredAt,
             ]
         );
     }

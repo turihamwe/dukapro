@@ -13,10 +13,54 @@
         @method('PUT')
 
         @if($entity === 'businesses')
-            <input type="text" name="name" value="{{ old('name', $item->name) }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
-            <input type="email" name="email" value="{{ old('email', $item->email) }}" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
-            <input type="text" name="phone" value="{{ old('phone', $item->phone) }}" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
-            <input type="text" name="subscription_status" value="{{ old('subscription_status', $item->subscription_status) }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            @php
+                $selectedReferralAffiliateId = old(
+                    'referral_affiliate_id',
+                    $item->referring_affiliate_id ?? $item->sponsor_id
+                );
+            @endphp
+            <div>
+                <label class="mb-1 block text-sm font-medium text-gray-700">Business name</label>
+                <input type="text" name="name" value="{{ old('name', $item->name) }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            </div>
+            <div>
+                <label class="mb-1 block text-sm font-medium text-gray-700">Email</label>
+                <input type="email" name="email" value="{{ old('email', $item->email) }}" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            </div>
+            <div>
+                <label class="mb-1 block text-sm font-medium text-gray-700">Phone</label>
+                <input type="text" name="phone" value="{{ old('phone', $item->phone) }}" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            </div>
+            <div>
+                <label class="mb-1 block text-sm font-medium text-gray-700">Subscription status</label>
+                <input type="text" name="subscription_status" value="{{ old('subscription_status', $item->subscription_status) }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            </div>
+            <div>
+                <label class="mb-1 block text-sm font-medium text-gray-700">Referring affiliate</label>
+                <select name="referral_affiliate_id" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                    <option value="">System default (no referral)</option>
+                    @foreach($affiliatesForBusiness as $affiliate)
+                        <option value="{{ $affiliate->id }}" @selected((string) $selectedReferralAffiliateId === (string) $affiliate->id)>
+                            {{ $affiliate->name }} ({{ $affiliate->code }})
+                            @if($affiliate->parent_affiliate_id && $affiliate->relationLoaded('parent') && $affiliate->parent)
+                                — sub under {{ $affiliate->parent->name }}
+                            @endif
+                            @if(! $affiliate->is_active || $affiliate->status !== \App\Enums\AffiliateStatus::APPROVED)
+                                — inactive
+                            @endif
+                        </option>
+                    @endforeach
+                </select>
+                <p class="mt-1 text-xs text-gray-500">
+                    Commissions use the primary affiliate (team leader). Sub-affiliate selections set downline attribution automatically.
+                    @if($item->sponsor)
+                        Current sponsor: {{ $item->sponsor->name }} ({{ $item->sponsor->code }}).
+                    @endif
+                </p>
+                @error('referral_affiliate_id')
+                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
             <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_active" value="1" @checked(old('is_active', $item->is_active))> Active</label>
         @elseif($entity === 'branches')
             <input type="text" name="name" value="{{ old('name', $item->name) }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
