@@ -26,6 +26,22 @@
    class="{{ $navLink }} {{ $navIdle }}">
     Affiliate Performance
 </a>
+@php
+    try {
+        $affiliateFeedbackNewCount = \App\Models\AffiliateFieldFeedback::where('status', \App\Models\AffiliateFieldFeedback::STATUS_NEW)->count();
+    } catch (\Throwable $e) {
+        $affiliateFeedbackNewCount = 0;
+    }
+@endphp
+<a href="{{ route('superadmin.affiliate-feedback.index') }}"
+   class="{{ $navLink }} {{ request()->routeIs('superadmin.affiliate-feedback*') ? $navActive : $navIdle }}">
+    <span class="flex flex-1 items-center justify-between gap-2">
+        <span>Affiliate feedback</span>
+        @if($affiliateFeedbackNewCount > 0)
+            <span class="rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-bold text-white">{{ $affiliateFeedbackNewCount > 99 ? '99+' : $affiliateFeedbackNewCount }}</span>
+        @endif
+    </span>
+</a>
 @foreach(\App\Support\SuperAdmin\EntityRegistry::all() as $key => $entity)
     <a href="{{ route('superadmin.entities.index', $key) }}"
        class="{{ $navLink }} {{ request()->is('superadmin/entities/' . $key . '*') ? $navActive : $navIdle }}">

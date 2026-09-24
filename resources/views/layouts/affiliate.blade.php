@@ -22,5 +22,9 @@
         @include('layouts.partials.flash')
         @yield('content')
     </main>
+
+    @if(auth()->user()->affiliateProfile)
+        @include('affiliate.partials.field-feedback-widget')
+    @endif
 </div>
 @endsection

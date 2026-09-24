@@ -4,6 +4,7 @@ use App\Http\Controllers\AffiliateApplicationController;
 use App\Http\Controllers\AffiliateReferralController;
 use App\Http\Controllers\AffiliateAuthController;
 use App\Http\Controllers\Affiliate\DashboardController as AffiliateDashboardController;
+use App\Http\Controllers\Affiliate\FeedbackController as AffiliateFeedbackController;
 use App\Http\Controllers\Affiliate\TeamController as AffiliateTeamController;
 use App\Http\Controllers\Affiliate\WithdrawalController as AffiliateWithdrawalController;
 use App\Http\Controllers\SuperAdmin\AffiliateNetworkController;
@@ -33,6 +34,7 @@ use App\Http\Controllers\SuperAdmin\PlatformOverviewController;
 use App\Http\Controllers\SuperAdmin\BusinessSalesController;
 use App\Http\Controllers\SuperAdmin\UserActionController;
 use App\Http\Controllers\SuperAdmin\AffiliateActionController;
+use App\Http\Controllers\SuperAdmin\AffiliateFieldFeedbackController;
 use App\Http\Controllers\SuperAdmin\BusinessEfrisController as SuperAdminBusinessEfrisController;
 use App\Http\Controllers\SuperAdmin\BusinessModuleController;
 use App\Http\Controllers\SuperAdmin\BusinessDivisibleProductsController;
@@ -146,6 +148,7 @@ Route::middleware(['maintenance'])->group(function () {
             Route::post('/team/sub-affiliates', [AffiliateTeamController::class, 'storeSubAffiliate'])->name('team.store');
             Route::post('/team/payouts', [AffiliateTeamController::class, 'payout'])->name('team.payout');
             Route::post('/withdrawals', [AffiliateWithdrawalController::class, 'store'])->name('withdrawals.store');
+            Route::post('/feedback', [AffiliateFeedbackController::class, 'store'])->middleware('throttle:20,1')->name('feedback.store');
             Route::post('/logout', [AffiliateAuthController::class, 'logout'])->name('logout');
         });
 
@@ -424,6 +427,8 @@ Route::prefix('superadmin')
         Route::get('/business-sales/engagement', [BusinessSalesController::class, 'engagement'])->name('business-sales.engagement');
         Route::get('/affiliates', [SuperAdminAffiliateController::class, 'index'])->name('affiliates.index');
         Route::get('/affiliates/{affiliate}', [SuperAdminAffiliateController::class, 'show'])->whereNumber('affiliate')->name('affiliates.show');
+        Route::get('/affiliate-feedback', [AffiliateFieldFeedbackController::class, 'index'])->name('affiliate-feedback.index');
+        Route::get('/affiliate-feedback/{affiliateFieldFeedback}', [AffiliateFieldFeedbackController::class, 'show'])->whereNumber('affiliateFieldFeedback')->name('affiliate-feedback.show');
 
         Route::middleware('platform.full')->group(function () {
             Route::get('/search', [SuperAdminGlobalSearchController::class, 'index'])->name('search');
