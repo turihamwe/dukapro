@@ -190,18 +190,18 @@ class AuthController extends Controller
         $username = strtolower(trim((string) $request->query('username', '')));
 
         if ($username === '' || strlen($username) < 3) {
-            return response()->json(['available' => false, 'message' => 'Username must be at least 3 characters.']);
+            return response()->json(['available' => false, 'message' => 'Please use at least 3 letters or numbers for your username.']);
         }
 
         if (! preg_match('/^[A-Za-z0-9_-]+$/', $username)) {
-            return response()->json(['available' => false, 'message' => 'Use only letters, numbers, dashes, or underscores.']);
+            return response()->json(['available' => false, 'message' => 'Please remove spaces or symbols like @ from your username.']);
         }
 
         $taken = \App\Models\User::whereRaw('LOWER(username) = ?', [$username])->exists();
 
         return response()->json([
             'available' => ! $taken,
-            'message' => $taken ? 'That username is already taken.' : 'Username is available.',
+            'message' => $taken ? 'That username is already taken - try another simple name.' : 'Great - that username is available.',
         ]);
     }
 
@@ -217,9 +217,9 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'username' => 'required|string|max:50|alpha_dash|unique:users,username',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => ['required', 'string', 'min:8', 'confirmed', 'regex:/\d/'],
             'phone' => 'nullable|string|max:30',
-        ]);
+        ], $this->registrationValidationMessages());
 
         $referral = $this->affiliateReferralService->resolveReferralPairFromSession($request);
 
@@ -367,5 +367,27 @@ class AuthController extends Controller
         }
 
         return redirect()->route('tenant.pos.index', $params);
+    }
+
+    protected function registrationValidationMessages(): array
+    {
+        return [
+            'business_name.required' => 'Please tell us your shop or business name - you can change details later.',
+            'business_type.required' => 'Please choose the type of business you run so we can set things up correctly.',
+            'business_type.in' => 'Please pick a business type from the list.',
+            'name.required' => 'Please enter your name so your team knows who manages the account.',
+            'username.required' => 'Please choose a username - you will use it each time you sign in.',
+            'username.alpha_dash' => 'Please remove spaces or symbols like @ from your username.',
+            'username.unique' => 'That username is already taken. Try another simple name you will remember.',
+            'username.max' => 'Please use a shorter username (50 characters or fewer).',
+            'email.required' => 'Please add your email so we can send receipts and important updates.',
+            'email.email' => 'Please check your email address - it should look like name@example.com.',
+            'email.unique' => 'That email is already registered. Try signing in or use a different email.',
+            'password.required' => 'Please create a password to keep your business account secure.',
+            'password.min' => 'Please make your password slightly longer and include at least one number.',
+            'password.regex' => 'Please make your password slightly longer and include at least one number.',
+            'password.confirmed' => 'Please type the same password in both boxes so they match.',
+            'phone.max' => 'Please use a shorter phone number.',
+        ];
     }
 }
