@@ -10,7 +10,7 @@
 {{-- Navigation --}}
 <header class="sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 backdrop-blur-md">
     <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-        <x-dukapro-logo size="header" href="{{ route('home') }}" class="shrink-0" />
+        <x-dukapro-logo size="header" class="shrink-0" />
 
         <nav class="hidden items-center gap-8 md:flex">
             <a href="#features" class="text-sm font-medium text-slate-600 transition hover:text-ink-900">Features</a>
@@ -386,6 +386,15 @@
                     <li><a href="#features" class="transition hover:text-brand-600">Features</a></li>
                     <li><a href="#pricing" class="transition hover:text-brand-600">Pricing</a></li>
                     <li><a href="{{ route('register') }}" class="transition hover:text-brand-600">Get Started for FREE</a></li>
+                    <li>
+                        <a href="{{ asset('assets/dukapro-beginners-guide.pdf') }}"
+                           class="transition hover:text-brand-600"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           download="DukaPro-Beginners-Guide.pdf">
+                            Beginner&rsquo;s guide (PDF)
+                        </a>
+                    </li>
                 </ul>
             </div>
             <div>

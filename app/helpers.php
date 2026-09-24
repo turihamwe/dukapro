@@ -586,3 +586,13 @@ if (! function_exists('should_show_whatsapp_float')) {
         return auth()->check() || request()->routeIs('login', 'register', 'login.*', 'register.*');
     }
 }
+
+if (! function_exists('app_logo_url')) {
+    /**
+     * Logo link target: marketing home for guests, role-appropriate dashboard when logged in.
+     */
+    function app_logo_url(): string
+    {
+        return \App\Support\AppLogoUrl::resolve();
+    }
+}

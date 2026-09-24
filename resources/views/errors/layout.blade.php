@@ -33,6 +33,9 @@
             box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
         }
         .logo { margin-bottom: 1.25rem; }
+        .logo-link { display: inline-block; text-decoration: none; color: inherit; border-radius: 0.375rem; }
+        .logo-link:hover { opacity: 0.85; }
+        .logo-link:focus-visible { outline: 2px solid rgba(16, 185, 129, 0.45); outline-offset: 2px; }
         .logo img { max-height: 2.5rem; width: auto; max-width: min(100%, 200px); }
         .logo-fallback {
             display: inline-flex; height: 2.5rem; width: 2.5rem; align-items: center; justify-content: center;
@@ -125,12 +128,18 @@
     <div class="page">
         <div class="card">
             <div class="logo">
-                @php $logoUrl = dukapro_logo_url(); @endphp
-                @if($logoUrl)
-                    <img src="{{ $logoUrl }}" alt="{{ platform_brand('name') }}" width="200" height="50" decoding="async">
-                @else
-                    <span class="logo-fallback" aria-hidden="true">D</span>
-                @endif
+                @php
+                    $logoUrl = dukapro_logo_url();
+                    $logoHref = app_logo_url();
+                    $logoLinkLabel = auth()->check() ? 'Go to your dashboard' : 'Go to home';
+                @endphp
+                <a href="{{ $logoHref }}" aria-label="{{ $logoLinkLabel }}" class="logo-link">
+                    @if($logoUrl)
+                        <img src="{{ $logoUrl }}" alt="{{ platform_brand('name') }}" width="200" height="50" decoding="async">
+                    @else
+                        <span class="logo-fallback" aria-hidden="true">D</span>
+                    @endif
+                </a>
             </div>
 
             <p class="@yield('badge_class', 'badge')">@yield('badge')</p>

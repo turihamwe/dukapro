@@ -2,6 +2,7 @@
     'size' => 'md',
     'centered' => false,
     'href' => null,
+    'link' => true,
 ])
 
 @php
@@ -18,14 +19,17 @@
     $wrapperClass = trim(
         ($centered ? 'flex w-full justify-center ' : 'inline-flex items-center ')
         . 'min-w-0 max-w-full '
+        . ($link ? 'rounded-md transition-opacity hover:opacity-85 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 ' : '')
         . ($attributes->get('class') ?? '')
     );
     $logoUrl = dukapro_logo_url();
     $brandName = platform_brand('name');
+    $targetHref = $link ? ($href ?? app_logo_url()) : $href;
+    $linkLabel = auth()->check() ? __('Go to your dashboard') : __('Go to home');
 @endphp
 
-@if($href)
-    <a href="{{ $href }}" {{ $attributes->except('class')->merge(['class' => $wrapperClass]) }}>
+@if($targetHref)
+    <a href="{{ $targetHref }}" aria-label="{{ $linkLabel }}" {{ $attributes->except('class')->merge(['class' => $wrapperClass]) }}>
 @else
     <span {{ $attributes->except('class')->merge(['class' => $wrapperClass]) }}>
 @endif
@@ -36,7 +40,7 @@
             D
         </span>
     @endif
-@if($href)
+@if($targetHref)
     </a>
 @else
     </span>
