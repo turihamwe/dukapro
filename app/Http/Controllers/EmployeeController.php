@@ -6,6 +6,7 @@ use App\Helpers\AuditLogger;
 use App\Models\Branch;
 use App\Models\Business;
 use App\Models\User;
+use App\Services\BusinessPermissionService;
 use App\Services\EmployeeService;
 use App\Services\OnboardingService;
 use Illuminate\Http\Request;
@@ -18,10 +19,16 @@ class EmployeeController extends Controller
 
     protected OnboardingService $onboardingService;
 
-    public function __construct(EmployeeService $employeeService, OnboardingService $onboardingService)
-    {
+    protected BusinessPermissionService $permissionService;
+
+    public function __construct(
+        EmployeeService $employeeService,
+        OnboardingService $onboardingService,
+        BusinessPermissionService $permissionService
+    ) {
         $this->employeeService = $employeeService;
         $this->onboardingService = $onboardingService;
+        $this->permissionService = $permissionService;
         $this->middleware('can:manage-employees');
     }
 
@@ -46,10 +53,12 @@ class EmployeeController extends Controller
     {
         $this->authorize('create', User::class);
 
-        $roles = $this->employeeService->assignableRoles($request->user(), $request->user()->business);
-        $branches = $this->employeeService->branchOptions($request->user()->business, $request->user());
+        $business = $request->user()->business;
+        $roles = $this->employeeService->assignableRoles($request->user(), $business);
+        $branches = $this->employeeService->branchOptions($business, $request->user());
+        $permissionMatrix = $this->permissionService->matrixForBusiness($business);
 
-        return view('staff.create', compact('roles', 'branches'));
+        return view('staff.create', compact('roles', 'branches', 'business', 'permissionMatrix'));
     }
 
     public function store(Request $request)
@@ -75,9 +84,19 @@ class EmployeeController extends Controller
                 'integer',
                 Rule::exists('branches', 'id')->where(fn ($q) => $q->where('business_id', $request->user()->business_id)),
             ],
+            'role_permissions' => 'nullable|array',
         ]);
 
-        $staff = $this->employeeService->create($request->user()->business, $request->user(), $data);
+        $business = $request->user()->business;
+        $staff = $this->employeeService->create($business, $request->user(), $data);
+
+        if ($request->has('role_permissions')) {
+            $this->permissionService->syncRolePermissions(
+                $business->fresh(),
+                $request->input('role_permissions', []),
+                [$data['role']]
+            );
+        }
 
         AuditLogger::record('staff_created', $staff, null, $staff->toArray());
 

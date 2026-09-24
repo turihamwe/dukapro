@@ -11,7 +11,7 @@
     </x-slot>
 </x-page-header>
 
-<x-card class="max-w-2xl">
+<x-card class="max-w-3xl">
     <form method="POST" action="{{ tenant_route('tenant.staff.store') }}" class="space-y-5">
         @csrf
             <x-input type="text" name="name" label="Full name" required />
@@ -48,6 +48,14 @@
             <x-password-input name="password" label="Password" required />
             <x-password-input name="password_confirmation" label="Confirm password" required />
         </div>
+
+        @include('staff.partials.role-permissions-picker', [
+            'business' => $business,
+            'permissionMatrix' => $permissionMatrix,
+            'roles' => $roles,
+            'selectedRole' => old('role', $roles[0] ?? null),
+        ])
+
         <x-button variant="primary" type="submit">Save staff member</x-button>
     </form>
 </x-card>
@@ -57,13 +65,31 @@
 <script>
 (function () {
     var input = document.getElementById('staff-username');
-    if (!input) return;
-    input.addEventListener('input', function () {
-        var start = input.selectionStart;
-        var end = input.selectionEnd;
-        input.value = input.value.toLowerCase();
-        input.setSelectionRange(start, end);
+    if (input) {
+        input.addEventListener('input', function () {
+            var start = input.selectionStart;
+            var end = input.selectionEnd;
+            input.value = input.value.toLowerCase();
+            input.setSelectionRange(start, end);
+        });
+    }
+
+    var roleSelect = document.getElementById('staff-role');
+    var panels = document.querySelectorAll('.staff-role-permissions-panel');
+    if (!roleSelect || !panels.length) return;
+
+    function showPermissionsForRole(role) {
+        panels.forEach(function (panel) {
+            var match = panel.getAttribute('data-staff-role') === role;
+            panel.classList.toggle('hidden', !match);
+        });
+    }
+
+    roleSelect.addEventListener('change', function () {
+        showPermissionsForRole(roleSelect.value);
     });
+
+    showPermissionsForRole(roleSelect.value);
 })();
 </script>
 @endpush
