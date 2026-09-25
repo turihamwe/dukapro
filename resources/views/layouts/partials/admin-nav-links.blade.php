@@ -68,6 +68,10 @@
         <span>🏪</span> Branches
     </a>
 @endcan
+<a href="{{ tenant_route('tenant.downloads.index') }}"
+   class="{{ $navLink }} {{ request()->routeIs('tenant.downloads.*') ? $navActive : $navIdle }}">
+    <span>📲</span> Downloads
+</a>
 @can('manage-settings')
     <a href="{{ tenant_route('tenant.business.edit') }}"
        class="{{ $navLink }} {{ request()->routeIs('tenant.business.*') ? $navActive : $navIdle }}">

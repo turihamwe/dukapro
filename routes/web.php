@@ -58,6 +58,8 @@ use App\Http\Controllers\KitchenController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\WaiterOrderController;
 use App\Http\Controllers\PosController;
+use App\Http\Controllers\DownloadsController;
+use App\Http\Controllers\PwaManifestController;
 use App\Http\Controllers\OperationsController;
 use App\Http\Controllers\WaiterShiftController;
 use App\Http\Controllers\RestaurantOrderController;
@@ -168,6 +170,8 @@ Route::middleware(['maintenance'])->group(function () {
         ->middleware(['auth', 'tenant.access', 'cashier.isolation'])
         ->name('tenant.')
         ->group(function () {
+            Route::get('/manifest.webmanifest', [PwaManifestController::class, 'show'])->name('pwa.manifest');
+
             Route::middleware(['subscription.active'])->group(function () {
                     Route::middleware(['can:view-dashboard', 'management.access'])->group(function () {
                     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -374,6 +378,7 @@ Route::middleware(['maintenance'])->group(function () {
                 });
 
                 Route::get('/operations', [OperationsController::class, 'index'])->name('operations.index');
+                Route::get('/downloads', [DownloadsController::class, 'index'])->name('downloads.index');
 
                 Route::prefix('reconciliation')->name('reconciliation.')->group(function () {
                     Route::get('/', [ReconciliationController::class, 'index'])

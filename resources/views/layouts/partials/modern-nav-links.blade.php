@@ -93,6 +93,11 @@
         Branches
     </a>
 @endcan
+<a href="{{ tenant_route('tenant.downloads.index') }}"
+   class="modern-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] {{ request()->routeIs('tenant.downloads.*') ? $navActive : $navIdle }}">
+    <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"/></svg>
+    Downloads
+</a>
 @can('manage-settings')
     <a href="{{ tenant_route('tenant.business.edit') }}"
        class="modern-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] {{ request()->routeIs('tenant.business.*') ? $navActive : $navIdle }}">
