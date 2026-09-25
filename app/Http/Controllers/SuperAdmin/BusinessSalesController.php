@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\BusinessEngagementService;
 use App\Services\BusinessSalesMetricsService;
 use App\Support\BusinessEngagementTier;
+use App\Support\SuperAdmin\AdminListPagination;
 use Illuminate\Http\Request;
 
 class BusinessSalesController extends Controller
@@ -44,7 +45,7 @@ class BusinessSalesController extends Controller
 
         $businesses = $this->metrics
             ->businessesQuery($stage, $period, $search)
-            ->paginate(25)
+            ->paginate(AdminListPagination::PER_PAGE)
             ->withQueryString();
 
         return view('business-sales.businesses', [
@@ -69,7 +70,7 @@ class BusinessSalesController extends Controller
 
         $businesses = $this->engagement
             ->trialBusinessesQuery($filter, $search)
-            ->paginate(25)
+            ->paginate(AdminListPagination::PER_PAGE)
             ->withQueryString();
 
         return view('business-sales.engagement', [

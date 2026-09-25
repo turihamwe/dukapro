@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\AffiliatePerformanceService;
 use App\Services\AffiliateTargetTrackingService;
 use App\Services\PlatformBusinessMetricsService;
+use App\Support\SuperAdmin\AdminListPagination;
 use Illuminate\Http\Request;
 
 class PlatformOverviewController extends Controller
@@ -34,7 +35,7 @@ class PlatformOverviewController extends Controller
             'status' => $request->query('status', 'all'),
         ];
 
-        $rows = $this->affiliatePerformance->affiliateRows($filters);
+        $rows = $this->affiliatePerformance->affiliateRows($filters, AdminListPagination::PER_PAGE);
         $rows->appends($filters)->fragment('affiliate-performance');
 
         return view('platform.overview', [

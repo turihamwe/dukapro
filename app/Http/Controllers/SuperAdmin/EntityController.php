@@ -28,6 +28,7 @@ use App\Services\ShareAllocationService;
 use App\Services\ShareholderEarningsService;
 use App\Services\ShareholderRegistrationService;
 use App\Services\UserPromotionService;
+use App\Support\SuperAdmin\AdminListPagination;
 use App\Support\SuperAdmin\EntityRegistry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -130,7 +131,7 @@ class EntityController extends Controller
             $query->latest('id');
         }
 
-        $records = $query->paginate(20)->withQueryString();
+        $records = $query->paginate(AdminListPagination::PER_PAGE)->withQueryString();
 
         $shareStats = null;
         if ($entity === 'shareholders') {

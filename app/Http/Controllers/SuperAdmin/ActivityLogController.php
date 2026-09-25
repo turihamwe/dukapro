@@ -4,6 +4,7 @@ namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
 use App\Models\SystemAuditLog;
+use App\Support\SuperAdmin\AdminListPagination;
 use Illuminate\Http\Request;
 
 class ActivityLogController extends Controller
@@ -28,7 +29,7 @@ class ActivityLogController extends Controller
             });
         }
 
-        $logs = $query->paginate(30)->withQueryString();
+        $logs = $query->paginate(AdminListPagination::PER_PAGE)->withQueryString();
         $actions = SystemAuditLog::distinct()->orderBy('action')->pluck('action');
         $businesses = \App\Models\Business::orderBy('name')->get(['id', 'name']);
 

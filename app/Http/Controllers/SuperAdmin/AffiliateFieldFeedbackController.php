@@ -4,6 +4,7 @@ namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AffiliateFieldFeedback;
+use App\Support\SuperAdmin\AdminListPagination;
 use Illuminate\Http\Request;
 
 class AffiliateFieldFeedbackController extends Controller
@@ -32,7 +33,7 @@ class AffiliateFieldFeedbackController extends Controller
             });
         }
 
-        $feedback = $query->paginate(25)->withQueryString();
+        $feedback = $query->paginate(AdminListPagination::PER_PAGE)->withQueryString();
 
         $summary = [
             'total' => AffiliateFieldFeedback::count(),

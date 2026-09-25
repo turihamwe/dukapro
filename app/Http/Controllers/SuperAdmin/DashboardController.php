@@ -12,6 +12,7 @@ use App\Models\Sale;
 use App\Models\SystemAuditLog;
 use App\Models\User;
 use App\Services\BusinessSalesMetricsService;
+use App\Support\SuperAdmin\AdminListPagination;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -66,7 +67,7 @@ class DashboardController extends Controller
 
         $businesses = Business::withCount('users')
             ->orderByDesc('created_at')
-            ->paginate(10, ['*'], 'businesses_page');
+            ->paginate(AdminListPagination::PER_PAGE, ['*'], 'businesses_page');
 
         $businessSales = $this->businessSalesMetrics->funnel();
 

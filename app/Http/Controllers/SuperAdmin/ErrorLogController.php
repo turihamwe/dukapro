@@ -7,6 +7,7 @@ use App\Models\Business;
 use App\Models\ErrorLog;
 use App\Models\SystemSetting;
 use App\Services\ErrorLogService;
+use App\Support\SuperAdmin\AdminListPagination;
 use Illuminate\Http\Request;
 
 class ErrorLogController extends Controller
@@ -61,7 +62,7 @@ class ErrorLogController extends Controller
             }
         }
 
-        $logs = $query->paginate(25)->withQueryString();
+        $logs = $query->paginate(AdminListPagination::PER_PAGE)->withQueryString();
 
         $summary = [
             'total' => ErrorLog::count(),
