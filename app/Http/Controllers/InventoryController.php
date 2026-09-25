@@ -504,19 +504,6 @@ class InventoryController extends Controller
             $rules['stock_quantity'] = 'nullable|numeric|min:0';
             $rules['critical_threshold'] = 'nullable|integer|min:0';
             $rules['sku'] = 'nullable|string|max:100';
-        } elseif ($itemType === CatalogItemType::INVENTORY_ONLY) {
-            $rules['price'] = 'nullable|numeric|min:0';
-            $rules['measurement_unit'] = 'required|string|max:50';
-            $rules['stock_quantity'] = 'nullable|numeric|min:0';
-            $rules['critical_threshold'] = 'nullable|integer|min:0';
-            $rules['sku'] = [
-                'nullable',
-                'string',
-                'max:100',
-                Rule::unique('products', 'sku')
-                    ->where(fn ($query) => $query->where('business_id', $businessId))
-                    ->ignore($ignoreProductId),
-            ];
         } else {
             $rules['price'] = 'required|numeric|min:0';
             $rules['measurement_unit'] = 'required|string|max:50';
@@ -566,13 +553,6 @@ class InventoryController extends Controller
             $data['rental_rate_unit'] = null;
             $data['is_sellable'] = true;
             $data['measurement_unit'] = $data['measurement_unit'] ?? MeasurementUnit::PIECE;
-        } elseif ($type === CatalogItemType::INVENTORY_ONLY) {
-            $data['price'] = 0;
-            $data['cost_price'] = null;
-            $data['stock_quantity'] = $data['stock_quantity'] ?? 0;
-            $data['is_sellable'] = false;
-            $data['rental_rate'] = null;
-            $data['rental_rate_unit'] = null;
         } elseif ($type === CatalogItemType::RENTABLE) {
             $data['is_sellable'] = true;
             $data['is_service'] = false;

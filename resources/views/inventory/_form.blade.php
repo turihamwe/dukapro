@@ -114,7 +114,7 @@
             @error('catalog_item_type')
                 <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
             @else
-                <p class="mt-1 text-xs text-gray-500">Fields below adjust automatically — services skip stock, rentals add hire rates, inventory-only items are not sold on POS.</p>
+                <p class="mt-1 text-xs text-gray-500">Fields below adjust automatically — services skip stock; rentals add hire rates.</p>
             @enderror
         </div>
     @else
@@ -195,11 +195,10 @@
             @endif
         </div>
         <p id="service-stock-hint" class="text-xs text-indigo-700" x-show="isService()" x-cloak>Stock is not tracked for services.</p>
-        <p class="text-xs text-amber-800" x-show="isInventoryOnly()" x-cloak>Inventory-only items are tracked for stock but are not sold on the POS.</p>
     </div>
 
     @efrisPlatform
-    <div class="rounded-xl border border-gray-200 bg-white p-4" x-show="!isService() && !isInventoryOnly()" x-cloak>
+    <div class="rounded-xl border border-gray-200 bg-white p-4" x-show="!isService()" x-cloak>
         <label for="efris_item_code" class="mb-1 block text-xs font-medium text-gray-700">URA / EFRIS item code <span class="font-normal text-gray-400">(optional)</span></label>
         <input type="text" name="efris_item_code" id="efris_item_code" maxlength="100" value="{{ old('efris_item_code', $product->efris_item_code ?? '') }}"
                placeholder="Registered commodity code for fiscal receipts"
@@ -420,11 +419,10 @@ document.addEventListener('alpine:init', function () {
             isPhysical: function () { return this.itemType === 'physical'; },
             isService: function () { return this.itemType === 'service'; },
             isRentable: function () { return this.itemType === 'rentable'; },
-            isInventoryOnly: function () { return this.itemType === 'inventory_only'; },
             showsSku: function () { return ! this.isService(); },
-            showsPricing: function () { return ! this.isInventoryOnly(); },
+            showsPricing: function () { return true; },
             showsCost: function () { return this.canViewCost && (this.isPhysical() || this.isRentable()); },
-            showsStock: function () { return this.isPhysical() || this.isInventoryOnly() || this.isRentable(); },
+            showsStock: function () { return this.isPhysical() || this.isRentable(); },
             showsStockAlerts: function () { return this.showsStock() && ! this.isRentable(); },
             showsUnits: function () { return ! this.isService(); },
             showsPackaging: function () { return this.isPhysical(); },
@@ -432,7 +430,6 @@ document.addEventListener('alpine:init', function () {
             priceLabel: function () {
                 if (this.isService()) return 'Service fee';
                 if (this.isRentable()) return 'Default POS price';
-                if (this.isInventoryOnly()) return 'Selling price';
                 return 'Selling price';
             },
             syncCatalogFields: function () {
@@ -442,12 +439,7 @@ document.addEventListener('alpine:init', function () {
                 var variantToggle = document.getElementById('enable_variants_toggle');
                 if (this.isService() && stockInput) stockInput.value = '0';
                 if (priceInput) {
-                    if (this.isInventoryOnly()) {
-                        priceInput.removeAttribute('required');
-                        priceInput.value = '0';
-                    } else {
-                        priceInput.setAttribute('required', 'required');
-                    }
+                    priceInput.setAttribute('required', 'required');
                 }
                 if (unitSelect) {
                     if (this.isService()) {

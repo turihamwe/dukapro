@@ -131,6 +131,10 @@ class Product extends Model
     {
         $type = $this->catalog_item_type;
 
+        if ($type === 'inventory_only') {
+            return \App\Enums\CatalogItemType::PHYSICAL;
+        }
+
         if ($type && in_array($type, \App\Enums\CatalogItemType::all(), true)) {
             return $type;
         }
@@ -143,11 +147,6 @@ class Product extends Model
     public function isRentable(): bool
     {
         return $this->catalogItemType() === \App\Enums\CatalogItemType::RENTABLE;
-    }
-
-    public function isInventoryOnlyItem(): bool
-    {
-        return $this->catalogItemType() === \App\Enums\CatalogItemType::INVENTORY_ONLY;
     }
 
     public function tracksInventory(): bool

@@ -14,11 +14,5 @@ return [
             'unlock_setting' => 'rental_mode_admin_unlocked',
             'label' => 'Rentals (car hire / property)',
         ],
-        'inventory_only' => [
-            'system_setting' => 'use_inventory_only_mode',
-            'owner_setting' => 'inventory_only_mode_enabled',
-            'unlock_setting' => 'inventory_only_mode_admin_unlocked',
-            'label' => 'Inventory-only tracking',
-        ],
     ],
 ];

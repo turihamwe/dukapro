@@ -18,7 +18,6 @@ class BusinessOperatingModesController extends Controller
         $request->validate([
             'service_mode_admin_unlocked' => 'nullable|boolean',
             'rental_mode_admin_unlocked' => 'nullable|boolean',
-            'inventory_only_mode_admin_unlocked' => 'nullable|boolean',
         ]);
 
         $before = $business->settings ?? [];
@@ -26,7 +25,6 @@ class BusinessOperatingModesController extends Controller
         foreach ([
             'service' => 'service_mode_admin_unlocked',
             'rental' => 'rental_mode_admin_unlocked',
-            'inventory_only' => 'inventory_only_mode_admin_unlocked',
         ] as $mode => $inputKey) {
             if (! $request->has($inputKey)) {
                 continue;

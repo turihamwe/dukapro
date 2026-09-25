@@ -10,15 +10,12 @@ class BusinessOperatingMode
 
     public const RENTAL = 'rental';
 
-    public const INVENTORY_ONLY = 'inventory_only';
-
     public static function all(): array
     {
         return [
             self::RETAIL,
             self::SERVICE_BASED,
             self::RENTAL,
-            self::INVENTORY_ONLY,
         ];
     }
 
@@ -28,7 +25,6 @@ class BusinessOperatingMode
             self::RETAIL => 'Retail (products & POS)',
             self::SERVICE_BASED => 'Service-based business',
             self::RENTAL => 'Car hire / rentals',
-            self::INVENTORY_ONLY => 'Inventory-only / warehouse',
         ];
     }
 

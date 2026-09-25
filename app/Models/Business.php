@@ -122,7 +122,13 @@ class Business extends Model
 
     public function operatingMode(): string
     {
-        return $this->operating_mode ?: \App\Enums\BusinessOperatingMode::RETAIL;
+        $mode = $this->operating_mode ?: \App\Enums\BusinessOperatingMode::RETAIL;
+
+        if ($mode === 'inventory_only') {
+            return \App\Enums\BusinessOperatingMode::RETAIL;
+        }
+
+        return $mode;
     }
 
     public function usesServiceCatalog(): bool
@@ -133,11 +139,6 @@ class Business extends Model
     public function usesRentalMode(): bool
     {
         return \App\Support\BusinessModeCompliance::rentalModeActive($this);
-    }
-
-    public function usesInventoryOnlyMode(): bool
-    {
-        return \App\Support\BusinessModeCompliance::inventoryOnlyModeActive($this);
     }
 
     public function usesVariablePricing(): bool

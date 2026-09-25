@@ -11,8 +11,6 @@ class BusinessModeCompliance
 
     public const MODE_RENTAL = 'rental';
 
-    public const MODE_INVENTORY_ONLY = 'inventory_only';
-
     public static function globallyEnabled(string $mode): bool
     {
         $config = config('business_modes.modes.' . $mode);
@@ -71,11 +69,6 @@ class BusinessModeCompliance
         return static::isActive($business, self::MODE_RENTAL);
     }
 
-    public static function inventoryOnlyModeActive(?Business $business): bool
-    {
-        return static::isActive($business, self::MODE_INVENTORY_ONLY);
-    }
-
     /**
      * @return array<string, mixed>
      */
@@ -91,11 +84,6 @@ class BusinessModeCompliance
         if ($operatingMode === \App\Enums\BusinessOperatingMode::RENTAL) {
             $settings['rental_mode_admin_unlocked'] = true;
             $settings['rental_mode_enabled'] = true;
-        }
-
-        if ($operatingMode === \App\Enums\BusinessOperatingMode::INVENTORY_ONLY) {
-            $settings['inventory_only_mode_admin_unlocked'] = true;
-            $settings['inventory_only_mode_enabled'] = true;
         }
 
         return $settings;

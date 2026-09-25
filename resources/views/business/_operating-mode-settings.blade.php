@@ -5,10 +5,8 @@
     $selectedOperatingMode = old('operating_mode', $business->operatingMode());
     $serviceUnlocked = BusinessModeCompliance::isAdminUnlocked($business, BusinessModeCompliance::MODE_SERVICE);
     $rentalUnlocked = BusinessModeCompliance::isAdminUnlocked($business, BusinessModeCompliance::MODE_RENTAL);
-    $inventoryUnlocked = BusinessModeCompliance::isAdminUnlocked($business, BusinessModeCompliance::MODE_INVENTORY_ONLY);
     $serviceGlobal = BusinessModeCompliance::globallyEnabled(BusinessModeCompliance::MODE_SERVICE);
     $rentalGlobal = BusinessModeCompliance::globallyEnabled(BusinessModeCompliance::MODE_RENTAL);
-    $inventoryGlobal = BusinessModeCompliance::globallyEnabled(BusinessModeCompliance::MODE_INVENTORY_ONLY);
 @endphp
 
 <div class="rounded-xl border border-gray-200 bg-white p-4 sm:p-5 space-y-4">
@@ -56,19 +54,7 @@
         </label>
     @endif
 
-    @if($inventoryGlobal && $inventoryUnlocked)
-        <label class="flex items-start gap-3 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-3 text-sm opacity-75">
-            <input type="hidden" name="inventory_only_mode_enabled" value="0">
-            <input type="checkbox" name="inventory_only_mode_enabled" value="1" disabled
-                   @checked(old('inventory_only_mode_enabled', ! empty(($business->settings ?? [])['inventory_only_mode_enabled'])))>
-            <span>
-                <span class="font-semibold text-gray-900">Inventory-only / warehouse</span>
-                <span class="mt-0.5 block text-xs text-gray-600">Track stock without POS checkout — warehouse workflows coming soon.</span>
-            </span>
-        </label>
-    @endif
-
-    @if(! $serviceUnlocked && ! $rentalUnlocked && ! $inventoryUnlocked)
-        <p class="text-xs text-gray-500">Specialized modes are locked for this business. Contact DukaPro support if you need service, rental, or warehouse tracking.</p>
+    @if(! $serviceUnlocked && ! $rentalUnlocked)
+        <p class="text-xs text-gray-500">Specialized modes are locked for this business. Contact DukaPro support if you need service or rental catalog features.</p>
     @endif
 </div>

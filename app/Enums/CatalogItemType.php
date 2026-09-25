@@ -13,15 +13,12 @@ class CatalogItemType
 
     public const RENTABLE = 'rentable';
 
-    public const INVENTORY_ONLY = 'inventory_only';
-
     public static function all(): array
     {
         return [
             self::PHYSICAL,
             self::SERVICE,
             self::RENTABLE,
-            self::INVENTORY_ONLY,
         ];
     }
 
@@ -31,14 +28,13 @@ class CatalogItemType
             self::PHYSICAL => 'Physical product (retail stock)',
             self::SERVICE => 'Service (fee / labour — no stock)',
             self::RENTABLE => 'Rentable item (hire / rental rate)',
-            self::INVENTORY_ONLY => 'Inventory only (track stock, not sold on POS)',
         ];
     }
 
     public static function label(?string $type): string
     {
-        if ($type === null || $type === '') {
-            return 'Physical product';
+        if ($type === null || $type === '' || $type === 'inventory_only') {
+            return self::labels()[self::PHYSICAL];
         }
 
         return self::labels()[$type] ?? ucfirst(str_replace('_', ' ', $type));
@@ -59,10 +55,6 @@ class CatalogItemType
             $types[] = self::RENTABLE;
         }
 
-        if ($business && BusinessModeCompliance::inventoryOnlyModeActive($business)) {
-            $types[] = self::INVENTORY_ONLY;
-        }
-
         return $types;
     }
 
@@ -77,9 +69,6 @@ class CatalogItemType
             if ($business->operating_mode === BusinessOperatingMode::RENTAL && in_array(self::RENTABLE, $allowed, true)) {
                 return self::RENTABLE;
             }
-            if ($business->operating_mode === BusinessOperatingMode::INVENTORY_ONLY && in_array(self::INVENTORY_ONLY, $allowed, true)) {
-                return self::INVENTORY_ONLY;
-            }
         }
 
         return $allowed[0] ?? self::PHYSICAL;
@@ -87,7 +76,7 @@ class CatalogItemType
 
     public static function tracksStock(string $type): bool
     {
-        return in_array($type, [self::PHYSICAL, self::INVENTORY_ONLY, self::RENTABLE], true);
+        return in_array($type, [self::PHYSICAL, self::RENTABLE], true);
     }
 
     public static function requiresSellingPrice(string $type): bool
