@@ -5,16 +5,22 @@
 @section('content')
 @php
     $posCatalog = $products->map(function ($product) use ($divisibleProductsMode) {
+        $isService = $product->isService();
         $baseStock = (float) $product->available_stock;
         $fifoBasePrice = (float) $product->fifo_price;
-        $units = collect($product->pos_units ?? [])->map(function ($unit) use ($baseStock, $fifoBasePrice, $divisibleProductsMode) {
+        $units = collect($product->pos_units ?? [])->map(function ($unit) use ($baseStock, $fifoBasePrice, $divisibleProductsMode, $isService) {
             $factor = (float) ($unit['factor'] ?? 1);
             $unitPrice = isset($unit['price']) && $unit['price'] > 0
                 ? (float) $unit['price']
                 : round($fifoBasePrice * $factor, 2);
-            $maxStock = $factor > 0 ? round($baseStock / $factor, 3) : 0;
-            if (! $divisibleProductsMode) {
-                $maxStock = floor($maxStock);
+
+            if ($isService) {
+                $maxStock = 999999;
+            } else {
+                $maxStock = $factor > 0 ? round($baseStock / $factor, 3) : 0;
+                if (! $divisibleProductsMode) {
+                    $maxStock = floor($maxStock);
+                }
             }
 
             return [
@@ -34,7 +40,7 @@
                 'factor' => 1,
                 'price' => $fifoBasePrice,
                 'is_base' => true,
-                'max_stock' => $baseStock,
+                'max_stock' => $isService ? 999999 : $baseStock,
             ]]);
         }
 
@@ -46,6 +52,7 @@
             'price' => (float) $defaultUnit['price'],
             'base_price' => (float) $product->price,
             'base_stock' => $baseStock,
+            'is_service' => $isService,
             'measurement_unit' => $product->measurement_unit,
             'units' => $units->all(),
         ];
@@ -68,11 +75,15 @@
                             <p class="mt-0.5 truncate text-[10px] font-medium uppercase tracking-wide text-gray-400">{{ $product->sku }}</p>
                         @endif
                         <p class="mt-1 text-base font-bold text-indigo-600 sm:text-lg">@money($product->fifo_price)</p>
-                        <p class="mt-1 text-[11px] text-gray-500">Stock: {{ format_unit_quantity($product->available_stock, $product->measurement_unit, auth()->user()->business_id) }}</p>
+                        @if($product->isService())
+                            <p class="mt-1 text-[11px] font-medium text-violet-600">Service · no stock</p>
+                        @else
+                            <p class="mt-1 text-[11px] text-gray-500">Stock: {{ format_unit_quantity($product->available_stock, $product->measurement_unit, auth()->user()->business_id) }}</p>
+                        @endif
                     </button>
                 </div>
             @empty
-                <p class="col-span-full rounded-xl border border-dashed border-gray-200 bg-white p-8 text-center text-sm text-gray-500">No products in stock.</p>
+                <p class="col-span-full rounded-xl border border-dashed border-gray-200 bg-white p-8 text-center text-sm text-gray-500">No products available for sale.</p>
             @endforelse
         </div>
     </div>
@@ -554,6 +565,12 @@
     }
 
     function qtyInputAttrs(item) {
+        if (item.is_service) {
+            if (divisibleProductsMode) {
+                return { min: 0.001, step: 0.001, max: null };
+            }
+            return { min: 1, step: 1, max: null };
+        }
         if (divisibleProductsMode) {
             return {
                 min: 0.001,
@@ -566,6 +583,10 @@
             step: 1,
             max: Math.floor(item.max_stock),
         };
+    }
+
+    function isUnlimitedStock(item) {
+        return !!(item && item.is_service);
     }
 
     function defaultUnit(product) {
@@ -612,7 +633,7 @@
         });
         var nextQty = existing ? parseQty(existing.quantity + qty) : qty;
 
-        if (nextQty > maxStock) {
+        if (!product.is_service && nextQty > maxStock) {
             alert('Insufficient stock for ' + product.name + '. Available: ' + formatQty(maxStock) + ' ' + unit.name);
             return false;
         }
@@ -631,7 +652,8 @@
                 unit_price: parseFloat(unit.price),
                 base_price: parseFloat(product.base_price || product.price),
                 quantity: qty,
-                max_stock: maxStock,
+                max_stock: product.is_service ? 999999 : maxStock,
+                is_service: !!product.is_service,
                 notes: '',
             });
             targetIdx = cart.length - 1;
@@ -649,15 +671,23 @@
         return String(item.product_id) + '|' + String(item.product_unit_id || '') + '|' + (item.notes || '').trim();
     }
 
+    function stockHintHtml(item) {
+        if (isUnlimitedStock(item)) {
+            return '<p class="text-xs text-violet-600">Service · adjust price or add a note below</p>';
+        }
+        return item.unit_name
+            ? '<p class="text-xs text-gray-500">Sold by ' + esc(item.unit_name) + ' · max ' + formatQty(item.max_stock) + '</p>'
+            : '<p class="text-xs text-gray-500">max ' + formatQty(item.max_stock) + '</p>';
+    }
+
     function unitSelectorHtml(item, idx) {
         if (!item.units || item.units.length <= 1) {
-            return item.unit_name
-                ? '<p class="text-xs text-gray-500">Sold by ' + esc(item.unit_name) + ' · max ' + formatQty(item.max_stock) + '</p>'
-                : '<p class="text-xs text-gray-500">max ' + formatQty(item.max_stock) + '</p>';
+            return stockHintHtml(item);
         }
         var options = item.units.map(function (u) {
             var selected = String(u.id) === String(item.product_unit_id) ? ' selected' : '';
-            return '<option value="' + u.id + '"' + selected + '>' + esc(u.name) + ' (max ' + formatQty(u.max_stock) + ')</option>';
+            var suffix = isUnlimitedStock(item) ? '' : ' (max ' + formatQty(u.max_stock) + ')';
+            return '<option value="' + u.id + '"' + selected + '>' + esc(u.name) + suffix + '</option>';
         }).join('');
         return '<label class="mt-1 block text-xs text-gray-500">Unit' +
             '<select data-action="unit" data-idx="' + idx + '" class="mt-0.5 w-full min-h-[36px] rounded-lg border border-gray-200 bg-white px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">' +
@@ -666,7 +696,7 @@
     }
 
     function priceFieldHtml(item, idx) {
-        if (variablePricingMode) {
+        if (variablePricingMode || isUnlimitedStock(item)) {
             return '<label class="mt-1 block text-xs text-gray-500">' +
                 'Unit price' +
                 '<input type="number" min="0" step="0.01" value="' + item.unit_price + '" data-action="price" data-idx="' + idx + '" ' +
@@ -678,6 +708,13 @@
         }
 
         return '<p class="text-xs text-gray-500">' + formatMoney(item.unit_price) + ' / ' + esc(item.unit_name || 'unit') + ' · max ' + formatQty(item.max_stock) + '</p>';
+    }
+
+    function lineNotesHtml(item, idx) {
+        if (!restaurantMode && !isUnlimitedStock(item)) {
+            return '';
+        }
+        return '<input type="text" data-action="notes" data-idx="' + idx + '" value="' + esc(item.notes || '') + '" placeholder="Line note (optional)" maxlength="500" class="mt-2 w-full rounded-lg border border-gray-200 px-2 py-1.5 text-xs focus:border-emerald-500 focus:outline-none">';
     }
 
     function updateCartTotals() {
@@ -732,10 +769,10 @@
                             ? '<button type="button" data-action="collapse" data-idx="' + idx + '" class="shrink-0 text-xs font-medium text-gray-500 hover:text-gray-700">Done</button>'
                             : '<button type="button" data-action="remove" data-idx="' + idx + '" class="min-h-[36px] min-w-[36px] shrink-0 rounded-lg border border-red-200 text-sm text-red-600 hover:bg-red-50" aria-label="Remove">×</button>') +
                     '</div>' +
-                    (restaurantMode ? '<input type="text" data-action="notes" data-idx="' + idx + '" value="' + esc(item.notes || '') + '" placeholder="Item note (e.g. spiced)" maxlength="500" class="mt-2 w-full rounded-lg border border-gray-200 px-2 py-1.5 text-xs focus:border-emerald-500 focus:outline-none">' : '') +
+                    lineNotesHtml(item, idx) +
                     '<div class="mt-2 flex items-center gap-2">' +
                         '<button type="button" data-action="minus" data-idx="' + idx + '" class="min-h-[40px] min-w-[40px] rounded-lg border border-gray-300 text-sm hover:bg-gray-50">−</button>' +
-                        '<input type="number" min="' + qtyAttrs.min + '" step="' + qtyAttrs.step + '" max="' + qtyAttrs.max + '" value="' + formatQty(item.quantity) + '" data-action="qty" data-idx="' + idx + '" ' +
+                        '<input type="number" min="' + qtyAttrs.min + '" step="' + qtyAttrs.step + '"' + (qtyAttrs.max != null ? ' max="' + qtyAttrs.max + '"' : '') + ' value="' + formatQty(item.quantity) + '" data-action="qty" data-idx="' + idx + '" ' +
                             'class="w-24 min-h-[40px] rounded-lg border-gray-300 text-center text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">' +
                         '<span class="text-xs text-gray-500">' + esc(item.unit_name || '') + '</span>' +
                         '<button type="button" data-action="plus" data-idx="' + idx + '" class="min-h-[40px] min-w-[40px] rounded-lg border border-gray-300 text-sm hover:bg-gray-50">+</button>' +
@@ -811,7 +848,7 @@
             renderCart();
             return;
         }
-        if (qty > item.max_stock) {
+        if (!isUnlimitedStock(item) && qty > item.max_stock) {
             alert('Max stock is ' + item.max_stock);
             renderCart();
             return;

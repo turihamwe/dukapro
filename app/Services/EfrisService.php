@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\EfrisSetting;
 use App\Models\Sale;
 use App\Support\EfrisCompliance;
+use App\Support\EfrisItemMapper;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -143,20 +144,23 @@ class EfrisService
 
     protected function buildItems(Sale $sale): array
     {
+        $sale->loadMissing(['items.product']);
         $items = [];
 
         foreach ($sale->items as $item) {
+            $product = $item->product;
             $quantity = (float) $item->quantity;
             $unitPrice = (float) $item->unit_price;
             $total = round((float) $item->subtotal, 2);
             $discount = (float) ($item->discount_amount ?? 0);
 
             $items[] = [
-                'itemCode' => $item->sku ?: $item->product_name,
+                'itemCode' => EfrisItemMapper::itemCode($item, $product),
+                'itemType' => EfrisItemMapper::itemType($product),
                 'quantity' => $quantity,
                 'unitPrice' => $unitPrice,
                 'total' => $total,
-                'unitOfMeasure' => $this->mapUnit($item->measurement_unit ?? 'piece'),
+                'unitOfMeasure' => EfrisItemMapper::unitOfMeasure($item, $product),
                 'discountFlag' => $discount > 0 ? '1' : '2',
                 'discountTotal' => $discount > 0 ? (string) $discount : '',
             ];

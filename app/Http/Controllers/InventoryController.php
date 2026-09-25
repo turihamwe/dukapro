@@ -276,7 +276,8 @@ class InventoryController extends Controller
         $rules = $this->simpleProductRules($businessId, $request);
 
         $data = $request->validate($rules);
-        $data['stock_quantity'] = $data['stock_quantity'] ?? 0;
+        $data['is_service'] = $request->boolean('is_service');
+        $data['stock_quantity'] = $data['is_service'] ? 0 : ($data['stock_quantity'] ?? 0);
 
         if ($branchId = $this->resolveBranchIdForOwner($request, $business)) {
             $data['branch_id'] = $branchId;
@@ -342,6 +343,10 @@ class InventoryController extends Controller
 
         $data = $request->validate($rules);
         $data['is_active'] = $request->boolean('is_active');
+        $data['is_service'] = $request->boolean('is_service');
+        if ($data['is_service']) {
+            $data['stock_quantity'] = 0;
+        }
         $data['brand_id'] = $this->resolveBrandId($request, $business->id);
         $data['measurement_unit'] = $this->resolveMeasurementUnit($request, $business->id, $data['measurement_unit'] ?? 'piece');
 
@@ -474,6 +479,8 @@ class InventoryController extends Controller
             'price' => 'required|numeric|min:0',
             'measurement_unit' => 'required|string|max:50',
             'stock_quantity' => 'nullable|numeric|min:0',
+            'is_service' => 'nullable|boolean',
+            'efris_item_code' => 'nullable|string|max:100',
             'critical_threshold' => 'nullable|integer|min:0',
             'secondary_units' => 'nullable|array',
             'secondary_units.*.unit_name' => 'nullable|string|max:50',

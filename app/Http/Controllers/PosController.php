@@ -68,12 +68,18 @@ class PosController extends Controller
             ->where('is_active', true)
             ->with(['activeBatches', 'units'])
             ->orderBy('name')
-            ->get(['id', 'name', 'sku', 'price', 'stock_quantity', 'measurement_unit', 'attribute_values', 'brand_id', 'parent_id']);
+            ->get(['id', 'name', 'sku', 'price', 'stock_quantity', 'measurement_unit', 'attribute_values', 'brand_id', 'parent_id', 'is_service']);
 
         $products = $products->filter(function (Product $product) {
+            if ($product->isService()) {
+                return true;
+            }
+
             return $this->batchService->availableStock($product) > 0;
         })->map(function (Product $product) {
-            $baseStock = $this->batchService->availableStock($product);
+            $baseStock = $product->isService()
+                ? 999999.0
+                : $this->batchService->availableStock($product);
             $product->setAttribute('available_stock', $baseStock);
             $product->setAttribute('fifo_price', $this->batchService->fifoSellingPrice($product));
             $product->setAttribute('pos_units', $this->unitService->posCatalogUnits($product));
@@ -125,12 +131,18 @@ class PosController extends Controller
                     ->orWhere('sku', 'like', "%{$query}%");
             })
             ->limit(15)
-            ->get(['id', 'name', 'sku', 'price', 'stock_quantity', 'measurement_unit', 'attribute_values']);
+            ->get(['id', 'name', 'sku', 'price', 'stock_quantity', 'measurement_unit', 'attribute_values', 'is_service']);
 
         $products = $products->filter(function (Product $product) {
+            if ($product->isService()) {
+                return true;
+            }
+
             return $this->batchService->availableStock($product) > 0;
         })->map(function (Product $product) {
-            $baseStock = $this->batchService->availableStock($product);
+            $baseStock = $product->isService()
+                ? 999999.0
+                : $this->batchService->availableStock($product);
             $product->setAttribute('available_stock', $baseStock);
             $product->setAttribute('fifo_price', $this->batchService->fifoSellingPrice($product));
             $product->setAttribute('pos_units', $this->unitService->posCatalogUnits($product));

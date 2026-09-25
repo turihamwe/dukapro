@@ -47,6 +47,18 @@ return [
 
     'default_unit' => 'PCE',
 
+    /*
+    | URA / EFRIS line classification: 1 = goods, 2 = services (WEAF fiscal receipt).
+    */
+    'item_type' => [
+        'goods' => env('EFRIS_ITEM_TYPE_GOODS', '1'),
+        'service' => env('EFRIS_ITEM_TYPE_SERVICE', '2'),
+    ],
+
+    'service_unit' => env('EFRIS_SERVICE_UNIT', 'SV'),
+
+    'default_service_item_code' => env('EFRIS_DEFAULT_SERVICE_ITEM_CODE', ''),
+
     'job' => [
         'tries' => 3,
         'backoff_seconds' => [60, 300, 900],

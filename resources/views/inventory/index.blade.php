@@ -114,6 +114,9 @@
                         @if($product->variants_count > 0)
                             · {{ $product->variants_count }} variants
                         @endif
+                        @if($product->isService())
+                            · <span class="font-medium text-violet-700">Service</span>
+                        @endif
                     </p>
                 </div>
                 <div class="text-right shrink-0">
@@ -136,7 +139,11 @@
                         @if($product->variants_count === 0)
                             <p class="text-xs text-gray-500">Sell: <span class="font-semibold text-gray-900">@money($product->price)</span></p>
                         @endif
-                        <p class="text-xs {{ $totalStock <= 5 ? 'text-red-600 font-medium' : 'text-gray-500' }}">Stock: {{ $totalStock }}</p>
+                        @if($product->isService())
+                            <p class="text-xs font-medium text-violet-700">No stock tracking</p>
+                        @else
+                            <p class="text-xs {{ $totalStock <= 5 ? 'text-red-600 font-medium' : 'text-gray-500' }}">Stock: {{ $totalStock }}</p>
+                        @endif
                         <div class="mt-1 flex flex-wrap justify-end gap-x-3 gap-y-1">
                             <a href="{{ tenant_route('tenant.inventory.show', ['product' => $product]) }}" class="text-xs font-medium text-emerald-600 hover:text-emerald-700">View</a>
                             @can('update', $product)

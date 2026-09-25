@@ -44,6 +44,7 @@ class ProductPolicy
     public function topUp(User $user, Product $product): bool
     {
         return $user->can('top-up-inventory')
+            && ! $product->isService()
             && (int) $user->business_id === (int) $product->business_id
             && $this->sameBranch($user, $product);
     }

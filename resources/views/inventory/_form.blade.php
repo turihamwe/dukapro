@@ -5,6 +5,7 @@
     $catalogVariantsEnabled = $catalogVariantsEnabled ?? auth()->user()->can('use-catalog-variants');
     $showVariantFields = $catalogVariantsEnabled || ($isEdit && $isVariable);
     $productType = old('product_type', $isVariable ? 'variable' : 'simple');
+    $isServiceItem = (bool) old('is_service', $product->is_service ?? false);
     $variantsEnabled = $showVariantFields && $productType === 'variable';
     $canViewCost = $canViewCost ?? auth()->user()->can('view-cost-prices');
 
@@ -82,6 +83,25 @@
     <x-input type="text" name="name" label="Product name" value="{{ old('name', $product->name ?? '') }}" required autofocus
              placeholder="e.g. Classic T-Shirt or Guinness beer 500ml" />
 
+    <div id="catalog-item-kind" class="rounded-xl border border-gray-200 bg-white p-4 {{ $variantsEnabled ? 'hidden' : '' }}">
+        <label class="flex cursor-pointer items-start gap-3">
+            <input type="checkbox" name="is_service" id="is_service_toggle" value="1" class="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" @checked($isServiceItem)>
+            <span class="min-w-0">
+                <span class="block text-sm font-medium text-gray-900">Non-inventory service</span>
+                <span class="mt-0.5 block text-xs text-gray-500">Sell labour, delivery, repairs, or fees with a price but no stock tracking (still appears on POS).</span>
+            </span>
+        </label>
+        <div class="mt-4">
+            <label for="efris_item_code" class="mb-1 block text-xs font-medium text-gray-700">URA / EFRIS item code <span class="font-normal text-gray-400">(optional)</span></label>
+            <input type="text" name="efris_item_code" id="efris_item_code" maxlength="100" value="{{ old('efris_item_code', $product->efris_item_code ?? '') }}"
+                   placeholder="Registered commodity code for fiscal receipts"
+                   class="block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+            @error('efris_item_code')
+                <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+            @enderror
+        </div>
+    </div>
+
     @if(! $isEdit)
         <div>
             <label class="mb-1.5 block text-sm font-medium text-gray-700" for="product_sku">SKU <span class="font-normal text-gray-400">(optional)</span></label>
@@ -116,7 +136,7 @@
                 </div>
             @endif
         </div>
-        <div>
+        <div id="simple-stock-wrap" class="{{ $isServiceItem ? 'hidden' : '' }}">
             @if($isEdit)
                 <label class="mb-1.5 block text-sm font-medium text-gray-700" for="simple_stock">Stock on hand</label>
                 <input type="number" step="0.001" min="0" name="stock_quantity" id="simple_stock" value="{{ old('stock_quantity', $product->stock_quantity ?? 0) }}"
@@ -128,6 +148,7 @@
                 <p class="mt-1 text-xs text-gray-500">Leave at 0 and use <strong>Top-up Stock</strong> later to restock existing products.</p>
             @endif
         </div>
+        <p id="service-stock-hint" class="text-xs text-indigo-700 {{ $isServiceItem ? '' : 'hidden' }}">Stock is not tracked for services.</p>
     </div>
 
     {{-- Variant toggle --}}
@@ -358,6 +379,24 @@
     var variant = document.getElementById('variant-product-fields');
     var secondaryUnitsSection = document.getElementById('secondary-units-section');
     var typeInput = document.getElementById('product_type_input');
+    var catalogKind = document.getElementById('catalog-item-kind');
+    var serviceToggle = document.getElementById('is_service_toggle');
+    var stockWrap = document.getElementById('simple-stock-wrap');
+    var serviceHint = document.getElementById('service-stock-hint');
+
+    function syncServiceMode() {
+        if (!serviceToggle) return;
+        var on = serviceToggle.checked;
+        if (stockWrap) stockWrap.classList.toggle('hidden', on);
+        if (serviceHint) serviceHint.classList.toggle('hidden', !on);
+        var stockInput = document.getElementById('simple_stock');
+        if (on && stockInput) stockInput.value = '0';
+    }
+
+    if (serviceToggle) {
+        serviceToggle.addEventListener('change', syncServiceMode);
+        syncServiceMode();
+    }
 
     function syncVariantMode() {
         if (!toggle || !simple || !variant || !typeInput) return;
@@ -365,6 +404,11 @@
         simple.classList.toggle('hidden', on);
         variant.classList.toggle('hidden', !on);
         if (secondaryUnitsSection) secondaryUnitsSection.classList.toggle('hidden', on);
+        if (catalogKind) catalogKind.classList.toggle('hidden', on);
+        if (on && serviceToggle) {
+            serviceToggle.checked = false;
+            syncServiceMode();
+        }
         typeInput.value = on ? 'variable' : 'simple';
         simple.querySelectorAll('.simple-field').forEach(function (field) {
             field.disabled = on;

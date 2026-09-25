@@ -28,6 +28,10 @@ class LowStockAlertService
             ->get();
 
         return $products->filter(function (Product $product) {
+            if ($product->isService()) {
+                return false;
+            }
+
             $available = $product->isVariableParent()
                 ? $product->variants->sum(fn (Product $variant) => $this->batchService->availableStock($variant))
                 : $this->batchService->availableStock($product);

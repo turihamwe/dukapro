@@ -32,6 +32,8 @@ class Product extends Model
         'critical_threshold',
         'is_active',
         'is_sellable',
+        'is_service',
+        'efris_item_code',
     ];
 
     protected $casts = [
@@ -43,6 +45,7 @@ class Product extends Model
         'critical_threshold' => 'integer',
         'is_active' => 'boolean',
         'is_sellable' => 'boolean',
+        'is_service' => 'boolean',
     ];
 
     public function business(): BelongsTo
@@ -107,6 +110,21 @@ class Product extends Model
     public function scopeSellable($query)
     {
         return $query->where('is_sellable', true);
+    }
+
+    public function scopeInventoryTracked($query)
+    {
+        return $query->where('is_service', false);
+    }
+
+    public function isService(): bool
+    {
+        return (bool) $this->is_service;
+    }
+
+    public function tracksInventory(): bool
+    {
+        return ! $this->isService();
     }
 
     public function isVariableParent(): bool

@@ -119,6 +119,34 @@ class SaleService
                 DivisibleProductsMode::assertWholeQuantity($business, $soldQuantity, $product->displayName());
                 $productUnit = $this->unitService->resolveUnit($product, $item['product_unit_id'] ?? null);
                 $baseQuantity = $this->unitService->toBaseQuantity($productUnit, $soldQuantity);
+
+                if ($product->isService()) {
+                    $linePricing = $this->resolveServiceLinePricing(
+                        $product,
+                        $productUnit,
+                        $soldQuantity,
+                        $item,
+                        $variablePricing
+                    );
+
+                    $subtotal += $linePricing['subtotal'];
+
+                    $lineItems[] = [
+                        'product' => $product->fresh(),
+                        'product_unit' => $productUnit,
+                        'quantity' => $soldQuantity,
+                        'base_quantity' => $baseQuantity,
+                        'unit_price' => $linePricing['unit_price'],
+                        'cost_price' => $linePricing['cost_price'],
+                        'subtotal' => $linePricing['subtotal'],
+                        'allocations' => [],
+                        'notes' => ! empty($item['notes']) ? mb_substr(trim((string) $item['notes']), 0, 500) : null,
+                        'tracks_inventory' => false,
+                    ];
+
+                    continue;
+                }
+
                 $available = $this->batchService->availableStock($product);
 
                 if ($available < $baseQuantity) {
@@ -165,6 +193,7 @@ class SaleService
                     'subtotal' => $lineSubtotal,
                     'allocations' => $deduction['allocations'],
                     'notes' => ! empty($item['notes']) ? mb_substr(trim((string) $item['notes']), 0, 500) : null,
+                    'tracks_inventory' => true,
                 ];
             }
 
@@ -243,31 +272,33 @@ class SaleService
                     'notes' => $line['notes'] ?? null,
                 ]);
 
-                foreach ($line['allocations'] as $allocation) {
-                    SaleItemBatchAllocation::create([
-                        'sale_item_id' => $saleItem->id,
-                        'product_batch_id' => $allocation['product_batch_id'],
-                        'quantity' => $allocation['quantity'],
-                        'cost_price' => $allocation['cost_price'],
-                        'selling_price' => $allocation['selling_price'],
-                        'subtotal' => $allocation['subtotal'],
-                        'is_legacy_stock' => $allocation['is_legacy_stock'],
-                    ]);
-                }
+                if ($line['tracks_inventory'] ?? true) {
+                    foreach ($line['allocations'] as $allocation) {
+                        SaleItemBatchAllocation::create([
+                            'sale_item_id' => $saleItem->id,
+                            'product_batch_id' => $allocation['product_batch_id'],
+                            'quantity' => $allocation['quantity'],
+                            'cost_price' => $allocation['cost_price'],
+                            'selling_price' => $allocation['selling_price'],
+                            'subtotal' => $allocation['subtotal'],
+                            'is_legacy_stock' => $allocation['is_legacy_stock'],
+                        ]);
+                    }
 
-                AuditLogger::record(
-                    'stock_decremented',
-                    $product->fresh(),
-                    null,
-                    [
-                        'stock_quantity' => $product->fresh()->stock_quantity,
-                        'batch_stock' => $product->fresh()->batchStockQuantity(),
-                        'sale_id' => $sale->id,
-                        'fifo_allocations' => count($line['allocations']),
-                    ],
-                    $businessId,
-                    $user->id
-                );
+                    AuditLogger::record(
+                        'stock_decremented',
+                        $product->fresh(),
+                        null,
+                        [
+                            'stock_quantity' => $product->fresh()->stock_quantity,
+                            'batch_stock' => $product->fresh()->batchStockQuantity(),
+                            'sale_id' => $sale->id,
+                            'fifo_allocations' => count($line['allocations']),
+                        ],
+                        $businessId,
+                        $user->id
+                    );
+                }
             }
 
             if ($isCreditSale && $creditCustomer) {
@@ -302,6 +333,46 @@ class SaleService
         }
 
         return $sale;
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     * @return array{unit_price: float, cost_price: float, subtotal: float}
+     */
+    protected function resolveServiceLinePricing(
+        Product $product,
+        $productUnit,
+        float $soldQuantity,
+        array $item,
+        bool $variablePricing
+    ): array {
+        $catalogUnitPrice = $productUnit->sellingPrice($product);
+
+        if ($variablePricing || (array_key_exists('unit_price', $item) && is_numeric($item['unit_price']))) {
+            if (! isset($item['unit_price']) || ! is_numeric($item['unit_price'])) {
+                throw ValidationException::withMessages([
+                    'items' => 'Service lines must include a price when variable pricing is enabled.',
+                ]);
+            }
+
+            $unitPrice = round((float) $item['unit_price'], 2);
+        } else {
+            $unitPrice = round((float) $catalogUnitPrice, 2);
+        }
+
+        if ($unitPrice < 0) {
+            throw ValidationException::withMessages([
+                'items' => 'Item prices cannot be negative.',
+            ]);
+        }
+
+        $costPrice = $product->cost_price !== null ? round((float) $product->cost_price, 2) : 0.0;
+
+        return [
+            'unit_price' => $unitPrice,
+            'cost_price' => $costPrice,
+            'subtotal' => round($soldQuantity * $unitPrice, 2),
+        ];
     }
 
     protected function resolveSaleBranchId(User $user, Collection $products): int
