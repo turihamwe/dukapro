@@ -596,3 +596,13 @@ if (! function_exists('app_logo_url')) {
         return \App\Support\AppLogoUrl::resolve();
     }
 }
+
+if (! function_exists('efris_platform_enabled')) {
+    /**
+     * Level 1 — platform master "Use EFRIS". When false, hide all EFRIS UI system-wide (except superadmin settings).
+     */
+    function efris_platform_enabled(): bool
+    {
+        return \App\Support\EfrisCompliance::globallyEnabled();
+    }
+}

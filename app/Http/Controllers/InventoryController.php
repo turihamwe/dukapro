@@ -9,6 +9,7 @@ use App\Models\Brand;
 use App\Models\Business;
 use App\Models\Product;
 use App\Support\BusinessModeCompliance;
+use App\Support\EfrisCompliance;
 use App\Models\ProductAttribute;
 use App\Models\SoldByUnit;
 use App\Support\BatchMode;
@@ -285,6 +286,9 @@ class InventoryController extends Controller
                 'is_service' => 'Service items are not enabled for this business.',
             ]);
         }
+        if (! EfrisCompliance::globallyEnabled()) {
+            unset($data['efris_item_code']);
+        }
         $data['stock_quantity'] = $data['is_service'] ? 0 : ($data['stock_quantity'] ?? 0);
 
         if ($branchId = $this->resolveBranchIdForOwner($request, $business)) {
@@ -361,6 +365,9 @@ class InventoryController extends Controller
             $data['stock_quantity'] = 0;
         } elseif ($product->isService()) {
             $data['is_service'] = false;
+        }
+        if (! EfrisCompliance::globallyEnabled()) {
+            unset($data['efris_item_code']);
         }
         $data['brand_id'] = $this->resolveBrandId($request, $business->id);
         $data['measurement_unit'] = $this->resolveMeasurementUnit($request, $business->id, $data['measurement_unit'] ?? 'piece');

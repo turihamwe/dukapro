@@ -76,10 +76,11 @@ class BusinessSettingsController extends Controller
 
         $efrisInput = $request->input('efris', []);
         $existingEfris = EfrisSetting::query()->firstOrNew(['business_id' => $business->id]);
-        $efrisUnlocked = EfrisCompliance::isAdminUnlocked($existingEfris->exists ? $existingEfris : null);
+        $efrisGloballyOn = EfrisCompliance::globallyEnabled();
+        $efrisUnlocked = $efrisGloballyOn && EfrisCompliance::isAdminUnlocked($existingEfris->exists ? $existingEfris : null);
         $efrisEnabled = $efrisUnlocked && $request->boolean('efris.enabled');
 
-        if ($efrisEnabled) {
+        if ($efrisGloballyOn && $efrisEnabled) {
             $tin = preg_replace('/\D+/', '', (string) $business->tax_number);
 
             if ($tin === '') {

@@ -92,6 +92,7 @@
                 <span class="mt-0.5 block text-xs text-gray-500">Sell labour, delivery, repairs, or fees with a price but no stock tracking (still appears on POS).</span>
             </span>
         </label>
+        @efrisPlatform
         <div class="mt-4">
             <label for="efris_item_code" class="mb-1 block text-xs font-medium text-gray-700">URA / EFRIS item code <span class="font-normal text-gray-400">(optional)</span></label>
             <input type="text" name="efris_item_code" id="efris_item_code" maxlength="100" value="{{ old('efris_item_code', $product->efris_item_code ?? '') }}"
@@ -101,6 +102,7 @@
                 <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
             @enderror
         </div>
+        @endefrisPlatform
     </div>
     @endif
 

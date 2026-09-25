@@ -141,7 +141,9 @@
 
         @include('business._divisible-products-settings', ['business' => $business])
 
-        @include('business._efris-settings', ['efrisSetting' => $efrisSetting ?? null, 'business' => $business])
+        @efrisPlatform
+            @include('business._efris-settings', ['efrisSetting' => $efrisSetting ?? null, 'business' => $business])
+        @endefrisPlatform
 
         <x-button type="submit" variant="primary">Save business profile</x-button>
     </form>

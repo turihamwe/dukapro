@@ -4,10 +4,10 @@
     use App\Support\WeafPlatformCredentials;
 
     $efris = $efrisSetting ?? null;
-    $adminUnlocked = EfrisCompliance::isAdminUnlocked($efris);
+    $adminUnlocked = EfrisCompliance::globallyEnabled() && EfrisCompliance::isAdminUnlocked($efris);
 @endphp
 
-@if(! $adminUnlocked)
+@if(! EfrisCompliance::globallyEnabled() || ! $adminUnlocked)
     {{-- Hidden until platform "Use EFRIS" is on and a superadmin unlocks this business. --}}
 @else
 @php

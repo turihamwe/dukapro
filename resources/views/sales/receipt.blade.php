@@ -107,28 +107,30 @@
         <p class="mt-4 text-center text-sm font-semibold text-emerald-700">PAID — Thank you!</p>
     @endif
 
-    @if($sale->hasEfrisReceipt())
-        <div class="mt-4 border-t border-gray-200 pt-4 text-center">
-            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">URA EFRIS Fiscal Receipt</p>
-            @if($sale->efris_fdn)
-                <p class="mt-2 text-sm font-bold text-gray-900">FDN: {{ $sale->efris_fdn }}</p>
-            @endif
-            @if($sale->efris_antifake_code)
-                <p class="mt-1 text-xs text-gray-600">Verification code: {{ $sale->efris_antifake_code }}</p>
-            @endif
-            @if($sale->efris_qr_code)
-                <div class="mt-3 flex justify-center">
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&amp;data={{ urlencode($sale->efris_qr_code) }}"
-                         alt="EFRIS verification QR code" class="h-36 w-36 rounded-lg border border-gray-200 bg-white p-1">
-                </div>
-                <p class="mt-2 break-all text-[10px] text-gray-500">{{ $sale->efris_qr_code }}</p>
-            @endif
-        </div>
-    @elseif($sale->efris_status === 'pending')
-        <p class="mt-4 text-center text-xs text-amber-700">EFRIS fiscal receipt is being submitted…</p>
-    @elseif($sale->efris_status === 'failed')
-        <p class="mt-4 text-center text-xs text-red-600">EFRIS submission pending retry.</p>
-    @endif
+    @efrisPlatform
+        @if($sale->hasEfrisReceipt())
+            <div class="mt-4 border-t border-gray-200 pt-4 text-center">
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">URA EFRIS Fiscal Receipt</p>
+                @if($sale->efris_fdn)
+                    <p class="mt-2 text-sm font-bold text-gray-900">FDN: {{ $sale->efris_fdn }}</p>
+                @endif
+                @if($sale->efris_antifake_code)
+                    <p class="mt-1 text-xs text-gray-600">Verification code: {{ $sale->efris_antifake_code }}</p>
+                @endif
+                @if($sale->efris_qr_code)
+                    <div class="mt-3 flex justify-center">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&amp;data={{ urlencode($sale->efris_qr_code) }}"
+                             alt="EFRIS verification QR code" class="h-36 w-36 rounded-lg border border-gray-200 bg-white p-1">
+                    </div>
+                    <p class="mt-2 break-all text-[10px] text-gray-500">{{ $sale->efris_qr_code }}</p>
+                @endif
+            </div>
+        @elseif($sale->efris_status === 'pending')
+            <p class="mt-4 text-center text-xs text-amber-700">EFRIS fiscal receipt is being submitted…</p>
+        @elseif($sale->efris_status === 'failed')
+            <p class="mt-4 text-center text-xs text-red-600">EFRIS submission pending retry.</p>
+        @endif
+    @endefrisPlatform
 
     @if($sale->notes)
         <p class="mt-3 text-xs text-gray-500">Note: {{ $sale->notes }}</p>

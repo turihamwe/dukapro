@@ -5,6 +5,13 @@
 @section('content')
 @php
     $brand = platform_brand('name');
+    $efrisOnLanding = efris_platform_enabled();
+    $complianceFeatureDesc = $efrisOnLanding
+        ? 'Stay audit-ready with structured sales records, EFRIS integration support, and complete transaction history you can export anytime.'
+        : 'Stay audit-ready with structured sales records and complete transaction history you can export anytime.';
+    $businessPlanBlurb = $efrisOnLanding
+        ? 'Add modules for restaurants, multi-branch, EFRIS, and advanced reporting.'
+        : 'Add modules for restaurants, multi-branch, and advanced reporting.';
 @endphp
 
 {{-- Navigation --}}
@@ -220,7 +227,7 @@
                 ],
                 [
                     'title' => 'Seamless Compliance',
-                    'desc' => 'Stay audit-ready with structured sales records, EFRIS integration support, and complete transaction history you can export anytime.',
+                    'desc' => $complianceFeatureDesc,
                     'icon' => 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z',
                     'icon_class' => 'bg-sky-50 text-sky-600 ring-sky-100',
                 ],
@@ -315,7 +322,7 @@
                 <span class="absolute -top-3 left-6 rounded-full bg-brand-600 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">Popular</span>
                 <p class="text-sm font-semibold uppercase tracking-wider text-brand-600">Business</p>
                 <p class="mt-4 text-4xl font-extrabold text-ink-900">Flexible plans</p>
-                <p class="mt-2 text-slate-600">Add modules for restaurants, multi-branch, EFRIS, and advanced reporting.</p>
+                <p class="mt-2 text-slate-600">{{ $businessPlanBlurb }}</p>
                 <ul class="mt-6 space-y-3 text-sm text-slate-700">
                     <li class="flex items-center gap-2"><svg class="h-4 w-4 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Everything in Starter</li>
                     <li class="flex items-center gap-2"><svg class="h-4 w-4 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> EOD reconciliation &amp; shortages</li>

@@ -10,7 +10,7 @@
 <div class="rounded-xl border border-violet-200 bg-violet-50/40 p-4 sm:p-5">
     <p class="text-sm font-semibold text-gray-900">Specialized operating modes</p>
     <p class="mt-1 text-xs text-gray-600">
-        Level 2 unlock (like EFRIS). Turn on platform masters in System Settings first, then unlock per business. Owners toggle features on their profile.
+        Level 2 unlock per business (same pattern as optional compliance modules). Turn on platform masters in System Settings first, then unlock here. Owners toggle features on their profile.
     </p>
     <p class="mt-2 text-xs text-gray-500">Operating mode: <span class="font-medium text-gray-800">{{ \App\Enums\BusinessOperatingMode::label($business->operatingMode()) }}</span></p>
 

@@ -96,7 +96,9 @@
         @include('superadmin.businesses._variable-pricing-panel', ['business' => $item])
         @include('superadmin.businesses._divisible-products-panel', ['business' => $item])
         @include('superadmin.businesses._operating-modes-panel', ['business' => $item])
-        @include('superadmin.businesses._efris-panel', ['business' => $item])
+        @efrisPlatform
+            @include('superadmin.businesses._efris-panel', ['business' => $item])
+        @endefrisPlatform
     @endif
 
     @if($entity === 'affiliates')
