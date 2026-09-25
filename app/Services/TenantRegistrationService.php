@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Enums\BusinessOperatingMode;
 use App\Enums\BusinessType;
+use App\Support\BusinessModeCompliance;
 use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
 use App\Models\Business;
@@ -23,9 +25,12 @@ class TenantRegistrationService
         $user = DB::transaction(function () use ($data) {
             $slug = $this->uniqueSlug($data['business_name']);
 
+            $operatingMode = $data['operating_mode'] ?? BusinessOperatingMode::RETAIL;
+
             $business = Business::create([
                 'name' => $data['business_name'],
                 'business_type' => $data['business_type'],
+                'operating_mode' => $operatingMode,
                 'slug' => $slug,
                 'portal_slug' => $this->uniquePortalSlug($data['business_name']),
                 'email' => $data['email'],
@@ -46,7 +51,10 @@ class TenantRegistrationService
 
             app(BranchService::class)->createDefault($business);
 
-            $settings = $business->settings ?? [];
+            $settings = array_merge(
+                $business->settings ?? [],
+                BusinessModeCompliance::registrationPreset($operatingMode)
+            );
 
             if ($data['business_type'] === BusinessType::BAR_PUB) {
                 $settings['shift_waiter_mode'] = true;

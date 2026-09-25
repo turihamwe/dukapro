@@ -42,6 +42,20 @@
                 @enderror
             </div>
             <div>
+                <label for="operating_mode" class="mb-1.5 block text-sm font-medium text-gray-700">How you operate <span class="text-red-500">*</span></label>
+                <select name="operating_mode" id="operating_mode" required
+                        class="block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 @error('operating_mode') border-red-300 ring-red-200 @enderror">
+                    @foreach(\App\Enums\BusinessOperatingMode::labels() as $value => $label)
+                        <option value="{{ $value }}" @selected(old('operating_mode', \App\Enums\BusinessOperatingMode::RETAIL) === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+                @error('operating_mode')
+                    <p class="mt-1 text-xs font-medium text-red-600" role="alert">{{ $message }}</p>
+                @else
+                    <p class="mt-1 text-xs text-gray-500">Most shops choose <strong>Retail</strong>. Pick a specialized mode only if you mainly sell services, rentals, or track warehouse stock.</p>
+                @enderror
+            </div>
+            <div>
                 <x-input type="text" name="name" label="Your name" value="{{ old('name') }}" required
                          class="@error('name') [&_input]:border-red-300 [&_input]:ring-red-200 @enderror" />
                 @error('name')

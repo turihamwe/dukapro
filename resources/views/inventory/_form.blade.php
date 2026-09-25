@@ -83,6 +83,7 @@
     <x-input type="text" name="name" label="Product name" value="{{ old('name', $product->name ?? '') }}" required autofocus
              placeholder="e.g. Classic T-Shirt or Guinness beer 500ml" />
 
+    @if($serviceCatalogEnabled ?? false)
     <div id="catalog-item-kind" class="rounded-xl border border-gray-200 bg-white p-4 {{ $variantsEnabled ? 'hidden' : '' }}">
         <label class="flex cursor-pointer items-start gap-3">
             <input type="checkbox" name="is_service" id="is_service_toggle" value="1" class="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" @checked($isServiceItem)>
@@ -101,6 +102,7 @@
             @enderror
         </div>
     </div>
+    @endif
 
     @if(! $isEdit)
         <div>

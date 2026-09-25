@@ -13,6 +13,7 @@ use App\Models\SaleItem;
 use App\Models\SaleItemBatchAllocation;
 use App\Models\User;
 use App\Scopes\BranchScope;
+use App\Support\BusinessModeCompliance;
 use App\Support\DivisibleProductsMode;
 use App\Support\VariablePricingMode;
 use Carbon\Carbon;
@@ -121,6 +122,12 @@ class SaleService
                 $baseQuantity = $this->unitService->toBaseQuantity($productUnit, $soldQuantity);
 
                 if ($product->isService()) {
+                    if (! BusinessModeCompliance::serviceCatalogActive($business)) {
+                        throw ValidationException::withMessages([
+                            'items' => 'Service sales are not enabled for this business.',
+                        ]);
+                    }
+
                     $linePricing = $this->resolveServiceLinePricing(
                         $product,
                         $productUnit,

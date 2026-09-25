@@ -55,6 +55,9 @@ class SettingsController extends Controller
             'module_prices.*' => 'nullable|numeric|min:0',
             'affiliate_first_commission_percent' => 'required|numeric|min:0|max:100',
             'affiliate_subsequent_commission_percent' => 'required|numeric|min:0|max:100',
+            'use_service_based_mode' => 'nullable|boolean',
+            'use_rental_mode' => 'nullable|boolean',
+            'use_inventory_only_mode' => 'nullable|boolean',
             'use_efris' => 'nullable|boolean',
             'efris_auto_provision_enabled' => 'nullable|boolean',
             'efris_platform_email' => 'nullable|email|max:255',
@@ -97,6 +100,9 @@ class SettingsController extends Controller
             'affiliate_subsequent_commission_rate',
             (string) round((float) $data['affiliate_subsequent_commission_percent'] / 100, 4)
         );
+        SystemSetting::set('use_service_based_mode', $request->boolean('use_service_based_mode') ? '1' : '0');
+        SystemSetting::set('use_rental_mode', $request->boolean('use_rental_mode') ? '1' : '0');
+        SystemSetting::set('use_inventory_only_mode', $request->boolean('use_inventory_only_mode') ? '1' : '0');
         SystemSetting::set('use_efris', $request->boolean('use_efris') ? '1' : '0');
         SystemSetting::set('efris_auto_provision_enabled', $request->boolean('efris_auto_provision_enabled') ? '1' : '0');
         SystemSetting::set('efris_platform_email', $data['efris_platform_email'] ?? '');

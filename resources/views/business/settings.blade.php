@@ -67,6 +67,8 @@
 
         <x-input type="color" name="brand_color" label="Brand color" value="{{ old('brand_color', $business->brand_color ?? '#4f46e5') }}" />
 
+        @include('business._operating-mode-settings', ['business' => $business])
+
         <div class="rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
             <div class="mb-4">
                 <p class="text-sm font-semibold text-gray-900">Capabilities</p>

@@ -8,6 +8,8 @@ use App\Models\EfrisSetting;
 use App\Services\BusinessModuleService;
 use App\Services\BusinessPermissionService;
 use App\Support\BatchMode;
+use App\Enums\BusinessOperatingMode;
+use App\Support\BusinessModeCompliance;
 use App\Support\EfrisCompliance;
 use App\Support\DivisibleProductsMode;
 use App\Support\VariablePricingMode;
@@ -49,6 +51,8 @@ class BusinessSettingsController extends Controller
             'currency_symbol' => 'required|string|max:20',
             'currency_position' => 'required|in:prefix,suffix',
             'brand_color' => 'nullable|string|max:7',
+            'operating_mode' => 'required|string|in:' . implode(',', BusinessOperatingMode::all()),
+            'service_based_mode_enabled' => 'nullable|boolean',
             'modules' => 'nullable|array',
             'modules.restaurant.enabled' => 'nullable|boolean',
             'modules.restaurant.use_tables' => 'nullable|boolean',
@@ -123,6 +127,7 @@ class BusinessSettingsController extends Controller
             'currency_position' => $data['currency_position'],
             'currency' => $data['currency_symbol'],
             'brand_color' => $data['brand_color'] ?? $business->brand_color,
+            'operating_mode' => $data['operating_mode'],
         ];
 
         if (VariablePricingMode::platformEnabled()) {
@@ -134,6 +139,16 @@ class BusinessSettingsController extends Controller
         }
 
         $business->update($businessPayload);
+
+        if (BusinessModeCompliance::isAdminUnlocked($business->fresh(), BusinessModeCompliance::MODE_SERVICE)) {
+            BusinessModeCompliance::setOwnerEnabled(
+                $business->fresh(),
+                BusinessModeCompliance::MODE_SERVICE,
+                $request->boolean('service_based_mode_enabled')
+            );
+        }
+
+        $business = $business->fresh();
 
         app(BusinessModuleService::class)->updateCapabilities(
             $business->fresh(),

@@ -214,6 +214,7 @@ class AuthController extends Controller
         $data = $request->validate([
             'business_name' => 'required|string|max:255',
             'business_type' => 'required|string|in:' . implode(',', \App\Enums\BusinessType::all()),
+            'operating_mode' => 'required|string|in:' . implode(',', \App\Enums\BusinessOperatingMode::all()),
             'name' => 'required|string|max:255',
             'username' => 'required|string|max:50|alpha_dash|unique:users,username',
             'email' => 'required|email|unique:users,email',
@@ -229,6 +230,10 @@ class AuthController extends Controller
 
         if ($referral['sub']) {
             $data['referring_affiliate_id'] = $referral['sub']->id;
+        }
+
+        if (empty($data['operating_mode'])) {
+            $data['operating_mode'] = \App\Enums\BusinessOperatingMode::RETAIL;
         }
 
         $user = $this->registrationService->register($data);

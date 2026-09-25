@@ -284,8 +284,48 @@
     </div>
 
     @php
+        $useServiceMode = old('use_service_based_mode', $settings['use_service_based_mode'] ?? '0') === '1';
+        $useRentalMode = old('use_rental_mode', $settings['use_rental_mode'] ?? '0') === '1';
+        $useInventoryOnlyMode = old('use_inventory_only_mode', $settings['use_inventory_only_mode'] ?? '0') === '1';
         $useEfris = old('use_efris', $settings['use_efris'] ?? '0') === '1';
     @endphp
+
+    <div class="rounded-xl border border-violet-200 bg-violet-50/50 p-6 space-y-5">
+        <div>
+            <h2 class="text-sm font-semibold text-gray-900">Specialized business modes</h2>
+            <p class="mt-1 text-xs text-gray-600">Master switches (level 1). When off, service/rental/warehouse features stay hidden platform-wide. Unlock individual businesses on their superadmin detail page.</p>
+        </div>
+
+        <label class="flex items-start gap-3 rounded-lg border border-violet-300 bg-white p-4 text-sm">
+            <input type="hidden" name="use_service_based_mode" value="0">
+            <input type="checkbox" name="use_service_based_mode" value="1" class="mt-0.5 rounded border-gray-300 text-violet-600"
+                   {{ $useServiceMode ? 'checked' : '' }}>
+            <span>
+                <span class="font-semibold text-gray-900">Service-based businesses</span>
+                <span class="block text-xs text-gray-500">Non-inventory services in catalog and POS (labour, fees, repairs).</span>
+            </span>
+        </label>
+
+        <label class="flex items-start gap-3 rounded-lg border border-dashed border-gray-300 bg-white/80 p-4 text-sm">
+            <input type="hidden" name="use_rental_mode" value="0">
+            <input type="checkbox" name="use_rental_mode" value="1" class="mt-0.5 rounded border-gray-300 text-gray-600"
+                   {{ $useRentalMode ? 'checked' : '' }}>
+            <span>
+                <span class="font-semibold text-gray-900">Rentals (stub)</span>
+                <span class="block text-xs text-gray-500">Car hire / property — unlock only; product UI coming later.</span>
+            </span>
+        </label>
+
+        <label class="flex items-start gap-3 rounded-lg border border-dashed border-gray-300 bg-white/80 p-4 text-sm">
+            <input type="hidden" name="use_inventory_only_mode" value="0">
+            <input type="checkbox" name="use_inventory_only_mode" value="1" class="mt-0.5 rounded border-gray-300 text-gray-600"
+                   {{ $useInventoryOnlyMode ? 'checked' : '' }}>
+            <span>
+                <span class="font-semibold text-gray-900">Inventory-only / warehouse (stub)</span>
+                <span class="block text-xs text-gray-500">Stock tracking without POS emphasis — coming later.</span>
+            </span>
+        </label>
+    </div>
 
     <div class="rounded-xl border border-emerald-200 bg-emerald-50/50 p-6 space-y-5">
         <div>

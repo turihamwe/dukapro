@@ -8,6 +8,7 @@ use App\Models\Branch;
 use App\Models\Brand;
 use App\Models\Business;
 use App\Models\Product;
+use App\Support\BusinessModeCompliance;
 use App\Models\ProductAttribute;
 use App\Models\SoldByUnit;
 use App\Support\BatchMode;
@@ -108,7 +109,9 @@ class InventoryController extends Controller
             'stock' => $stockFilter,
         ]));
 
-        return view('inventory.index', compact('products', 'search', 'business', 'branches', 'branchId', 'stockFilter'));
+        $serviceCatalogEnabled = BusinessModeCompliance::serviceCatalogActive($business);
+
+        return view('inventory.index', compact('products', 'search', 'business', 'branches', 'branchId', 'stockFilter', 'serviceCatalogEnabled'));
     }
 
     public function show(Business $business, Product $product)
@@ -277,6 +280,11 @@ class InventoryController extends Controller
 
         $data = $request->validate($rules);
         $data['is_service'] = $request->boolean('is_service');
+        if ($data['is_service'] && ! BusinessModeCompliance::serviceCatalogActive($business)) {
+            throw ValidationException::withMessages([
+                'is_service' => 'Service items are not enabled for this business.',
+            ]);
+        }
         $data['stock_quantity'] = $data['is_service'] ? 0 : ($data['stock_quantity'] ?? 0);
 
         if ($branchId = $this->resolveBranchIdForOwner($request, $business)) {
@@ -344,8 +352,15 @@ class InventoryController extends Controller
         $data = $request->validate($rules);
         $data['is_active'] = $request->boolean('is_active');
         $data['is_service'] = $request->boolean('is_service');
+        if ($data['is_service'] && ! BusinessModeCompliance::serviceCatalogActive($business)) {
+            throw ValidationException::withMessages([
+                'is_service' => 'Service items are not enabled for this business.',
+            ]);
+        }
         if ($data['is_service']) {
             $data['stock_quantity'] = 0;
+        } elseif ($product->isService()) {
+            $data['is_service'] = false;
         }
         $data['brand_id'] = $this->resolveBrandId($request, $business->id);
         $data['measurement_unit'] = $this->resolveMeasurementUnit($request, $business->id, $data['measurement_unit'] ?? 'piece');
@@ -640,6 +655,7 @@ class InventoryController extends Controller
             'businessTypeLabel' => $business->business_type
                 ? \App\Enums\BusinessType::label($business->business_type)
                 : null,
+            'serviceCatalogEnabled' => BusinessModeCompliance::serviceCatalogActive($business),
         ];
     }
 

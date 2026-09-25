@@ -12,6 +12,7 @@ use App\Services\ProductBatchService;
 use App\Services\ProductUnitService;
 use App\Services\PosOfflineSyncService;
 use App\Services\SaleService;
+use App\Support\BusinessModeCompliance;
 use App\Support\DivisibleProductsMode;
 use App\Support\PosOfflineMode;
 use App\Support\SaleDocument;
@@ -64,19 +65,21 @@ class PosController extends Controller
             ? app(\App\Services\RestaurantTableService::class)->optionsForOrder($request->user())
             : [];
 
+        $serviceCatalogActive = BusinessModeCompliance::serviceCatalogActive($business);
+
         $products = Product::sellable()
             ->where('is_active', true)
             ->with(['activeBatches', 'units'])
             ->orderBy('name')
             ->get(['id', 'name', 'sku', 'price', 'stock_quantity', 'measurement_unit', 'attribute_values', 'brand_id', 'parent_id', 'is_service']);
 
-        $products = $products->filter(function (Product $product) {
+        $products = $products->filter(function (Product $product) use ($serviceCatalogActive) {
             if ($product->isService()) {
-                return true;
+                return $serviceCatalogActive;
             }
 
             return $this->batchService->availableStock($product) > 0;
-        })->map(function (Product $product) {
+        })->map(function (Product $product) use ($serviceCatalogActive) {
             $baseStock = $product->isService()
                 ? 999999.0
                 : $this->batchService->availableStock($product);
@@ -123,6 +126,9 @@ class PosController extends Controller
     {
         $query = $request->get('q', '');
 
+        $business = $request->user()->business;
+        $serviceCatalogActive = BusinessModeCompliance::serviceCatalogActive($business);
+
         $products = Product::sellable()
             ->where('is_active', true)
             ->with(['activeBatches', 'units'])
@@ -133,9 +139,9 @@ class PosController extends Controller
             ->limit(15)
             ->get(['id', 'name', 'sku', 'price', 'stock_quantity', 'measurement_unit', 'attribute_values', 'is_service']);
 
-        $products = $products->filter(function (Product $product) {
+        $products = $products->filter(function (Product $product) use ($serviceCatalogActive) {
             if ($product->isService()) {
-                return true;
+                return $serviceCatalogActive;
             }
 
             return $this->batchService->availableStock($product) > 0;

@@ -114,7 +114,7 @@
                         @if($product->variants_count > 0)
                             · {{ $product->variants_count }} variants
                         @endif
-                        @if($product->isService())
+                        @if($product->isService() && ($serviceCatalogEnabled ?? auth()->user()->business?->usesServiceCatalog()))
                             · <span class="font-medium text-violet-700">Service</span>
                         @endif
                     </p>
@@ -139,8 +139,10 @@
                         @if($product->variants_count === 0)
                             <p class="text-xs text-gray-500">Sell: <span class="font-semibold text-gray-900">@money($product->price)</span></p>
                         @endif
-                        @if($product->isService())
+                        @if($product->isService() && ($serviceCatalogEnabled ?? false))
                             <p class="text-xs font-medium text-violet-700">No stock tracking</p>
+                        @elseif($product->isService())
+                            <p class="text-xs text-gray-400">Service (mode off)</p>
                         @else
                             <p class="text-xs {{ $totalStock <= 5 ? 'text-red-600 font-medium' : 'text-gray-500' }}">Stock: {{ $totalStock }}</p>
                         @endif

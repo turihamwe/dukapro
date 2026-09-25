@@ -36,6 +36,7 @@ use App\Http\Controllers\SuperAdmin\UserActionController;
 use App\Http\Controllers\SuperAdmin\AffiliateActionController;
 use App\Http\Controllers\SuperAdmin\AffiliateFieldFeedbackController;
 use App\Http\Controllers\SuperAdmin\BusinessEfrisController as SuperAdminBusinessEfrisController;
+use App\Http\Controllers\SuperAdmin\BusinessOperatingModesController as SuperAdminBusinessOperatingModesController;
 use App\Http\Controllers\SuperAdmin\BusinessModuleController;
 use App\Http\Controllers\SuperAdmin\BusinessDivisibleProductsController;
 use App\Http\Controllers\SuperAdmin\BusinessVariablePricingController;
@@ -471,6 +472,7 @@ Route::prefix('superadmin')
             Route::post('/businesses/{businessId}/impersonate', [ImpersonationController::class, 'start'])->whereNumber('businessId')->name('impersonate.start');
             Route::post('/businesses/{businessId}/modules', [BusinessModuleController::class, 'update'])->whereNumber('businessId')->name('businesses.modules.update');
             Route::post('/businesses/{businessId}/efris/unlock', [SuperAdminBusinessEfrisController::class, 'updateUnlock'])->whereNumber('businessId')->name('businesses.efris.unlock');
+            Route::post('/businesses/{businessId}/modes/unlock', [SuperAdminBusinessOperatingModesController::class, 'updateUnlocks'])->whereNumber('businessId')->name('businesses.modes.unlock');
             Route::post('/businesses/{businessId}/variable-pricing', [BusinessVariablePricingController::class, 'update'])->whereNumber('businessId')->name('businesses.variable-pricing.update');
             Route::post('/businesses/{businessId}/divisible-products', [BusinessDivisibleProductsController::class, 'update'])->whereNumber('businessId')->name('businesses.divisible-products.update');
             Route::get('/settings', [SuperAdminSettingsController::class, 'edit'])->name('settings');

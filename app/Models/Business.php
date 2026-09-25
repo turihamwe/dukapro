@@ -23,6 +23,7 @@ class Business extends Model
         'referring_affiliate_id',
         'name',
         'business_type',
+        'operating_mode',
         'slug',
         'portal_slug',
         'logo_path',
@@ -115,6 +116,26 @@ class Business extends Model
     public function usesEfris(): bool
     {
         return \App\Support\EfrisCompliance::isTransmissionAllowed($this);
+    }
+
+    public function operatingMode(): string
+    {
+        return $this->operating_mode ?: \App\Enums\BusinessOperatingMode::RETAIL;
+    }
+
+    public function usesServiceCatalog(): bool
+    {
+        return \App\Support\BusinessModeCompliance::serviceCatalogActive($this);
+    }
+
+    public function usesRentalMode(): bool
+    {
+        return \App\Support\BusinessModeCompliance::rentalModeActive($this);
+    }
+
+    public function usesInventoryOnlyMode(): bool
+    {
+        return \App\Support\BusinessModeCompliance::inventoryOnlyModeActive($this);
     }
 
     public function usesVariablePricing(): bool
