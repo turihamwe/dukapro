@@ -33,11 +33,15 @@ class Product extends Model
         'is_active',
         'is_sellable',
         'is_service',
+        'catalog_item_type',
+        'rental_rate',
+        'rental_rate_unit',
         'efris_item_code',
     ];
 
     protected $casts = [
         'price' => 'float',
+        'rental_rate' => 'float',
         'cost_price' => 'float',
         'variant_attributes' => 'array',
         'attribute_values' => 'array',
@@ -119,7 +123,31 @@ class Product extends Model
 
     public function isService(): bool
     {
-        return (bool) $this->is_service;
+        return $this->catalog_item_type === \App\Enums\CatalogItemType::SERVICE
+            || (bool) $this->is_service;
+    }
+
+    public function catalogItemType(): string
+    {
+        $type = $this->catalog_item_type;
+
+        if ($type && in_array($type, \App\Enums\CatalogItemType::all(), true)) {
+            return $type;
+        }
+
+        return $this->is_service
+            ? \App\Enums\CatalogItemType::SERVICE
+            : \App\Enums\CatalogItemType::PHYSICAL;
+    }
+
+    public function isRentable(): bool
+    {
+        return $this->catalogItemType() === \App\Enums\CatalogItemType::RENTABLE;
+    }
+
+    public function isInventoryOnlyItem(): bool
+    {
+        return $this->catalogItemType() === \App\Enums\CatalogItemType::INVENTORY_ONLY;
     }
 
     public function tracksInventory(): bool

@@ -71,16 +71,22 @@ class PosController extends Controller
             ->where('is_active', true)
             ->with(['activeBatches', 'units'])
             ->orderBy('name')
-            ->get(['id', 'name', 'sku', 'price', 'stock_quantity', 'measurement_unit', 'attribute_values', 'brand_id', 'parent_id', 'is_service']);
+            ->get(['id', 'name', 'sku', 'price', 'stock_quantity', 'measurement_unit', 'attribute_values', 'brand_id', 'parent_id', 'is_service', 'catalog_item_type']);
 
-        $products = $products->filter(function (Product $product) use ($serviceCatalogActive) {
+        $rentalCatalogActive = BusinessModeCompliance::rentalModeActive($business);
+
+        $products = $products->filter(function (Product $product) use ($serviceCatalogActive, $rentalCatalogActive) {
             if ($product->isService()) {
                 return $serviceCatalogActive;
             }
 
+            if ($product->isRentable()) {
+                return $rentalCatalogActive;
+            }
+
             return $this->batchService->availableStock($product) > 0;
-        })->map(function (Product $product) use ($serviceCatalogActive) {
-            $baseStock = $product->isService()
+        })->map(function (Product $product) {
+            $baseStock = ($product->isService() || $product->isRentable())
                 ? 999999.0
                 : $this->batchService->availableStock($product);
             $product->setAttribute('available_stock', $baseStock);
@@ -128,6 +134,7 @@ class PosController extends Controller
 
         $business = $request->user()->business;
         $serviceCatalogActive = BusinessModeCompliance::serviceCatalogActive($business);
+        $rentalCatalogActive = BusinessModeCompliance::rentalModeActive($business);
 
         $products = Product::sellable()
             ->where('is_active', true)
@@ -137,16 +144,20 @@ class PosController extends Controller
                     ->orWhere('sku', 'like', "%{$query}%");
             })
             ->limit(15)
-            ->get(['id', 'name', 'sku', 'price', 'stock_quantity', 'measurement_unit', 'attribute_values', 'is_service']);
+            ->get(['id', 'name', 'sku', 'price', 'stock_quantity', 'measurement_unit', 'attribute_values', 'is_service', 'catalog_item_type']);
 
-        $products = $products->filter(function (Product $product) use ($serviceCatalogActive) {
+        $products = $products->filter(function (Product $product) use ($serviceCatalogActive, $rentalCatalogActive) {
             if ($product->isService()) {
                 return $serviceCatalogActive;
             }
 
+            if ($product->isRentable()) {
+                return $rentalCatalogActive;
+            }
+
             return $this->batchService->availableStock($product) > 0;
         })->map(function (Product $product) {
-            $baseStock = $product->isService()
+            $baseStock = ($product->isService() || $product->isRentable())
                 ? 999999.0
                 : $this->batchService->availableStock($product);
             $product->setAttribute('available_stock', $baseStock);

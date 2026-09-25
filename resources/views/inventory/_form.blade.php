@@ -5,7 +5,17 @@
     $catalogVariantsEnabled = $catalogVariantsEnabled ?? auth()->user()->can('use-catalog-variants');
     $showVariantFields = $catalogVariantsEnabled || ($isEdit && $isVariable);
     $productType = old('product_type', $isVariable ? 'variable' : 'simple');
-    $isServiceItem = (bool) old('is_service', $product->is_service ?? false);
+    $allowedCatalogTypes = $catalogItemTypes ?? [\App\Enums\CatalogItemType::PHYSICAL];
+    $selectedCatalogType = old(
+        'catalog_item_type',
+        isset($product) ? $product->catalogItemType() : ($defaultCatalogItemType ?? \App\Enums\CatalogItemType::PHYSICAL)
+    );
+    if (! in_array($selectedCatalogType, $allowedCatalogTypes, true)) {
+        $selectedCatalogType = $allowedCatalogTypes[0] ?? \App\Enums\CatalogItemType::PHYSICAL;
+    }
+    $isServiceItem = $selectedCatalogType === \App\Enums\CatalogItemType::SERVICE;
+    $catalogTypeLabels = $catalogItemTypeLabels ?? \App\Enums\CatalogItemType::labels();
+    $rentalUnits = $rentalRateUnits ?? \App\Enums\CatalogItemType::rentalRateUnits();
     $variantsEnabled = $showVariantFields && $productType === 'variable';
     $canViewCost = $canViewCost ?? auth()->user()->can('view-cost-prices');
 
@@ -26,6 +36,9 @@
     $formConfig = [
         'existingVariants' => $existingVariants,
         'canViewCost' => $canViewCost,
+        'allowedCatalogTypes' => $allowedCatalogTypes,
+        'initialCatalogType' => $selectedCatalogType,
+        'showVariantFields' => $showVariantFields,
         'quickBrandUrl' => $quickBrandUrl ?? tenant_route('tenant.brands.quick-store'),
         'quickUnitUrl' => $quickUnitUrl ?? tenant_route('tenant.inventory.units.quick-store'),
         'quickAttributeUrl' => $quickAttributeUrl ?? tenant_route('tenant.inventory.attributes.quick-store'),
@@ -35,7 +48,13 @@
     ];
 @endphp
 
-<div class="space-y-5">
+<div class="space-y-5"
+     x-data="productCatalogForm(@js([
+         'initialType' => $selectedCatalogType,
+         'types' => $allowedCatalogTypes,
+         'canViewCost' => $canViewCost,
+         'showVariantFields' => $showVariantFields,
+     ]))">
     @if(!empty($requireBranch) && $branches->isNotEmpty())
         <div>
             <label for="branch_id" class="mb-1 block text-sm font-medium text-gray-700">Branch</label>
@@ -83,32 +102,28 @@
     <x-input type="text" name="name" label="Product name" value="{{ old('name', $product->name ?? '') }}" required autofocus
              placeholder="e.g. Classic T-Shirt or Guinness beer 500ml" />
 
-    @if($serviceCatalogEnabled ?? false)
-    <div id="catalog-item-kind" class="rounded-xl border border-gray-200 bg-white p-4 {{ $variantsEnabled ? 'hidden' : '' }}">
-        <label class="flex cursor-pointer items-start gap-3">
-            <input type="checkbox" name="is_service" id="is_service_toggle" value="1" class="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" @checked($isServiceItem)>
-            <span class="min-w-0">
-                <span class="block text-sm font-medium text-gray-900">Non-inventory service</span>
-                <span class="mt-0.5 block text-xs text-gray-500">Sell labour, delivery, repairs, or fees with a price but no stock tracking (still appears on POS).</span>
-            </span>
-        </label>
-        @efrisPlatform
-        <div class="mt-4">
-            <label for="efris_item_code" class="mb-1 block text-xs font-medium text-gray-700">URA / EFRIS item code <span class="font-normal text-gray-400">(optional)</span></label>
-            <input type="text" name="efris_item_code" id="efris_item_code" maxlength="100" value="{{ old('efris_item_code', $product->efris_item_code ?? '') }}"
-                   placeholder="Registered commodity code for fiscal receipts"
-                   class="block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-            @error('efris_item_code')
+    @if(count($allowedCatalogTypes) > 1)
+        <div id="catalog-item-kind" class="rounded-xl border border-gray-200 bg-white p-4">
+            <label for="catalog_item_type" class="mb-1.5 block text-sm font-medium text-gray-700">Item type <span class="text-red-500">*</span></label>
+            <select name="catalog_item_type" id="catalog_item_type" x-model="itemType" @change="syncCatalogFields()"
+                    class="block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 @error('catalog_item_type') border-red-300 @enderror">
+                @foreach($allowedCatalogTypes as $typeKey)
+                    <option value="{{ $typeKey }}">{{ $catalogTypeLabels[$typeKey] ?? $typeKey }}</option>
+                @endforeach
+            </select>
+            @error('catalog_item_type')
                 <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+            @else
+                <p class="mt-1 text-xs text-gray-500">Fields below adjust automatically — services skip stock, rentals add hire rates, inventory-only items are not sold on POS.</p>
             @enderror
         </div>
-        @endefrisPlatform
-    </div>
+    @else
+        <input type="hidden" name="catalog_item_type" value="{{ $allowedCatalogTypes[0] ?? \App\Enums\CatalogItemType::PHYSICAL }}">
     @endif
 
     @if(! $isEdit)
-        <div>
-            <label class="mb-1.5 block text-sm font-medium text-gray-700" for="product_sku">SKU <span class="font-normal text-gray-400">(optional)</span></label>
+        <div id="field-sku-barcode" x-show="showsSku()" x-cloak>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700" for="product_sku">SKU / barcode <span class="font-normal text-gray-400">(optional)</span></label>
             <input type="text" name="sku" id="product_sku" value="{{ old('sku') }}" maxlength="100"
                    placeholder="Leave blank to auto-generate (e.g. ABC-001)"
                    class="block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
@@ -118,29 +133,56 @@
             @enderror
         </div>
     @elseif($product->sku ?? null)
-        <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700">SKU</label>
+        <div x-show="showsSku()" x-cloak>
+            <label class="mb-1 block text-sm font-medium text-gray-700">SKU / barcode</label>
             <p class="text-sm text-gray-900">{{ $product->sku }}</p>
         </div>
     @endif
 
     {{-- Simple product fields --}}
     <div id="simple-product-fields" class="space-y-5 {{ $variantsEnabled ? 'hidden' : '' }}">
-        <div class="grid gap-5 sm:grid-cols-2">
+        <div class="grid gap-5 sm:grid-cols-2" x-show="showsPricing()" x-cloak>
             <div>
-                <label class="mb-1.5 block text-sm font-medium text-gray-700" for="simple_price">Selling price <span class="text-red-500">*</span></label>
-                <input type="number" step="0.01" min="0" name="price" id="simple_price" value="{{ old('price', $product->price ?? '') }}" required
+                <label class="mb-1.5 block text-sm font-medium text-gray-700" for="simple_price">
+                    <span x-text="priceLabel()">Selling price</span> <span class="text-red-500">*</span>
+                </label>
+                <input type="number" step="0.01" min="0" name="price" id="simple_price" value="{{ old('price', $product->price ?? '') }}"
                        class="simple-field block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
             </div>
             @if($canViewCost)
-                <div>
-                    <label class="mb-1.5 block text-sm font-medium text-gray-700" for="simple_cost_price">Cost price</label>
+                <div x-show="showsCost()" x-cloak>
+                    <label class="mb-1.5 block text-sm font-medium text-gray-700" for="simple_cost_price">Buying / cost price</label>
                     <input type="number" step="0.01" min="0" name="cost_price" id="simple_cost_price" value="{{ old('cost_price', $product->cost_price ?? '') }}"
                            class="simple-field block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                 </div>
             @endif
         </div>
-        <div id="simple-stock-wrap" class="{{ $isServiceItem ? 'hidden' : '' }}">
+        <div id="field-rental-pricing" class="grid gap-5 sm:grid-cols-2 rounded-xl border border-violet-200 bg-violet-50/60 p-4" x-show="isRentable()" x-cloak>
+            <div>
+                <label class="mb-1.5 block text-sm font-medium text-gray-800" for="rental_rate">Rental rate (UGX) <span class="text-red-500">*</span></label>
+                <input type="number" step="0.01" min="0" name="rental_rate" id="rental_rate"
+                       value="{{ old('rental_rate', $product->rental_rate ?? '') }}"
+                       class="block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-violet-500 focus:ring-violet-500">
+                @error('rental_rate')
+                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+            <div>
+                <label class="mb-1.5 block text-sm font-medium text-gray-800" for="rental_rate_unit">Rate period <span class="text-red-500">*</span></label>
+                <select name="rental_rate_unit" id="rental_rate_unit"
+                        class="block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-violet-500 focus:ring-violet-500">
+                    <option value="">Select…</option>
+                    @foreach($rentalUnits as $unitKey => $unitLabel)
+                        <option value="{{ $unitKey }}" @selected(old('rental_rate_unit', $product->rental_rate_unit ?? '') === $unitKey)>{{ $unitLabel }}</option>
+                    @endforeach
+                </select>
+                @error('rental_rate_unit')
+                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+            <p class="sm:col-span-2 text-xs text-violet-900/80">Selling price above can be used as a default POS charge; rental rate documents hire pricing per period.</p>
+        </div>
+        <div id="simple-stock-wrap" x-show="showsStock()" x-cloak>
             @if($isEdit)
                 <label class="mb-1.5 block text-sm font-medium text-gray-700" for="simple_stock">Stock on hand</label>
                 <input type="number" step="0.001" min="0" name="stock_quantity" id="simple_stock" value="{{ old('stock_quantity', $product->stock_quantity ?? 0) }}"
@@ -152,12 +194,25 @@
                 <p class="mt-1 text-xs text-gray-500">Leave at 0 and use <strong>Top-up Stock</strong> later to restock existing products.</p>
             @endif
         </div>
-        <p id="service-stock-hint" class="text-xs text-indigo-700 {{ $isServiceItem ? '' : 'hidden' }}">Stock is not tracked for services.</p>
+        <p id="service-stock-hint" class="text-xs text-indigo-700" x-show="isService()" x-cloak>Stock is not tracked for services.</p>
+        <p class="text-xs text-amber-800" x-show="isInventoryOnly()" x-cloak>Inventory-only items are tracked for stock but are not sold on the POS.</p>
     </div>
+
+    @efrisPlatform
+    <div class="rounded-xl border border-gray-200 bg-white p-4" x-show="!isService() && !isInventoryOnly()" x-cloak>
+        <label for="efris_item_code" class="mb-1 block text-xs font-medium text-gray-700">URA / EFRIS item code <span class="font-normal text-gray-400">(optional)</span></label>
+        <input type="text" name="efris_item_code" id="efris_item_code" maxlength="100" value="{{ old('efris_item_code', $product->efris_item_code ?? '') }}"
+               placeholder="Registered commodity code for fiscal receipts"
+               class="block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+        @error('efris_item_code')
+            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+        @enderror
+    </div>
+    @endefrisPlatform
 
     {{-- Variant toggle --}}
     @if($showVariantFields)
-    <div class="flex items-center gap-3">
+    <div class="flex items-center gap-3" x-show="showsVariants()" x-cloak>
         <label class="relative inline-flex shrink-0 cursor-pointer items-center">
             <input type="checkbox" id="enable_variants_toggle" class="peer sr-only" @checked($variantsEnabled)>
             <span class="block h-6 w-11 rounded-full bg-gray-300 transition-colors peer-checked:bg-indigo-600 peer-focus:ring-2 peer-focus:ring-indigo-500 peer-focus:ring-offset-2"></span>
@@ -173,7 +228,7 @@
     @php
         $selectedUnit = old('measurement_unit', $product->measurement_unit ?? 'piece');
     @endphp
-    <div class="rounded-xl border border-gray-200 bg-white p-4">
+    <div class="rounded-xl border border-gray-200 bg-white p-4" x-show="showsUnits()" x-cloak>
         <label class="mb-2 block text-sm font-medium text-gray-700" for="measurement_unit_select">Sold by</label>
         @if(! empty($businessTypeLabel))
             <p class="mb-2 text-xs text-gray-500">Suggestions for {{ $businessTypeLabel }} businesses may appear below.</p>
@@ -229,7 +284,7 @@
         }
         $secondaryUnits = is_array($secondaryUnits) ? $secondaryUnits : [];
     @endphp
-    <div id="secondary-units-section" class="rounded-xl border border-gray-200 bg-white p-4 {{ $variantsEnabled ? 'hidden' : '' }}">
+    <div id="secondary-units-section" class="rounded-xl border border-gray-200 bg-white p-4 {{ $variantsEnabled ? 'hidden' : '' }}" x-show="showsPackaging()" x-cloak>
         <div class="mb-3">
             <h3 class="text-sm font-semibold text-gray-900">Packaging units <span class="font-normal text-gray-400">(optional)</span></h3>
             <p class="mt-1 text-xs text-gray-500">Add larger units sold at the POS (e.g. 1 roll = 50 meters). Stock is always deducted in the base unit.</p>
@@ -265,11 +320,13 @@
         @enderror
     </div>
 
-    <x-input type="number" step="1" name="critical_threshold" label="Low-stock alert" value="{{ old('critical_threshold', $product->critical_threshold ?? 5) }}" />
+    <div x-show="showsStockAlerts()" x-cloak>
+        <x-input type="number" step="1" name="critical_threshold" label="Low-stock alert threshold" value="{{ old('critical_threshold', $product->critical_threshold ?? 5) }}" />
+    </div>
 
     @if($showVariantFields)
     {{-- Variant builder --}}
-    <div id="variant-product-fields" class="{{ $variantsEnabled ? '' : 'hidden' }}">
+    <div id="variant-product-fields" class="{{ $variantsEnabled ? '' : 'hidden' }}" x-show="showsVariants()" x-cloak>
         <div class="rounded-xl border border-gray-200 bg-gray-50 p-5 space-y-5">
             <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -347,7 +404,73 @@
 
 <script type="application/json" id="product-form-config">@json($formConfig)</script>
 
+@push('styles')
+<style>[x-cloak]{display:none!important}</style>
+@endpush
+
 @push('scripts')
+<script>
+document.addEventListener('alpine:init', function () {
+    Alpine.data('productCatalogForm', function (config) {
+        config = config || {};
+        return {
+            itemType: config.initialType || 'physical',
+            canViewCost: !!config.canViewCost,
+            showVariantFields: !!config.showVariantFields,
+            isPhysical: function () { return this.itemType === 'physical'; },
+            isService: function () { return this.itemType === 'service'; },
+            isRentable: function () { return this.itemType === 'rentable'; },
+            isInventoryOnly: function () { return this.itemType === 'inventory_only'; },
+            showsSku: function () { return ! this.isService(); },
+            showsPricing: function () { return ! this.isInventoryOnly(); },
+            showsCost: function () { return this.canViewCost && (this.isPhysical() || this.isRentable()); },
+            showsStock: function () { return this.isPhysical() || this.isInventoryOnly() || this.isRentable(); },
+            showsStockAlerts: function () { return this.showsStock() && ! this.isRentable(); },
+            showsUnits: function () { return ! this.isService(); },
+            showsPackaging: function () { return this.isPhysical(); },
+            showsVariants: function () { return this.showVariantFields && this.isPhysical(); },
+            priceLabel: function () {
+                if (this.isService()) return 'Service fee';
+                if (this.isRentable()) return 'Default POS price';
+                if (this.isInventoryOnly()) return 'Selling price';
+                return 'Selling price';
+            },
+            syncCatalogFields: function () {
+                var stockInput = document.getElementById('simple_stock');
+                var priceInput = document.getElementById('simple_price');
+                var unitSelect = document.getElementById('measurement_unit_select');
+                var variantToggle = document.getElementById('enable_variants_toggle');
+                if (this.isService() && stockInput) stockInput.value = '0';
+                if (priceInput) {
+                    if (this.isInventoryOnly()) {
+                        priceInput.removeAttribute('required');
+                        priceInput.value = '0';
+                    } else {
+                        priceInput.setAttribute('required', 'required');
+                    }
+                }
+                if (unitSelect) {
+                    if (this.isService()) {
+                        unitSelect.removeAttribute('required');
+                    } else {
+                        unitSelect.setAttribute('required', 'required');
+                    }
+                }
+                if (variantToggle && ! this.isPhysical() && variantToggle.checked) {
+                    variantToggle.checked = false;
+                    variantToggle.dispatchEvent(new Event('change'));
+                }
+                if (typeof window.productFormSyncVariantMode === 'function') {
+                    window.productFormSyncVariantMode();
+                }
+            },
+            init: function () {
+                this.syncCatalogFields();
+            },
+        };
+    });
+});
+</script>
 <script>
 (function () {
     var config = {};
@@ -384,23 +507,6 @@
     var secondaryUnitsSection = document.getElementById('secondary-units-section');
     var typeInput = document.getElementById('product_type_input');
     var catalogKind = document.getElementById('catalog-item-kind');
-    var serviceToggle = document.getElementById('is_service_toggle');
-    var stockWrap = document.getElementById('simple-stock-wrap');
-    var serviceHint = document.getElementById('service-stock-hint');
-
-    function syncServiceMode() {
-        if (!serviceToggle) return;
-        var on = serviceToggle.checked;
-        if (stockWrap) stockWrap.classList.toggle('hidden', on);
-        if (serviceHint) serviceHint.classList.toggle('hidden', !on);
-        var stockInput = document.getElementById('simple_stock');
-        if (on && stockInput) stockInput.value = '0';
-    }
-
-    if (serviceToggle) {
-        serviceToggle.addEventListener('change', syncServiceMode);
-        syncServiceMode();
-    }
 
     function syncVariantMode() {
         if (!toggle || !simple || !variant || !typeInput) return;
@@ -409,10 +515,6 @@
         variant.classList.toggle('hidden', !on);
         if (secondaryUnitsSection) secondaryUnitsSection.classList.toggle('hidden', on);
         if (catalogKind) catalogKind.classList.toggle('hidden', on);
-        if (on && serviceToggle) {
-            serviceToggle.checked = false;
-            syncServiceMode();
-        }
         typeInput.value = on ? 'variable' : 'simple';
         simple.querySelectorAll('.simple-field').forEach(function (field) {
             field.disabled = on;
@@ -424,6 +526,8 @@
         });
         if (on) rebuildVariantTable();
     }
+
+    window.productFormSyncVariantMode = syncVariantMode;
 
     if (toggle) {
         toggle.addEventListener('change', syncVariantMode);

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\CatalogItemType;
 use App\Enums\MeasurementUnit;
 use App\Helpers\AuditLogger;
 use App\Models\Branch;
@@ -272,24 +273,23 @@ class InventoryController extends Controller
         $productType = $request->input('product_type', 'simple');
 
         if ($productType === 'variable') {
+            if ($request->input('catalog_item_type', CatalogItemType::PHYSICAL) !== CatalogItemType::PHYSICAL) {
+                throw ValidationException::withMessages([
+                    'catalog_item_type' => 'Variants are only available for physical products.',
+                ]);
+            }
             $this->ensureCatalogVariantsEnabled($business);
 
             return $this->storeVariableProduct($request, $business);
         }
 
-        $rules = $this->simpleProductRules($businessId, $request);
+        $rules = $this->simpleProductRules($businessId, $request, null, $business);
 
         $data = $request->validate($rules);
-        $data['is_service'] = $request->boolean('is_service');
-        if ($data['is_service'] && ! BusinessModeCompliance::serviceCatalogActive($business)) {
-            throw ValidationException::withMessages([
-                'is_service' => 'Service items are not enabled for this business.',
-            ]);
-        }
+        $data = $this->normalizeCatalogItemPayload($data, $business, $request);
         if (! EfrisCompliance::globallyEnabled()) {
             unset($data['efris_item_code']);
         }
-        $data['stock_quantity'] = $data['is_service'] ? 0 : ($data['stock_quantity'] ?? 0);
 
         if ($branchId = $this->resolveBranchIdForOwner($request, $business)) {
             $data['branch_id'] = $branchId;
@@ -350,22 +350,12 @@ class InventoryController extends Controller
             ]);
         }
 
-        $rules = $this->simpleProductRules($business->id, $request, $product->id);
+        $rules = $this->simpleProductRules($business->id, $request, $product->id, $business);
         $rules['is_active'] = 'nullable|boolean';
 
         $data = $request->validate($rules);
         $data['is_active'] = $request->boolean('is_active');
-        $data['is_service'] = $request->boolean('is_service');
-        if ($data['is_service'] && ! BusinessModeCompliance::serviceCatalogActive($business)) {
-            throw ValidationException::withMessages([
-                'is_service' => 'Service items are not enabled for this business.',
-            ]);
-        }
-        if ($data['is_service']) {
-            $data['stock_quantity'] = 0;
-        } elseif ($product->isService()) {
-            $data['is_service'] = false;
-        }
+        $data = $this->normalizeCatalogItemPayload($data, $business, $request);
         if (! EfrisCompliance::globallyEnabled()) {
             unset($data['efris_item_code']);
         }
@@ -483,38 +473,122 @@ class InventoryController extends Controller
         return redirect()->to(tenant_route('tenant.inventory.index'))->with('success', 'Product variants updated.');
     }
 
-    protected function simpleProductRules(int $businessId, Request $request, ?int $ignoreProductId = null): array
+    protected function simpleProductRules(int $businessId, Request $request, ?int $ignoreProductId = null, ?Business $business = null): array
     {
+        $business = $business ?? $request->user()->business;
+        $allowedTypes = CatalogItemType::allowedFor($business);
+        $itemType = $request->input('catalog_item_type', CatalogItemType::defaultFor($business));
+
+        if (! in_array($itemType, $allowedTypes, true)) {
+            throw ValidationException::withMessages([
+                'catalog_item_type' => 'This item type is not enabled for your business.',
+            ]);
+        }
+
         $rules = [
             'name' => 'required|string|max:255',
-            'sku' => [
-                'nullable',
-                'string',
-                'max:100',
-                Rule::unique('products', 'sku')
-                    ->where(fn ($query) => $query->where('business_id', $businessId))
-                    ->ignore($ignoreProductId),
-            ],
+            'catalog_item_type' => ['required', 'string', Rule::in($allowedTypes)],
             'brand_id' => 'nullable|exists:brands,id',
             'new_brand_name' => 'nullable|string|max:255',
             'description' => 'nullable|string',
-            'price' => 'required|numeric|min:0',
-            'measurement_unit' => 'required|string|max:50',
-            'stock_quantity' => 'nullable|numeric|min:0',
-            'is_service' => 'nullable|boolean',
             'efris_item_code' => 'nullable|string|max:100',
-            'critical_threshold' => 'nullable|integer|min:0',
             'secondary_units' => 'nullable|array',
             'secondary_units.*.unit_name' => 'nullable|string|max:50',
             'secondary_units.*.conversion_factor' => 'nullable|numeric|min:0.000001',
             'secondary_units.*.price' => 'nullable|numeric|min:0',
         ];
 
-        if ($request->user()->can('view-cost-prices')) {
+        if ($itemType === CatalogItemType::SERVICE) {
+            $rules['price'] = 'required|numeric|min:0';
+            $rules['measurement_unit'] = 'nullable|string|max:50';
+            $rules['stock_quantity'] = 'nullable|numeric|min:0';
+            $rules['critical_threshold'] = 'nullable|integer|min:0';
+            $rules['sku'] = 'nullable|string|max:100';
+        } elseif ($itemType === CatalogItemType::INVENTORY_ONLY) {
+            $rules['price'] = 'nullable|numeric|min:0';
+            $rules['measurement_unit'] = 'required|string|max:50';
+            $rules['stock_quantity'] = 'nullable|numeric|min:0';
+            $rules['critical_threshold'] = 'nullable|integer|min:0';
+            $rules['sku'] = [
+                'nullable',
+                'string',
+                'max:100',
+                Rule::unique('products', 'sku')
+                    ->where(fn ($query) => $query->where('business_id', $businessId))
+                    ->ignore($ignoreProductId),
+            ];
+        } else {
+            $rules['price'] = 'required|numeric|min:0';
+            $rules['measurement_unit'] = 'required|string|max:50';
+            $rules['stock_quantity'] = 'nullable|numeric|min:0';
+            $rules['critical_threshold'] = 'nullable|integer|min:0';
+            $rules['sku'] = [
+                'nullable',
+                'string',
+                'max:100',
+                Rule::unique('products', 'sku')
+                    ->where(fn ($query) => $query->where('business_id', $businessId))
+                    ->ignore($ignoreProductId),
+            ];
+        }
+
+        if ($itemType === CatalogItemType::RENTABLE) {
+            $rules['rental_rate'] = 'required|numeric|min:0';
+            $rules['rental_rate_unit'] = ['required', 'string', Rule::in(array_keys(CatalogItemType::rentalRateUnits()))];
+        } else {
+            $rules['rental_rate'] = 'nullable|prohibited';
+            $rules['rental_rate_unit'] = 'nullable|prohibited';
+        }
+
+        if ($request->user()->can('view-cost-prices') && in_array($itemType, [CatalogItemType::PHYSICAL, CatalogItemType::RENTABLE], true)) {
             $rules['cost_price'] = 'nullable|numeric|min:0';
         }
 
         return $rules;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function normalizeCatalogItemPayload(array $data, Business $business, Request $request): array
+    {
+        $type = $data['catalog_item_type'] ?? CatalogItemType::PHYSICAL;
+
+        $data['is_service'] = $type === CatalogItemType::SERVICE;
+
+        if ($type === CatalogItemType::SERVICE) {
+            $data['stock_quantity'] = 0;
+            $data['critical_threshold'] = 0;
+            $data['cost_price'] = null;
+            $data['sku'] = null;
+            $data['rental_rate'] = null;
+            $data['rental_rate_unit'] = null;
+            $data['is_sellable'] = true;
+            $data['measurement_unit'] = $data['measurement_unit'] ?? MeasurementUnit::PIECE;
+        } elseif ($type === CatalogItemType::INVENTORY_ONLY) {
+            $data['price'] = 0;
+            $data['cost_price'] = null;
+            $data['stock_quantity'] = $data['stock_quantity'] ?? 0;
+            $data['is_sellable'] = false;
+            $data['rental_rate'] = null;
+            $data['rental_rate_unit'] = null;
+        } elseif ($type === CatalogItemType::RENTABLE) {
+            $data['is_sellable'] = true;
+            $data['is_service'] = false;
+        } else {
+            $data['is_sellable'] = true;
+            $data['is_service'] = false;
+            $data['stock_quantity'] = $data['stock_quantity'] ?? 0;
+            $data['rental_rate'] = null;
+            $data['rental_rate_unit'] = null;
+        }
+
+        if (! $request->user()->can('view-cost-prices')) {
+            unset($data['cost_price']);
+        }
+
+        return $data;
     }
 
     protected function resolveBrandId(Request $request, int $businessId): ?int
@@ -663,6 +737,10 @@ class InventoryController extends Controller
                 ? \App\Enums\BusinessType::label($business->business_type)
                 : null,
             'serviceCatalogEnabled' => BusinessModeCompliance::serviceCatalogActive($business),
+            'catalogItemTypes' => CatalogItemType::allowedFor($business),
+            'catalogItemTypeLabels' => CatalogItemType::labels(),
+            'defaultCatalogItemType' => CatalogItemType::defaultFor($business),
+            'rentalRateUnits' => CatalogItemType::rentalRateUnits(),
         ];
     }
 

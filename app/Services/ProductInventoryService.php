@@ -37,7 +37,9 @@ class ProductInventoryService
                 $product = Product::create(array_merge($payload, [
                     'business_id' => $businessId,
                     'is_active' => true,
-                    'is_sellable' => true,
+                    'is_sellable' => array_key_exists('is_sellable', $payload)
+                        ? (bool) $payload['is_sellable']
+                        : true,
                     'parent_id' => null,
                 ]));
 
