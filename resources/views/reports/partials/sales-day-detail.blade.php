@@ -10,32 +10,36 @@
     <div class="border-b border-gray-100 px-4 py-3 sm:px-6">
         <h2 class="text-sm font-semibold text-gray-900">Products sold</h2>
     </div>
-    <div class="overflow-x-auto">
+    <x-sortable-table class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Product</th>
-                    <th class="px-4 sm:px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Qty sold</th>
-                    <th class="px-4 sm:px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Revenue</th>
-                    <th class="px-4 sm:px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Sales</th>
+                    <x-sortable-th column="product" class="px-4 sm:px-6 py-3">Product</x-sortable-th>
+                    <x-sortable-th column="qty" align="right" class="px-4 sm:px-6 py-3">Qty sold</x-sortable-th>
+                    <x-sortable-th column="revenue" align="right" class="px-4 sm:px-6 py-3">Revenue</x-sortable-th>
+                    <x-sortable-th column="sales" align="right" class="px-4 sm:px-6 py-3">Sales</x-sortable-th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100 bg-white">
+            <tbody x-ref="tbody" class="divide-y divide-gray-100 bg-white">
                 @forelse($productSummary as $row)
-                    <tr>
+                    <tr data-sortable-row
+                        data-sort-product="{{ strtolower($row->product_name) }}"
+                        data-sort-qty="{{ (float) $row->total_quantity }}"
+                        data-sort-revenue="{{ (float) $row->total_revenue }}"
+                        data-sort-sales="{{ (int) $row->sale_count }}">
                         <td class="px-4 sm:px-6 py-3 text-sm text-gray-900">{{ $row->product_name }}</td>
                         <td class="px-4 sm:px-6 py-3 text-right text-sm text-gray-600">{{ number_format($row->total_quantity, 2) }}</td>
                         <td class="px-4 sm:px-6 py-3 text-right text-sm font-medium text-gray-900">@money($row->total_revenue)</td>
                         <td class="px-4 sm:px-6 py-3 text-right text-sm text-gray-600">{{ number_format($row->sale_count) }}</td>
                     </tr>
                 @empty
-                    <tr>
+                    <tr data-sort-empty="1">
                         <td colspan="4" class="px-6 py-8 text-center text-sm text-gray-500">No product sales on this day.</td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
-    </div>
+    </x-sortable-table>
 </x-card>
 
 <x-card class="mt-6" :padding="false">

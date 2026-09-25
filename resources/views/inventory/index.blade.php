@@ -114,7 +114,7 @@
                         @if($product->variants_count > 0)
                             · {{ $product->variants_count }} variants
                         @endif
-                        @if($product->isService() && ($serviceCatalogEnabled ?? auth()->user()->business?->usesServiceCatalog()))
+                        @if($product->isService() && ($serviceCatalogEnabled ?? false))
                             · <span class="font-medium text-violet-700">Service</span>
                         @endif
                     </p>
@@ -179,32 +179,45 @@
 
 {{-- Desktop --}}
 <x-card :padding="false" class="hidden md:block overflow-hidden">
-    <div class="overflow-x-auto">
+    <x-sortable-table class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Product</th>
+                    <x-sortable-th column="name" class="px-6 py-3">Product</x-sortable-th>
                     @if(($stockFilter ?? null) === 'low')
-                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Branch</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Stock</th>
+                        <x-sortable-th column="branch" class="px-6 py-3">Branch</x-sortable-th>
+                        <x-sortable-th column="stock" align="center" class="px-6 py-3">Stock</x-sortable-th>
                         <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
                     @else
-                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Brand / SKU</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Cost (UGX)</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Sell (UGX)</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">In Stock</th>
+                        <x-sortable-th column="brand" class="px-6 py-3">Brand / SKU</x-sortable-th>
+                        <x-sortable-th column="cost" align="center" class="px-6 py-3">Cost (UGX)</x-sortable-th>
+                        <x-sortable-th column="sell" align="center" class="px-6 py-3">Sell (UGX)</x-sortable-th>
+                        <x-sortable-th column="stock" align="center" class="px-6 py-3">In Stock</x-sortable-th>
                         <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500"></th>
                     @endif
                 </tr>
             </thead>
-            <tbody id="inventory-desktop-body" class="divide-y divide-gray-100 bg-white">
+            <tbody id="inventory-desktop-body" x-ref="tbody" class="divide-y divide-gray-100 bg-white">
                 @forelse($products as $product)
                     @php
                         $totalStock = $resolveProductStock($product);
                         $hasBatches = $productHasBatches($product);
                         $batchKey = 'batch-row-' . $product->id;
                     @endphp
-                    <tr class="inventory-item transition hover:bg-gray-50" data-search="{{ strtolower($product->name . ' ' . ($product->sku ?? '') . ' ' . $product->measurement_unit . ' ' . ($product->description ?? '')) }}">
+                    @php
+                        $sortBrand = strtolower($product->brand->name ?? '');
+                        $sortCost = ($product->variants_count === 0 && auth()->user()->can('view-cost-prices')) ? (float) ($product->cost_price ?? 0) : -1;
+                        $sortSell = $product->variants_count > 0 ? -1 : (float) $product->price;
+                    @endphp
+                    <tr class="inventory-item transition hover:bg-gray-50"
+                        data-sortable-row
+                        data-search="{{ strtolower($product->name . ' ' . ($product->sku ?? '') . ' ' . $product->measurement_unit . ' ' . ($product->description ?? '')) }}"
+                        data-sort-name="{{ strtolower($product->name) }}"
+                        data-sort-brand="{{ $sortBrand }}"
+                        data-sort-branch="{{ strtolower($product->branch->name ?? '') }}"
+                        data-sort-cost="{{ $sortCost }}"
+                        data-sort-sell="{{ $sortSell }}"
+                        data-sort-stock="{{ $totalStock }}">
                         <td class="px-6 py-4 text-left">
                             <div class="flex items-center gap-2">
                                 <p class="text-sm font-medium text-gray-900">{{ $product->name }}</p>
@@ -285,20 +298,20 @@
                         @endif
                     </tr>
                     @if($hasBatches && ($stockFilter ?? null) !== 'low')
-                        <tr id="{{ $batchKey }}" class="hidden bg-indigo-50/40">
+                        <tr id="{{ $batchKey }}" class="hidden bg-indigo-50/40" data-sort-follows="1">
                             <td colspan="6" class="px-6 py-4">
                                 @include('inventory.partials.batch-breakdown', ['product' => $product, 'canViewCost' => auth()->user()->can('view-cost-prices')])
                             </td>
                         </tr>
                     @endif
                 @empty
-                    <tr>
+                    <tr data-sort-empty="1">
                         <td colspan="{{ ($stockFilter ?? null) === 'low' ? 4 : 6 }}" class="px-6 py-12 text-center text-sm text-gray-500">{{ ($stockFilter ?? null) === 'low' ? 'No low stock products right now.' : 'No products match your search.' }}</td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
-    </div>
+    </x-sortable-table>
 </x-card>
 
 <div class="mt-6">{{ $products->links() }}</div>

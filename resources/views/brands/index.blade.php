@@ -20,19 +20,23 @@
 </div>
 
 <x-card :padding="false" class="overflow-hidden">
-    <div class="overflow-x-auto">
+    <x-sortable-table class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Brand</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Products</th>
-                    <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
+                    <x-sortable-th column="name" class="px-6 py-3">Brand</x-sortable-th>
+                    <x-sortable-th column="products" class="px-6 py-3">Products</x-sortable-th>
+                    <x-sortable-th column="status" align="center" class="px-6 py-3">Status</x-sortable-th>
                     <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500"></th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100 bg-white">
+            <tbody x-ref="tbody" class="divide-y divide-gray-100 bg-white">
                 @forelse($brands as $brand)
-                    <tr class="hover:bg-gray-50">
+                    <tr class="hover:bg-gray-50"
+                        data-sortable-row
+                        data-sort-name="{{ strtolower($brand->name) }}"
+                        data-sort-products="{{ (int) $brand->products_count }}"
+                        data-sort-status="{{ $brand->is_active ? 1 : 0 }}">
                         <td class="px-6 py-4">
                             <p class="text-sm font-medium text-gray-900">{{ $brand->name }}</p>
                             @if($brand->description)
@@ -56,13 +60,13 @@
                         </td>
                     </tr>
                 @empty
-                    <tr>
+                    <tr data-sort-empty="1">
                         <td colspan="4" class="px-6 py-12 text-center text-sm text-gray-500">No brands yet. Add brands like Club, Bell, Guinness, or cement suppliers.</td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
-    </div>
+    </x-sortable-table>
 </x-card>
 
 <div class="mt-6">{{ $brands->links() }}</div>

@@ -83,7 +83,7 @@
 @endif
 
 <div class="overflow-hidden rounded-xl border border-gray-200 bg-white">
-    <div class="overflow-x-auto">
+    <x-sortable-table class="overflow-x-auto">
         <table class="w-full text-left text-sm">
             <thead class="border-b border-gray-200 bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                 <tr>
@@ -98,16 +98,24 @@
                             </th>
                         @endcan
                     @endif
-                    <th class="px-4 py-3">ID</th>
+                    <x-sortable-th column="id" class="px-4 py-3">ID</x-sortable-th>
                     @foreach($config['list'] as $column)
-                        <th class="px-4 py-3">{{ str_replace('_', ' ', $column) }}</th>
+                        <x-sortable-th column="{{ $column }}" class="px-4 py-3">{{ str_replace('_', ' ', $column) }}</x-sortable-th>
                     @endforeach
                     <th class="px-4 py-3 text-right">Actions</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100">
+            <tbody x-ref="tbody" class="divide-y divide-gray-100">
                 @forelse($records as $record)
-                    <tr class="hover:bg-gray-50 {{ ! empty($showTrashed) ? 'bg-amber-50/40' : '' }}">
+                    @php
+                        $sortAttrs = \App\Support\SuperAdmin\EntityTableSort::rowAttributes($record, $entity, $config['list']);
+                    @endphp
+                    <tr class="hover:bg-gray-50 {{ ! empty($showTrashed) ? 'bg-amber-50/40' : '' }}"
+                        data-sortable-row
+                        @foreach($sortAttrs as $sortKey => $sortVal)
+                            data-sort-{{ $sortKey }}="{{ e($sortVal) }}"
+                        @endforeach
+                    >
                         @if($entity === 'affiliates')
                             @can('approve-affiliates')
                                 <td class="px-4 py-3 align-top">
@@ -232,7 +240,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr>
+                    <tr data-sort-empty="1">
                         @php
                             $emptyColspan = count($config['list']) + 2;
                             if ($entity === 'affiliates' && auth()->user()->can('approve-affiliates')) {
@@ -244,7 +252,7 @@
                 @endforelse
             </tbody>
         </table>
-    </div>
+    </x-sortable-table>
     @include('superadmin.partials.pagination', ['paginator' => $records])
 </div>
 @endsection

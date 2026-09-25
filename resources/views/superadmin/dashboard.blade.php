@@ -106,19 +106,23 @@
     <div class="border-b border-gray-200 px-6 py-4">
         <h2 class="font-semibold">Recent Businesses</h2>
     </div>
-    <div class="overflow-x-auto">
+    <x-sortable-table class="overflow-x-auto">
         <table class="w-full text-left text-sm">
             <thead class="border-b border-gray-200 text-xs uppercase tracking-wide text-gray-500">
                 <tr>
-                    <th class="px-6 py-3">Business</th>
-                    <th class="px-6 py-3">Users</th>
-                    <th class="px-6 py-3">Status</th>
+                    <x-sortable-th column="name" class="px-6 py-3">Business</x-sortable-th>
+                    <x-sortable-th column="users" class="px-6 py-3">Users</x-sortable-th>
+                    <x-sortable-th column="status" class="px-6 py-3">Status</x-sortable-th>
                     <th class="px-6 py-3"></th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200">
+            <tbody x-ref="tbody" class="divide-y divide-gray-200">
                 @forelse($businesses as $business)
-                    <tr class="hover:bg-gray-50">
+                    <tr class="hover:bg-gray-50"
+                        data-sortable-row
+                        data-sort-name="{{ strtolower($business->name) }}"
+                        data-sort-users="{{ (int) $business->users_count }}"
+                        data-sort-status="{{ strtolower($business->subscription_status ?? '') }}">
                         <td class="px-6 py-4 font-medium">{{ $business->name }}</td>
                         <td class="px-6 py-4">{{ $business->users_count }}</td>
                         <td class="px-6 py-4 capitalize">{{ $business->subscription_status }}</td>
@@ -133,11 +137,11 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="4" class="px-6 py-8 text-center text-gray-500">No businesses yet.</td></tr>
+                    <tr data-sort-empty="1"><td colspan="4" class="px-6 py-8 text-center text-gray-500">No businesses yet.</td></tr>
                 @endforelse
             </tbody>
         </table>
-    </div>
+    </x-sortable-table>
     @include('superadmin.partials.pagination', ['paginator' => $businesses])
 </div>
 

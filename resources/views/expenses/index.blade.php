@@ -49,20 +49,24 @@
 </div>
 
 <x-card :padding="false" class="hidden md:block overflow-hidden">
-    <div class="overflow-x-auto">
+    <x-sortable-table class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Title</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Category</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Amount</th>
+                    <x-sortable-th column="date" class="px-6 py-3">Date</x-sortable-th>
+                    <x-sortable-th column="title" class="px-6 py-3">Title</x-sortable-th>
+                    <x-sortable-th column="category" class="px-6 py-3">Category</x-sortable-th>
+                    <x-sortable-th column="amount" align="right" class="px-6 py-3">Amount</x-sortable-th>
                     <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500"></th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100 bg-white">
+            <tbody x-ref="tbody" class="divide-y divide-gray-100 bg-white">
                 @forelse($expenses as $expense)
-                    <tr>
+                    <tr data-sortable-row
+                        data-sort-date="{{ $expense->expense_date->timestamp }}"
+                        data-sort-title="{{ strtolower($expense->title) }}"
+                        data-sort-category="{{ strtolower($categories[$expense->category] ?? $expense->category) }}"
+                        data-sort-amount="{{ (float) $expense->amount }}">
                         <td class="px-6 py-4 text-sm text-gray-600">{{ $expense->expense_date->format('M j, Y') }}</td>
                         <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $expense->title }}</td>
                         <td class="px-6 py-4 text-sm text-gray-500">{{ $categories[$expense->category] ?? ucfirst($expense->category) }}</td>
@@ -81,13 +85,13 @@
                         </td>
                     </tr>
                 @empty
-                    <tr>
+                    <tr data-sort-empty="1">
                         <td colspan="5" class="px-6 py-12 text-center text-sm text-gray-500">No expenses recorded for this period.</td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
-    </div>
+    </x-sortable-table>
 </x-card>
 
 <div class="mt-6">{{ $expenses->links() }}</div>

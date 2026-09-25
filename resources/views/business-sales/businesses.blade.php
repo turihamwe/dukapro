@@ -47,20 +47,20 @@
     <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
         <h2 class="font-semibold">{{ number_format($businesses->total()) }} businesses</h2>
     </div>
-    <div class="overflow-x-auto">
+    <x-sortable-table class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200 text-sm">
             <thead class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                 <tr>
-                    <th class="px-4 py-3">Business</th>
-                    <th class="px-4 py-3">Subscription</th>
-                    <th class="px-4 py-3">Products</th>
-                    <th class="px-4 py-3">Registered</th>
-                    <th class="px-4 py-3">Phone</th>
-                    <th class="px-4 py-3">Email</th>
+                    <x-sortable-th column="name" class="px-4 py-3">Business</x-sortable-th>
+                    <x-sortable-th column="subscription" class="px-4 py-3">Subscription</x-sortable-th>
+                    <x-sortable-th column="products" class="px-4 py-3">Products</x-sortable-th>
+                    <x-sortable-th column="registered" class="px-4 py-3">Registered</x-sortable-th>
+                    <x-sortable-th column="phone" class="px-4 py-3">Phone</x-sortable-th>
+                    <x-sortable-th column="email" class="px-4 py-3">Email</x-sortable-th>
                     <th class="px-4 py-3"></th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100">
+            <tbody x-ref="tbody" class="divide-y divide-gray-100">
                 @forelse($businesses as $business)
                     @php
                         if ($business->subscription_status === 'active') {
@@ -73,7 +73,14 @@
                             $statusColors = 'bg-gray-100 text-gray-800';
                         }
                     @endphp
-                    <tr class="hover:bg-gray-50">
+                    <tr class="hover:bg-gray-50"
+                        data-sortable-row
+                        data-sort-name="{{ strtolower($business->name) }}"
+                        data-sort-subscription="{{ strtolower($business->subscription_status ?? '') }}"
+                        data-sort-products="{{ (int) $business->products_count }}"
+                        data-sort-registered="{{ $business->created_at->timestamp }}"
+                        data-sort-phone="{{ strtolower($business->phone ?? '') }}"
+                        data-sort-email="{{ strtolower($business->email ?? '') }}">
                         <td class="px-4 py-3 font-medium text-gray-900">{{ $business->name }}</td>
                         <td class="px-4 py-3">
                             <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium capitalize {{ $statusColors }}">
@@ -104,13 +111,13 @@
                         </td>
                     </tr>
                 @empty
-                    <tr>
+                    <tr data-sort-empty="1">
                         <td colspan="7" class="px-6 py-10 text-center text-gray-500">No businesses match this filter.</td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
-    </div>
+    </x-sortable-table>
     @include('superadmin.partials.pagination', ['paginator' => $businesses])
 </div>
 @endsection

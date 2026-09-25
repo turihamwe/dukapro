@@ -45,20 +45,24 @@
 </div>
 
 <x-card :padding="false" class="hidden overflow-hidden md:block">
-    <div class="overflow-x-auto">
+    <x-sortable-table class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Name</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Role</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Branch</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Email</th>
+                    <x-sortable-th column="name" class="px-6 py-3">Name</x-sortable-th>
+                    <x-sortable-th column="role" class="px-6 py-3">Role</x-sortable-th>
+                    <x-sortable-th column="branch" class="px-6 py-3">Branch</x-sortable-th>
+                    <x-sortable-th column="email" class="px-6 py-3">Email</x-sortable-th>
                     <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500"></th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100 bg-white">
+            <tbody x-ref="tbody" class="divide-y divide-gray-100 bg-white">
                 @forelse($staff as $member)
-                    <tr>
+                    <tr data-sortable-row
+                        data-sort-name="{{ strtolower($member->name) }}"
+                        data-sort-role="{{ strtolower($member->role) }}"
+                        data-sort-branch="{{ strtolower($member->branch->name ?? '') }}"
+                        data-sort-email="{{ strtolower($member->email) }}">
                         <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $member->name }}</td>
                         <td class="px-6 py-4 text-sm capitalize text-gray-600">{{ $member->role }}</td>
                         <td class="px-6 py-4 text-sm text-gray-500">{{ $member->branch->name ?? '—' }}</td>
@@ -79,12 +83,12 @@
                         </td>
                     </tr>
                 @empty
-                    <tr>
+                    <tr data-sort-empty="1">
                         <td colspan="5" class="px-6 py-12 text-center text-sm text-gray-500">No staff yet.</td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
-    </div>
+    </x-sortable-table>
 </x-card>
 @endsection

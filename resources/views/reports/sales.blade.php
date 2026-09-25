@@ -27,20 +27,24 @@
             <h2 class="text-sm font-semibold text-gray-900">Sales by date</h2>
             <p class="mt-1 text-xs text-gray-500">Select a date to view products sold, cashiers, and transaction details for that day.</p>
         </div>
-        <div class="overflow-x-auto">
+        <x-sortable-table class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date</th>
-                        <th class="px-4 sm:px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Transactions</th>
-                        <th class="px-4 sm:px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Total</th>
+                        <x-sortable-th column="date" class="px-4 sm:px-6 py-3">Date</x-sortable-th>
+                        <x-sortable-th column="count" align="right" class="px-4 sm:px-6 py-3">Transactions</x-sortable-th>
+                        <x-sortable-th column="total" align="right" class="px-4 sm:px-6 py-3">Total</x-sortable-th>
                         <th class="px-4 sm:px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Report</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100 bg-white">
+                <tbody x-ref="tbody" class="divide-y divide-gray-100 bg-white">
                     @forelse($dailyBreakdown as $row)
                         @php $saleDate = \Carbon\Carbon::parse($row->sale_date)->toDateString(); @endphp
-                        <tr class="hover:bg-gray-50">
+                        <tr class="hover:bg-gray-50"
+                            data-sortable-row
+                            data-sort-date="{{ $saleDate }}"
+                            data-sort-count="{{ (int) $row->count }}"
+                            data-sort-total="{{ (float) $row->total }}">
                             <td class="px-4 sm:px-6 py-4 text-sm font-medium text-gray-900">
                                 {{ \Carbon\Carbon::parse($row->sale_date)->format('l, M j, Y') }}
                             </td>
@@ -54,13 +58,13 @@
                             </td>
                         </tr>
                     @empty
-                        <tr>
+                        <tr data-sort-empty="1">
                             <td colspan="4" class="px-6 py-12 text-center text-sm text-gray-500">No sales recorded for this period.</td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
-        </div>
+        </x-sortable-table>
     </x-card>
 </div>
 @endsection

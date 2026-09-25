@@ -19,9 +19,22 @@
        class="rounded-full border px-3 py-1 text-xs font-medium {{ $filter === 'credit' ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-gray-200 bg-white text-gray-700' }}">Credit customers</a>
 </div>
 
-<div class="space-y-3">
+<x-sortable-table>
+    <x-sortable-list-bar :columns="['name' => 'Name', 'balance' => 'Outstanding', 'detail' => 'Contact']" />
+    <div class="space-y-3" x-ref="tbody">
     @forelse($customers as $customer)
-        <a href="{{ tenant_route('tenant.contacts.show', ['customer' => $customer]) }}" class="block transition hover:opacity-90">
+        @php
+            $sortDetail = $customer->is_credit_customer
+                ? (string) ($customer->credit_limit ?? '')
+                : strtolower($customer->email ?? $customer->company_name ?? $customer->phone ?? '');
+            $sortBalance = $customer->is_credit_customer ? (float) $customer->outstanding_balance : -1;
+        @endphp
+        <a href="{{ tenant_route('tenant.contacts.show', ['customer' => $customer]) }}"
+           class="block transition hover:opacity-90"
+           data-sortable-row
+           data-sort-name="{{ strtolower($customer->name) }}"
+           data-sort-balance="{{ $sortBalance }}"
+           data-sort-detail="{{ strtolower($sortDetail) }}">
             <x-card :padding="false" class="p-4">
                 <div class="flex items-center justify-between gap-4">
                     <div class="min-w-0">
@@ -45,9 +58,12 @@
             </x-card>
         </a>
     @empty
-        <x-card class="text-center text-sm text-gray-500">No contacts yet. Import your address book by adding contacts here.</x-card>
+        <div data-sort-empty="1">
+            <x-card class="text-center text-sm text-gray-500">No contacts yet. Import your address book by adding contacts here.</x-card>
+        </div>
     @endforelse
-</div>
+    </div>
+</x-sortable-table>
 
 <div class="mt-6">{{ $customers->links() }}</div>
 @endsection

@@ -36,24 +36,29 @@
         </div>
     </form>
 
-    <div class="overflow-x-auto">
+    <x-sortable-table class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 sm:px-6">Sale #</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 sm:px-6">Date</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 sm:px-6">Customer</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 sm:px-6">Type</th>
-                    <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 sm:px-6">Total</th>
+                    <x-sortable-th column="number" class="px-4 py-3 sm:px-6">Sale #</x-sortable-th>
+                    <x-sortable-th column="date" class="px-4 py-3 sm:px-6">Date</x-sortable-th>
+                    <x-sortable-th column="customer" class="px-4 py-3 sm:px-6">Customer</x-sortable-th>
+                    <x-sortable-th column="type" class="px-4 py-3 sm:px-6">Type</x-sortable-th>
+                    <x-sortable-th column="total" align="right" class="px-4 py-3 sm:px-6">Total</x-sortable-th>
                     <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 sm:px-6">Action</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100 bg-white">
+            <tbody x-ref="tbody" class="divide-y divide-gray-100 bg-white">
                 @forelse($documents as $sale)
                     @php
                         $isInvoice = \App\Support\SaleDocument::isInvoice($sale);
                     @endphp
-                    <tr>
+                    <tr data-sortable-row
+                        data-sort-number="{{ strtolower($sale->sale_number) }}"
+                        data-sort-date="{{ optional($sale->completed_at)->timestamp ?? 0 }}"
+                        data-sort-customer="{{ strtolower($sale->customer->name ?? 'walk-in') }}"
+                        data-sort-type="{{ $isInvoice ? 'invoice' : 'receipt' }}"
+                        data-sort-total="{{ (float) $sale->total }}">
                         <td class="px-4 py-3 text-sm font-medium text-gray-900 sm:px-6">{{ $sale->sale_number }}</td>
                         <td class="px-4 py-3 text-sm text-gray-600 sm:px-6">{{ optional($sale->completed_at)->format('M j, Y g:i A') ?? '—' }}</td>
                         <td class="px-4 py-3 text-sm text-gray-600 sm:px-6">
@@ -87,13 +92,13 @@
                         </td>
                     </tr>
                 @empty
-                    <tr>
+                    <tr data-sort-empty="1">
                         <td colspan="6" class="px-6 py-10 text-center text-sm text-gray-500">No documents found.</td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
-    </div>
+    </x-sortable-table>
 
     @if($documents->hasPages())
         <div class="border-t border-gray-100 px-4 py-3 sm:px-6">

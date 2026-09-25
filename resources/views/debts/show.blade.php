@@ -27,8 +27,15 @@
 
 <h2 class="mb-4 text-sm font-semibold text-gray-900">Ledger History</h2>
 
-<div class="space-y-3">
+<x-sortable-table>
+    <x-sortable-list-bar :columns="['when' => 'Date', 'type' => 'Type', 'amount' => 'Amount', 'balance' => 'Balance']" />
+    <div class="space-y-3" x-ref="tbody">
     @forelse($entries as $entry)
+        <div data-sortable-row
+             data-sort-when="{{ $entry->created_at->timestamp }}"
+             data-sort-type="{{ strtolower($entry->type) }}"
+             data-sort-amount="{{ (float) $entry->amount }}"
+             data-sort-balance="{{ (float) $entry->balance_after }}">
         <x-card :padding="false" class="p-4">
             <div class="flex items-start justify-between gap-4">
                 <div class="min-w-0">
@@ -42,10 +49,14 @@
                 </div>
             </div>
         </x-card>
+        </div>
     @empty
-        <x-card class="text-center text-sm text-gray-500">No ledger entries.</x-card>
+        <div data-sort-empty="1">
+            <x-card class="text-center text-sm text-gray-500">No ledger entries.</x-card>
+        </div>
     @endforelse
-</div>
+    </div>
+</x-sortable-table>
 
 <div class="mt-6">{{ $entries->links() }}</div>
 @endsection

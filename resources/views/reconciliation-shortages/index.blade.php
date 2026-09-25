@@ -35,22 +35,29 @@
 @endif
 
 <x-card :padding="false" class="overflow-hidden">
-    <div class="overflow-x-auto">
+    <x-sortable-table class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Staff</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Source</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Amount</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Outstanding</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
+                    <x-sortable-th column="date" class="px-6 py-3">Date</x-sortable-th>
+                    <x-sortable-th column="staff" class="px-6 py-3">Staff</x-sortable-th>
+                    <x-sortable-th column="source" class="px-6 py-3">Source</x-sortable-th>
+                    <x-sortable-th column="amount" align="right" class="px-6 py-3">Amount</x-sortable-th>
+                    <x-sortable-th column="outstanding" align="right" class="px-6 py-3">Outstanding</x-sortable-th>
+                    <x-sortable-th column="status" class="px-6 py-3">Status</x-sortable-th>
                     <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500"></th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100">
+            <tbody x-ref="tbody" class="divide-y divide-gray-100">
                 @forelse($shortages as $shortage)
-                    <tr class="hover:bg-gray-50 align-top">
+                    <tr class="hover:bg-gray-50 align-top"
+                        data-sortable-row
+                        data-sort-date="{{ $shortage->shortage_date->timestamp }}"
+                        data-sort-staff="{{ strtolower($shortage->user->name ?? '') }}"
+                        data-sort-source="{{ strtolower($shortage->sourceLabel()) }}"
+                        data-sort-amount="{{ (float) $shortage->amount }}"
+                        data-sort-outstanding="{{ (float) $shortage->outstandingAmount() }}"
+                        data-sort-status="{{ strtolower($shortage->status) }}">
                         <td class="px-6 py-4 text-sm text-gray-900">{{ $shortage->shortage_date->format('M j, Y') }}</td>
                         <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $shortage->user->name ?? 'Staff' }}</td>
                         <td class="px-6 py-4 text-sm text-gray-600">
@@ -104,7 +111,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr>
+                    <tr data-sort-empty="1">
                         <td colspan="7" class="px-6 py-12 text-center text-sm text-gray-500">
                             @if($status === 'pending')
                                 No pending shortages. Staff are balanced for recorded shifts.
@@ -116,6 +123,6 @@
                 @endforelse
             </tbody>
         </table>
-    </div>
+    </x-sortable-table>
 </x-card>
 @endsection

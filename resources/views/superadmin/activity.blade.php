@@ -30,21 +30,28 @@
 </form>
 
 <div class="overflow-hidden rounded-xl border border-gray-200 bg-white">
-    <div class="overflow-x-auto">
+    <x-sortable-table class="overflow-x-auto">
         <table class="w-full text-left text-sm">
             <thead class="border-b border-gray-200 text-xs uppercase tracking-wide text-gray-500">
                 <tr>
-                    <th class="px-6 py-3">When</th>
-                    <th class="px-6 py-3">Action</th>
-                    <th class="px-6 py-3">Summary</th>
-                    <th class="px-6 py-3">Tenant</th>
-                    <th class="px-6 py-3">User</th>
-                    <th class="px-6 py-3">IP</th>
+                    <x-sortable-th column="when" class="px-6 py-3">When</x-sortable-th>
+                    <x-sortable-th column="action" class="px-6 py-3">Action</x-sortable-th>
+                    <x-sortable-th column="summary" class="px-6 py-3">Summary</x-sortable-th>
+                    <x-sortable-th column="tenant" class="px-6 py-3">Tenant</x-sortable-th>
+                    <x-sortable-th column="user" class="px-6 py-3">User</x-sortable-th>
+                    <x-sortable-th column="ip" class="px-6 py-3">IP</x-sortable-th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200">
+            <tbody x-ref="tbody" class="divide-y divide-gray-200">
                 @forelse($logs as $log)
-                    <tr class="hover:bg-gray-100/50">
+                    <tr class="hover:bg-gray-100/50"
+                        data-sortable-row
+                        data-sort-when="{{ $log->created_at->timestamp }}"
+                        data-sort-action="{{ strtolower($log->action) }}"
+                        data-sort-summary="{{ strtolower($log->summary) }}"
+                        data-sort-tenant="{{ strtolower(optional($log->business)->name ?? '') }}"
+                        data-sort-user="{{ strtolower(optional($log->user)->email ?? '') }}"
+                        data-sort-ip="{{ $log->ip_address ?? '' }}">
                         <td class="whitespace-nowrap px-6 py-3 text-gray-500">{{ $log->created_at->format('M d, H:i') }}</td>
                         <td class="px-6 py-3"><code class="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-violet-700">{{ $log->action }}</code></td>
                         <td class="max-w-md px-6 py-3">{{ $log->summary }}</td>
@@ -53,13 +60,13 @@
                         <td class="px-6 py-3 text-xs text-gray-500">{{ $log->ip_address }}</td>
                     </tr>
                 @empty
-                    <tr>
+                    <tr data-sort-empty="1">
                         <td colspan="6" class="px-6 py-8 text-center text-gray-500">No activity recorded yet.</td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
-    </div>
+    </x-sortable-table>
     @include('superadmin.partials.pagination', ['paginator' => $logs])
 </div>
 @endsection

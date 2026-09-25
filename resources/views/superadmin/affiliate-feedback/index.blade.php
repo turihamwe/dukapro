@@ -37,22 +37,29 @@
 </form>
 
 <div class="overflow-hidden rounded-xl border border-gray-200 bg-white">
-    <div class="overflow-x-auto">
+    <x-sortable-table class="overflow-x-auto">
         <table class="w-full text-left text-sm">
             <thead class="border-b border-gray-200 bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                 <tr>
-                    <th class="px-4 py-3">When</th>
-                    <th class="px-4 py-3">Affiliate</th>
-                    <th class="px-4 py-3">Category</th>
-                    <th class="px-4 py-3">Headline</th>
-                    <th class="px-4 py-3">Merchant / area</th>
-                    <th class="px-4 py-3">Status</th>
-                    <th class="px-4 py-3 text-right">Actions</th>
+                    <x-sortable-th column="when" class="px-4 py-3">When</x-sortable-th>
+                    <x-sortable-th column="affiliate" class="px-4 py-3">Affiliate</x-sortable-th>
+                    <x-sortable-th column="category" class="px-4 py-3">Category</x-sortable-th>
+                    <x-sortable-th column="headline" class="px-4 py-3">Headline</x-sortable-th>
+                    <x-sortable-th column="merchant" class="px-4 py-3">Merchant / area</x-sortable-th>
+                    <x-sortable-th column="status" class="px-4 py-3">Status</x-sortable-th>
+                    <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100">
+            <tbody x-ref="tbody" class="divide-y divide-gray-100">
                 @forelse($feedback as $row)
-                    <tr class="hover:bg-gray-50 {{ $row->status === 'new' ? 'bg-emerald-50/40' : '' }}">
+                    <tr class="hover:bg-gray-50 {{ $row->status === 'new' ? 'bg-emerald-50/40' : '' }}"
+                        data-sortable-row
+                        data-sort-when="{{ $row->created_at->timestamp }}"
+                        data-sort-affiliate="{{ strtolower(optional($row->affiliate)->name ?? '') }}"
+                        data-sort-category="{{ strtolower(\App\Models\AffiliateFieldFeedback::categoryLabel($row->category)) }}"
+                        data-sort-headline="{{ strtolower($row->summary) }}"
+                        data-sort-merchant="{{ strtolower(trim(($row->merchant_name ?? '') . ' ' . ($row->location ?? ''))) }}"
+                        data-sort-status="{{ strtolower($row->status) }}">
                         <td class="whitespace-nowrap px-4 py-3 text-gray-600">{{ $row->created_at->format('M j, Y g:i A') }}</td>
                         <td class="px-4 py-3">
                             @if($row->affiliate)
@@ -84,13 +91,13 @@
                         </td>
                     </tr>
                 @empty
-                    <tr>
+                    <tr data-sort-empty="1">
                         <td colspan="7" class="px-4 py-10 text-center text-gray-500">No field feedback yet.</td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
-    </div>
+    </x-sortable-table>
     @include('superadmin.partials.pagination', ['paginator' => $feedback])
 </div>
 @endsection

@@ -10,20 +10,24 @@
 </x-page-header>
 
 <x-card :padding="false" class="overflow-hidden">
-    <div class="overflow-x-auto">
+    <x-sortable-table class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Branch</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Contact</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Staff</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
+                    <x-sortable-th column="name" class="px-6 py-3">Branch</x-sortable-th>
+                    <x-sortable-th column="contact" class="px-6 py-3">Contact</x-sortable-th>
+                    <x-sortable-th column="staff" class="px-6 py-3">Staff</x-sortable-th>
+                    <x-sortable-th column="status" class="px-6 py-3">Status</x-sortable-th>
                     <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500"></th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100 bg-white">
+            <tbody x-ref="tbody" class="divide-y divide-gray-100 bg-white">
                 @forelse($branches as $branch)
-                    <tr>
+                    <tr data-sortable-row
+                        data-sort-name="{{ strtolower($branch->name) }}"
+                        data-sort-contact="{{ strtolower($branch->phone ?? '') }}"
+                        data-sort-staff="{{ (int) $branch->users_count }}"
+                        data-sort-status="{{ $branch->is_active ? 1 : 0 }}">
                         <td class="px-6 py-4">
                             <p class="text-sm font-medium text-gray-900">{{ $branch->name }}</p>
                             @if($branch->is_default)
@@ -52,12 +56,12 @@
                         </td>
                     </tr>
                 @empty
-                    <tr>
+                    <tr data-sort-empty="1">
                         <td colspan="5" class="px-6 py-12 text-center text-sm text-gray-500">No branches yet.</td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
-    </div>
+    </x-sortable-table>
 </x-card>
 @endsection

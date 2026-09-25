@@ -96,23 +96,31 @@
 </form>
 
 <div class="overflow-hidden rounded-xl border border-gray-200 bg-white">
-    <div class="overflow-x-auto">
+    <x-sortable-table class="overflow-x-auto">
         <table class="min-w-full text-left text-sm">
             <thead class="border-b border-gray-200 bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                 <tr>
-                    <th class="px-4 py-3">When</th>
-                    <th class="px-4 py-3">Env</th>
-                    <th class="px-4 py-3">HTTP</th>
-                    <th class="px-4 py-3">Message</th>
-                    <th class="px-4 py-3">Business</th>
-                    <th class="px-4 py-3">User</th>
-                    <th class="px-4 py-3">Device</th>
+                    <x-sortable-th column="when" class="px-4 py-3">When</x-sortable-th>
+                    <x-sortable-th column="env" class="px-4 py-3">Env</x-sortable-th>
+                    <x-sortable-th column="http" class="px-4 py-3">HTTP</x-sortable-th>
+                    <x-sortable-th column="message" class="px-4 py-3">Message</x-sortable-th>
+                    <x-sortable-th column="business" class="px-4 py-3">Business</x-sortable-th>
+                    <x-sortable-th column="user" class="px-4 py-3">User</x-sortable-th>
+                    <x-sortable-th column="device" class="px-4 py-3">Device</x-sortable-th>
                     <th class="px-4 py-3"></th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100">
+            <tbody x-ref="tbody" class="divide-y divide-gray-100">
                 @forelse($logs as $log)
-                    <tr class="hover:bg-gray-50">
+                    <tr class="hover:bg-gray-50"
+                        data-sortable-row
+                        data-sort-when="{{ $log->created_at->timestamp }}"
+                        data-sort-env="{{ strtolower($log->environment) }}"
+                        data-sort-http="{{ (int) ($log->httpStatus() ?? 0) }}"
+                        data-sort-message="{{ strtolower($log->error_message) }}"
+                        data-sort-business="{{ strtolower(optional($log->business)->name ?? '') }}"
+                        data-sort-user="{{ strtolower($log->contactEmail() ?? $log->contactUsername() ?? '') }}"
+                        data-sort-device="{{ strtolower($log->deviceTypeLabel()) }}">
                         <td class="whitespace-nowrap px-4 py-3 text-xs text-gray-500">{{ $log->created_at->format('M j, H:i') }}</td>
                         <td class="px-4 py-3">
                             <span class="inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase {{ $log->environment === 'backend' ? 'bg-rose-100 text-rose-800' : 'bg-violet-100 text-violet-800' }}">
@@ -146,13 +154,13 @@
                         </td>
                     </tr>
                 @empty
-                    <tr>
+                    <tr data-sort-empty="1">
                         <td colspan="8" class="px-6 py-10 text-center text-gray-500">No errors logged yet.</td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
-    </div>
+    </x-sortable-table>
     @include('superadmin.partials.pagination', ['paginator' => $logs])
 </div>
 @endsection

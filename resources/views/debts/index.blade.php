@@ -10,9 +10,16 @@
     </x-slot>
 </x-page-header>
 
-<div class="space-y-3">
+<x-sortable-table>
+    <x-sortable-list-bar :columns="['name' => 'Name', 'balance' => 'Outstanding', 'limit' => 'Credit limit']" />
+    <div class="space-y-3" x-ref="tbody">
     @forelse($customers as $customer)
-        <a href="{{ tenant_route('tenant.debts.show', ['customer' => $customer]) }}" class="block transition hover:opacity-90">
+        <a href="{{ tenant_route('tenant.debts.show', ['customer' => $customer]) }}"
+           class="block transition hover:opacity-90"
+           data-sortable-row
+           data-sort-name="{{ strtolower($customer->name) }}"
+           data-sort-balance="{{ (float) $customer->outstanding_balance }}"
+           data-sort-limit="{{ (float) $customer->credit_limit }}">
             <x-card :padding="false" class="p-4">
                 <div class="flex items-center justify-between gap-4">
                     <div class="min-w-0">
@@ -27,9 +34,12 @@
             </x-card>
         </a>
     @empty
-        <x-card class="text-center text-sm text-gray-500">No credit customers yet.</x-card>
+        <div data-sort-empty="1">
+            <x-card class="text-center text-sm text-gray-500">No credit customers yet.</x-card>
+        </div>
     @endforelse
-</div>
+    </div>
+</x-sortable-table>
 
 <div class="mt-6">{{ $customers->links() }}</div>
 @endsection
