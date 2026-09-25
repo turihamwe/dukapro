@@ -29,6 +29,8 @@ class TenantRegistrationService
 
             $business = Business::create([
                 'name' => $data['business_name'],
+                'business_category' => $data['business_category'],
+                'business_subcategory' => $data['business_subcategory'],
                 'business_type' => $data['business_type'],
                 'operating_mode' => $operatingMode,
                 'slug' => $slug,

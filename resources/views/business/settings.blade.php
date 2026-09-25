@@ -8,7 +8,9 @@
     use App\Modules\ModuleKeys;
     use App\Support\BillingMode;
 
-    $businessTypeLabel = BusinessType::label($business->business_type);
+    $businessTypeLabel = $business->business_category
+        ? \App\Support\BusinessIndustryCatalog::subcategoryLabel($business->business_category, $business->business_subcategory)
+        : BusinessType::label($business->business_type);
     $moduleRegistry = app(\App\Modules\ModuleRegistry::class);
     $moduleFootnotes = [
         ModuleKeys::BAR_SHIFT => 'Turn on for a bar or pub with no kitchen. Use Floor service below for waiters and tables.',

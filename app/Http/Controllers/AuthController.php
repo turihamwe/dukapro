@@ -8,8 +8,10 @@ use App\Models\Business;
 use App\Services\AuthLoginService;
 use App\Services\AffiliateReferralService;
 use App\Services\TenantRegistrationService;
+use App\Support\BusinessIndustryCatalog;
 use App\Support\CashierMode;
 use App\Support\LoginPortal;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -182,7 +184,9 @@ class AuthController extends Controller
     {
         $this->affiliateReferralService->captureFromRequest($request);
 
-        return view('auth.register');
+        return view('auth.register', [
+            'industryCatalog' => BusinessIndustryCatalog::forClient(),
+        ]);
     }
 
     public function checkUsername(Request $request)
@@ -213,7 +217,9 @@ class AuthController extends Controller
 
         $data = $request->validate([
             'business_name' => 'required|string|max:255',
-            'business_type' => 'required|string|in:' . implode(',', \App\Enums\BusinessType::all()),
+            'business_category' => 'required|string|in:' . implode(',', array_keys(BusinessIndustryCatalog::masterCategories())),
+            'business_subcategory' => 'required|string|max:120',
+            'business_subcategory_custom' => 'nullable|string|max:80',
             'operating_mode' => 'required|string|in:' . implode(',', \App\Enums\BusinessOperatingMode::all()),
             'name' => 'required|string|max:255',
             'username' => 'required|string|max:50|alpha_dash|unique:users,username',
@@ -221,6 +227,26 @@ class AuthController extends Controller
             'password' => ['required', 'string', 'min:8', 'confirmed', 'regex:/\d/'],
             'phone' => 'nullable|string|max:30',
         ], $this->registrationValidationMessages());
+
+        if ($data['business_subcategory'] === BusinessIndustryCatalog::CUSTOM_SUBCATEGORY) {
+            $request->validate([
+                'business_subcategory_custom' => ['required', 'string', 'min:2', 'max:80', 'regex:/^[\pL\pN\s\-\/\&\.\,\'\(\)]+$/u'],
+            ], [
+                'business_subcategory_custom.required' => 'Please type your subcategory so we know your niche.',
+                'business_subcategory_custom.min' => 'Please enter at least 2 characters for your subcategory.',
+                'business_subcategory_custom.regex' => 'Please use letters, numbers, and simple punctuation only in your subcategory.',
+            ]);
+            $data['business_subcategory'] = BusinessIndustryCatalog::sanitizeCustomSubcategory((string) $request->input('business_subcategory_custom'));
+        } elseif (! BusinessIndustryCatalog::isValidSubcategorySlug($data['business_category'], $data['business_subcategory'])) {
+            throw ValidationException::withMessages([
+                'business_subcategory' => 'Please pick a subcategory from the list or choose “type your own”.',
+            ]);
+        }
+
+        $data['business_type'] = BusinessIndustryCatalog::resolveLegacyBusinessType(
+            $data['business_category'],
+            $data['business_subcategory']
+        );
 
         $referral = $this->affiliateReferralService->resolveReferralPairFromSession($request);
 
@@ -378,8 +404,10 @@ class AuthController extends Controller
     {
         return [
             'business_name.required' => 'Please tell us your shop or business name - you can change details later.',
-            'business_type.required' => 'Please choose the type of business you run so we can set things up correctly.',
-            'business_type.in' => 'Please pick a business type from the list.',
+            'business_category.required' => 'Please choose the main category that best describes your business.',
+            'business_category.in' => 'Please pick a category from the list.',
+            'business_subcategory.required' => 'Please choose or enter your business subcategory.',
+            'business_subcategory.max' => 'Your subcategory is too long — please shorten it.',
             'name.required' => 'Please enter your name so your team knows who manages the account.',
             'username.required' => 'Please choose a username - you will use it each time you sign in.',
             'username.alpha_dash' => 'Please remove spaces or symbols like @ from your username.',

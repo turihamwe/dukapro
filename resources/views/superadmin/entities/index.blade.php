@@ -159,7 +159,11 @@
                                     @php $affiliateBadge = \App\Support\AffiliateStatusPresenter::for($record); @endphp
                                     <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $affiliateBadge['classes'] }}">{{ $affiliateBadge['label'] }}</span>
                                 @elseif($column === 'business_type' && $value)
-                                    {{ \App\Enums\BusinessType::label($value) }}
+                                    @if($record->business_category)
+                                        {{ \App\Support\BusinessIndustryCatalog::subcategoryLabel($record->business_category, $record->business_subcategory) }}
+                                    @else
+                                        {{ \App\Enums\BusinessType::label($value) }}
+                                    @endif
                                 @elseif($column === 'shareholder_id' && $record->relationLoaded('shareholder') && $record->shareholder)
                                     {{ $record->shareholder->name }}
                                 @elseif(in_array($column, ['capital_invested', 'total_earnings', 'amount', 'payment_amount', 'commission_amount'], true))

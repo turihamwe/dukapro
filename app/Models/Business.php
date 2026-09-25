@@ -22,6 +22,8 @@ class Business extends Model
         'sponsor_id',
         'referring_affiliate_id',
         'name',
+        'business_category',
+        'business_subcategory',
         'business_type',
         'operating_mode',
         'slug',

@@ -2,6 +2,10 @@
 
 @section('title', 'Register your business | ' . platform_brand('name'))
 
+@push('styles')
+<style>[x-cloak]{display:none!important}</style>
+@endpush
+
 @section('content')
     @include('layouts.partials.auth-brand', [
         'subtitle' => 'Create your business account',
@@ -26,20 +30,64 @@
                     <p class="mt-1 text-xs text-gray-500">Use the name customers know - your shop or company name.</p> --}}
                 @enderror
             </div>
-            <div>
-                <label for="business_type" class="mb-1.5 block text-sm font-medium text-gray-700">Business type <span class="text-red-500">*</span></label>
-                <select name="business_type" id="business_type" required
-                        class="block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 @error('business_type') border-red-300 ring-red-200 @enderror">
-                    <option value="">Select</option>
-                    @foreach(\App\Enums\BusinessType::labels() as $value => $label)
-                        <option value="{{ $value }}" @selected(old('business_type') === $value)>{{ $label }}</option>
-                    @endforeach
-                </select>
-                @error('business_type')
-                    <p class="mt-1 text-xs font-medium text-red-600" role="alert">{{ $message }}</p>
-                {{-- @else
-                    <p class="mt-1 text-xs text-gray-500">Tip: Pick the option that best matches what you sell today.</p> --}}
-                @enderror
+            @php
+                $oldMaster = old('business_category', '');
+                $oldSub = old('business_subcategory', '');
+                $oldCustom = old('business_subcategory_custom', '');
+                if ($oldMaster && $oldSub !== '' && $oldSub !== \App\Support\BusinessIndustryCatalog::CUSTOM_SUBCATEGORY
+                    && ! \App\Support\BusinessIndustryCatalog::isValidSubcategorySlug($oldMaster, $oldSub)) {
+                    $oldCustom = $oldSub;
+                    $oldSub = \App\Support\BusinessIndustryCatalog::CUSTOM_SUBCATEGORY;
+                }
+            @endphp
+            <div class="space-y-3 rounded-xl border border-gray-200 bg-gray-50/80 p-3 sm:p-4"
+                 x-data="businessIndustryPicker(@js($industryCatalog), @js([
+                     'master' => $oldMaster,
+                     'sub' => $oldSub,
+                     'custom' => $oldCustom,
+                 ]))">
+                <div>
+                    <label for="business_category" class="mb-1.5 block text-sm font-medium text-gray-700">Business category <span class="text-red-500">*</span></label>
+                    <select name="business_category" id="business_category" required x-model="master" @change="onMasterChange()"
+                            class="block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 @error('business_category') border-red-300 ring-red-200 @enderror">
+                        <option value="">Select</option>
+                        @foreach(\App\Support\BusinessIndustryCatalog::masterCategories() as $categoryKey => $categoryLabel)
+                            <option value="{{ $categoryKey }}">{{ $categoryLabel }}</option>
+                        @endforeach
+                    </select>
+                    @error('business_category')
+                        <p class="mt-1 text-xs font-medium text-red-600" role="alert">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div x-show="master" x-cloak>
+                    <label for="business_subcategory" class="mb-1.5 block text-sm font-medium text-gray-700">Subcategory <span class="text-red-500">*</span></label>
+                    <select name="business_subcategory" id="business_subcategory" required x-model="sub"
+                            class="block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 @error('business_subcategory') border-red-300 ring-red-200 @enderror">
+                        <option value="">Select</option>
+                        <template x-for="item in subsForMaster" :key="item.slug">
+                            <option :value="item.slug" x-text="item.label"></option>
+                        </template>
+                        <option :value="catalog.customValue" x-text="catalog.customOptionLabel"></option>
+                    </select>
+                    @error('business_subcategory')
+                        <p class="mt-1 text-xs font-medium text-red-600" role="alert">{{ $message }}</p>
+                    {{-- @else
+                        <p class="mt-1 text-xs text-gray-500">Pick the closest match - subcategories update instantly when you change category.</p> --}}
+                    @enderror
+                </div>
+                <div x-show="master && sub === catalog.customValue" x-cloak>
+                    <label for="business_subcategory_custom" class="mb-1.5 block text-sm font-medium text-gray-700">Your subcategory <span class="text-red-500">*</span></label>
+                    <input type="text" name="business_subcategory_custom" id="business_subcategory_custom"
+                           x-model="customText" maxlength="80" autocomplete="organization-title"
+                           placeholder="e.g. Mobile money agency, Pool table hall"
+                           class="block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 @error('business_subcategory_custom') border-red-300 ring-red-200 @enderror"
+                           :required="sub === catalog.customValue">
+                    @error('business_subcategory_custom')
+                        <p class="mt-1 text-xs font-medium text-red-600" role="alert">{{ $message }}</p>
+                    @else
+                        <p class="mt-1 text-xs text-gray-500">Saved under your chosen category - use a short, clear name for your niche.</p>
+                    @enderror
+                </div>
             </div>
             <div>
                 <label for="operating_mode" class="mb-1.5 block text-sm font-medium text-gray-700">How you operate <span class="text-red-500">*</span></label>
@@ -51,8 +99,8 @@
                 </select>
                 @error('operating_mode')
                     <p class="mt-1 text-xs font-medium text-red-600" role="alert">{{ $message }}</p>
-                @else
-                    <p class="mt-1 text-xs text-gray-500">Most shops choose <strong>Retail</strong>. Pick a specialized mode only if you mainly sell services, rentals, or track warehouse stock.</p>
+                {{-- @else
+                    <p class="mt-1 text-xs text-gray-500">Most shops choose <strong>Retail</strong>. Pick a specialized mode only if you mainly sell services, rentals, or track warehouse stock.</p> --}}
                 @enderror
             </div>
             <div>
@@ -128,6 +176,30 @@
 @endsection
 
 @push('scripts')
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script>
+document.addEventListener('alpine:init', function () {
+    Alpine.data('businessIndustryPicker', function (catalog, oldInput) {
+        oldInput = oldInput || {};
+        return {
+            catalog: catalog,
+            master: oldInput.master || '',
+            sub: oldInput.sub || '',
+            customText: oldInput.custom || '',
+            get subsForMaster() {
+                if (! this.master || ! this.catalog.subcategories[this.master]) {
+                    return [];
+                }
+                return this.catalog.subcategories[this.master];
+            },
+            onMasterChange: function () {
+                this.sub = '';
+                this.customText = '';
+            },
+        };
+    });
+});
+</script>
 <script>
 (function () {
     function setLive(el, text, tone) {
