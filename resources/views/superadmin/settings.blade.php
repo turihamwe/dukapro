@@ -286,6 +286,7 @@
     @php
         $useServiceMode = old('use_service_based_mode', $settings['use_service_based_mode'] ?? '0') === '1';
         $useRentalMode = old('use_rental_mode', $settings['use_rental_mode'] ?? '0') === '1';
+        $useHospitalityMode = old('use_hospitality_mode', $settings['use_hospitality_mode'] ?? '0') === '1';
         $useEfris = old('use_efris', $settings['use_efris'] ?? '0') === '1';
     @endphp
 
@@ -312,6 +313,16 @@
             <span>
                 <span class="font-semibold text-gray-900">Rentals (stub)</span>
                 <span class="block text-xs text-gray-500">Car hire / property — unlock only; product UI coming later.</span>
+            </span>
+        </label>
+
+        <label class="flex items-start gap-3 rounded-lg border border-amber-300 bg-white p-4 text-sm">
+            <input type="hidden" name="use_hospitality_mode" value="0">
+            <input type="checkbox" name="use_hospitality_mode" value="1" class="mt-0.5 rounded border-gray-300 text-amber-700"
+                   {{ $useHospitalityMode ? 'checked' : '' }}>
+            <span>
+                <span class="font-semibold text-gray-900">Hospitality (hotels & lodging)</span>
+                <span class="block text-xs text-gray-500">Room assets, bookings, and check-in ledger — unlock per business after this master is on.</span>
             </span>
         </label>
 

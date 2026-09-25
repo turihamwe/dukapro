@@ -11,6 +11,8 @@ class BusinessModeCompliance
 
     public const MODE_RENTAL = 'rental';
 
+    public const MODE_HOSPITALITY = 'hospitality';
+
     public static function globallyEnabled(string $mode): bool
     {
         $config = config('business_modes.modes.' . $mode);
@@ -67,6 +69,19 @@ class BusinessModeCompliance
     public static function rentalModeActive(?Business $business): bool
     {
         return static::isActive($business, self::MODE_RENTAL);
+    }
+
+    public static function hospitalityModeActive(?Business $business): bool
+    {
+        return static::isActive($business, self::MODE_HOSPITALITY);
+    }
+
+    /**
+     * Rentable catalog rows for room assets (hotels) — separate from generic rental operating mode.
+     */
+    public static function hospitalityRentableCatalogActive(?Business $business): bool
+    {
+        return static::hospitalityModeActive($business);
     }
 
     /**

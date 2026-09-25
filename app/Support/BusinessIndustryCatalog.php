@@ -60,8 +60,8 @@ class BusinessIndustryCatalog
                 ['slug' => 'restaurant', 'label' => 'Restaurant', 'legacy_type' => BusinessType::RESTAURANT],
                 ['slug' => 'cafe', 'label' => 'Café / coffee shop', 'legacy_type' => BusinessType::RESTAURANT],
                 ['slug' => 'bar_pub', 'label' => 'Bar / pub / lounge', 'legacy_type' => BusinessType::BAR_PUB],
-                ['slug' => 'hotel', 'label' => 'Hotel / lodging', 'legacy_type' => BusinessType::OTHER],
-                ['slug' => 'guesthouse', 'label' => 'Guest house / B&B', 'legacy_type' => BusinessType::OTHER],
+                ['slug' => 'hotel', 'label' => 'Hotel / motel / inn', 'legacy_type' => BusinessType::OTHER, 'enables_hospitality_mode' => true],
+                ['slug' => 'guesthouse', 'label' => 'Guest house / B&B', 'legacy_type' => BusinessType::OTHER, 'enables_hospitality_mode' => true],
                 ['slug' => 'fast_food', 'label' => 'Fast food / takeaway', 'legacy_type' => BusinessType::RESTAURANT],
                 ['slug' => 'bakery', 'label' => 'Bakery / confectionery', 'legacy_type' => BusinessType::RESTAURANT],
                 ['slug' => 'catering', 'label' => 'Catering & events food', 'legacy_type' => BusinessType::RESTAURANT],
@@ -237,5 +237,31 @@ class BusinessIndustryCatalog
         $subLabel = self::subcategoryLabel($master, $subcategory);
 
         return $subLabel . ' · ' . self::masterLabel($master);
+    }
+
+    public static function subcategoryEnablesHospitalityMode(?string $master, ?string $subcategory): bool
+    {
+        if (! self::isValidMaster($master) || $subcategory === null || $subcategory === '') {
+            return false;
+        }
+
+        foreach (self::subcategoriesByMaster()[$master] ?? [] as $item) {
+            if ($item['slug'] === $subcategory) {
+                return ! empty($item['enables_hospitality_mode']);
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function hospitalityRegistrationPreset(): array
+    {
+        return [
+            'hospitality_mode_admin_unlocked' => true,
+            'hospitality_mode' => true,
+        ];
     }
 }

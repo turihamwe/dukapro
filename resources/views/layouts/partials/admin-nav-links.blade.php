@@ -62,6 +62,12 @@
         <span>🧑‍💼</span> Staff
     </a>
 @endcan
+@can('access-hospitality')
+    <a href="{{ tenant_route('tenant.hospitality.index') }}"
+       class="{{ $navLink }} {{ request()->routeIs('tenant.hospitality.*') ? $navActive : $navIdle }}">
+        <span>🛏</span> Rooms
+    </a>
+@endcan
 @can('manage-branches')
     <a href="{{ tenant_route('tenant.branches.index') }}"
        class="{{ $navLink }} {{ request()->routeIs('tenant.branches.*') ? $navActive : $navIdle }}">

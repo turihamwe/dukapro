@@ -54,6 +54,12 @@ class AppServiceProvider extends ServiceProvider
             return $user && $user->business && $user->business->hasModule($moduleKey);
         });
 
+        Blade::if('hospitality', function () {
+            $user = auth()->user();
+
+            return $user && $user->business && \App\Support\BusinessModeCompliance::hospitalityModeActive($user->business);
+        });
+
         Blade::if('efrisPlatform', function () {
             return \App\Support\EfrisCompliance::globallyEnabled();
         });

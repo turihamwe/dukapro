@@ -55,6 +55,12 @@ class CatalogItemType
             $types[] = self::RENTABLE;
         }
 
+        if ($business && BusinessModeCompliance::hospitalityRentableCatalogActive($business)) {
+            if (! in_array(self::RENTABLE, $types, true)) {
+                $types[] = self::RENTABLE;
+            }
+        }
+
         return $types;
     }
 
@@ -97,5 +103,16 @@ class CatalogItemType
             'week' => 'Per week',
             'month' => 'Per month',
         ];
+    }
+
+    public static function labelsFor(?Business $business): array
+    {
+        $labels = self::labels();
+
+        if ($business && BusinessModeCompliance::hospitalityModeActive($business)) {
+            $labels[self::RENTABLE] = 'Room / rentable asset';
+        }
+
+        return $labels;
     }
 }

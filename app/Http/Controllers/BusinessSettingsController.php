@@ -53,6 +53,7 @@ class BusinessSettingsController extends Controller
             'brand_color' => 'nullable|string|max:7',
             'operating_mode' => 'required|string|in:' . implode(',', BusinessOperatingMode::all()),
             'service_based_mode_enabled' => 'nullable|boolean',
+            'hospitality_mode' => 'nullable|boolean',
             'modules' => 'nullable|array',
             'modules.restaurant.enabled' => 'nullable|boolean',
             'modules.restaurant.use_tables' => 'nullable|boolean',
@@ -146,6 +147,14 @@ class BusinessSettingsController extends Controller
                 $business->fresh(),
                 BusinessModeCompliance::MODE_SERVICE,
                 $request->boolean('service_based_mode_enabled')
+            );
+        }
+
+        if (BusinessModeCompliance::isAdminUnlocked($business->fresh(), BusinessModeCompliance::MODE_HOSPITALITY)) {
+            BusinessModeCompliance::setOwnerEnabled(
+                $business->fresh(),
+                BusinessModeCompliance::MODE_HOSPITALITY,
+                $request->boolean('hospitality_mode')
             );
         }
 

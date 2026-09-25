@@ -308,5 +308,21 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('view-affiliate-performance', function (User $user) {
             return $user->isPlatformAdmin();
         });
+
+        Gate::define('access-hospitality', function (User $user) {
+            if (! $user->business || ! \App\Support\BusinessModeCompliance::hospitalityModeActive($user->business)) {
+                return false;
+            }
+
+            return $user->isOwner() || $user->isManager() || $user->isSupervisor();
+        });
+
+        Gate::define('manage-hospitality-bookings', function (User $user) {
+            if (! Gate::forUser($user)->allows('access-hospitality')) {
+                return false;
+            }
+
+            return $user->isOwner() || $user->isManager();
+        });
     }
 }

@@ -718,7 +718,7 @@ class InventoryController extends Controller
                 : null,
             'serviceCatalogEnabled' => BusinessModeCompliance::serviceCatalogActive($business),
             'catalogItemTypes' => CatalogItemType::allowedFor($business),
-            'catalogItemTypeLabels' => CatalogItemType::labels(),
+            'catalogItemTypeLabels' => CatalogItemType::labelsFor($business),
             'defaultCatalogItemType' => CatalogItemType::defaultFor($business),
             'rentalRateUnits' => CatalogItemType::rentalRateUnits(),
         ];

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\BusinessOperatingMode;
 use App\Enums\BusinessType;
+use App\Support\BusinessIndustryCatalog;
 use App\Support\BusinessModeCompliance;
 use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
@@ -70,6 +71,13 @@ class TenantRegistrationService
 
             if ($data['business_type'] === BusinessType::BOUTIQUE) {
                 $settings['use_product_variants'] = true;
+            }
+
+            if (BusinessIndustryCatalog::subcategoryEnablesHospitalityMode(
+                $data['business_category'],
+                $data['business_subcategory']
+            )) {
+                $settings = array_merge($settings, BusinessIndustryCatalog::hospitalityRegistrationPreset());
             }
 
             $business->update(['settings' => $settings]);

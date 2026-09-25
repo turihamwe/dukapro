@@ -5,8 +5,10 @@
     $selectedOperatingMode = old('operating_mode', $business->operatingMode());
     $serviceUnlocked = BusinessModeCompliance::isAdminUnlocked($business, BusinessModeCompliance::MODE_SERVICE);
     $rentalUnlocked = BusinessModeCompliance::isAdminUnlocked($business, BusinessModeCompliance::MODE_RENTAL);
+    $hospitalityUnlocked = BusinessModeCompliance::isAdminUnlocked($business, BusinessModeCompliance::MODE_HOSPITALITY);
     $serviceGlobal = BusinessModeCompliance::globallyEnabled(BusinessModeCompliance::MODE_SERVICE);
     $rentalGlobal = BusinessModeCompliance::globallyEnabled(BusinessModeCompliance::MODE_RENTAL);
+    $hospitalityGlobal = BusinessModeCompliance::globallyEnabled(BusinessModeCompliance::MODE_HOSPITALITY);
 @endphp
 
 <div class="rounded-xl border border-gray-200 bg-white p-4 sm:p-5 space-y-4">
@@ -54,7 +56,19 @@
         </label>
     @endif
 
-    @if(! $serviceUnlocked && ! $rentalUnlocked)
-        <p class="text-xs text-gray-500">Specialized modes are locked for this business. Contact DukaPro support if you need service or rental catalog features.</p>
+    @if($hospitalityGlobal && $hospitalityUnlocked)
+        <label class="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50/60 p-3 text-sm">
+            <input type="hidden" name="hospitality_mode" value="0">
+            <input type="checkbox" name="hospitality_mode" value="1" class="mt-0.5 rounded border-gray-300 text-amber-700 focus:ring-amber-500"
+                   @checked(old('hospitality_mode', ! empty(($business->settings ?? [])['hospitality_mode'])))>
+            <span>
+                <span class="font-semibold text-gray-900">Hospitality mode</span>
+                <span class="mt-0.5 block text-xs text-gray-600">Room assets, date-range bookings, and check-in/out ledger for hotels and lodges. Does not change POS or restaurant screens.</span>
+            </span>
+        </label>
+    @endif
+
+    @if(! $serviceUnlocked && ! $rentalUnlocked && ! $hospitalityUnlocked)
+        <p class="text-xs text-gray-500">Specialized modes are locked for this business. Contact DukaPro support if you need service, rental, or hospitality features.</p>
     @endif
 </div>

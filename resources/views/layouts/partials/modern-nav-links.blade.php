@@ -86,6 +86,13 @@
         Contacts
     </a>
 @endcan
+@can('access-hospitality')
+    <a href="{{ tenant_route('tenant.hospitality.index') }}"
+       class="modern-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] {{ request()->routeIs('tenant.hospitality.*') ? $navActive : $navIdle }}">
+        <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v11a1 1 0 001 1h16a1 1 0 001-1V7M3 7l2-3h14l2 3M8 11h8"/></svg>
+        Rooms
+    </a>
+@endcan
 @can('manage-branches')
     <a href="{{ tenant_route('tenant.branches.index') }}"
        class="modern-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] {{ request()->routeIs('tenant.branches.*') ? $navActive : $navIdle }}">

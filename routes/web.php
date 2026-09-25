@@ -59,6 +59,8 @@ use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\WaiterOrderController;
 use App\Http\Controllers\PosController;
 use App\Http\Controllers\DownloadsController;
+use App\Http\Controllers\HospitalityBookingController;
+use App\Http\Controllers\HospitalityController;
 use App\Http\Controllers\PwaManifestController;
 use App\Http\Controllers\OperationsController;
 use App\Http\Controllers\WaiterShiftController;
@@ -375,6 +377,14 @@ Route::middleware(['maintenance'])->group(function () {
                     Route::post('/balance-all', [WaiterShiftController::class, 'balanceAll'])->name('balance-all');
                     Route::get('/waiters/{waiter}', [WaiterShiftController::class, 'show'])->name('show');
                     Route::post('/sales/{sale}/settle-credit', [WaiterShiftController::class, 'settleCredit'])->name('settle-credit');
+                });
+
+                Route::prefix('hospitality')->name('hospitality.')->group(function () {
+                    Route::get('/', [HospitalityController::class, 'index'])->name('index');
+                    Route::post('/bookings', [HospitalityBookingController::class, 'store'])->name('bookings.store');
+                    Route::post('/bookings/{booking}/check-in', [HospitalityBookingController::class, 'checkIn'])->name('bookings.check-in');
+                    Route::post('/bookings/{booking}/check-out', [HospitalityBookingController::class, 'checkOut'])->name('bookings.check-out');
+                    Route::post('/bookings/{booking}/cancel', [HospitalityBookingController::class, 'cancel'])->name('bookings.cancel');
                 });
 
                 Route::get('/operations', [OperationsController::class, 'index'])->name('operations.index');

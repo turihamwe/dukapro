@@ -57,6 +57,7 @@ class SettingsController extends Controller
             'affiliate_subsequent_commission_percent' => 'required|numeric|min:0|max:100',
             'use_service_based_mode' => 'nullable|boolean',
             'use_rental_mode' => 'nullable|boolean',
+            'use_hospitality_mode' => 'nullable|boolean',
             'use_efris' => 'nullable|boolean',
             'efris_auto_provision_enabled' => 'nullable|boolean',
             'efris_platform_email' => 'nullable|email|max:255',
@@ -101,6 +102,7 @@ class SettingsController extends Controller
         );
         SystemSetting::set('use_service_based_mode', $request->boolean('use_service_based_mode') ? '1' : '0');
         SystemSetting::set('use_rental_mode', $request->boolean('use_rental_mode') ? '1' : '0');
+        SystemSetting::set('use_hospitality_mode', $request->boolean('use_hospitality_mode') ? '1' : '0');
         SystemSetting::set('use_efris', $request->boolean('use_efris') ? '1' : '0');
         SystemSetting::set('efris_auto_provision_enabled', $request->boolean('efris_auto_provision_enabled') ? '1' : '0');
         SystemSetting::set('efris_platform_email', $data['efris_platform_email'] ?? '');

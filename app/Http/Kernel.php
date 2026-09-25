@@ -75,5 +75,6 @@ class Kernel extends HttpKernel
         'affiliate' => \App\Http\Middleware\EnsureAffiliate::class,
         'shareholder' => \App\Http\Middleware\EnsureShareholder::class,
         'module' => \App\Http\Middleware\EnsureModuleEnabled::class,
+        'hospitality' => \App\Http\Middleware\EnsureHospitalityModeActive::class,
     ];
 }

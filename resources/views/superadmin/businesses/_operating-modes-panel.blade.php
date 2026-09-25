@@ -4,6 +4,7 @@
     $settings = $business->settings ?? [];
     $serviceGlobal = BusinessModeCompliance::globallyEnabled(BusinessModeCompliance::MODE_SERVICE);
     $rentalGlobal = BusinessModeCompliance::globallyEnabled(BusinessModeCompliance::MODE_RENTAL);
+    $hospitalityGlobal = BusinessModeCompliance::globallyEnabled(BusinessModeCompliance::MODE_HOSPITALITY);
 @endphp
 
 <div class="rounded-xl border border-violet-200 bg-violet-50/40 p-4 sm:p-5">
@@ -39,6 +40,21 @@
             <span>
                 <span class="font-medium text-gray-900">Unlock rentals mode (stub)</span>
                 <span class="block text-xs text-gray-500">Reserved for car hire / property — UI not live yet.</span>
+            </span>
+        </label>
+
+        <label class="flex items-start gap-3 rounded-lg border border-amber-200 bg-white/80 p-3 text-sm {{ $hospitalityGlobal ? '' : 'opacity-60' }}">
+            <input type="hidden" name="hospitality_mode_admin_unlocked" value="0">
+            <input type="checkbox" name="hospitality_mode_admin_unlocked" value="1" class="mt-0.5 rounded border-gray-300 text-amber-700"
+                   @disabled(! $hospitalityGlobal)
+                   @checked(! empty($settings['hospitality_mode_admin_unlocked']))>
+            <span>
+                <span class="font-medium text-gray-900">Unlock hospitality mode</span>
+                @if(! $hospitalityGlobal)
+                    <span class="block text-xs text-amber-700">Enable “Hospitality (hotels & lodging)” in System Settings first.</span>
+                @else
+                    <span class="block text-xs text-gray-500">Owner can turn on room bookings and the Rooms nav when they enable hospitality mode.</span>
+                @endif
             </span>
         </label>
 
