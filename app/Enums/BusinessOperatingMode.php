@@ -22,9 +22,9 @@ class BusinessOperatingMode
     public static function labels(): array
     {
         return [
-            self::RETAIL => 'Retail (products & POS)',
+            self::RETAIL => 'Retail business (Products)',
             self::SERVICE_BASED => 'Service-based business',
-            self::RENTAL => 'Car hire / rentals',
+            self::RENTAL => 'Rental business',
         ];
     }
 

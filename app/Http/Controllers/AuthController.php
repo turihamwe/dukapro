@@ -220,7 +220,6 @@ class AuthController extends Controller
             'business_category' => 'required|string|in:' . implode(',', array_keys(BusinessIndustryCatalog::masterCategories())),
             'business_subcategory' => 'required|string|max:120',
             'business_subcategory_custom' => 'nullable|string|max:80',
-            'operating_mode' => 'required|string|in:' . implode(',', \App\Enums\BusinessOperatingMode::all()),
             'name' => 'required|string|max:255',
             'username' => 'required|string|max:50|alpha_dash|unique:users,username',
             'email' => 'required|email|unique:users,email',
@@ -248,6 +247,11 @@ class AuthController extends Controller
             $data['business_subcategory']
         );
 
+        $data['operating_mode'] = BusinessIndustryCatalog::resolveOperatingMode(
+            $data['business_category'],
+            $data['business_subcategory']
+        );
+
         $referral = $this->affiliateReferralService->resolveReferralPairFromSession($request);
 
         if ($referral['parent']) {
@@ -256,10 +260,6 @@ class AuthController extends Controller
 
         if ($referral['sub']) {
             $data['referring_affiliate_id'] = $referral['sub']->id;
-        }
-
-        if (empty($data['operating_mode'])) {
-            $data['operating_mode'] = \App\Enums\BusinessOperatingMode::RETAIL;
         }
 
         $user = $this->registrationService->register($data);

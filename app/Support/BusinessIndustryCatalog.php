@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Enums\BusinessOperatingMode;
 use App\Enums\BusinessType;
 use Illuminate\Support\Str;
 
@@ -49,11 +50,11 @@ class BusinessIndustryCatalog
             'health_pharma' => [
                 ['slug' => 'pharmacy', 'label' => 'Pharmacy', 'legacy_type' => BusinessType::PHARMACY],
                 ['slug' => 'drug_shop', 'label' => 'Licensed drug shop', 'legacy_type' => BusinessType::PHARMACY],
-                ['slug' => 'clinic', 'label' => 'Clinic / medical centre', 'legacy_type' => BusinessType::OTHER],
-                ['slug' => 'dental', 'label' => 'Dental practice', 'legacy_type' => BusinessType::OTHER],
+                ['slug' => 'clinic', 'label' => 'Clinic / medical centre', 'legacy_type' => BusinessType::OTHER, 'operating_mode' => BusinessOperatingMode::SERVICE_BASED],
+                ['slug' => 'dental', 'label' => 'Dental practice', 'legacy_type' => BusinessType::OTHER, 'operating_mode' => BusinessOperatingMode::SERVICE_BASED],
                 ['slug' => 'optical', 'label' => 'Optical / eyewear', 'legacy_type' => BusinessType::OTHER],
-                ['slug' => 'veterinary', 'label' => 'Veterinary / animal health', 'legacy_type' => BusinessType::OTHER],
-                ['slug' => 'medical_lab', 'label' => 'Medical laboratory', 'legacy_type' => BusinessType::OTHER],
+                ['slug' => 'veterinary', 'label' => 'Veterinary / animal health', 'legacy_type' => BusinessType::OTHER, 'operating_mode' => BusinessOperatingMode::SERVICE_BASED],
+                ['slug' => 'medical_lab', 'label' => 'Medical laboratory', 'legacy_type' => BusinessType::OTHER, 'operating_mode' => BusinessOperatingMode::SERVICE_BASED],
                 ['slug' => 'wellness_herbal', 'label' => 'Wellness / herbal supplements', 'legacy_type' => BusinessType::PHARMACY],
             ],
             'hospitality_food_drink' => [
@@ -68,24 +69,24 @@ class BusinessIndustryCatalog
                 ['slug' => 'nightclub', 'label' => 'Nightclub / entertainment venue', 'legacy_type' => BusinessType::BAR_PUB],
             ],
             'services' => [
-                ['slug' => 'salon_spa', 'label' => 'Salon / spa / beauty', 'legacy_type' => BusinessType::SALON],
-                ['slug' => 'barber', 'label' => 'Barber shop', 'legacy_type' => BusinessType::SALON],
-                ['slug' => 'phone_repair', 'label' => 'Phone & electronics repair', 'legacy_type' => BusinessType::OTHER],
-                ['slug' => 'auto_repair', 'label' => 'Auto / motorcycle repair', 'legacy_type' => BusinessType::OTHER],
-                ['slug' => 'laundry_dry_clean', 'label' => 'Laundry / dry cleaning', 'legacy_type' => BusinessType::OTHER],
-                ['slug' => 'professional_consulting', 'label' => 'Consulting & advisory', 'legacy_type' => BusinessType::OTHER],
-                ['slug' => 'legal_services', 'label' => 'Legal services', 'legacy_type' => BusinessType::OTHER],
-                ['slug' => 'accounting_bookkeeping', 'label' => 'Accounting / bookkeeping', 'legacy_type' => BusinessType::OTHER],
-                ['slug' => 'cleaning_services', 'label' => 'Cleaning & fumigation', 'legacy_type' => BusinessType::OTHER],
-                ['slug' => 'photography_video', 'label' => 'Photography / videography', 'legacy_type' => BusinessType::OTHER],
-                ['slug' => 'events_decor', 'label' => 'Events & décor', 'legacy_type' => BusinessType::OTHER],
-                ['slug' => 'it_services', 'label' => 'IT support & software services', 'legacy_type' => BusinessType::OTHER],
+                ['slug' => 'salon_spa', 'label' => 'Salon / spa / beauty', 'legacy_type' => BusinessType::SALON, 'operating_mode' => BusinessOperatingMode::SERVICE_BASED],
+                ['slug' => 'barber', 'label' => 'Barber shop', 'legacy_type' => BusinessType::SALON, 'operating_mode' => BusinessOperatingMode::SERVICE_BASED],
+                ['slug' => 'phone_repair', 'label' => 'Phone & electronics repair', 'legacy_type' => BusinessType::OTHER, 'operating_mode' => BusinessOperatingMode::SERVICE_BASED],
+                ['slug' => 'auto_repair', 'label' => 'Auto / motorcycle repair', 'legacy_type' => BusinessType::OTHER, 'operating_mode' => BusinessOperatingMode::SERVICE_BASED],
+                ['slug' => 'laundry_dry_clean', 'label' => 'Laundry / dry cleaning', 'legacy_type' => BusinessType::OTHER, 'operating_mode' => BusinessOperatingMode::SERVICE_BASED],
+                ['slug' => 'professional_consulting', 'label' => 'Consulting & advisory', 'legacy_type' => BusinessType::OTHER, 'operating_mode' => BusinessOperatingMode::SERVICE_BASED],
+                ['slug' => 'legal_services', 'label' => 'Legal services', 'legacy_type' => BusinessType::OTHER, 'operating_mode' => BusinessOperatingMode::SERVICE_BASED],
+                ['slug' => 'accounting_bookkeeping', 'label' => 'Accounting / bookkeeping', 'legacy_type' => BusinessType::OTHER, 'operating_mode' => BusinessOperatingMode::SERVICE_BASED],
+                ['slug' => 'cleaning_services', 'label' => 'Cleaning & fumigation', 'legacy_type' => BusinessType::OTHER, 'operating_mode' => BusinessOperatingMode::SERVICE_BASED],
+                ['slug' => 'photography_video', 'label' => 'Photography / videography', 'legacy_type' => BusinessType::OTHER, 'operating_mode' => BusinessOperatingMode::SERVICE_BASED],
+                ['slug' => 'events_decor', 'label' => 'Events & décor', 'legacy_type' => BusinessType::OTHER, 'operating_mode' => BusinessOperatingMode::SERVICE_BASED],
+                ['slug' => 'it_services', 'label' => 'IT support & software services', 'legacy_type' => BusinessType::OTHER, 'operating_mode' => BusinessOperatingMode::SERVICE_BASED],
             ],
             'rentals_transport' => [
-                ['slug' => 'car_hire', 'label' => 'Car hire / rental', 'legacy_type' => BusinessType::OTHER],
-                ['slug' => 'boda_fleet', 'label' => 'Boda-boda / motorcycle fleet', 'legacy_type' => BusinessType::OTHER],
-                ['slug' => 'property_rental', 'label' => 'Property rental / real estate', 'legacy_type' => BusinessType::OTHER],
-                ['slug' => 'equipment_rental', 'label' => 'Equipment & tools rental', 'legacy_type' => BusinessType::OTHER],
+                ['slug' => 'car_hire', 'label' => 'Car hire / rental', 'legacy_type' => BusinessType::OTHER, 'operating_mode' => BusinessOperatingMode::RENTAL],
+                ['slug' => 'boda_fleet', 'label' => 'Boda-boda / motorcycle fleet', 'legacy_type' => BusinessType::OTHER, 'operating_mode' => BusinessOperatingMode::RENTAL],
+                ['slug' => 'property_rental', 'label' => 'Property rental / real estate', 'legacy_type' => BusinessType::OTHER, 'operating_mode' => BusinessOperatingMode::RENTAL],
+                ['slug' => 'equipment_rental', 'label' => 'Equipment & tools rental', 'legacy_type' => BusinessType::OTHER, 'operating_mode' => BusinessOperatingMode::RENTAL],
                 ['slug' => 'logistics_courier', 'label' => 'Logistics / courier / delivery', 'legacy_type' => BusinessType::OTHER],
                 ['slug' => 'warehouse_storage', 'label' => 'Warehouse / storage', 'legacy_type' => BusinessType::OTHER],
             ],
@@ -99,18 +100,18 @@ class BusinessIndustryCatalog
                 ['slug' => 'timber_wood', 'label' => 'Timber / wood products', 'legacy_type' => BusinessType::OTHER],
             ],
             'education_training' => [
-                ['slug' => 'school', 'label' => 'School (primary / secondary)', 'legacy_type' => BusinessType::OTHER],
-                ['slug' => 'nursery_daycare', 'label' => 'Nursery / daycare', 'legacy_type' => BusinessType::OTHER],
-                ['slug' => 'training_centre', 'label' => 'Training centre / institute', 'legacy_type' => BusinessType::OTHER],
-                ['slug' => 'vocational', 'label' => 'Vocational / skills academy', 'legacy_type' => BusinessType::OTHER],
-                ['slug' => 'driving_school', 'label' => 'Driving school', 'legacy_type' => BusinessType::OTHER],
-                ['slug' => 'tutoring', 'label' => 'Tutoring / coaching', 'legacy_type' => BusinessType::OTHER],
+                ['slug' => 'school', 'label' => 'School (primary / secondary)', 'legacy_type' => BusinessType::OTHER, 'operating_mode' => BusinessOperatingMode::SERVICE_BASED],
+                ['slug' => 'nursery_daycare', 'label' => 'Nursery / daycare', 'legacy_type' => BusinessType::OTHER, 'operating_mode' => BusinessOperatingMode::SERVICE_BASED],
+                ['slug' => 'training_centre', 'label' => 'Training centre / institute', 'legacy_type' => BusinessType::OTHER, 'operating_mode' => BusinessOperatingMode::SERVICE_BASED],
+                ['slug' => 'vocational', 'label' => 'Vocational / skills academy', 'legacy_type' => BusinessType::OTHER, 'operating_mode' => BusinessOperatingMode::SERVICE_BASED],
+                ['slug' => 'driving_school', 'label' => 'Driving school', 'legacy_type' => BusinessType::OTHER, 'operating_mode' => BusinessOperatingMode::SERVICE_BASED],
+                ['slug' => 'tutoring', 'label' => 'Tutoring / coaching', 'legacy_type' => BusinessType::OTHER, 'operating_mode' => BusinessOperatingMode::SERVICE_BASED],
             ],
             'fuel_energy_automotive' => [
                 ['slug' => 'fuel_station', 'label' => 'Fuel station / pump', 'legacy_type' => BusinessType::OTHER],
                 ['slug' => 'lpg_gas', 'label' => 'LPG / gas refill', 'legacy_type' => BusinessType::OTHER],
-                ['slug' => 'garage_mechanic', 'label' => 'Garage / mechanic workshop', 'legacy_type' => BusinessType::OTHER],
-                ['slug' => 'car_wash', 'label' => 'Car wash / detailing', 'legacy_type' => BusinessType::OTHER],
+                ['slug' => 'garage_mechanic', 'label' => 'Garage / mechanic workshop', 'legacy_type' => BusinessType::OTHER, 'operating_mode' => BusinessOperatingMode::SERVICE_BASED],
+                ['slug' => 'car_wash', 'label' => 'Car wash / detailing', 'legacy_type' => BusinessType::OTHER, 'operating_mode' => BusinessOperatingMode::SERVICE_BASED],
                 ['slug' => 'auto_spares', 'label' => 'Auto spare parts shop', 'legacy_type' => BusinessType::HARDWARE],
                 ['slug' => 'tyre_battery', 'label' => 'Tyres & batteries', 'legacy_type' => BusinessType::HARDWARE],
                 ['slug' => 'solar_energy', 'label' => 'Solar & renewable energy', 'legacy_type' => BusinessType::ELECTRONICS],
@@ -263,5 +264,30 @@ class BusinessIndustryCatalog
             'hospitality_mode_admin_unlocked' => true,
             'hospitality_mode' => true,
         ];
+    }
+
+    /**
+     * Operating mode derived from industry pick at registration (no separate signup question).
+     */
+    public static function resolveOperatingMode(string $master, string $subcategory): string
+    {
+        if (self::isValidSubcategorySlug($master, $subcategory)) {
+            foreach (self::subcategoriesByMaster()[$master] ?? [] as $item) {
+                if ($item['slug'] === $subcategory) {
+                    return $item['operating_mode'] ?? self::masterDefaultOperatingMode($master);
+                }
+            }
+        }
+
+        return self::masterDefaultOperatingMode($master);
+    }
+
+    public static function masterDefaultOperatingMode(string $master): string
+    {
+        if ($master === 'services') {
+            return BusinessOperatingMode::SERVICE_BASED;
+        }
+
+        return BusinessOperatingMode::RETAIL;
     }
 }

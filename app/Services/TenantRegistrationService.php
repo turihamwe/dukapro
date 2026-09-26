@@ -26,7 +26,10 @@ class TenantRegistrationService
         $user = DB::transaction(function () use ($data) {
             $slug = $this->uniqueSlug($data['business_name']);
 
-            $operatingMode = $data['operating_mode'] ?? BusinessOperatingMode::RETAIL;
+            $operatingMode = $data['operating_mode'] ?? BusinessIndustryCatalog::resolveOperatingMode(
+                $data['business_category'],
+                $data['business_subcategory']
+            );
 
             $business = Business::create([
                 'name' => $data['business_name'],
