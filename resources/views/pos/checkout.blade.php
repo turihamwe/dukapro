@@ -372,6 +372,22 @@
     var invoiceCustomerId = null;
     var checkoutInProgress = false;
 
+    function releaseCheckoutLock() {
+        checkoutInProgress = false;
+        var checkoutBtn = document.getElementById('checkoutBtn');
+        if (checkoutBtn) {
+            checkoutBtn.disabled = cart.length === 0;
+        }
+    }
+
+    function generateCheckoutIdempotencyKey() {
+        if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+            return window.crypto.randomUUID();
+        }
+
+        return 'chk-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 14);
+    }
+
     function whenOfflineReady(fn) {
         if (window.DukaProOfflineStore && window.DukaProOfflinePOS) {
             fn();
@@ -1219,64 +1235,69 @@
     }
 
     async function processCheckout() {
-        if (checkoutInProgress) return;
-
-        var paymentMethod = document.getElementById('paymentMethod').value;
-        var customerId = document.getElementById('customerId').value;
-        var waiterId = waiterMode ? document.getElementById('waiterId').value : null;
-        var mobileProviderEl = document.getElementById('mobileMoneyProvider');
-        var mobileProvider = mobileProviderEl ? mobileProviderEl.value : null;
-        var checkoutBtn = document.getElementById('checkoutBtn');
-
-        if (!paymentMethod) {
-            alert('Select a payment method');
-            return;
-        }
-        if (waiterMode && !waiterId) {
-            alert('Select the waiter or floor staff for this order');
-            return;
-        }
-        if (paymentMethod === 'invoice' && !invoiceCustomerId) {
-            openInvoiceCustomerModal();
-            return;
-        }
-        if (paymentMethod === 'credit' && !waiterMode && !customerId) {
-            openNewCustomerModal();
-            return;
-        }
-        if (waiterMode && paymentMethod === 'mobile_money' && !mobileProvider) {
-            alert('Select Airtel or MTN for mobile money');
-            return;
-        }
-
-        var tablePayload = {};
-        if (restaurantMode) {
-            if (useRestaurantTables) {
-                var tableId = document.getElementById('restaurantTableId').value;
-                if (!tableId) {
-                    alert('Select a table for this order');
-                    return;
-                }
-                tablePayload.restaurant_table_id = parseInt(tableId, 10);
-            } else {
-                var tableLabelEl = document.getElementById('tableLabel');
-                tablePayload.table_label = tableLabelEl ? tableLabelEl.value.trim() || null : null;
-            }
-        }
-
-        if (isPosOffline()) {
-            if (paymentMethod !== 'cash') {
-                alert('Offline mode supports cash sales only. Choose Cash or reconnect to use other payment methods.');
-                return;
-            }
-        } else if (!posOfflineEnabled && !navigator.onLine) {
-            alert('You are offline and offline POS is disabled. Reconnect to complete this sale.');
+        if (checkoutInProgress) {
             return;
         }
 
         checkoutInProgress = true;
-        if (checkoutBtn) checkoutBtn.disabled = true;
+        var checkoutBtn = document.getElementById('checkoutBtn');
+        if (checkoutBtn) {
+            checkoutBtn.disabled = true;
+        }
+
         try {
+            var paymentMethod = document.getElementById('paymentMethod').value;
+            var customerId = document.getElementById('customerId').value;
+            var waiterId = waiterMode ? document.getElementById('waiterId').value : null;
+            var mobileProviderEl = document.getElementById('mobileMoneyProvider');
+            var mobileProvider = mobileProviderEl ? mobileProviderEl.value : null;
+
+            if (!paymentMethod) {
+                alert('Select a payment method');
+                return;
+            }
+            if (waiterMode && !waiterId) {
+                alert('Select the waiter or floor staff for this order');
+                return;
+            }
+            if (paymentMethod === 'invoice' && !invoiceCustomerId) {
+                openInvoiceCustomerModal();
+                return;
+            }
+            if (paymentMethod === 'credit' && !waiterMode && !customerId) {
+                openNewCustomerModal();
+                return;
+            }
+            if (waiterMode && paymentMethod === 'mobile_money' && !mobileProvider) {
+                alert('Select Airtel or MTN for mobile money');
+                return;
+            }
+
+            var tablePayload = {};
+            if (restaurantMode) {
+                if (useRestaurantTables) {
+                    var tableId = document.getElementById('restaurantTableId').value;
+                    if (!tableId) {
+                        alert('Select a table for this order');
+                        return;
+                    }
+                    tablePayload.restaurant_table_id = parseInt(tableId, 10);
+                } else {
+                    var tableLabelEl = document.getElementById('tableLabel');
+                    tablePayload.table_label = tableLabelEl ? tableLabelEl.value.trim() || null : null;
+                }
+            }
+
+            if (isPosOffline()) {
+                if (paymentMethod !== 'cash') {
+                    alert('Offline mode supports cash sales only. Choose Cash or reconnect to use other payment methods.');
+                    return;
+                }
+            } else if (!posOfflineEnabled && !navigator.onLine) {
+                alert('You are offline and offline POS is disabled. Reconnect to complete this sale.');
+                return;
+            }
+
             var resolvedCustomerId = paymentMethod === 'invoice'
                 ? invoiceCustomerId
                 : (customerId || null);
@@ -1287,6 +1308,7 @@
                 mobileProvider,
                 tablePayload
             );
+            checkoutPayload.idempotency_key = generateCheckoutIdempotencyKey();
             var totals = updateCartTotals();
 
             if (isPosOffline()) {
@@ -1315,8 +1337,7 @@
         } catch (err) {
             alert(err.message);
         } finally {
-            checkoutInProgress = false;
-            if (checkoutBtn) checkoutBtn.disabled = cart.length === 0;
+            releaseCheckoutLock();
         }
     }
 

@@ -244,6 +244,7 @@ class PosController extends Controller
             'notes' => 'nullable|string|max:500',
             'table_label' => 'nullable|string|max:50',
             'restaurant_table_id' => 'nullable|integer|exists:restaurant_tables,id',
+            'idempotency_key' => 'nullable|string|max:64',
         ]);
 
         if (VariablePricingMode::active($business)) {
@@ -281,7 +282,7 @@ class PosController extends Controller
 
         $sale = $this->saleService->completeSale($request->user(), $data);
 
-        if ($business && $business->usesRestaurantMode()) {
+        if ($this->saleService->saleWasNewlyCreated() && $business && $business->usesRestaurantMode()) {
             $this->kitchenOrderService->recordCounterSaleOrder($request->user(), $sale, $data);
             $sale = $sale->fresh(['items']);
         }

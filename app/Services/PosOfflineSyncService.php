@@ -52,7 +52,7 @@ class PosOfflineSyncService
                 $payload['offline_local_id'] = $localId;
                 $sale = $this->saleService->completeSale($user, $payload);
 
-                if ($business && $business->usesRestaurantMode()) {
+                if ($this->saleService->saleWasNewlyCreated() && $business && $business->usesRestaurantMode()) {
                     $this->kitchenOrderService->recordCounterSaleOrder($user, $sale, $payload);
                     $sale = $sale->fresh(['items']);
                 }

@@ -24,6 +24,7 @@ class Sale extends Model
         'kitchen_order_id',
         'sale_number',
         'offline_local_id',
+        'checkout_idempotency_key',
         'subtotal',
         'tax_amount',
         'discount_amount',

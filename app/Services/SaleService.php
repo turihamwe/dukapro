@@ -23,6 +23,8 @@ use Illuminate\Validation\ValidationException;
 
 class SaleService
 {
+    protected bool $lastSaleWasNewlyCreated = true;
+
     protected DebtLedgerService $debtLedgerService;
 
     protected ProductBatchService $batchService;
@@ -43,10 +45,47 @@ class SaleService
         $this->unitService = $unitService;
     }
 
+    public function saleWasNewlyCreated(): bool
+    {
+        return $this->lastSaleWasNewlyCreated;
+    }
+
     public function completeSale(User $user, array $payload): Sale
     {
-        $sale = DB::transaction(function () use ($user, $payload) {
-            $businessId = $user->business_id;
+        $businessId = (int) $user->business_id;
+        $idempotencyKey = $this->normalizeCheckoutIdempotencyKey($payload['idempotency_key'] ?? null);
+        $this->lastSaleWasNewlyCreated = true;
+
+        if ($idempotencyKey !== null) {
+            $existing = Sale::query()
+                ->where('business_id', $businessId)
+                ->where('checkout_idempotency_key', $idempotencyKey)
+                ->first();
+
+            if ($existing) {
+                $this->lastSaleWasNewlyCreated = false;
+
+                return $existing;
+            }
+        }
+
+        $wasNewlyCreated = true;
+
+        $sale = DB::transaction(function () use ($user, $payload, $businessId, $idempotencyKey, &$wasNewlyCreated) {
+            if ($idempotencyKey !== null) {
+                $existing = Sale::query()
+                    ->where('business_id', $businessId)
+                    ->where('checkout_idempotency_key', $idempotencyKey)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($existing) {
+                    $wasNewlyCreated = false;
+
+                    return $existing;
+                }
+            }
+
             $items = $payload['items'];
             $paymentMethod = $payload['payment_method'] ?? 'cash';
             $isCreditSale = (bool) ($payload['is_credit_sale'] ?? false);
@@ -241,6 +280,7 @@ class SaleService
                 'kitchen_order_id' => $payload['kitchen_order_id'] ?? null,
                 'sale_number' => $saleNumber,
                 'offline_local_id' => isset($payload['offline_local_id']) ? (string) $payload['offline_local_id'] : null,
+                'checkout_idempotency_key' => $idempotencyKey,
                 'subtotal' => $subtotal,
                 'tax_amount' => $taxAmount,
                 'discount_amount' => $discountAmount,
@@ -331,6 +371,12 @@ class SaleService
             return $sale->load('items');
         });
 
+        $this->lastSaleWasNewlyCreated = $wasNewlyCreated;
+
+        if (! $wasNewlyCreated) {
+            return $sale;
+        }
+
         app(BusinessActivityService::class)->recordFromId((int) $sale->business_id);
 
         $sale->load('business.efrisSetting');
@@ -380,6 +426,21 @@ class SaleService
             'cost_price' => $costPrice,
             'subtotal' => round($soldQuantity * $unitPrice, 2),
         ];
+    }
+
+    protected function normalizeCheckoutIdempotencyKey(mixed $key): ?string
+    {
+        if ($key === null || $key === '') {
+            return null;
+        }
+
+        $key = trim((string) $key);
+
+        if ($key === '' || strlen($key) > 64) {
+            return null;
+        }
+
+        return $key;
     }
 
     protected function resolveSaleBranchId(User $user, Collection $products): int
