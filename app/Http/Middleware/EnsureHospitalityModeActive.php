@@ -10,7 +10,8 @@ class EnsureHospitalityModeActive
 {
     public function handle(Request $request, Closure $next)
     {
-        $business = $request->user()?->business;
+        $user = $request->user();
+        $business = $user ? $user->business : null;
 
         if (! BusinessModeCompliance::hospitalityModeActive($business)) {
             if ($request->expectsJson()) {

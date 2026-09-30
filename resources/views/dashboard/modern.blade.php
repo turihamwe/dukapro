@@ -1,5 +1,7 @@
 @if(!$onboarding['is_complete'])
     @include('dashboard.partials.onboarding')
+@else
+    @include('dashboard.partials.pwa-install-banner')
 @endif
 
 @php

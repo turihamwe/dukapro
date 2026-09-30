@@ -28,8 +28,8 @@ class HospitalityController extends Controller
         return view('hospitality.index', [
             'rooms' => $bookings->rentableRooms($business),
             'ledger' => $bookings->ledger($business, $from, $to),
-            'filterFrom' => $from?->toDateString(),
-            'filterTo' => $to?->toDateString(),
+            'filterFrom' => $from ? $from->toDateString() : null,
+            'filterTo' => $to ? $to->toDateString() : null,
             'branches' => $business->branches()->orderBy('name')->get(),
         ]);
     }

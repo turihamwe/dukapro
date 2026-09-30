@@ -7,7 +7,7 @@
                     This app is already on your computer or phone. Open it from your taskbar, Start menu, or home screen — you do not need to install again.
                 </p>
             </div>
-            <template x-if="isStandalone || isInstalledOnDevice">
+            <template x-if="isStandalone || (isInstalledOnDevice && !canInstall)">
                 <span class="inline-flex shrink-0 items-center gap-2 rounded-full bg-emerald-100 px-4 py-2 text-sm font-semibold text-emerald-800">
                     <span aria-hidden="true">✓</span>
                     {{ platform_brand('name') }} is installed on this device
@@ -29,14 +29,15 @@
             </div>
         </template>
 
-        <div x-show="!isStandalone && !isInstalledOnDevice" class="mt-6 space-y-3">
+        <div x-show="!isStandalone && (!isInstalledOnDevice || canInstall)" class="mt-6 space-y-3">
             <button type="button"
                     @click="installApp()"
                     class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-4 text-base font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto min-h-[52px]">
-                <img src="{{ asset('assets/dukapro-logo.png') }}" alt="" width="28" height="28" class="h-7 w-7 shrink-0 rounded-md bg-white object-contain p-0.5" aria-hidden="true">
-                Install {{ platform_brand('name') }} App
+                <img src="{{ asset('assets/pwa/icon-192.png') }}" alt="" width="28" height="28" class="h-7 w-7 shrink-0 rounded-md bg-white object-contain p-0.5" aria-hidden="true">
+                <span x-text="canInstall ? 'Install {{ platform_brand('name') }} App' : 'Download {{ platform_brand('name') }} App'"></span>
             </button>
-            <p class="text-xs text-gray-500">One click opens your browser’s install dialog (Chrome or Edge on PC; Chrome on Android).</p>
+            <p class="text-xs text-gray-500" x-show="canInstall">One click opens your browser’s install dialog (Chrome or Edge).</p>
+            <p class="text-xs text-gray-500" x-show="!canInstall">Use Chrome or Edge. If the dialog does not appear, refresh this page once and tap again.</p>
             <p x-show="installMessage" x-text="installMessage" class="text-sm font-medium text-indigo-800" role="status"></p>
         </div>
     </div>

@@ -77,6 +77,8 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->n
 Route::get('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout.get');
 
 Route::middleware(['maintenance'])->group(function () {
+    Route::get('/manifest.webmanifest', [PwaManifestController::class, 'site'])->name('pwa.manifest.site');
+
     Route::post('/telemetry/client-errors', [ClientErrorReportController::class, 'store'])
         ->middleware('throttle:60,1')
         ->name('telemetry.client-errors');

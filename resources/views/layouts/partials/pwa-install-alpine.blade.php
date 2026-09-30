@@ -73,15 +73,36 @@ document.addEventListener('alpine:init', function () {
                 }
 
                 navigator.getInstalledRelatedApps().then(function (apps) {
-                    if (apps && apps.length > 0) {
+                    self.syncDeferredPrompt();
+                    if (apps && apps.length > 0 && ! self.canInstall) {
                         self.isInstalledOnDevice = true;
-                        self.canInstall = false;
-                        self.deferredPrompt = null;
                     }
                 }).catch(function () {});
             },
             showInstalledInBrowser: function () {
-                return this.isInstalledOnDevice && ! this.isStandalone;
+                return this.isInstalledOnDevice && ! this.isStandalone && ! this.canInstall;
+            },
+            waitForInstallPrompt: function (maxMs) {
+                var self = this;
+                var waited = 0;
+                var step = 150;
+
+                return new Promise(function (resolve) {
+                    function tick() {
+                        self.syncDeferredPrompt();
+                        if (self.deferredPrompt) {
+                            resolve(true);
+                            return;
+                        }
+                        waited += step;
+                        if (waited >= maxMs) {
+                            resolve(false);
+                            return;
+                        }
+                        window.setTimeout(tick, step);
+                    }
+                    tick();
+                });
             },
             install: function () {
                 var self = this;
@@ -109,7 +130,10 @@ document.addEventListener('alpine:init', function () {
             },
             installApp: function () {
                 var self = this;
-                if (this.isStandalone || this.isInstalledOnDevice) {
+                if (this.isStandalone) {
+                    return;
+                }
+                if (this.isInstalledOnDevice && ! this.canInstall) {
                     return;
                 }
                 this.syncDeferredPrompt();
@@ -125,7 +149,22 @@ document.addEventListener('alpine:init', function () {
                     });
                     return;
                 }
-                this.installMessage = 'Install is not ready yet — wait a moment and click Install again, or use Chrome/Edge on this site.';
+                this.installMessage = 'Preparing install…';
+                this.waitForInstallPrompt(4000).then(function (ready) {
+                    if (! ready) {
+                        self.installMessage = 'Install is not available yet. Use Chrome or Edge on this site, refresh the page, then try again.';
+                        return;
+                    }
+                    self.installMessage = 'Confirm the install prompt from your browser…';
+                    self.install().then(function (accepted) {
+                        if (accepted) {
+                            self.installMessage = '';
+                            self.isInstalledOnDevice = true;
+                        } else if (! self.deferredPrompt) {
+                            self.installMessage = 'Install cancelled. Click Install again to retry.';
+                        }
+                    });
+                });
             },
         };
     });
