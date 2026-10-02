@@ -35,6 +35,8 @@
 
     $formConfig = [
         'existingVariants' => $existingVariants,
+        'lockExistingVariants' => $isEdit && $isVariable,
+        'canDeleteVariantLines' => $isEdit && $isVariable && auth()->user()->can('delete-inventory'),
         'canViewCost' => $canViewCost,
         'allowedCatalogTypes' => $allowedCatalogTypes,
         'initialCatalogType' => $selectedCatalogType,
@@ -61,7 +63,7 @@
             <select name="branch_id" id="branch_id" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
                 <option value="">Select branch for this product…</option>
                 @foreach($branches as $branchId => $branchName)
-                    <option value="{{ $branchId }}" @selected(old('branch_id') == $branchId)>{{ $branchName }}</option>
+                    <option value="{{ $branchId }}" @selected(old('branch_id', $product->branch_id ?? null) == $branchId)>{{ $branchName }}</option>
                 @endforeach
             </select>
             @error('branch_id')
@@ -330,7 +332,13 @@
             <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h3 class="text-sm font-semibold text-gray-900">Attributes &amp; variants</h3>
-                    <p class="mt-1 text-xs text-gray-500">Pick attribute values below — variant rows appear automatically.</p>
+                    <p class="mt-1 text-xs text-gray-500">
+                        @if($isEdit && $isVariable)
+                            Options already used by a variant are <strong>locked</strong> so you cannot remove a line by accident. Add new sizes/colors by ticking new options or <strong>+ Add variant</strong>. To drop a sellable line, use <strong>Remove</strong> on that row.
+                        @else
+                            Each sellable SKU is one row in the table below. Tick multiple options (e.g. S, M, and L) or click <strong>+ Add variant</strong> repeatedly to add one row at a time. Use <strong>+ Add attribute</strong> only for new types (Size vs Color).
+                        @endif
+                    </p>
                 </div>
                 <a href="{{ tenant_route('tenant.inventory.attributes.index') }}" class="text-xs font-medium text-indigo-600 hover:text-indigo-800">Manage attributes →</a>
             </div>
@@ -348,7 +356,12 @@
             <div id="attribute-picker-list" class="space-y-4">
                 @forelse($attributes ?? [] as $attribute)
                     <div class="attribute-picker rounded-lg border border-gray-200 bg-white p-4" data-attribute-id="{{ $attribute->id }}" data-attribute-name="{{ $attribute->name }}">
-                        <p class="mb-2 text-sm font-medium text-gray-800">{{ $attribute->name }}</p>
+                        <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+                            <p class="text-sm font-medium text-gray-800">{{ $attribute->name }}</p>
+                            @if($attribute->values->isNotEmpty())
+                                <button type="button" class="select-all-attribute-btn text-xs font-medium text-indigo-600 hover:text-indigo-800" data-attribute-id="{{ $attribute->id }}">Select all</button>
+                            @endif
+                        </div>
                         <div class="flex flex-wrap gap-2">
                             @forelse($attribute->values as $value)
                                 <label class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 hover:border-gray-300">
@@ -364,13 +377,30 @@
                             <input type="text" class="new-attribute-value-input min-w-0 flex-1 rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                    placeholder="Add {{ $attribute->name }} option…" data-attribute-id="{{ $attribute->id }}">
                             <button type="button" class="add-attribute-value-btn shrink-0 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                                    data-attribute-id="{{ $attribute->id }}">Add</button>
+                                    data-attribute-id="{{ $attribute->id }}">Add option</button>
                         </div>
                     </div>
                 @empty
                     <p id="no-attributes-msg" class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">No attributes yet. Add Size or Color above, or use Manage attributes.</p>
                 @endforelse
             </div>
+
+            <div class="flex flex-wrap items-center gap-3">
+                <button type="button" id="add_variant_row_btn"
+                        class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50">
+                    + Add variant
+                </button>
+                <p id="variant-row-hint" class="text-xs text-gray-500">Adds the next size/color row, or tick several options above for many rows at once.</p>
+            </div>
+            <p id="variant_notice" class="hidden rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900" role="status"></p>
+
+            <div id="variant-table-empty" class="rounded-lg border border-dashed border-gray-300 bg-white px-4 py-6 text-center text-sm text-gray-500">
+                No variant rows yet. Tick options above or click <strong>+ Add variant</strong>.
+            </div>
+
+            @if($isEdit && $isVariable)
+                <div id="deleted-variant-ids-container" aria-hidden="true"></div>
+            @endif
 
             <div id="variant-table-wrap" class="hidden overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200 text-sm">
@@ -382,6 +412,9 @@
                                 <th class="px-3 py-2 text-left font-medium text-gray-500">Cost</th>
                             @endif
                             <th class="px-3 py-2 text-left font-medium text-gray-500">Stock</th>
+                            @if($isEdit && $isVariable && auth()->user()->can('delete-inventory'))
+                                <th class="px-3 py-2 text-left font-medium text-gray-500 w-24"></th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody id="variant-rows-tbody" class="divide-y divide-gray-100 bg-white"></tbody>
@@ -404,7 +437,10 @@
 <script type="application/json" id="product-form-config">@json($formConfig)</script>
 
 @push('styles')
-<style>[x-cloak]{display:none!important}</style>
+<style>
+[x-cloak]{display:none!important}
+.variant-value-checkbox:disabled{opacity:.65;cursor:not-allowed}
+</style>
 @endpush
 
 @push('scripts')
@@ -475,7 +511,10 @@ document.addEventListener('alpine:init', function () {
     var csrf = document.querySelector('meta[name="csrf-token"]');
     var csrfToken = csrf ? csrf.content : '';
     var canViewCost = !!config.canViewCost;
+    var lockExistingVariants = !!config.lockExistingVariants;
+    var canDeleteVariantLines = !!config.canDeleteVariantLines;
     var savedVariants = config.existingVariants || [];
+    var deletedVariantIds = {};
     var rowState = {};
 
     function esc(text) {
@@ -490,6 +529,45 @@ document.addEventListener('alpine:init', function () {
         el.classList.toggle('hidden', !text);
         el.classList.toggle('text-red-600', !!isError);
         el.classList.toggle('text-emerald-600', !isError);
+    }
+
+    function showVariantNotice(text) {
+        showMsg(document.getElementById('variant_notice'), text, false);
+    }
+
+    function clearVariantNotice() {
+        showMsg(document.getElementById('variant_notice'), '', false);
+    }
+
+    function notifyIfSelectionOnlyExisting(checkbox) {
+        if (!checkbox || !checkbox.checked) {
+            clearVariantNotice();
+            return;
+        }
+        var picker = checkbox.closest('.attribute-picker');
+        var attrName = picker ? picker.getAttribute('data-attribute-name') : '';
+        if (!attrName) return;
+        var value = checkbox.value;
+        var combos = cartesianCombinations(getSelectedValues());
+        var related = combos.filter(function (c) {
+            return String(c[attrName]) === String(value);
+        });
+        if (!related.length) return;
+        var allExisting = related.every(function (c) {
+            var saved = savedVariants.find(function (variant) {
+                if (deletedVariantIds[variant.id]) return false;
+                var attrs = variant.attribute_values || {};
+                var keys = Object.keys(c);
+                if (keys.length !== Object.keys(attrs).length) return false;
+                return keys.every(function (k) { return String(attrs[k]) === String(c[k]); });
+            });
+            return saved && saved.id;
+        });
+        if (allExisting) {
+            showVariantNotice('This variant already exists — update price or stock in the table below.');
+        } else {
+            clearVariantNotice();
+        }
     }
 
     // --- Simple / variant mode toggle ---
@@ -681,6 +759,33 @@ document.addEventListener('alpine:init', function () {
         return groups;
     }
 
+    function snapshotCheckedOptions() {
+        var selected = {};
+        document.querySelectorAll('.attribute-picker').forEach(function (picker) {
+            var attrName = picker.getAttribute('data-attribute-name');
+            if (!attrName) return;
+            selected[attrName] = [];
+            picker.querySelectorAll('.variant-value-checkbox:checked').forEach(function (cb) {
+                selected[attrName].push(cb.value);
+            });
+        });
+        return selected;
+    }
+
+    function restoreCheckedOptions(selected) {
+        if (!selected) return;
+        Object.keys(selected).forEach(function (attrName) {
+            (selected[attrName] || []).forEach(function (value) {
+                document.querySelectorAll('.attribute-picker').forEach(function (picker) {
+                    if (picker.getAttribute('data-attribute-name') !== attrName) return;
+                    picker.querySelectorAll('.variant-value-checkbox').forEach(function (cb) {
+                        if (cb.value === String(value)) cb.checked = true;
+                    });
+                });
+            });
+        });
+    }
+
     function cartesianCombinations(groups) {
         if (!groups.length) return [];
         var results = [{}];
@@ -700,6 +805,7 @@ document.addEventListener('alpine:init', function () {
 
     function findSavedMatch(values) {
         return savedVariants.find(function (variant) {
+            if (deletedVariantIds[variant.id]) return false;
             var attrs = variant.attribute_values || {};
             var keys = Object.keys(values);
             if (keys.length !== Object.keys(attrs).length) return false;
@@ -707,20 +813,104 @@ document.addEventListener('alpine:init', function () {
         });
     }
 
+    function attributeValueInUseByActiveVariant(attrName, value) {
+        return savedVariants.some(function (variant) {
+            if (deletedVariantIds[variant.id]) return false;
+            var attrs = variant.attribute_values || {};
+            return String(attrs[attrName]) === String(value);
+        });
+    }
+
+    function updateAttributeCheckboxLocks() {
+        if (!lockExistingVariants) return;
+        document.querySelectorAll('.variant-value-checkbox').forEach(function (cb) {
+            var picker = cb.closest('.attribute-picker');
+            var attrName = picker ? picker.getAttribute('data-attribute-name') : '';
+            var inUse = attrName && attributeValueInUseByActiveVariant(attrName, cb.value);
+            if (inUse) {
+                cb.checked = true;
+                cb.disabled = true;
+            } else {
+                cb.disabled = false;
+            }
+        });
+    }
+
+    function renderDeletedVariantInputs() {
+        var container = document.getElementById('deleted-variant-ids-container');
+        if (!container) return;
+        container.innerHTML = '';
+        Object.keys(deletedVariantIds).forEach(function (id) {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'deleted_variant_ids[]';
+            input.value = id;
+            container.appendChild(input);
+        });
+    }
+
+    function removeVariantLine(variantId, label) {
+        var message = 'Do you really want to delete this product line?\n\n'
+            + (label ? label + '\n\n' : '')
+            + 'This removes the sellable SKU and its stock from inventory. Past sales on receipts are kept.';
+        if (!window.confirm(message)) return;
+        deletedVariantIds[variantId] = true;
+        updateAttributeCheckboxLocks();
+        rebuildVariantTable();
+        renderDeletedVariantInputs();
+    }
+
+    function syncVariantTableVisibility(comboCount) {
+        var wrap = document.getElementById('variant-table-wrap');
+        var empty = document.getElementById('variant-table-empty');
+        if (wrap) wrap.classList.toggle('hidden', comboCount < 1);
+        if (empty) empty.classList.toggle('hidden', comboCount > 0);
+    }
+
+    function checkOptionForAttribute(attrName, value) {
+        document.querySelectorAll('.attribute-picker').forEach(function (picker) {
+            if (picker.getAttribute('data-attribute-name') !== attrName) return;
+            picker.querySelectorAll('.variant-value-checkbox').forEach(function (cb) {
+                if (cb.value === String(value)) cb.checked = true;
+            });
+        });
+    }
+
+    function addVariantRow() {
+        var pickers = document.querySelectorAll('.attribute-picker');
+        if (!pickers.length) {
+            alert('Create an attribute first — e.g. name “Size” and values “S, M, L” in the quick-add box above.');
+            return;
+        }
+        for (var i = 0; i < pickers.length; i++) {
+            var unchecked = pickers[i].querySelector('.variant-value-checkbox:not(:checked):not(:disabled)');
+            if (unchecked) {
+                unchecked.checked = true;
+                rebuildVariantTable();
+                notifyIfSelectionOnlyExisting(unchecked);
+                var wrap = document.getElementById('variant-table-wrap');
+                if (wrap) wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                return;
+            }
+        }
+        alert('Every listed option is already a variant. Type a new option (e.g. XL) under the attribute and click “Add option”, then + Add variant again.');
+    }
+
     function rebuildVariantTable() {
         var tbody = document.getElementById('variant-rows-tbody');
         var wrap = document.getElementById('variant-table-wrap');
         if (!tbody || !wrap) return;
 
-        var combos = cartesianCombinations(getSelectedValues());
+        var combos = cartesianCombinations(getSelectedValues()).filter(function (attributeValues) {
+            var saved = findSavedMatch(attributeValues);
+            return !(saved && saved.id && deletedVariantIds[saved.id]);
+        });
         tbody.innerHTML = '';
 
+        syncVariantTableVisibility(combos.length);
         if (!combos.length) {
-            wrap.classList.add('hidden');
             return;
         }
-
-        wrap.classList.remove('hidden');
 
         combos.forEach(function (attributeValues, index) {
             var key = comboKey(attributeValues);
@@ -742,14 +932,29 @@ document.addEventListener('alpine:init', function () {
                 return '<input type="hidden" name="variants[' + index + '][attribute_values][' + name + ']" value="' + esc(attributeValues[name]) + '">';
             }).join('');
             var idHtml = rowState[key].id ? '<input type="hidden" name="variants[' + index + '][id]" value="' + esc(rowState[key].id) + '">' : '';
+            var removeHtml = '';
+            if (lockExistingVariants && canDeleteVariantLines && rowState[key].id) {
+                removeHtml = '<td class="px-3 py-2 text-right">' +
+                    '<button type="button" class="remove-variant-line-btn text-xs font-medium text-red-600 hover:text-red-800" data-variant-id="' + esc(rowState[key].id) + '" data-variant-label="' + esc(label) + '">Remove</button>' +
+                    '</td>';
+            } else if (lockExistingVariants && canDeleteVariantLines) {
+                removeHtml = '<td class="px-3 py-2"></td>';
+            }
 
             tr.innerHTML =
                 '<td class="px-3 py-2 text-gray-900">' + esc(label) + attrsHtml + idHtml + '</td>' +
                 '<td class="px-3 py-2"><input type="number" step="0.01" min="0" required name="variants[' + index + '][price]" value="' + esc(rowState[key].price) + '" class="w-full min-w-[80px] rounded-lg border-gray-300 text-sm variant-field" data-key="' + esc(key) + '" data-field="price"></td>' +
                 (canViewCost ? '<td class="px-3 py-2"><input type="number" step="0.01" min="0" name="variants[' + index + '][cost_price]" value="' + esc(rowState[key].cost_price) + '" class="w-full min-w-[80px] rounded-lg border-gray-300 text-sm variant-field" data-key="' + esc(key) + '" data-field="cost_price"></td>' : '') +
-                '<td class="px-3 py-2"><input type="number" step="0.001" min="0" required name="variants[' + index + '][stock_quantity]" value="' + esc(rowState[key].stock_quantity) + '" class="w-full min-w-[72px] rounded-lg border-gray-300 text-sm variant-field" data-key="' + esc(key) + '" data-field="stock_quantity"></td>';
+                '<td class="px-3 py-2"><input type="number" step="0.001" min="0" required name="variants[' + index + '][stock_quantity]" value="' + esc(rowState[key].stock_quantity) + '" class="w-full min-w-[72px] rounded-lg border-gray-300 text-sm variant-field" data-key="' + esc(key) + '" data-field="stock_quantity"></td>' +
+                removeHtml;
 
             tbody.appendChild(tr);
+        });
+
+        tbody.querySelectorAll('.remove-variant-line-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                removeVariantLine(btn.getAttribute('data-variant-id'), btn.getAttribute('data-variant-label'));
+            });
         });
 
         tbody.querySelectorAll('.variant-field').forEach(function (input) {
@@ -762,11 +967,74 @@ document.addEventListener('alpine:init', function () {
         });
     }
 
-    document.getElementById('attribute-picker-list').addEventListener('change', function (e) {
-        if (e.target && e.target.classList.contains('variant-value-checkbox')) {
-            rebuildVariantTable();
-        }
-    });
+    var attributePickerList = document.getElementById('attribute-picker-list');
+    if (attributePickerList) {
+        attributePickerList.addEventListener('change', function (e) {
+            if (e.target && e.target.classList.contains('variant-value-checkbox')) {
+                if (e.target.disabled && !e.target.checked) {
+                    e.target.checked = true;
+                    return;
+                }
+                rebuildVariantTable();
+                if (e.target.checked) {
+                    notifyIfSelectionOnlyExisting(e.target);
+                } else {
+                    clearVariantNotice();
+                }
+            }
+        });
+        attributePickerList.addEventListener('click', function (e) {
+            var selectAllBtn = e.target.closest('.select-all-attribute-btn');
+            if (selectAllBtn) {
+                var picker = selectAllBtn.closest('.attribute-picker');
+                if (picker) {
+                    picker.querySelectorAll('.variant-value-checkbox:not(:disabled)').forEach(function (cb) {
+                        cb.checked = true;
+                    });
+                    rebuildVariantTable();
+                }
+                return;
+            }
+            var btn = e.target.closest('.add-attribute-value-btn');
+            if (!btn) return;
+            var attributeId = btn.getAttribute('data-attribute-id');
+            var picker = btn.closest('.attribute-picker');
+            var input = picker ? picker.querySelector('.new-attribute-value-input') : null;
+            var value = input ? input.value.trim() : '';
+            if (!value || !config.quickValueUrl) return;
+            fetch(config.quickValueUrl, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({ attribute_id: attributeId, value: value }),
+            })
+            .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+            .then(function (result) {
+                if (!result.ok) throw new Error(result.data.message || 'Could not add value.');
+                if (result.data.created === false) {
+                    showVariantNotice('That option already exists in your attribute list.');
+                } else {
+                    clearVariantNotice();
+                }
+                if (input) input.value = '';
+                var attrName = picker ? picker.getAttribute('data-attribute-name') : null;
+                return refreshCatalog().then(function () {
+                    if (attrName && value) checkOptionForAttribute(attrName, value);
+                });
+            })
+            .then(function () { rebuildVariantTable(); })
+            .catch(function (e) { alert(e.message || 'Could not add value.'); });
+        });
+    }
+
+    var addVariantRowBtn = document.getElementById('add_variant_row_btn');
+    if (addVariantRowBtn) {
+        addVariantRowBtn.addEventListener('click', addVariantRow);
+    }
 
     // Seed checkboxes from saved variants on edit
     savedVariants.forEach(function (variant) {
@@ -781,6 +1049,7 @@ document.addEventListener('alpine:init', function () {
             });
         });
     });
+    updateAttributeCheckboxLocks();
     rebuildVariantTable();
 
     // --- Attribute quick-add ---
@@ -797,24 +1066,33 @@ document.addEventListener('alpine:init', function () {
                     '<input type="checkbox" class="variant-value-checkbox rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" data-attribute-id="' + esc(attribute.id) + '" value="' + esc(val.value) + '">' +
                     '<span>' + esc(val.value) + '</span></label>';
             }).join('') || '<span class="text-xs text-gray-400">No values yet — add one below.</span>';
+            var selectAllHtml = (attribute.values && attribute.values.length)
+                ? '<button type="button" class="select-all-attribute-btn text-xs font-medium text-indigo-600 hover:text-indigo-800" data-attribute-id="' + esc(attribute.id) + '">Select all</button>'
+                : '';
             return '<div class="attribute-picker rounded-lg border border-gray-200 bg-white p-4" data-attribute-id="' + esc(attribute.id) + '" data-attribute-name="' + esc(attribute.name) + '">' +
-                '<p class="mb-2 text-sm font-medium text-gray-800">' + esc(attribute.name) + '</p>' +
+                '<div class="mb-2 flex flex-wrap items-center justify-between gap-2">' +
+                '<p class="text-sm font-medium text-gray-800">' + esc(attribute.name) + '</p>' + selectAllHtml + '</div>' +
                 '<div class="flex flex-wrap gap-2">' + valuesHtml + '</div>' +
                 '<div class="mt-3 flex gap-2">' +
                 '<input type="text" class="new-attribute-value-input min-w-0 flex-1 rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Add ' + esc(attribute.name) + ' option…" data-attribute-id="' + esc(attribute.id) + '">' +
-                '<button type="button" class="add-attribute-value-btn shrink-0 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50" data-attribute-id="' + esc(attribute.id) + '">Add</button>' +
+                '<button type="button" class="add-attribute-value-btn shrink-0 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50" data-attribute-id="' + esc(attribute.id) + '">Add option</button>' +
                 '</div></div>';
         }).join('');
     }
 
     function refreshCatalog() {
         if (!config.catalogUrl) return Promise.resolve();
+        var checked = snapshotCheckedOptions();
         return fetch(config.catalogUrl, {
             headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
         })
         .then(function (res) { return res.ok ? res.json() : null; })
         .then(function (data) {
-            if (data && data.attributes) renderAttributePickers(data.attributes);
+            if (data && data.attributes) {
+                renderAttributePickers(data.attributes);
+                restoreCheckedOptions(checked);
+                updateAttributeCheckboxLocks();
+            }
         });
     }
 
@@ -824,6 +1102,8 @@ document.addEventListener('alpine:init', function () {
             var nameInput = document.getElementById('new_attribute_name');
             var valuesInput = document.getElementById('new_attribute_values');
             var name = nameInput ? nameInput.value.trim() : '';
+            var valuesText = valuesInput ? valuesInput.value.trim() : '';
+            var valuesToSelect = valuesText ? valuesText.split(/\s*,\s*/).filter(Boolean) : [];
             if (!name || !config.quickAttributeUrl) return;
             addAttributeBtn.disabled = true;
             showMsg(document.getElementById('attribute_error'), '', true);
@@ -835,7 +1115,7 @@ document.addEventListener('alpine:init', function () {
                     'X-CSRF-TOKEN': csrfToken,
                     'X-Requested-With': 'XMLHttpRequest',
                 },
-                body: JSON.stringify({ name: name, values_text: valuesInput ? valuesInput.value.trim() : '' }),
+                body: JSON.stringify({ name: name, values_text: valuesText }),
             })
             .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
             .then(function (result) {
@@ -843,10 +1123,17 @@ document.addEventListener('alpine:init', function () {
                     var err = result.data.errors ? Object.values(result.data.errors).flat()[0] : null;
                     throw new Error(err || result.data.message || 'Could not add attribute.');
                 }
+                var attrName = (result.data.attribute && result.data.attribute.name) ? result.data.attribute.name : name;
                 if (nameInput) nameInput.value = '';
                 if (valuesInput) valuesInput.value = '';
-                return refreshCatalog();
+                showMsg(document.getElementById('attribute_error'), valuesToSelect.length
+                    ? 'Attribute added — variant rows created for each value.'
+                    : 'Attribute added. Add options or click + Add variant.', false);
+                return refreshCatalog().then(function () {
+                    valuesToSelect.forEach(function (v) { checkOptionForAttribute(attrName, v); });
+                });
             })
+            .then(function () { rebuildVariantTable(); })
             .catch(function (e) {
                 showMsg(document.getElementById('attribute_error'), e.message || 'Could not add attribute.', true);
             })
@@ -854,33 +1141,6 @@ document.addEventListener('alpine:init', function () {
         });
     }
 
-    document.getElementById('attribute-picker-list').addEventListener('click', function (e) {
-        var btn = e.target.closest('.add-attribute-value-btn');
-        if (!btn) return;
-        var attributeId = btn.getAttribute('data-attribute-id');
-        var picker = btn.closest('.attribute-picker');
-        var input = picker ? picker.querySelector('.new-attribute-value-input') : null;
-        var value = input ? input.value.trim() : '';
-        if (!value || !config.quickValueUrl) return;
-        fetch(config.quickValueUrl, {
-            method: 'POST',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'X-Requested-With': 'XMLHttpRequest',
-            },
-            body: JSON.stringify({ attribute_id: attributeId, value: value }),
-        })
-        .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
-        .then(function (result) {
-            if (!result.ok) throw new Error(result.data.message || 'Could not add value.');
-            if (input) input.value = '';
-            return refreshCatalog();
-        })
-        .then(function () { rebuildVariantTable(); })
-        .catch(function (e) { alert(e.message || 'Could not add value.'); });
-    });
 })();
 </script>
 @endpush

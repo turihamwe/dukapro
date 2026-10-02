@@ -73,6 +73,8 @@ class ProductInventoryService
             ]);
         }
 
+        $this->assertUniqueVariantCombinations($variants);
+
         return DB::transaction(function () use ($parentData, $variants, $businessId) {
             $parent = Product::create(array_merge($parentData, [
                 'business_id' => $businessId,
@@ -118,7 +120,7 @@ class ProductInventoryService
         return $product->fresh(['units']);
     }
 
-    public function updateVariableParent(Product $product, array $parentData, array $variants): Product
+    public function updateVariableParent(Product $product, array $parentData, array $variants, array $deletedVariantIds = []): Product
     {
         if ($product->parent_id !== null) {
             throw ValidationException::withMessages([
@@ -126,7 +128,9 @@ class ProductInventoryService
             ]);
         }
 
-        return DB::transaction(function () use ($product, $parentData, $variants) {
+        $product->loadMissing('variants');
+
+        return DB::transaction(function () use ($product, $parentData, $variants, $deletedVariantIds) {
             $old = $product->toArray();
             $product->update(array_merge($parentData, [
                 'is_sellable' => false,
@@ -134,8 +138,23 @@ class ProductInventoryService
                 'stock_quantity' => 0,
             ]));
 
-            $existingIds = collect($variants)->pluck('id')->filter()->map(fn ($id) => (int) $id)->all();
-            $product->variants()->whereNotIn('id', $existingIds)->delete();
+            if ($product->wasChanged('branch_id')) {
+                $product->variants()->update(['branch_id' => $product->branch_id]);
+            }
+
+            $allowedVariantIds = $product->variants()->pluck('id')->map(fn ($id) => (int) $id)->all();
+            $explicitDeletes = collect($deletedVariantIds)
+                ->map(fn ($id) => (int) $id)
+                ->filter(fn ($id) => in_array($id, $allowedVariantIds, true))
+                ->unique()
+                ->values()
+                ->all();
+
+            $this->assertUniqueVariantCombinations($variants, $product, $explicitDeletes);
+
+            if ($explicitDeletes !== []) {
+                $product->variants()->whereIn('id', $explicitDeletes)->delete();
+            }
 
             foreach ($variants as $index => $variant) {
                 if (! empty($variant['id'])) {
@@ -347,5 +366,92 @@ class ProductInventoryService
         $product->increment('stock_quantity', $quantity);
 
         return $product->fresh();
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $variants
+     * @param  array<int, int>  $deletedVariantIds
+     */
+    public function assertUniqueVariantCombinations(array $variants, ?Product $parent = null, array $deletedVariantIds = []): void
+    {
+        $seen = [];
+
+        foreach ($variants as $index => $variant) {
+            $key = self::variantCombinationKey($variant['attribute_values'] ?? []);
+            if ($key === '') {
+                continue;
+            }
+            if (isset($seen[$key])) {
+                throw ValidationException::withMessages([
+                    'variants' => 'Duplicate variant in this form: '.$this->describeVariantCombination($variant['attribute_values'] ?? []),
+                ]);
+            }
+            $seen[$key] = $index;
+        }
+
+        if ($parent === null) {
+            return;
+        }
+
+        $deleted = array_flip(array_map('intval', $deletedVariantIds));
+
+        foreach ($variants as $variant) {
+            if (! empty($variant['id'])) {
+                continue;
+            }
+
+            $key = self::variantCombinationKey($variant['attribute_values'] ?? []);
+            if ($key === '') {
+                continue;
+            }
+
+            foreach ($parent->variants as $child) {
+                if (isset($deleted[(int) $child->id])) {
+                    continue;
+                }
+
+                if (self::variantCombinationKey($child->attribute_values ?? []) === $key) {
+                    throw ValidationException::withMessages([
+                        'variants' => 'This variant already exists for this product: '.$this->describeVariantCombination($variant['attribute_values'] ?? []),
+                    ]);
+                }
+            }
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributeValues
+     */
+    public static function variantCombinationKey(array $attributeValues): string
+    {
+        if ($attributeValues === []) {
+            return '';
+        }
+
+        $normalized = [];
+        foreach ($attributeValues as $name => $value) {
+            $normalized[(string) $name] = (string) $value;
+        }
+        ksort($normalized);
+
+        return json_encode($normalized, JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributeValues
+     */
+    protected function describeVariantCombination(array $attributeValues): string
+    {
+        if ($attributeValues === []) {
+            return 'unknown options';
+        }
+
+        $parts = [];
+        foreach ($attributeValues as $name => $value) {
+            $parts[] = $name.': '.$value;
+        }
+        sort($parts);
+
+        return implode(', ', $parts);
     }
 }

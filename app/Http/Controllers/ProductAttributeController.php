@@ -133,6 +133,7 @@ class ProductAttributeController extends Controller
                 'value' => $record->value,
             ],
             'attribute_id' => $attribute->id,
+            'created' => $record->wasRecentlyCreated,
         ]);
     }
 

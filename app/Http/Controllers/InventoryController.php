@@ -366,6 +366,10 @@ class InventoryController extends Controller
             unset($data['cost_price']);
         }
 
+        if ($branchId = $this->resolveBranchIdForOwner($request, $business)) {
+            $data['branch_id'] = $branchId;
+        }
+
         $secondaryUnits = $this->parseSecondaryUnits($request);
 
         $this->inventoryService->updateSimple($product, $data, $secondaryUnits);
@@ -449,6 +453,8 @@ class InventoryController extends Controller
             'variants.*.price' => 'required|numeric|min:0',
             'variants.*.stock_quantity' => 'required|numeric|min:0',
             'variants.*.cost_price' => 'nullable|numeric|min:0',
+            'deleted_variant_ids' => 'nullable|array',
+            'deleted_variant_ids.*' => 'integer',
         ]);
 
         $data['brand_id'] = $this->resolveBrandId($request, $business->id);
@@ -461,14 +467,27 @@ class InventoryController extends Controller
             }
         }
 
-        $this->inventoryService->updateVariableParent($product, [
+        $deletedVariantIds = $request->input('deleted_variant_ids', []);
+        if ($deletedVariantIds !== [] && ! $request->user()->can('delete-inventory')) {
+            throw ValidationException::withMessages([
+                'variants' => 'You are not allowed to remove variant lines.',
+            ]);
+        }
+
+        $parentData = [
             'name' => $data['name'],
             'brand_id' => $data['brand_id'],
             'description' => $data['description'] ?? null,
             'measurement_unit' => $data['measurement_unit'],
             'critical_threshold' => $data['critical_threshold'] ?? 5,
             'is_active' => $data['is_active'],
-        ], $data['variants']);
+        ];
+
+        if ($branchId = $this->resolveBranchIdForOwner($request, $business)) {
+            $parentData['branch_id'] = $branchId;
+        }
+
+        $this->inventoryService->updateVariableParent($product, $parentData, $data['variants'], $deletedVariantIds);
 
         return redirect()->to(tenant_route('tenant.inventory.index'))->with('success', 'Product variants updated.');
     }

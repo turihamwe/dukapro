@@ -10,8 +10,13 @@
     </x-slot>
 </x-page-header>
 
-<div class="mb-6 rounded-xl border border-indigo-100 bg-indigo-50/80 px-4 py-3 text-sm text-indigo-900">
-    Attributes like <strong>Size</strong> or <strong>Color</strong> are used when creating variable products. Each combination becomes its own stock entry in POS.
+<div class="mb-6 space-y-3">
+    <div class="rounded-xl border border-indigo-100 bg-indigo-50/80 px-4 py-3 text-sm text-indigo-900">
+        Attributes like <strong>Size</strong> or <strong>Color</strong> are option lists for variable products — not separate products. Each ticked combination on the product form becomes its own SKU in POS.
+    </div>
+    <div class="rounded-xl border border-amber-100 bg-amber-50/80 px-4 py-3 text-sm text-amber-950">
+        <strong>Adding another size or color?</strong> Edit the existing attribute’s <strong>Values</strong> field below (e.g. change <code class="rounded bg-white/80 px-1">S, M, L</code> to <code class="rounded bg-white/80 px-1">S, M, L, XL</code>) and click <strong>Save</strong>. Then open the product → <strong>Edit</strong>, turn on variants if needed, <strong>tick the new option</strong>, set price/stock, and update. There is no separate “add variant product” button.
+    </div>
 </div>
 
 <x-card class="mb-6">
