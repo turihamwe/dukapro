@@ -229,6 +229,14 @@ class AuthServiceProvider extends ServiceProvider
             return $user->business && $user->business->hasModule(ModuleKeys::CATALOG_VARIANTS);
         });
 
+        Gate::define('access-supplier-credit', function (User $user) {
+            if (! $user->business || ! \App\Support\SupplierCreditMode::active($user->business)) {
+                return false;
+            }
+
+            return $user->isOwner() || $user->isManager() || $user->can('top-up-inventory');
+        });
+
         Gate::define('submit-reconciliation', function (User $user) {
             if ($user->isCashier()) {
                 return true;

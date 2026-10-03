@@ -139,6 +139,8 @@
             'activeStaffRoles' => $activeStaffRoles ?? [],
         ])
 
+        @include('business._supplier-credit-settings', ['business' => $business])
+
         @include('business._variable-pricing-settings', ['business' => $business])
 
         @include('business._divisible-products-settings', ['business' => $business])

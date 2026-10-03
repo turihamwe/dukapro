@@ -8,6 +8,7 @@ use App\Models\EfrisSetting;
 use App\Services\BusinessModuleService;
 use App\Services\BusinessPermissionService;
 use App\Support\BatchMode;
+use App\Support\SupplierCreditMode;
 use App\Enums\BusinessOperatingMode;
 use App\Support\BusinessModeCompliance;
 use App\Support\EfrisCompliance;
@@ -67,6 +68,7 @@ class BusinessSettingsController extends Controller
             'variable_pricing_enabled' => 'nullable|boolean',
             'divisible_products_enabled' => 'nullable|boolean',
             'branch_batch_mode' => 'nullable|array',
+            'supplier_credit_mode' => 'nullable|boolean',
             'role_permissions' => 'nullable|array',
             'efris.enabled' => 'nullable|boolean',
             'efris.api_token' => 'nullable|string|max:500',
@@ -176,6 +178,13 @@ class BusinessSettingsController extends Controller
 
         if (BatchMode::platformEnabled()) {
             $settings['batch_mode'] = $request->boolean('batch_mode');
+        }
+
+        if (SupplierCreditMode::platformEnabled()) {
+            $settings['supplier_credit_mode'] = $request->boolean('supplier_credit_mode');
+        }
+
+        if (BatchMode::platformEnabled() || SupplierCreditMode::platformEnabled()) {
             $business->settings = $settings;
             $business->save();
         }

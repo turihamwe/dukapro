@@ -17,6 +17,7 @@ class SettingsController extends Controller
     {
         $settings = array_merge([
             'batch_mode_enabled' => '0',
+            'supplier_credit_platform_enabled' => '0',
             'variable_pricing_enabled' => '1',
             'divisible_products_enabled' => '1',
             'pos_offline_enabled' => '1',
@@ -47,6 +48,7 @@ class SettingsController extends Controller
             'yopayments_account_id' => 'nullable|string|max:255',
             'maintenance_mode' => 'nullable|boolean',
             'batch_mode_enabled' => 'nullable|boolean',
+            'supplier_credit_platform_enabled' => 'nullable|boolean',
             'variable_pricing_enabled' => 'nullable|boolean',
             'divisible_products_enabled' => 'nullable|boolean',
             'pos_offline_enabled' => 'nullable|boolean',
@@ -82,6 +84,7 @@ class SettingsController extends Controller
         SystemSetting::set('yopayments_account_id', $data['yopayments_account_id'] ?? '');
         SystemSetting::set('maintenance_mode', $request->boolean('maintenance_mode') ? '1' : '0');
         SystemSetting::set('batch_mode_enabled', $request->boolean('batch_mode_enabled') ? '1' : '0');
+        SystemSetting::set('supplier_credit_platform_enabled', $request->boolean('supplier_credit_platform_enabled') ? '1' : '0');
         SystemSetting::set('variable_pricing_enabled', $request->boolean('variable_pricing_enabled') ? '1' : '0');
         SystemSetting::set('divisible_products_enabled', $request->boolean('divisible_products_enabled', true) ? '1' : '0');
         SystemSetting::set('pos_offline_enabled', $request->boolean('pos_offline_enabled', true) ? '1' : '0');

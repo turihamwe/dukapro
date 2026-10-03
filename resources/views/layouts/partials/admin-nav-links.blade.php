@@ -74,6 +74,9 @@
         <span>🏪</span> Branches
     </a>
 @endcan
+@can('access-supplier-credit')
+    @include('layouts.partials.purchases-nav-dropdown', ['theme' => 'plain', 'navLink' => $navLink, 'navActive' => $navActive, 'navIdle' => $navIdle])
+@endcan
 <a href="{{ tenant_route('tenant.downloads.index') }}"
    class="{{ $navLink }} {{ request()->routeIs('tenant.downloads.*') ? $navActive : $navIdle }}">
     <span>📲</span> Downloads

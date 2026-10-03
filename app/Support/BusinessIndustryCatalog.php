@@ -35,15 +35,15 @@ class BusinessIndustryCatalog
         return [
             'retail_wholesale' => [
                 ['slug' => 'general_retail', 'label' => 'General retail shop', 'legacy_type' => BusinessType::GENERAL_RETAIL],
-                ['slug' => 'supermarket', 'label' => 'Supermarket / hypermarket', 'legacy_type' => BusinessType::SUPERMARKET],
-                ['slug' => 'wholesale', 'label' => 'Wholesale / distribution', 'legacy_type' => BusinessType::GENERAL_RETAIL],
+                ['slug' => 'supermarket', 'label' => 'Supermarket / hypermarket', 'legacy_type' => BusinessType::SUPERMARKET, 'enables_supplier_credit' => true],
+                ['slug' => 'wholesale', 'label' => 'Wholesale / distribution', 'legacy_type' => BusinessType::GENERAL_RETAIL, 'enables_supplier_credit' => true],
                 ['slug' => 'grocery_provisions', 'label' => 'Grocery / provisions', 'legacy_type' => BusinessType::GROCERY],
                 ['slug' => 'hardware', 'label' => 'Hardware store', 'legacy_type' => BusinessType::HARDWARE],
                 ['slug' => 'electronics', 'label' => 'Electronics & appliances', 'legacy_type' => BusinessType::ELECTRONICS],
                 ['slug' => 'boutique_clothing', 'label' => 'Boutique / clothing & fashion', 'legacy_type' => BusinessType::BOUTIQUE],
                 ['slug' => 'mobile_phones', 'label' => 'Mobile phones & accessories', 'legacy_type' => BusinessType::ELECTRONICS],
                 ['slug' => 'furniture_home', 'label' => 'Furniture & home goods', 'legacy_type' => BusinessType::GENERAL_RETAIL],
-                ['slug' => 'building_materials', 'label' => 'Building materials & cement', 'legacy_type' => BusinessType::HARDWARE],
+                ['slug' => 'building_materials', 'label' => 'Building materials & cement', 'legacy_type' => BusinessType::HARDWARE, 'enables_supplier_credit' => true],
                 ['slug' => 'stationery_books', 'label' => 'Stationery, books & office supplies', 'legacy_type' => BusinessType::GENERAL_RETAIL],
                 ['slug' => 'sports_toys', 'label' => 'Sports, toys & gifts', 'legacy_type' => BusinessType::GENERAL_RETAIL],
             ],
@@ -87,12 +87,12 @@ class BusinessIndustryCatalog
                 ['slug' => 'boda_fleet', 'label' => 'Boda-boda / motorcycle fleet', 'legacy_type' => BusinessType::OTHER, 'operating_mode' => BusinessOperatingMode::RENTAL],
                 ['slug' => 'property_rental', 'label' => 'Property rental / real estate', 'legacy_type' => BusinessType::OTHER, 'operating_mode' => BusinessOperatingMode::RENTAL],
                 ['slug' => 'equipment_rental', 'label' => 'Equipment & tools rental', 'legacy_type' => BusinessType::OTHER, 'operating_mode' => BusinessOperatingMode::RENTAL],
-                ['slug' => 'logistics_courier', 'label' => 'Logistics / courier / delivery', 'legacy_type' => BusinessType::OTHER],
-                ['slug' => 'warehouse_storage', 'label' => 'Warehouse / storage', 'legacy_type' => BusinessType::OTHER],
+                ['slug' => 'logistics_courier', 'label' => 'Logistics / courier / delivery', 'legacy_type' => BusinessType::OTHER, 'enables_supplier_credit' => true],
+                ['slug' => 'warehouse_storage', 'label' => 'Warehouse / storage', 'legacy_type' => BusinessType::OTHER, 'enables_supplier_credit' => true],
             ],
             'manufacturing_agriculture' => [
                 ['slug' => 'farm_produce', 'label' => 'Farm produce & fresh market', 'legacy_type' => BusinessType::GROCERY],
-                ['slug' => 'agro_inputs', 'label' => 'Agro-inputs (seeds, feeds, fertiliser)', 'legacy_type' => BusinessType::HARDWARE],
+                ['slug' => 'agro_inputs', 'label' => 'Agro-inputs (seeds, feeds, fertiliser)', 'legacy_type' => BusinessType::HARDWARE, 'enables_supplier_credit' => true],
                 ['slug' => 'food_processing', 'label' => 'Food processing / packaging', 'legacy_type' => BusinessType::OTHER],
                 ['slug' => 'light_manufacturing', 'label' => 'Light manufacturing / workshop', 'legacy_type' => BusinessType::OTHER],
                 ['slug' => 'livestock', 'label' => 'Livestock / poultry', 'legacy_type' => BusinessType::OTHER],
@@ -263,6 +263,31 @@ class BusinessIndustryCatalog
         return [
             'hospitality_mode_admin_unlocked' => true,
             'hospitality_mode' => true,
+        ];
+    }
+
+    public static function subcategoryEnablesSupplierCreditMode(?string $master, ?string $subcategory): bool
+    {
+        if (! self::isValidMaster($master) || $subcategory === null || $subcategory === '') {
+            return false;
+        }
+
+        foreach (self::subcategoriesByMaster()[$master] ?? [] as $item) {
+            if ($item['slug'] === $subcategory) {
+                return ! empty($item['enables_supplier_credit']);
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function supplierCreditRegistrationPreset(): array
+    {
+        return [
+            'supplier_credit_mode' => true,
         ];
     }
 

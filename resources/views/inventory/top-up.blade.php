@@ -8,6 +8,9 @@
 
 <x-page-header title="Top-up Stock" subtitle="Increase quantities for products already in your catalog">
     <x-slot name="actions">
+        @can('access-supplier-credit')
+            <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.supplier-credit.receives.create') }}">Restock on credit</x-button>
+        @endcan
         @can('create', App\Models\Product::class)
             <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.inventory.create') }}">+ Add New Product</x-button>
         @endcan

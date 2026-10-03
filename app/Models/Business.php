@@ -283,6 +283,11 @@ class Business extends Model
         return \App\Support\BatchMode::active($this, $branchId);
     }
 
+    public function usesSupplierCreditMode(): bool
+    {
+        return \App\Support\SupplierCreditMode::active($this);
+    }
+
     public function isHospitality(): bool
     {
         return \App\Enums\BusinessType::isHospitality($this->business_type);

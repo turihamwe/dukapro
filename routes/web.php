@@ -61,6 +61,8 @@ use App\Http\Controllers\PosController;
 use App\Http\Controllers\DownloadsController;
 use App\Http\Controllers\HospitalityBookingController;
 use App\Http\Controllers\HospitalityController;
+use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\SupplierCreditController;
 use App\Http\Controllers\PwaManifestController;
 use App\Http\Controllers\OperationsController;
 use App\Http\Controllers\WaiterShiftController;
@@ -387,6 +389,27 @@ Route::middleware(['maintenance'])->group(function () {
                     Route::post('/bookings/{booking}/check-in', [HospitalityBookingController::class, 'checkIn'])->name('bookings.check-in');
                     Route::post('/bookings/{booking}/check-out', [HospitalityBookingController::class, 'checkOut'])->name('bookings.check-out');
                     Route::post('/bookings/{booking}/cancel', [HospitalityBookingController::class, 'cancel'])->name('bookings.cancel');
+                });
+
+                Route::prefix('supplier-credit')->name('supplier-credit.')->middleware(['supplier.credit', 'can:access-supplier-credit'])->group(function () {
+                    Route::get('/', [SupplierCreditController::class, 'index'])->name('index');
+                    Route::get('/overview', [SupplierCreditController::class, 'overview'])->name('overview.index');
+                    Route::get('/bills', [SupplierCreditController::class, 'bills'])->name('bills.index');
+                    Route::get('/bills/{purchase}', [SupplierCreditController::class, 'showBill'])->name('bills.show');
+                    Route::get('/payments', [SupplierCreditController::class, 'payments'])->name('payments.index');
+                    Route::get('/receives/create', [SupplierCreditController::class, 'create'])->name('receives.create');
+                    Route::get('/purchases/create', [SupplierCreditController::class, 'create'])->name('purchases.create');
+                    Route::post('/purchases', [SupplierCreditController::class, 'store'])->name('purchases.store');
+                    Route::post('/purchases/{purchase}/payments', [SupplierCreditController::class, 'storePayment'])->name('purchases.payments.store');
+                    Route::get('/vendors', [SupplierController::class, 'index'])->name('vendors.index');
+                    Route::get('/vendors/{supplier}/edit', [SupplierController::class, 'edit'])->name('vendors.edit');
+                    Route::put('/vendors/{supplier}', [SupplierController::class, 'update'])->name('vendors.update');
+                    Route::delete('/vendors/{supplier}', [SupplierController::class, 'destroy'])->name('vendors.destroy');
+                    Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers.index');
+                    Route::post('/suppliers', [SupplierController::class, 'store'])->name('suppliers.store');
+                    Route::get('/suppliers/{supplier}/edit', [SupplierController::class, 'edit'])->name('suppliers.edit');
+                    Route::put('/suppliers/{supplier}', [SupplierController::class, 'update'])->name('suppliers.update');
+                    Route::delete('/suppliers/{supplier}', [SupplierController::class, 'destroy'])->name('suppliers.destroy');
                 });
 
                 Route::get('/operations', [OperationsController::class, 'index'])->name('operations.index');

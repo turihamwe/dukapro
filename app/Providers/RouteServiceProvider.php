@@ -10,6 +10,8 @@ use App\Models\EndOfDayReconciliation;
 use App\Models\Expense;
 use App\Models\Product;
 use App\Models\ProductAttribute;
+use App\Models\Supplier;
+use App\Models\SupplierCreditPurchase;
 use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
@@ -66,6 +68,14 @@ class RouteServiceProvider extends ServiceProvider
 
         Route::bind('reconciliation', function ($value, $route) {
             return $this->resolveTenantRecord(EndOfDayReconciliation::class, $value, $route);
+        });
+
+        Route::bind('purchase', function ($value, $route) {
+            return $this->resolveTenantRecord(SupplierCreditPurchase::class, $value, $route);
+        });
+
+        Route::bind('supplier', function ($value, $route) {
+            return $this->resolveTenantRecord(Supplier::class, $value, $route);
         });
 
         $this->configureRateLimiting();
