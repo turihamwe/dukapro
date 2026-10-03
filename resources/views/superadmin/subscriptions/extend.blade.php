@@ -37,7 +37,9 @@
                     <tr>
                         <th class="px-4 py-3">Business</th>
                         <th class="px-4 py-3">Owner</th>
-                        <th class="px-4 py-3">Status</th>
+                        <th class="px-4 py-3">Subscription</th>
+                        <th class="px-4 py-3">Business account</th>
+                        <th class="px-4 py-3">Access</th>
                         <th class="px-4 py-3">Trial ends</th>
                         <th class="px-4 py-3">Paid until</th>
                         <th class="px-4 py-3">Extend</th>
@@ -47,21 +49,58 @@
                     @forelse($businesses as $business)
                         @php
                             $owner = $business->owner;
+                            $ownerEmailKey = $owner ? strtolower(trim((string) $owner->email)) : '';
+                            $ownerHasMultipleBusinesses = $ownerEmailKey !== '' && in_array($ownerEmailKey, $multiOwnerEmails ?? [], true);
+                            $subscriptionExpired = $business->isSubscriptionExpired();
+                            $subscriptionBadge = 'bg-gray-100 text-gray-800';
+                            if ($business->subscription_status === 'active') {
+                                $subscriptionBadge = 'bg-emerald-100 text-emerald-800';
+                            } elseif ($business->subscription_status === 'trial') {
+                                $subscriptionBadge = 'bg-sky-100 text-sky-800';
+                            } elseif ($business->subscription_status === 'expired') {
+                                $subscriptionBadge = 'bg-red-100 text-red-800';
+                            } elseif ($business->subscription_status === 'inactive') {
+                                $subscriptionBadge = 'bg-gray-200 text-gray-800';
+                            }
                         @endphp
-                        <tr class="align-top hover:bg-gray-50/80">
+                        <tr class="align-top hover:bg-gray-50/80 {{ $ownerHasMultipleBusinesses ? 'bg-violet-50/40' : '' }}">
                             <td class="px-4 py-3">
                                 <p class="font-medium text-gray-900">{{ $business->name }}</p>
-                                <p class="text-xs text-gray-500">#{{ $business->id }}</p>
+                                <p class="text-xs text-gray-500">#{{ $business->id }} · {{ $business->slug }}</p>
                             </td>
                             <td class="px-4 py-3">
                                 @if($owner)
                                     <p class="font-medium text-gray-900">{{ $owner->name }}</p>
                                     <p class="text-xs text-gray-500">{{ $owner->email }}</p>
+                                    @if($ownerHasMultipleBusinesses)
+                                        <p class="mt-1 text-xs font-medium text-violet-700">Same owner — multiple businesses in results</p>
+                                    @endif
+                                    @if(! $owner->is_active)
+                                        <p class="mt-0.5 text-xs text-amber-700">Owner login disabled</p>
+                                    @endif
                                 @else
                                     <span class="text-xs text-amber-700">No owner user</span>
                                 @endif
                             </td>
-                            <td class="px-4 py-3 capitalize">{{ $business->subscription_status }}</td>
+                            <td class="px-4 py-3">
+                                <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold capitalize {{ $subscriptionBadge }}">
+                                    {{ $business->subscription_status }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3">
+                                @if($business->is_active)
+                                    <span class="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">Active</span>
+                                @else
+                                    <span class="inline-flex rounded-full bg-gray-200 px-2 py-0.5 text-xs font-semibold text-gray-800">Disabled</span>
+                                @endif
+                            </td>
+                            <td class="px-4 py-3">
+                                @if($subscriptionExpired)
+                                    <span class="inline-flex rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">Expired</span>
+                                @else
+                                    <span class="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">Valid</span>
+                                @endif
+                            </td>
                             <td class="px-4 py-3 text-gray-600">
                                 {{ optional($business->trial_ends_at)->format('M j, Y') ?? '—' }}
                             </td>
@@ -91,7 +130,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-4 py-10 text-center text-gray-500">No businesses match “{{ $search }}”.</td>
+                            <td colspan="8" class="px-4 py-10 text-center text-gray-500">No businesses match “{{ $search }}”.</td>
                         </tr>
                     @endforelse
                 </tbody>

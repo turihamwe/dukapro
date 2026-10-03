@@ -37,9 +37,25 @@ class BusinessSubscriptionController extends Controller
             ->paginate(25)
             ->withQueryString();
 
+        $multiOwnerEmails = [];
+        if ($search !== '') {
+            $emailCounts = [];
+            foreach ($businesses as $business) {
+                $email = strtolower(trim((string) optional($business->owner)->email));
+                if ($email === '') {
+                    continue;
+                }
+                $emailCounts[$email] = ($emailCounts[$email] ?? 0) + 1;
+            }
+            $multiOwnerEmails = array_keys(array_filter($emailCounts, function ($count) {
+                return $count > 1;
+            }));
+        }
+
         return view('superadmin.subscriptions.extend', [
             'businesses' => $businesses,
             'search' => $search,
+            'multiOwnerEmails' => $multiOwnerEmails,
         ]);
     }
 
