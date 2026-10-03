@@ -18,5 +18,7 @@ When the gate passes, sidebar shows **Purchases** with:
 - **Payments Made** — payment ledger (`tenant.supplier-credit.payments.index`)
 - **Vendors** — `tenant.supplier-credit.vendors.index`
 - **Overview** — period stats + activity timeline (`tenant.supplier-credit.overview.index`)
+- **Income statement** — revenue, COGS, expenses, net income + purchasing lines (`tenant.supplier-credit.financials.income-statement`)
+- **Balance sheet** — inventory, receivables, EOD cash, supplier payables (`tenant.supplier-credit.financials.balance-sheet`)
 
 Bill detail supports **Make payment** modal for partial installments.

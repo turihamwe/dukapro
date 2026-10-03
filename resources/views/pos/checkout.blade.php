@@ -440,6 +440,32 @@
         return (data && data.message) ? data.message : fallback;
     }
 
+    async function readApiResponse(res) {
+        var text = await res.text();
+        if (!text) {
+            return { data: null, parseError: null };
+        }
+        try {
+            return { data: JSON.parse(text), parseError: null };
+        } catch (parseError) {
+            return { data: null, parseError: parseError, raw: text };
+        }
+    }
+
+    function htmlResponseHint(res) {
+        if (res.status === 419) {
+            return 'Your session expired (CSRF). Refresh the POS page and complete the sale again.';
+        }
+        if (res.status === 401 || res.status === 403) {
+            return 'You were signed out or lack permission. Refresh the page and sign in again.';
+        }
+        if (res.status >= 500) {
+            return 'Server error (HTTP ' + res.status + '). Check with support or try again shortly.';
+        }
+
+        return 'Unexpected server response (HTTP ' + res.status + '). Refresh the POS page and try again.';
+    }
+
     function updateReceiptWhatsAppLink() {
         var phoneEl = document.getElementById('receiptCustomerPhone');
         if (!phoneEl || !pendingReceipt.message) return;
@@ -1362,7 +1388,11 @@
                 },
                 body: JSON.stringify(checkoutPayload),
             });
-            var data = await res.json();
+            var parsed = await readApiResponse(res);
+            if (parsed.parseError) {
+                throw new Error(htmlResponseHint(res));
+            }
+            var data = parsed.data;
             if (!res.ok) {
                 throw new Error(formatApiError(data, 'Checkout failed'));
             }

@@ -64,6 +64,7 @@ use App\Http\Controllers\HospitalityBookingController;
 use App\Http\Controllers\HospitalityController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\SupplierCreditController;
+use App\Http\Controllers\SupplierFinancialStatementController;
 use App\Http\Controllers\PwaManifestController;
 use App\Http\Controllers\OperationsController;
 use App\Http\Controllers\WaiterShiftController;
@@ -395,6 +396,8 @@ Route::middleware(['maintenance'])->group(function () {
                 Route::prefix('supplier-credit')->name('supplier-credit.')->middleware(['supplier.credit', 'can:access-supplier-credit'])->group(function () {
                     Route::get('/', [SupplierCreditController::class, 'index'])->name('index');
                     Route::get('/overview', [SupplierCreditController::class, 'overview'])->name('overview.index');
+                    Route::get('/financials/income-statement', [SupplierFinancialStatementController::class, 'incomeStatement'])->name('financials.income-statement');
+                    Route::get('/financials/balance-sheet', [SupplierFinancialStatementController::class, 'balanceSheet'])->name('financials.balance-sheet');
                     Route::get('/bills', [SupplierCreditController::class, 'bills'])->name('bills.index');
                     Route::get('/bills/{purchase}', [SupplierCreditController::class, 'showBill'])->name('bills.show');
                     Route::get('/payments', [SupplierCreditController::class, 'payments'])->name('payments.index');

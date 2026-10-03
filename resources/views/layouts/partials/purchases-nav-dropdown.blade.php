@@ -37,5 +37,9 @@
            class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs(['tenant.supplier-credit.vendors.*', 'tenant.supplier-credit.suppliers.*']) ? $subActive : $subIdle }}">Vendors</a>
         <a href="{{ tenant_route('tenant.supplier-credit.overview.index') }}"
            class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('tenant.supplier-credit.overview.*') || request()->routeIs('tenant.supplier-credit.index') ? $subActive : $subIdle }}">Overview</a>
+        <a href="{{ tenant_route('tenant.supplier-credit.financials.income-statement') }}"
+           class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('tenant.supplier-credit.financials.income-statement') ? $subActive : $subIdle }}">Income statement</a>
+        <a href="{{ tenant_route('tenant.supplier-credit.financials.balance-sheet') }}"
+           class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('tenant.supplier-credit.financials.balance-sheet') ? $subActive : $subIdle }}">Balance sheet</a>
     </div>
 </div>

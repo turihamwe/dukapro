@@ -6,6 +6,8 @@
 @section('content')
 <x-page-header title="Purchases overview" subtitle="{{ $label }} — supplier credit activity">
     <x-slot name="actions">
+        <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.supplier-credit.financials.income-statement') }}">Income statement</x-button>
+        <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.supplier-credit.financials.balance-sheet') }}">Balance sheet</x-button>
         <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.supplier-credit.bills.index') }}">Bills</x-button>
         <x-button variant="primary" size="sm" href="{{ tenant_route('tenant.supplier-credit.receives.create') }}">+ Receive stock</x-button>
     </x-slot>
