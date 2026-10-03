@@ -23,6 +23,14 @@
             <a href="{{ route('superadmin.entities.index', [$entity, 'trashed' => 1]) }}" class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100">View archived</a>
         @else
             @can('platform-full-access')
+                @if($entity === 'businesses')
+                    <form method="POST" action="{{ route('superadmin.impersonate.start', ['businessId' => $item->id]) }}" class="inline">
+                        @csrf
+                        <button type="submit" class="rounded-lg border border-violet-300 bg-violet-50 px-4 py-2 text-sm font-semibold text-violet-800 hover:bg-violet-100">
+                            Impersonate owner
+                        </button>
+                    </form>
+                @endif
                 <a href="{{ route('superadmin.entities.edit', [$entity, $item->id]) }}" class="rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500">Edit</a>
                 @if($config['deletable'] ?? true)
                     <form method="POST" action="{{ route('superadmin.entities.destroy', [$entity, $item->id]) }}" onsubmit="return confirm('Delete this record?')">
@@ -97,7 +105,7 @@
         @include('superadmin.businesses._divisible-products-panel', ['business' => $item])
         @include('superadmin.businesses._operating-modes-panel', ['business' => $item])
         @efrisPlatform
-            @include('superadmin.businesses._efris-panel', ['business' => $item])
+            @include('superadmin.businesses._efris-panel', ['business' => $item, 'efrisGoLive' => $efrisGoLive ?? null])
         @endefrisPlatform
     @endif
 

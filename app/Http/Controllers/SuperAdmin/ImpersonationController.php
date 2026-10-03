@@ -18,32 +18,53 @@ class ImpersonationController extends Controller
     {
         abort_unless($request->user()->isSuperAdmin(), 403);
 
-        $business = Business::query()->findOrFail($businessId);
+        $business = Business::query()->withTrashed()->findOrFail($businessId);
 
-        $owner = User::query()
-            ->where('business_id', $business->id)
-            ->where('role', UserRole::OWNER)
-            ->where('is_active', true)
-            ->first();
+        $target = $this->resolveImpersonationUser($business);
 
-        abort_unless($owner, 404, 'No active owner account found for this business.');
+        if (! $target) {
+            return redirect()
+                ->back()
+                ->withErrors([
+                    'impersonate' => 'No active owner or manager account found for this business. Create or activate an owner user first.',
+                ]);
+        }
 
-        Impersonation::start($request, $request->user()->id);
+        $superAdminId = (int) $request->user()->id;
+
         CashierMode::disable($request);
-
-        Auth::login($owner);
+        Auth::login($target);
         $request->session()->regenerate();
+        Impersonation::start($request, $superAdminId);
 
         SystemAuditLogger::record(
             'impersonation_started',
-            'SuperAdmin impersonating owner of ' . $business->name,
+            'SuperAdmin impersonating ' . $target->role . ' of ' . $business->name,
             $business->id,
-            (int) Impersonation::impersonatorId($request)
+            $superAdminId
         );
 
         return redirect()
-            ->route('tenant.dashboard', ['business' => $business->slug])
-            ->with('info', 'Viewing as owner of ' . $business->name . '. Use “Exit impersonation” when finished.');
+            ->to(tenant_route('tenant.dashboard'))
+            ->with('info', 'Viewing as ' . $target->name . ' (' . $business->name . '). Use “Exit impersonation” when finished.');
+    }
+
+    protected function resolveImpersonationUser(Business $business): ?User
+    {
+        foreach ([UserRole::OWNER, UserRole::MANAGER] as $role) {
+            $user = User::query()
+                ->where('business_id', $business->id)
+                ->where('role', $role)
+                ->where('is_active', true)
+                ->orderBy('id')
+                ->first();
+
+            if ($user) {
+                return $user;
+            }
+        }
+
+        return null;
     }
 
     public function leave(Request $request)
@@ -59,7 +80,17 @@ class ImpersonationController extends Controller
         $admin = User::query()
             ->where('id', $impersonatorId)
             ->where('is_super_admin', true)
-            ->firstOrFail();
+            ->first();
+
+        if (! $admin) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()
+                ->route('login')
+                ->with('warning', 'Impersonation session ended. Sign in again as SuperAdmin.');
+        }
 
         Auth::login($admin);
         $request->session()->regenerate();

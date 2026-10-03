@@ -13,6 +13,7 @@ use App\Services\ProductUnitService;
 use App\Services\PosOfflineSyncService;
 use App\Services\SaleService;
 use App\Support\BusinessModeCompliance;
+use App\Support\EfrisCompliance;
 use App\Support\DivisibleProductsMode;
 use App\Support\PosOfflineMode;
 use App\Support\SaleDocument;
@@ -111,6 +112,7 @@ class PosController extends Controller
         $divisibleProductsMode = DivisibleProductsMode::active($business);
 
         $posOfflineEnabled = PosOfflineMode::enabled();
+        $efrisCheckoutAvailable = EfrisCompliance::isTransmissionAllowed($business);
 
         return view('pos.checkout', compact(
             'products',
@@ -124,7 +126,8 @@ class PosController extends Controller
             'lowStockItems',
             'variablePricingMode',
             'divisibleProductsMode',
-            'posOfflineEnabled'
+            'posOfflineEnabled',
+            'efrisCheckoutAvailable'
         ));
     }
 
@@ -245,6 +248,7 @@ class PosController extends Controller
             'table_label' => 'nullable|string|max:50',
             'restaurant_table_id' => 'nullable|integer|exists:restaurant_tables,id',
             'idempotency_key' => 'nullable|string|max:64',
+            'efris_requested' => 'nullable|boolean',
         ]);
 
         if (VariablePricingMode::active($business)) {

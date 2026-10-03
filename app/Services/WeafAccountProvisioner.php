@@ -337,7 +337,7 @@ class WeafAccountProvisioner
     protected function statusMessage(string $status, string $email, string $tin): string
     {
         if ($status === self::STATUS_CONNECTED) {
-            return 'EFRIS is connected. Fiscal receipts will be submitted automatically after each sale.';
+            return 'EFRIS is connected to WEAF. Enable fiscal receipts below, then cashiers can opt in per sale at checkout.';
         }
 
         if ($status === self::STATUS_COMPANY_PENDING) {

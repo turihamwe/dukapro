@@ -25,7 +25,7 @@
     <dl class="mt-4 grid gap-3 sm:grid-cols-2 text-sm">
         <div>
             <dt class="text-xs uppercase text-gray-500">Owner toggle</dt>
-            <dd class="mt-1 font-medium text-gray-900">{{ $ownerEnabled ? 'ON — submitting receipts' : 'OFF' }}</dd>
+            <dd class="mt-1 font-medium text-gray-900">{{ $ownerEnabled ? 'ON — per-sale opt-in at POS' : 'OFF' }}</dd>
         </div>
         <div>
             <dt class="text-xs uppercase text-gray-500">WEAF connection</dt>
@@ -61,5 +61,7 @@
     @else
         <p class="mt-4 text-xs text-gray-500">Full superadmin access is required to change EFRIS unlock status.</p>
     @endcan
+
+    @include('superadmin.businesses._efris-go-live-panel', ['efrisGoLive' => $efrisGoLive ?? null])
 </div>
 @endif

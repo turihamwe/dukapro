@@ -81,6 +81,12 @@
    class="{{ $navLink }} {{ request()->routeIs('tenant.downloads.*') ? $navActive : $navIdle }}">
     <span>📲</span> Downloads
 </a>
+@can('manage-profile')
+    <a href="{{ tenant_route('tenant.profile.edit') }}"
+       class="{{ $navLink }} {{ request()->routeIs('tenant.profile.*') ? $navActive : $navIdle }}">
+        <span>👤</span> Profile
+    </a>
+@endcan
 @can('manage-settings')
     <a href="{{ tenant_route('tenant.business.edit') }}"
        class="{{ $navLink }} {{ request()->routeIs('tenant.business.*') ? $navActive : $navIdle }}">

@@ -21,8 +21,10 @@ class BusinessEfrisController extends Controller
             'weaf_password' => 'nullable|string|max:255',
         ]);
 
+        $settingsUrl = tenant_route('tenant.business.edit') . '#efris-weaf';
+
         if (! EfrisCompliance::globallyEnabled()) {
-            return back()->withErrors([
+            return redirect()->to($settingsUrl)->withErrors([
                 'efris_connect' => 'EFRIS is not available on this platform.',
             ]);
         }
@@ -33,7 +35,7 @@ class BusinessEfrisController extends Controller
         $settings = $business->efrisSetting;
 
         if (! EfrisCompliance::isAdminUnlocked($settings)) {
-            return back()->withErrors([
+            return redirect()->to($settingsUrl)->withErrors([
                 'efris_connect' => 'EFRIS is not enabled for your business. Contact support or your administrator to unlock EFRIS compliance options.',
             ]);
         }
@@ -45,11 +47,39 @@ class BusinessEfrisController extends Controller
                 $request->filled('weaf_password') ? $request->input('weaf_password') : null
             );
         } catch (RuntimeException $e) {
-            return back()
+            return redirect()
+                ->to(tenant_route('tenant.business.edit') . '#efris-weaf')
                 ->withInput()
                 ->withErrors(['efris_connect' => $e->getMessage()]);
         }
 
-        return back()->with('efris_connect_result', $result);
+        return $this->redirectAfterConnect($result);
+    }
+
+    protected function redirectAfterConnect(array $result)
+    {
+        $status = (string) ($result['status'] ?? '');
+        $message = (string) ($result['message'] ?? 'WEAF connection updated.');
+
+        $redirect = redirect()
+            ->to(tenant_route('tenant.business.edit') . '#efris-weaf')
+            ->with('efris_connect_result', $result);
+
+        if (in_array($status, [
+            WeafAccountProvisioner::STATUS_CONNECTED,
+            WeafAccountProvisioner::STATUS_TOKEN_READY,
+        ], true)) {
+            return $redirect->with('success', $message);
+        }
+
+        if (in_array($status, [
+            WeafAccountProvisioner::STATUS_EMAIL_VERIFICATION,
+            WeafAccountProvisioner::STATUS_COMPANY_PENDING,
+            WeafAccountProvisioner::STATUS_REGISTERED,
+        ], true)) {
+            return $redirect->with('warning', $message);
+        }
+
+        return $redirect->with('success', $message);
     }
 }

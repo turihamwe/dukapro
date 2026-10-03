@@ -47,12 +47,14 @@
                 @endif
             </p>
         </div>
-        <form method="POST" action="{{ route('superadmin.impersonate.start', $business->id) }}" class="shrink-0">
-            @csrf
-            <button type="submit" class="rounded-lg border border-violet-300 bg-white px-4 py-2 text-sm font-medium text-violet-800 hover:bg-violet-50">
-                View as owner →
-            </button>
-        </form>
+        @can('platform-full-access')
+            <form method="POST" action="{{ route('superadmin.impersonate.start', ['businessId' => $business->id]) }}" class="shrink-0">
+                @csrf
+                <button type="submit" class="rounded-lg border border-violet-300 bg-white px-4 py-2 text-sm font-medium text-violet-800 hover:bg-violet-50">
+                    View as owner →
+                </button>
+            </form>
+        @endcan
     </div>
 
     @can('platform-full-access')

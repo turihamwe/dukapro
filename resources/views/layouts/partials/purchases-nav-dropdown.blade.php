@@ -1,6 +1,7 @@
 @php
     $purchasesOpen = request()->routeIs('tenant.supplier-credit.*');
     $isModern = ($theme ?? 'plain') === 'modern';
+    $navLink = $navLink ?? 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition';
     $subActive = $isModern ? 'font-medium text-emerald-400 bg-white/10' : 'font-medium text-indigo-700 bg-indigo-50';
     $subIdle = $isModern ? 'text-slate-300 hover:bg-white/5 hover:text-white' : 'text-gray-600 hover:bg-gray-100';
     $containerClass = $isModern ? 'modern-purchases-nav' : 'purchases-nav';

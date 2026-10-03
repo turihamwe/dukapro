@@ -180,6 +180,13 @@
                         <span id="cartTotal" class="text-lg font-bold text-gray-900 sm:text-xl">{{ auth()->user()->business->formatMoney(0) }}</span>
                     </div>
 
+                    @if($efrisCheckoutAvailable ?? false)
+                        <label id="efrisCheckoutWrap" class="flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50/60 px-3 py-2 text-xs text-emerald-950">
+                            <input type="checkbox" id="efrisRequested" value="1" class="mt-0.5 rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500">
+                            <span>Submit URA fiscal receipt (EFRIS) on this sale</span>
+                        </label>
+                    @endif
+
                 @if($restaurantMode ?? false)
                     <x-button id="sendKitchenBtn" variant="success" size="lg" type="button" class="w-full min-h-[44px]" disabled>Send to Kitchen</x-button>
                     <button type="button" id="togglePayNowBtn" class="w-full text-center text-xs font-medium text-indigo-600 hover:text-indigo-800">Pay now (Counter sales)</button>
@@ -1026,6 +1033,8 @@
         }
     });
 
+    syncEfrisCheckoutOption();
+
     document.getElementById('paymentMethod').addEventListener('change', function () {
         var method = this.value;
         document.getElementById('customerSelectWrap').classList.toggle('hidden', method !== 'credit');
@@ -1041,6 +1050,7 @@
             }
         }
         updateCheckoutButtonLabel();
+        syncEfrisCheckoutOption();
     });
 
     document.getElementById('invoiceCustomerForm').addEventListener('submit', async function (e) {
@@ -1209,7 +1219,34 @@
             notes: restaurantMode ? (document.getElementById('orderNotes').value.trim() || null) : null,
             table_label: tablePayload.table_label || null,
             restaurant_table_id: tablePayload.restaurant_table_id || null,
+            efris_requested: isEfrisRequestedForCheckout(paymentMethod),
         };
+    }
+
+    function isEfrisRequestedForCheckout(paymentMethod) {
+        var box = document.getElementById('efrisRequested');
+        if (!box || box.disabled || !box.checked) {
+            return false;
+        }
+        if (paymentMethod === 'credit' || paymentMethod === 'invoice') {
+            return false;
+        }
+        return true;
+    }
+
+    function syncEfrisCheckoutOption() {
+        var wrap = document.getElementById('efrisCheckoutWrap');
+        var box = document.getElementById('efrisRequested');
+        if (!wrap || !box) return;
+        var paymentMethod = document.getElementById('paymentMethod').value;
+        var creditLike = paymentMethod === 'credit' || paymentMethod === 'invoice';
+        wrap.classList.toggle('hidden', creditLike);
+        if (creditLike) {
+            box.checked = false;
+            box.disabled = true;
+        } else {
+            box.disabled = false;
+        }
     }
 
     async function processOfflineCheckout(checkoutPayload, totals) {
@@ -1332,6 +1369,10 @@
             cart = [];
             expandedIdx = null;
             invoiceCustomerId = null;
+            var efrisBox = document.getElementById('efrisRequested');
+            if (efrisBox) {
+                efrisBox.checked = false;
+            }
             renderCart();
             showReceiptModal(data);
         } catch (err) {

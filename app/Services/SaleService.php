@@ -89,6 +89,7 @@ class SaleService
             $items = $payload['items'];
             $paymentMethod = $payload['payment_method'] ?? 'cash';
             $isCreditSale = (bool) ($payload['is_credit_sale'] ?? false);
+            $efrisRequested = ! $isCreditSale && (bool) ($payload['efris_requested'] ?? false);
             $customerId = $payload['customer_id'] ?? null;
             $waiterId = $payload['waiter_id'] ?? null;
             $mobileProvider = $payload['mobile_money_provider'] ?? null;
@@ -291,6 +292,7 @@ class SaleService
                 'companion_receipt_issued' => (bool) ($payload['companion_receipt_issued'] ?? false),
                 'status' => 'completed',
                 'notes' => $payload['notes'] ?? null,
+                'efris_requested' => $efrisRequested,
                 'completed_at' => Carbon::now(),
                 'invoice_due_at' => $invoiceDueAt,
             ]);
@@ -381,7 +383,7 @@ class SaleService
 
         $sale->load('business.efrisSetting');
 
-        if ($sale->business && $sale->business->usesEfris()) {
+        if ($sale->efris_requested && $sale->business && $sale->business->usesEfris()) {
             app(EfrisService::class)->queueSaleSubmission($sale);
         }
 

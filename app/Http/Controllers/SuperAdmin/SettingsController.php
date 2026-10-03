@@ -17,7 +17,7 @@ class SettingsController extends Controller
     {
         $settings = array_merge([
             'batch_mode_enabled' => '0',
-            'supplier_credit_platform_enabled' => '0',
+            'supplier_credit_platform_enabled' => '1',
             'variable_pricing_enabled' => '1',
             'divisible_products_enabled' => '1',
             'pos_offline_enabled' => '1',

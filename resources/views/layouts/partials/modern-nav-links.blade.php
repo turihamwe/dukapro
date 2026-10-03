@@ -101,13 +101,20 @@
     </a>
 @endcan
 @can('access-supplier-credit')
-    @include('layouts.partials.purchases-nav-dropdown', ['theme' => 'modern', 'navLink' => $navLink, 'navActive' => $navActive, 'navIdle' => $navIdle])
+    @include('layouts.partials.purchases-nav-dropdown', ['theme' => 'modern', 'navActive' => $navActive, 'navIdle' => $navIdle])
 @endcan
 <a href="{{ tenant_route('tenant.downloads.index') }}"
    class="modern-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] {{ request()->routeIs('tenant.downloads.*') ? $navActive : $navIdle }}">
     <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"/></svg>
     Downloads
 </a>
+@can('manage-profile')
+    <a href="{{ tenant_route('tenant.profile.edit') }}"
+       class="modern-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] {{ request()->routeIs('tenant.profile.*') ? $navActive : $navIdle }}">
+        <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+        Profile
+    </a>
+@endcan
 @can('manage-settings')
     <a href="{{ tenant_route('tenant.business.edit') }}"
        class="modern-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] {{ request()->routeIs('tenant.business.*') ? $navActive : $navIdle }}">

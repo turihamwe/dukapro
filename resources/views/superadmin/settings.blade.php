@@ -96,11 +96,11 @@
         <div class="flex items-start gap-3 rounded-lg border border-teal-200 bg-teal-50 p-4">
             <input type="hidden" name="supplier_credit_platform_enabled" value="0">
             <input type="checkbox" name="supplier_credit_platform_enabled" id="supplier_credit_platform_enabled" value="1"
-                   {{ old('supplier_credit_platform_enabled', $settings['supplier_credit_platform_enabled'] ?? '0') === '1' ? 'checked' : '' }}
+                   {{ old('supplier_credit_platform_enabled', $settings['supplier_credit_platform_enabled'] ?? '1') === '1' ? 'checked' : '' }}
                    class="mt-0.5 rounded border-gray-300 text-teal-600 focus:ring-teal-500">
             <div>
                 <label for="supplier_credit_platform_enabled" class="block text-sm font-medium text-teal-950">Supplier credit &amp; accounts payable</label>
-                <p class="mt-0.5 text-xs text-teal-900/80">When enabled, eligible businesses can opt in to supplier credit restocking and AP ledgers. POS cash sales are unchanged.</p>
+                <p class="mt-0.5 text-xs text-teal-900/80">When enabled (default), each business owner can turn supplier credit on in Business settings. Uncheck to hide Purchases/AP for all tenants. POS cash sales are unchanged.</p>
             </div>
         </div>
 

@@ -9,15 +9,11 @@ class SupplierCreditMode
 {
     public static function platformEnabled(): bool
     {
-        return (bool) (int) SystemSetting::get('supplier_credit_platform_enabled', 0);
+        return (bool) (int) SystemSetting::get('supplier_credit_platform_enabled', 1);
     }
 
     public static function businessEnabled(Business $business): bool
     {
-        if (! self::platformEnabled()) {
-            return false;
-        }
-
         $settings = $business->settings ?? [];
 
         return (bool) ($settings['supplier_credit_mode'] ?? false);

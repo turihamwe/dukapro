@@ -207,7 +207,7 @@
                             @endif
                             @if($entity === 'businesses')
                                 @can('platform-full-access')
-                                    <form method="POST" action="{{ route('superadmin.impersonate.start', $record->id) }}" class="inline">
+                                    <form method="POST" action="{{ route('superadmin.impersonate.start', ['businessId' => $record->id]) }}" class="inline">
                                         @csrf
                                         <button type="submit" class="text-violet-600 hover:text-violet-800">Impersonate</button>
                                     </form>

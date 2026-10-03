@@ -462,6 +462,9 @@ Route::prefix('superadmin')
     ->name('superadmin.')
     ->group(function () {
         Route::get('/', [SuperAdminDashboardController::class, 'index'])->name('dashboard');
+        Route::post('/businesses/{businessId}/impersonate', [ImpersonationController::class, 'start'])
+            ->whereNumber('businessId')
+            ->name('impersonate.start');
         Route::get('/platform-overview', [PlatformOverviewController::class, 'index'])->name('platform-overview');
         Route::get('/business-sales', [BusinessSalesController::class, 'index'])->name('business-sales.index');
         Route::get('/business-sales/businesses', [BusinessSalesController::class, 'businesses'])->name('business-sales.businesses');
@@ -509,7 +512,6 @@ Route::prefix('superadmin')
             Route::post('/shareholders/{shareholder}/record-earning', [ShareholderActionController::class, 'recordEarning'])->whereNumber('shareholder')->name('shareholders.record-earning');
             Route::post('/users/{user}/promote-affiliate', [UserActionController::class, 'promoteAffiliate'])->whereNumber('user')->name('users.promote-affiliate');
             Route::post('/users/{user}/promote-shareholder', [UserActionController::class, 'promoteShareholder'])->whereNumber('user')->name('users.promote-shareholder');
-            Route::post('/businesses/{businessId}/impersonate', [ImpersonationController::class, 'start'])->whereNumber('businessId')->name('impersonate.start');
             Route::post('/businesses/{businessId}/modules', [BusinessModuleController::class, 'update'])->whereNumber('businessId')->name('businesses.modules.update');
             Route::post('/businesses/{businessId}/efris/unlock', [SuperAdminBusinessEfrisController::class, 'updateUnlock'])->whereNumber('businessId')->name('businesses.efris.unlock');
             Route::post('/businesses/{businessId}/modes/unlock', [SuperAdminBusinessOperatingModesController::class, 'updateUnlocks'])->whereNumber('businessId')->name('businesses.modes.unlock');

@@ -8,7 +8,6 @@ use App\Models\EfrisSetting;
 use App\Services\BusinessModuleService;
 use App\Services\BusinessPermissionService;
 use App\Support\BatchMode;
-use App\Support\SupplierCreditMode;
 use App\Enums\BusinessOperatingMode;
 use App\Support\BusinessModeCompliance;
 use App\Support\EfrisCompliance;
@@ -84,10 +83,11 @@ class BusinessSettingsController extends Controller
         $efrisEnabled = $efrisUnlocked && $request->boolean('efris.enabled');
 
         if ($efrisGloballyOn && $efrisEnabled) {
-            $tin = preg_replace('/\D+/', '', (string) $business->tax_number);
+            $tin = preg_replace('/\D+/', '', (string) ($data['tax_number'] ?? $business->tax_number));
 
             if ($tin === '') {
-                return back()
+                return redirect()
+                    ->to(tenant_route('tenant.business.edit') . '#efris-weaf')
                     ->withInput()
                     ->withErrors(['tax_number' => 'Company TIN is required when EFRIS is enabled. Add it under Tax / registration number.']);
             }
@@ -96,13 +96,15 @@ class BusinessSettingsController extends Controller
             $canAutoProvision = WeafPlatformCredentials::autoProvisionEnabled();
 
             if (! $hasToken && ! $canAutoProvision) {
-                return back()
+                return redirect()
+                    ->to(tenant_route('tenant.business.edit') . '#efris-weaf')
                     ->withInput()
                     ->withErrors(['efris_connect' => 'Connect EFRIS first, or paste a WEAF API token under Advanced settings.']);
             }
 
             if (! $hasToken && $canAutoProvision && ! $existingEfris->isProvisioned()) {
-                return back()
+                return redirect()
+                    ->to(tenant_route('tenant.business.edit') . '#efris-weaf')
                     ->withInput()
                     ->withErrors(['efris_connect' => 'Click Connect EFRIS to register your WEAF account before enabling fiscal receipts.']);
             }
@@ -180,14 +182,10 @@ class BusinessSettingsController extends Controller
             $settings['batch_mode'] = $request->boolean('batch_mode');
         }
 
-        if (SupplierCreditMode::platformEnabled()) {
-            $settings['supplier_credit_mode'] = $request->boolean('supplier_credit_mode');
-        }
+        $settings['supplier_credit_mode'] = $request->boolean('supplier_credit_mode');
 
-        if (BatchMode::platformEnabled() || SupplierCreditMode::platformEnabled()) {
-            $business->settings = $settings;
-            $business->save();
-        }
+        $business->settings = $settings;
+        $business->save();
 
         foreach ($request->input('branch_batch_mode', []) as $branchId => $value) {
             $branch = Branch::query()
@@ -218,9 +216,10 @@ class BusinessSettingsController extends Controller
         );
 
         if ($efrisUnlocked) {
+            $profileTin = preg_replace('/\D+/', '', (string) ($business->tax_number ?? ''));
             $efrisPayload = [
                 'efris_enabled' => $efrisEnabled,
-                'efris_tin' => $efrisEnabled ? preg_replace('/\D+/', '', (string) $business->tax_number) : ($existingEfris->efris_tin ?? null),
+                'efris_tin' => $efrisEnabled && $profileTin !== '' ? $profileTin : ($existingEfris->efris_tin ?? null),
                 'efris_environment' => $efrisInput['environment'] ?? ($existingEfris->efris_environment ?? 'sandbox'),
                 'efris_branch_id' => $efrisInput['branch_id'] ?? null,
                 'default_buyer_tin' => $efrisInput['default_buyer_tin'] ?? null,

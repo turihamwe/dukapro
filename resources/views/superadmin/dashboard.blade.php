@@ -128,7 +128,7 @@
                         <td class="px-6 py-4 capitalize">{{ $business->subscription_status }}</td>
                         <td class="px-6 py-4 text-right whitespace-nowrap">
                             @can('platform-full-access')
-                                <form method="POST" action="{{ route('superadmin.impersonate.start', $business->id) }}" class="inline">
+                                <form method="POST" action="{{ route('superadmin.impersonate.start', ['businessId' => $business->id]) }}" class="inline">
                                     @csrf
                                     <button type="submit" class="text-violet-600 hover:text-violet-800">Impersonate</button>
                                 </form>

@@ -28,6 +28,7 @@ use App\Services\ShareAllocationService;
 use App\Services\ShareholderEarningsService;
 use App\Services\ShareholderRegistrationService;
 use App\Services\UserPromotionService;
+use App\Support\EfrisGoLiveReadiness;
 use App\Support\SuperAdmin\AdminListPagination;
 use App\Support\SuperAdmin\EntityRegistry;
 use Illuminate\Http\Request;
@@ -461,6 +462,7 @@ class EntityController extends Controller
             ]);
             $capabilities = app(BusinessModuleService::class)->capabilityStates($item);
             $floor = app(BusinessModuleService::class)->floorSettings($item);
+            $efrisGoLive = app(EfrisGoLiveReadiness::class)->forBusiness($item);
         }
 
         $promotionUser = $entity === 'users' ? $item : null;
@@ -479,6 +481,7 @@ class EntityController extends Controller
             'remainingShares' => $this->allocationService->remainingShares(),
             'capabilities' => $entity === 'businesses' ? ($capabilities ?? []) : [],
             'floor' => $entity === 'businesses' ? ($floor ?? []) : [],
+            'efrisGoLive' => $entity === 'businesses' ? ($efrisGoLive ?? null) : null,
             'businessTab' => $entity === 'businesses' ? request('tab', 'details') : 'details',
             'affiliateAttribution' => $affiliateAttribution,
         ]);
