@@ -86,6 +86,7 @@
         </div>
     </x-card>
 
+    {{--
     <x-card class="!p-4 bg-gray-50 border-dashed">
         <p class="text-xs text-gray-600">
             <strong>Audit note:</strong> Inventory and receivable balances reflect current ledger values in DukaPro (not a historical snapshot unless you run this as of today).
@@ -97,5 +98,6 @@
             for a fuller picture.
         </p>
     </x-card>
+    --}}
 </div>
 @endsection
