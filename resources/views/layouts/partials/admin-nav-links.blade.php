@@ -81,12 +81,6 @@
 @can('manage-settings')
     <a href="{{ tenant_route('tenant.business.edit') }}"
        class="{{ $navLink }} {{ request()->routeIs('tenant.business.*') ? $navActive : $navIdle }}">
-        <span>🏢</span> Business
-    </a>
-@endcan
-@can('manage-profile')
-    <a href="{{ tenant_route('tenant.profile.edit') }}"
-       class="{{ $navLink }} {{ request()->routeIs('tenant.profile.*') ? $navActive : $navIdle }}">
-        <span>⚙️</span> My profile
+        <span>⚙️</span> Settings
     </a>
 @endcan
