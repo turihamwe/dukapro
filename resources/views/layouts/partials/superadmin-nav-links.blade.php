@@ -22,6 +22,12 @@
    class="{{ $navLink }} {{ request()->routeIs('superadmin.business-sales*') ? $navActive : $navIdle }}">
     Business Sales
 </a>
+@can('platform-full-access')
+    <a href="{{ route('superadmin.subscriptions.extend.index') }}"
+       class="{{ $navLink }} {{ request()->routeIs('superadmin.subscriptions.extend*') ? $navActive : $navIdle }}">
+        Extend subscriptions
+    </a>
+@endcan
 <a href="{{ route('superadmin.platform-overview') }}#affiliate-performance"
    class="{{ $navLink }} {{ $navIdle }}">
     Affiliate Performance

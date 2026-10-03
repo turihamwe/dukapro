@@ -38,6 +38,7 @@ use App\Http\Controllers\SuperAdmin\AffiliateFieldFeedbackController;
 use App\Http\Controllers\SuperAdmin\BusinessEfrisController as SuperAdminBusinessEfrisController;
 use App\Http\Controllers\SuperAdmin\BusinessOperatingModesController as SuperAdminBusinessOperatingModesController;
 use App\Http\Controllers\SuperAdmin\BusinessModuleController;
+use App\Http\Controllers\SuperAdmin\BusinessSubscriptionController;
 use App\Http\Controllers\SuperAdmin\BusinessDivisibleProductsController;
 use App\Http\Controllers\SuperAdmin\BusinessVariablePricingController;
 use App\Http\Controllers\SuperAdmin\ShareholderActionController;
@@ -475,6 +476,10 @@ Route::prefix('superadmin')
         Route::get('/affiliate-feedback/{affiliateFieldFeedback}', [AffiliateFieldFeedbackController::class, 'show'])->whereNumber('affiliateFieldFeedback')->name('affiliate-feedback.show');
 
         Route::middleware('platform.full')->group(function () {
+            Route::get('/subscriptions/extend', [BusinessSubscriptionController::class, 'index'])->name('subscriptions.extend.index');
+            Route::post('/subscriptions/extend/{businessId}', [BusinessSubscriptionController::class, 'extend'])
+                ->whereNumber('businessId')
+                ->name('subscriptions.extend.store');
             Route::get('/search', [SuperAdminGlobalSearchController::class, 'index'])->name('search');
             Route::get('/activity', [ActivityLogController::class, 'index'])->name('activity');
             Route::get('/errors', [ErrorLogController::class, 'index'])->name('errors.index');

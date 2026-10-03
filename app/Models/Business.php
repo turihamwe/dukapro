@@ -413,6 +413,23 @@ class Business extends Model
         ]);
     }
 
+    public function extendTrial(int $days = 30): void
+    {
+        $startsFrom = $this->trial_ends_at && $this->trial_ends_at->isFuture()
+            ? $this->trial_ends_at
+            : Carbon::now();
+
+        $this->update([
+            'subscription_status' => SubscriptionStatus::TRIAL,
+            'trial_ends_at' => $startsFrom->copy()->addDays($days),
+        ]);
+    }
+
+    public function owner(): HasOne
+    {
+        return $this->hasOne(User::class)->where('role', \App\Enums\UserRole::OWNER);
+    }
+
     public function staffUsers()
     {
         return $this->users()->where('role', '!=', \App\Enums\UserRole::OWNER);
