@@ -359,7 +359,10 @@
                         <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
                             <p class="text-sm font-medium text-gray-800">{{ $attribute->name }}</p>
                             @if($attribute->values->isNotEmpty())
-                                <button type="button" class="select-all-attribute-btn text-xs font-medium text-indigo-600 hover:text-indigo-800" data-attribute-id="{{ $attribute->id }}">Select all</button>
+                                <div class="flex items-center gap-2">
+                                    <button type="button" class="select-all-attribute-btn text-xs font-medium text-indigo-600 hover:text-indigo-800" data-attribute-id="{{ $attribute->id }}">Select all</button>
+                                    <button type="button" class="unselect-all-attribute-btn text-xs font-medium text-indigo-600 hover:text-indigo-800" data-attribute-id="{{ $attribute->id }}">Unselect all</button>
+                                </div>
                             @endif
                         </div>
                         <div class="flex flex-wrap gap-2">
@@ -390,9 +393,26 @@
                         class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50">
                     + Add variant
                 </button>
-                <p id="variant-row-hint" class="text-xs text-gray-500">Adds the next size/color row, or tick several options above for many rows at once.</p>
+                <p id="variant-row-hint" class="text-xs text-gray-500">Adds the next size/color row, or tick several options above for many rows at once. Rows with both price and stock blank are skipped on save (0 is allowed).</p>
             </div>
-            <p id="variant_notice" class="hidden rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900" role="status"></p>
+            @php
+                $variantErrorMessages = [];
+                foreach ($errors->keys() as $errorKey) {
+                    if ($errorKey === 'variants' || strpos($errorKey, 'variants.') === 0) {
+                        foreach ($errors->get($errorKey) as $message) {
+                            $variantErrorMessages[] = $message;
+                        }
+                    }
+                }
+            @endphp
+            @if(count($variantErrorMessages))
+                <div class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
+                    @foreach($variantErrorMessages as $message)
+                        <p>{{ $message }}</p>
+                    @endforeach
+                </div>
+            @endif
+            <p id="variant_notice" class="hidden rounded-lg border px-3 py-2 text-sm border-amber-200 bg-amber-50 text-amber-900" role="status"></p>
 
             <div id="variant-table-empty" class="rounded-lg border border-dashed border-gray-300 bg-white px-4 py-6 text-center text-sm text-gray-500">
                 No variant rows yet. Tick options above or click <strong>+ Add variant</strong>.
@@ -531,8 +551,8 @@ document.addEventListener('alpine:init', function () {
         el.classList.toggle('text-emerald-600', !isError);
     }
 
-    function showVariantNotice(text) {
-        showMsg(document.getElementById('variant_notice'), text, false);
+    function showVariantNotice(text, isError) {
+        showMsg(document.getElementById('variant_notice'), text, !!isError);
     }
 
     function clearVariantNotice() {
@@ -850,9 +870,9 @@ document.addEventListener('alpine:init', function () {
     }
 
     function removeVariantLine(variantId, label) {
-        var message = 'Do you really want to delete this product line?\n\n'
+        var message = 'Remove this variant line?\n\n'
             + (label ? label + '\n\n' : '')
-            + 'This removes the sellable SKU and its stock from inventory. Past sales on receipts are kept.';
+            + 'It will be hidden from POS and inventory (soft delete). Past sales on receipts are kept. Save the product to apply.';
         if (!window.confirm(message)) return;
         deletedVariantIds[variantId] = true;
         updateAttributeCheckboxLocks();
@@ -943,9 +963,9 @@ document.addEventListener('alpine:init', function () {
 
             tr.innerHTML =
                 '<td class="px-3 py-2 text-gray-900">' + esc(label) + attrsHtml + idHtml + '</td>' +
-                '<td class="px-3 py-2"><input type="number" step="0.01" min="0" required name="variants[' + index + '][price]" value="' + esc(rowState[key].price) + '" class="w-full min-w-[80px] rounded-lg border-gray-300 text-sm variant-field" data-key="' + esc(key) + '" data-field="price"></td>' +
+                '<td class="px-3 py-2"><input type="number" step="0.01" min="0" name="variants[' + index + '][price]" value="' + esc(rowState[key].price) + '" class="w-full min-w-[80px] rounded-lg border-gray-300 text-sm variant-field" data-key="' + esc(key) + '" data-field="price"></td>' +
                 (canViewCost ? '<td class="px-3 py-2"><input type="number" step="0.01" min="0" name="variants[' + index + '][cost_price]" value="' + esc(rowState[key].cost_price) + '" class="w-full min-w-[80px] rounded-lg border-gray-300 text-sm variant-field" data-key="' + esc(key) + '" data-field="cost_price"></td>' : '') +
-                '<td class="px-3 py-2"><input type="number" step="0.001" min="0" required name="variants[' + index + '][stock_quantity]" value="' + esc(rowState[key].stock_quantity) + '" class="w-full min-w-[72px] rounded-lg border-gray-300 text-sm variant-field" data-key="' + esc(key) + '" data-field="stock_quantity"></td>' +
+                '<td class="px-3 py-2"><input type="number" step="0.001" min="0" name="variants[' + index + '][stock_quantity]" value="' + esc(rowState[key].stock_quantity) + '" class="w-full min-w-[72px] rounded-lg border-gray-300 text-sm variant-field" data-key="' + esc(key) + '" data-field="stock_quantity"></td>' +
                 removeHtml;
 
             tbody.appendChild(tr);
@@ -990,6 +1010,17 @@ document.addEventListener('alpine:init', function () {
                 if (picker) {
                     picker.querySelectorAll('.variant-value-checkbox:not(:disabled)').forEach(function (cb) {
                         cb.checked = true;
+                    });
+                    rebuildVariantTable();
+                }
+                return;
+            }
+            var unselectAllBtn = e.target.closest('.unselect-all-attribute-btn');
+            if (unselectAllBtn) {
+                var unselectPicker = unselectAllBtn.closest('.attribute-picker');
+                if (unselectPicker) {
+                    unselectPicker.querySelectorAll('.variant-value-checkbox:not(:disabled)').forEach(function (cb) {
+                        cb.checked = false;
                     });
                     rebuildVariantTable();
                 }
@@ -1067,7 +1098,10 @@ document.addEventListener('alpine:init', function () {
                     '<span>' + esc(val.value) + '</span></label>';
             }).join('') || '<span class="text-xs text-gray-400">No values yet — add one below.</span>';
             var selectAllHtml = (attribute.values && attribute.values.length)
-                ? '<button type="button" class="select-all-attribute-btn text-xs font-medium text-indigo-600 hover:text-indigo-800" data-attribute-id="' + esc(attribute.id) + '">Select all</button>'
+                ? '<div class="flex items-center gap-2">' +
+                '<button type="button" class="select-all-attribute-btn text-xs font-medium text-indigo-600 hover:text-indigo-800" data-attribute-id="' + esc(attribute.id) + '">Select all</button>' +
+                '<button type="button" class="unselect-all-attribute-btn text-xs font-medium text-indigo-600 hover:text-indigo-800" data-attribute-id="' + esc(attribute.id) + '">Unselect all</button>' +
+                '</div>'
                 : '';
             return '<div class="attribute-picker rounded-lg border border-gray-200 bg-white p-4" data-attribute-id="' + esc(attribute.id) + '" data-attribute-name="' + esc(attribute.name) + '">' +
                 '<div class="mb-2 flex flex-wrap items-center justify-between gap-2">' +
@@ -1140,6 +1174,96 @@ document.addEventListener('alpine:init', function () {
             .finally(function () { addAttributeBtn.disabled = false; });
         });
     }
+
+    function variantRowLabelFromTr(tr) {
+        var cell = tr.querySelector('td:first-child');
+        return cell ? cell.textContent.trim() : 'This variant';
+    }
+
+    function setVariantRowSubmitExcluded(tr, exclude) {
+        tr.querySelectorAll('input, select, textarea').forEach(function (input) {
+            if (exclude) {
+                input.disabled = true;
+                input.setAttribute('data-variant-submit-excluded', '1');
+            } else if (input.getAttribute('data-variant-submit-excluded') === '1') {
+                input.disabled = false;
+                input.removeAttribute('data-variant-submit-excluded');
+            }
+        });
+    }
+
+    function prepareVariantRowsForSubmit() {
+        var tbody = document.getElementById('variant-rows-tbody');
+        if (!tbody || !toggle || !toggle.checked) {
+            return true;
+        }
+
+        tbody.querySelectorAll('tr').forEach(function (tr) {
+            setVariantRowSubmitExcluded(tr, false);
+        });
+
+        var messages = [];
+        var kept = 0;
+
+        tbody.querySelectorAll('tr').forEach(function (tr) {
+            var priceInput = tr.querySelector('input[name*="[price]"]');
+            var stockInput = tr.querySelector('input[name*="[stock_quantity]"]');
+            var idInput = tr.querySelector('input[name*="[id]"]');
+            var hasId = idInput && String(idInput.value).trim() !== '';
+            var priceFilled = priceInput && String(priceInput.value).trim() !== '';
+            var stockFilled = stockInput && String(stockInput.value).trim() !== '';
+            var label = variantRowLabelFromTr(tr);
+
+            if (hasId) {
+                if (!priceFilled) {
+                    messages.push('Price is required for ' + label + '.');
+                }
+                if (!stockFilled) {
+                    messages.push('Stock is required for ' + label + '.');
+                }
+                if (priceFilled && stockFilled) {
+                    kept++;
+                }
+                return;
+            }
+
+            if (!priceFilled && !stockFilled) {
+                setVariantRowSubmitExcluded(tr, true);
+                return;
+            }
+
+            if (priceFilled && stockFilled) {
+                kept++;
+                return;
+            }
+
+            messages.push('Enter both price and stock for ' + label + ', or leave both blank to skip.');
+        });
+
+        if (messages.length) {
+            showVariantNotice(messages[0], true);
+            return false;
+        }
+
+        if (kept < 1) {
+            showVariantNotice('Add at least one variant with both price and stock filled in.', true);
+            return false;
+        }
+
+        clearVariantNotice();
+        return true;
+    }
+
+    document.querySelectorAll('form').forEach(function (form) {
+        if (!form.querySelector('#variant-product-fields')) {
+            return;
+        }
+        form.addEventListener('submit', function (e) {
+            if (!prepareVariantRowsForSubmit()) {
+                e.preventDefault();
+            }
+        });
+    });
 
 })();
 </script>

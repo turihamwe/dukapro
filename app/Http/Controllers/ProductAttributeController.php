@@ -40,16 +40,12 @@ class ProductAttributeController extends Controller
                 'required',
                 'string',
                 'max:100',
-                Rule::unique('product_attributes', 'name')->where(fn ($q) => $q->where('business_id', $businessId)),
+                Rule::unique('product_attributes', 'name')->where(fn ($q) => $q->where('business_id', $businessId)->whereNull('deleted_at')),
             ],
             'values' => 'required|string|max:2000',
         ]);
 
-        $attribute = ProductAttribute::create([
-            'business_id' => $businessId,
-            'name' => $data['name'],
-            'sort_order' => (int) ProductAttribute::where('business_id', $businessId)->max('sort_order') + 1,
-        ]);
+        $attribute = $this->restoreOrCreateAttribute($businessId, $data['name']);
 
         $this->syncValues($attribute, $data['values']);
 
@@ -69,18 +65,14 @@ class ProductAttributeController extends Controller
                 'required',
                 'string',
                 'max:100',
-                Rule::unique('product_attributes', 'name')->where(fn ($q) => $q->where('business_id', $businessId)),
+                Rule::unique('product_attributes', 'name')->where(fn ($q) => $q->where('business_id', $businessId)->whereNull('deleted_at')),
             ],
             'values' => 'nullable|array',
             'values.*' => 'string|max:100',
             'values_text' => 'nullable|string|max:2000',
         ]);
 
-        $attribute = ProductAttribute::create([
-            'business_id' => $businessId,
-            'name' => $data['name'],
-            'sort_order' => (int) ProductAttribute::where('business_id', $businessId)->max('sort_order') + 1,
-        ]);
+        $attribute = $this->restoreOrCreateAttribute($businessId, $data['name']);
 
         $values = $data['values'] ?? [];
         if (! empty($data['values_text'])) {
@@ -117,15 +109,7 @@ class ProductAttributeController extends Controller
             ->whereKey($data['attribute_id'])
             ->firstOrFail();
 
-        $record = ProductAttributeValue::firstOrCreate(
-            [
-                'product_attribute_id' => $attribute->id,
-                'value' => trim($data['value']),
-            ],
-            [
-                'sort_order' => (int) $attribute->values()->max('sort_order') + 1,
-            ]
-        );
+        $record = $this->findOrRestoreAttributeValue($attribute, trim($data['value']));
 
         return response()->json([
             'value' => [
@@ -151,7 +135,7 @@ class ProductAttributeController extends Controller
                 'string',
                 'max:100',
                 Rule::unique('product_attributes', 'name')
-                    ->where(fn ($q) => $q->where('business_id', $business->id))
+                    ->where(fn ($q) => $q->where('business_id', $business->id)->whereNull('deleted_at'))
                     ->ignore($attribute->id),
             ],
             'values' => 'required|string|max:2000',
@@ -173,6 +157,7 @@ class ProductAttributeController extends Controller
             abort(404);
         }
 
+        $attribute->values()->get()->each->delete();
         $attribute->delete();
 
         return redirect()
@@ -188,16 +173,54 @@ class ProductAttributeController extends Controller
             ->unique()
             ->values();
 
-        $attribute->values()->whereNotIn('value', $values->all())->delete();
+        $attribute->values()->whereNotIn('value', $values->all())->get()->each->delete();
 
         foreach ($values as $index => $value) {
-            ProductAttributeValue::updateOrCreate(
-                [
-                    'product_attribute_id' => $attribute->id,
-                    'value' => $value,
-                ],
-                ['sort_order' => $index]
-            );
+            $this->findOrRestoreAttributeValue($attribute, $value, $index);
         }
+    }
+
+    protected function restoreOrCreateAttribute(int $businessId, string $name): ProductAttribute
+    {
+        $trashed = ProductAttribute::onlyTrashed()
+            ->where('business_id', $businessId)
+            ->where('name', $name)
+            ->first();
+
+        if ($trashed) {
+            $trashed->restore();
+
+            return $trashed;
+        }
+
+        return ProductAttribute::create([
+            'business_id' => $businessId,
+            'name' => $name,
+            'sort_order' => (int) ProductAttribute::where('business_id', $businessId)->max('sort_order') + 1,
+        ]);
+    }
+
+    protected function findOrRestoreAttributeValue(ProductAttribute $attribute, string $value, ?int $sortOrder = null): ProductAttributeValue
+    {
+        $value = trim($value);
+        $record = ProductAttributeValue::withTrashed()->firstOrCreate(
+            [
+                'product_attribute_id' => $attribute->id,
+                'value' => $value,
+            ],
+            [
+                'sort_order' => $sortOrder ?? ((int) $attribute->values()->withTrashed()->max('sort_order') + 1),
+            ]
+        );
+
+        if ($record->trashed()) {
+            $record->restore();
+        }
+
+        if ($sortOrder !== null) {
+            $record->update(['sort_order' => $sortOrder]);
+        }
+
+        return $record->fresh();
     }
 }

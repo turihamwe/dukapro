@@ -14,6 +14,7 @@ use App\Support\EfrisCompliance;
 use App\Models\ProductAttribute;
 use App\Models\SoldByUnit;
 use App\Support\BatchMode;
+use App\Support\InventoryVariantSubmission;
 use App\Scopes\BranchScope;
 use App\Services\BranchResolver;
 use App\Services\CatalogDiscoveryService;
@@ -403,12 +404,10 @@ class InventoryController extends Controller
             'description' => 'nullable|string',
             'measurement_unit' => 'required|string|max:50',
             'critical_threshold' => 'nullable|integer|min:0',
-            'variants' => 'required|array|min:1',
-            'variants.*.attribute_values' => 'required|array|min:1',
-            'variants.*.price' => 'required|numeric|min:0',
-            'variants.*.stock_quantity' => 'required|numeric|min:0',
-            'variants.*.cost_price' => 'nullable|numeric|min:0',
         ]);
+
+        $rawVariants = $request->input('variants', []);
+        $data['variants'] = InventoryVariantSubmission::normalizeAndValidate(is_array($rawVariants) ? $rawVariants : []);
 
         $data['brand_id'] = $this->resolveBrandId($request, $businessId);
         $data['measurement_unit'] = $this->resolveMeasurementUnit($request, $businessId, $data['measurement_unit'] ?? 'piece');
@@ -447,15 +446,12 @@ class InventoryController extends Controller
             'measurement_unit' => 'required|string|max:50',
             'critical_threshold' => 'nullable|integer|min:0',
             'is_active' => 'nullable|boolean',
-            'variants' => 'required|array|min:1',
-            'variants.*.id' => 'nullable|integer',
-            'variants.*.attribute_values' => 'required|array|min:1',
-            'variants.*.price' => 'required|numeric|min:0',
-            'variants.*.stock_quantity' => 'required|numeric|min:0',
-            'variants.*.cost_price' => 'nullable|numeric|min:0',
             'deleted_variant_ids' => 'nullable|array',
             'deleted_variant_ids.*' => 'integer',
         ]);
+
+        $rawVariants = $request->input('variants', []);
+        $data['variants'] = InventoryVariantSubmission::normalizeAndValidate(is_array($rawVariants) ? $rawVariants : []);
 
         $data['brand_id'] = $this->resolveBrandId($request, $business->id);
         $data['measurement_unit'] = $this->resolveMeasurementUnit($request, $business->id, $data['measurement_unit'] ?? 'piece');

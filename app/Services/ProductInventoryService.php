@@ -87,7 +87,7 @@ class ProductInventoryService
             ]));
 
             foreach ($variants as $index => $variant) {
-                $this->createVariantChild($parent, $variant, $businessId, $index);
+                $this->upsertVariantChild($parent, $variant, $businessId, $index);
             }
 
             AuditLogger::record('product_created', $parent, null, $parent->fresh(['variants'])->toArray());
@@ -153,7 +153,11 @@ class ProductInventoryService
             $this->assertUniqueVariantCombinations($variants, $product, $explicitDeletes);
 
             if ($explicitDeletes !== []) {
-                $product->variants()->whereIn('id', $explicitDeletes)->delete();
+                $product->variants()->whereIn('id', $explicitDeletes)->get()->each(function (Product $child) {
+                    $old = $child->toArray();
+                    $child->delete();
+                    AuditLogger::record('product_deleted', $child, $old, null);
+                });
             }
 
             foreach ($variants as $index => $variant) {
@@ -163,7 +167,7 @@ class ProductInventoryService
                     continue;
                 }
 
-                $this->createVariantChild($product, $variant, (int) $product->business_id, $index);
+                $this->upsertVariantChild($product, $variant, (int) $product->business_id, $index);
             }
 
             AuditLogger::record('product_updated', $product, $old, $product->fresh(['variants'])->toArray());
@@ -181,6 +185,29 @@ class ProductInventoryService
         $this->updateVariableParent($parent, $parent->only([
             'name', 'brand_id', 'description', 'measurement_unit', 'critical_threshold', 'is_active',
         ]), $variants);
+    }
+
+    protected function upsertVariantChild(Product $parent, array $variant, int $businessId, int $index): Product
+    {
+        $combinationKey = self::variantCombinationKey($variant['attribute_values'] ?? []);
+        if ($combinationKey !== '') {
+            $trashed = Product::onlyTrashed()
+                ->where('parent_id', $parent->id)
+                ->where('business_id', $businessId)
+                ->get()
+                ->first(function (Product $child) use ($combinationKey) {
+                    return self::variantCombinationKey($child->attribute_values ?? []) === $combinationKey;
+                });
+
+            if ($trashed) {
+                $trashed->restore();
+                $trashed->update($this->variantPayload($parent, $variant, $index, (int) $trashed->id));
+
+                return $trashed->fresh();
+            }
+        }
+
+        return $this->createVariantChild($parent, $variant, $businessId, $index);
     }
 
     protected function createVariantChild(Product $parent, array $variant, int $businessId, int $index): Product
