@@ -3,15 +3,20 @@
 @section('title', 'Sales Reports')
 
 @section('content')
-<x-page-header title="Sales Reports" subtitle="{{ $label }}">
+@php
+    $branchQuery = $branchQuery ?? [];
+@endphp
+<x-page-header title="Sales Reports" subtitle="{{ $label }}{{ !empty($branchName) ? ' · ' . $branchName : '' }}">
     <x-slot name="actions">
-        <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.reports.sales.print', ['period' => $period]) }}" target="_blank">
+        <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.reports.sales.print', array_merge(['period' => $period], $branchQuery)) }}" target="_blank">
             Print summary
         </x-button>
     </x-slot>
 </x-page-header>
 
-<x-report-period-tabs :period="$period" route-name="tenant.reports.sales.index" />
+@include('reports.partials.sales-branch-filter')
+
+<x-report-period-tabs :period="$period" route-name="tenant.reports.sales.index" :extra-params="$branchQuery" />
 
 <div id="sales-report-printable">
     <div class="grid gap-4 grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
@@ -51,7 +56,7 @@
                             <td class="px-4 sm:px-6 py-4 text-right text-sm text-gray-600">{{ number_format($row->count) }}</td>
                             <td class="px-4 sm:px-6 py-4 text-right text-sm font-semibold text-emerald-700">@money($row->total)</td>
                             <td class="px-4 sm:px-6 py-4 text-right">
-                                <a href="{{ tenant_route('tenant.reports.sales.show', ['date' => $saleDate, 'period' => $period]) }}"
+                                <a href="{{ tenant_route('tenant.reports.sales.show', array_merge(['date' => $saleDate, 'period' => $period], $branchQuery)) }}"
                                    class="inline-flex items-center rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100">
                                     View report
                                 </a>

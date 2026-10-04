@@ -393,7 +393,7 @@
                         class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50">
                     + Add variant
                 </button>
-                <p id="variant-row-hint" class="text-xs text-gray-500">Adds the next size/color row, or tick several options above for many rows at once. Rows with both price and stock blank are skipped on save (0 is allowed).</p>
+                <p id="variant-row-hint" class="text-xs text-gray-500">Adds the next size/color row, or tick several options above for many rows at once. Unfilled rows and rows with only default 0 stock are skipped on save.</p>
             </div>
             @php
                 $variantErrorMessages = [];
@@ -1205,13 +1205,38 @@ document.addEventListener('alpine:init', function () {
         var messages = [];
         var kept = 0;
 
+        function variantFieldFilled(val) {
+            return val != null && String(val).trim() !== '';
+        }
+
+        function variantIsZero(val) {
+            if (!variantFieldFilled(val)) {
+                return false;
+            }
+            return parseFloat(val) === 0;
+        }
+
+        function shouldSkipNewVariantRow(priceVal, stockVal) {
+            var priceFilled = variantFieldFilled(priceVal);
+            var stockFilled = variantFieldFilled(stockVal);
+            if (!priceFilled && (!stockFilled || variantIsZero(stockVal))) {
+                return true;
+            }
+            if (priceFilled && stockFilled) {
+                return false;
+            }
+            return true;
+        }
+
         tbody.querySelectorAll('tr').forEach(function (tr) {
             var priceInput = tr.querySelector('input[name*="[price]"]');
             var stockInput = tr.querySelector('input[name*="[stock_quantity]"]');
             var idInput = tr.querySelector('input[name*="[id]"]');
             var hasId = idInput && String(idInput.value).trim() !== '';
-            var priceFilled = priceInput && String(priceInput.value).trim() !== '';
-            var stockFilled = stockInput && String(stockInput.value).trim() !== '';
+            var priceVal = priceInput ? priceInput.value : '';
+            var stockVal = stockInput ? stockInput.value : '';
+            var priceFilled = variantFieldFilled(priceVal);
+            var stockFilled = variantFieldFilled(stockVal);
             var label = variantRowLabelFromTr(tr);
 
             if (hasId) {
@@ -1227,17 +1252,12 @@ document.addEventListener('alpine:init', function () {
                 return;
             }
 
-            if (!priceFilled && !stockFilled) {
+            if (shouldSkipNewVariantRow(priceVal, stockVal)) {
                 setVariantRowSubmitExcluded(tr, true);
                 return;
             }
 
-            if (priceFilled && stockFilled) {
-                kept++;
-                return;
-            }
-
-            messages.push('Enter both price and stock for ' + label + ', or leave both blank to skip.');
+            kept++;
         });
 
         if (messages.length) {

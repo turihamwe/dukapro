@@ -40,21 +40,12 @@ class InventoryVariantSubmission
                 continue;
             }
 
-            if (! $priceFilled && ! $stockFilled) {
+            if (self::shouldSkipNewVariantRow($variant['price'] ?? null, $variant['stock_quantity'] ?? null)) {
                 continue;
             }
 
             if ($priceFilled && $stockFilled) {
                 $kept[] = self::normalizeCompleteRow($variant);
-
-                continue;
-            }
-
-            if (! $priceFilled) {
-                $errors["variants.{$index}.price"] = "Enter a price for {$label}, or leave both price and stock blank to skip this variant.";
-            }
-            if (! $stockFilled) {
-                $errors["variants.{$index}.stock_quantity"] = "Enter stock for {$label}, or leave both price and stock blank to skip this variant.";
             }
         }
 
@@ -94,6 +85,35 @@ class InventoryVariantSubmission
         }
 
         if (is_string($value) && trim($value) === '') {
+            return false;
+        }
+
+        return true;
+    }
+
+    protected static function isZero($value): bool
+    {
+        if (! self::fieldFilled($value)) {
+            return false;
+        }
+
+        return (float) $value === 0.0;
+    }
+
+    /**
+     * New matrix rows: skip when unset. Treat 0 like empty unless the row is otherwise complete.
+     * Partial rows (e.g. price only with default 0 stock) are skipped, not rejected.
+     */
+    protected static function shouldSkipNewVariantRow($price, $stock): bool
+    {
+        $priceFilled = self::fieldFilled($price);
+        $stockFilled = self::fieldFilled($stock);
+
+        if (! $priceFilled && (! $stockFilled || self::isZero($stock))) {
+            return true;
+        }
+
+        if ($priceFilled && $stockFilled) {
             return false;
         }
 
