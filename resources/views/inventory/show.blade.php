@@ -87,13 +87,16 @@
         <div class="mb-4 flex items-center justify-between">
             <h2 class="text-lg font-semibold text-gray-900">Variants &amp; batches</h2>
         </div>
-        <div class="space-y-4">
+        @include('inventory.partials.variant-filter-toolbar', ['variants' => $product->variants])
+        <div class="space-y-4" id="variant-catalog-list">
             @foreach($product->variants as $variant)
-                @include('inventory.partials.batch-panel', [
-                    'sellable' => $variant,
-                    'parentProduct' => $product,
-                    'canViewCost' => $canViewCost,
-                ])
+                <x-variant-catalog-item :variant="$variant">
+                    @include('inventory.partials.batch-panel', [
+                        'sellable' => $variant,
+                        'parentProduct' => $product,
+                        'canViewCost' => $canViewCost,
+                    ])
+                </x-variant-catalog-item>
             @endforeach
         </div>
     @else
@@ -159,20 +162,31 @@
         @endif
     @endcan
 @elseif($isVariable)
+    @include('inventory.partials.variant-filter-toolbar', ['variants' => $product->variants])
     <x-card>
         <h2 class="mb-4 text-lg font-semibold text-gray-900">Variants</h2>
-        <div class="divide-y divide-gray-100">
+        <div class="divide-y divide-gray-100" id="variant-catalog-list">
             @foreach($product->variants as $variant)
-                <div class="flex flex-wrap items-center justify-between gap-3 py-3">
+                <x-variant-catalog-item :variant="$variant" class="flex flex-wrap items-center justify-between gap-3 py-3">
                     <div>
                         <p class="text-sm font-medium text-gray-900">{{ $variant->displayName() }}</p>
                         <p class="text-xs text-gray-500">{{ $variant->sku ?? 'No SKU' }}</p>
+                        @if($variant->formattedAttributes())
+                            <div class="mt-1.5 flex flex-wrap gap-1">
+                                @foreach($variant->attribute_values ?? [] as $attrName => $attrValue)
+                                    <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-600">
+                                        {{ $attrName }}: {{ $attrValue }}
+                                    </span>
+                                @endforeach
+                            </div>
+                        @endif
                     </div>
                     <div class="text-right">
                         <p class="text-xs text-gray-500">Available</p>
                         <p class="text-sm font-semibold text-indigo-700">{{ format_unit_quantity($variant->totalStockQuantity(), $variant->measurement_unit, $variant->business_id) }}</p>
+                        <p class="mt-0.5 text-xs font-medium text-gray-700">@money($variant->price)</p>
                     </div>
-                </div>
+                </x-variant-catalog-item>
             @endforeach
         </div>
     </x-card>
