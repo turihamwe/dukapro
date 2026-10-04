@@ -6,15 +6,21 @@ use App\Http\Controllers\Controller;
 use App\Models\AffiliateCommission;
 use App\Models\AffiliateWithdrawalRequest;
 use App\Services\AffiliateAttributionService;
+use App\Services\AffiliateReferredBusinessActivityService;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
     protected AffiliateAttributionService $attributionService;
 
-    public function __construct(AffiliateAttributionService $attributionService)
-    {
+    protected AffiliateReferredBusinessActivityService $referredActivityService;
+
+    public function __construct(
+        AffiliateAttributionService $attributionService,
+        AffiliateReferredBusinessActivityService $referredActivityService
+    ) {
         $this->attributionService = $attributionService;
+        $this->referredActivityService = $referredActivityService;
     }
 
     public function index(Request $request)
@@ -50,7 +56,18 @@ class DashboardController extends Controller
         $referredBusinesses = $referredQuery
             ->with('referringAffiliate:id,name,code')
             ->orderByDesc('created_at')
-            ->get(['id', 'name', 'phone', 'email', 'created_at', 'subscription_status', 'referring_affiliate_id']);
+            ->get([
+                'id',
+                'name',
+                'phone',
+                'email',
+                'created_at',
+                'subscription_status',
+                'trial_ends_at',
+                'referring_affiliate_id',
+            ]);
+
+        $catalogActivity = $this->referredActivityService->leaderboard($referredBusinesses);
 
         $referralAttribution = $affiliate->isSubAffiliate()
             ? null
@@ -86,6 +103,7 @@ class DashboardController extends Controller
             'withdrawals' => $withdrawals,
             'teamMembers' => $affiliate->isSubAffiliate() ? collect() : $affiliate->teamMembers,
             'stats' => $stats,
+            'catalogActivity' => $catalogActivity,
         ]);
     }
 }

@@ -122,30 +122,6 @@
             </div>
         @endif
     </div>
-
-    @if(! $affiliate->isSubAffiliate() && ($teamMembers ?? collect())->isNotEmpty())
-        <div class="mb-8 overflow-hidden rounded-xl border border-gray-200 bg-white">
-            <div class="border-b border-gray-200 px-6 py-4">
-                <h2 class="font-semibold text-gray-900">Your team</h2>
-            </div>
-            <div class="divide-y divide-gray-100">
-                @foreach($teamMembers as $member)
-                    <div class="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
-                        <div>
-                            <p class="font-medium text-gray-900">{{ $member->name }}</p>
-                            <p class="text-xs text-gray-500">{{ $member->code }} · {{ $member->attributed_businesses_count ?? 0 }} shops · Wallet UGX {{ number_format($member->wallet_balance, 0) }}</p>
-                        </div>
-                        <form method="POST" action="{{ route('affiliate.team.payout') }}" class="flex flex-wrap items-end gap-2">
-                            @csrf
-                            <input type="hidden" name="sub_affiliate_id" value="{{ $member->id }}">
-                            <input type="number" min="1" name="amount" placeholder="Payout UGX" required class="w-32 rounded-lg border-gray-300 text-sm">
-                            <button type="submit" class="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-500">Pay sub-affiliate</button>
-                        </form>
-                    </div>
-                @endforeach
-            </div>
-        </div>
-    @endif
 @endif
 
 <div class="mb-8 overflow-hidden rounded-xl border border-gray-200 bg-white">
@@ -234,6 +210,121 @@
         </table>
     </div>
 </div>
+
+@php
+    $activityWindow = $catalogActivity['window_days'] ?? 30;
+    $featuredShop = $catalogActivity['featured'] ?? null;
+    $activeLeaders = $catalogActivity['leaders'] ?? collect();
+@endphp
+@if($activeLeaders->isNotEmpty())
+    <div class="mb-8 overflow-hidden rounded-xl border border-sky-200 bg-gradient-to-br from-sky-50 via-white to-emerald-50/40">
+        <div class="border-b border-sky-100/80 px-6 py-4">
+            <h2 class="font-semibold text-gray-900">Most active shops to support</h2>
+            <p class="mt-1 text-xs text-gray-600">
+                Referred businesses adding catalog items in the last {{ $activityWindow }} days — reach out before trial ends to help them subscribe.
+            </p>
+        </div>
+        @if($featuredShop)
+            @php
+                $featuredBusiness = $featuredShop['business'];
+                $trialDays = $featuredBusiness->trialDaysRemaining();
+            @endphp
+            <div class="border-b border-sky-100/80 px-6 py-5">
+                <p class="text-[11px] font-semibold uppercase tracking-wide text-sky-800">Top activity</p>
+                <div class="mt-3 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div class="min-w-0">
+                        <p class="text-lg font-bold text-gray-900">{{ $featuredBusiness->name }}</p>
+                        <p class="mt-1 text-sm text-gray-600">
+                            <span class="font-semibold text-emerald-700">{{ number_format($featuredShop['products_added']) }}</span>
+                            new {{ \Illuminate\Support\Str::plural('product', $featuredShop['products_added']) }} in {{ $activityWindow }} days
+                            @if($featuredShop['last_product_at'])
+                                · last added {{ $featuredShop['last_product_at']->diffForHumans() }}
+                            @endif
+                        </p>
+                        @if(! $affiliate->isSubAffiliate() && $featuredBusiness->referringAffiliate)
+                            <p class="mt-1 text-xs text-gray-500">Via {{ $featuredBusiness->referringAffiliate->name }} ({{ $featuredBusiness->referringAffiliate->code }})</p>
+                        @endif
+                        <p class="mt-2 text-xs capitalize text-gray-500">
+                            Subscription: <span class="font-medium text-gray-800">{{ $featuredBusiness->subscription_status }}</span>
+                            @if($featuredBusiness->subscription_status === \App\Enums\SubscriptionStatus::TRIAL && $trialDays !== null)
+                                · <span class="{{ $trialDays <= 7 ? 'font-semibold text-amber-700' : 'text-gray-600' }}">{{ $trialDays }} {{ \Illuminate\Support\Str::plural('day', $trialDays) }} left on trial</span>
+                            @endif
+                        </p>
+                    </div>
+                    <div class="flex shrink-0 flex-wrap gap-2">
+                        @if($featuredBusiness->phone)
+                            <a href="tel:{{ $featuredBusiness->phone }}"
+                               class="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500">
+                                Call {{ $featuredBusiness->phone }}
+                            </a>
+                        @endif
+                        @if($featuredBusiness->email)
+                            <a href="mailto:{{ $featuredBusiness->email }}"
+                               class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50">
+                                Email
+                            </a>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        @endif
+        @if($activeLeaders->count() > 1)
+            <div class="px-6 py-4">
+                <p class="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">Also building their catalog</p>
+                <ul class="divide-y divide-gray-100 rounded-lg border border-gray-100 bg-white/80">
+                    @foreach($activeLeaders->skip(1) as $row)
+                        @php $shop = $row['business']; @endphp
+                        <li class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
+                            <div class="min-w-0">
+                                <p class="font-medium text-gray-900">{{ $shop->name }}</p>
+                                <p class="text-xs text-gray-500">
+                                    {{ number_format($row['products_added']) }} products ·
+                                    @if($row['last_product_at'])
+                                        last {{ $row['last_product_at']->diffForHumans() }}
+                                    @endif
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                @if($shop->phone)
+                                    <a href="tel:{{ $shop->phone }}" class="text-xs font-semibold text-violet-600 hover:text-violet-800">Call</a>
+                                @endif
+                                <span class="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium capitalize text-gray-600">{{ $shop->subscription_status }}</span>
+                            </div>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+    </div>
+@elseif(($stats['onboarded_count'] ?? 0) > 0)
+    <div class="mb-8 rounded-xl border border-dashed border-gray-200 bg-gray-50 px-6 py-4 text-sm text-gray-600">
+        No referred shops have added new products in the last {{ $activityWindow }} days yet. Nudge them to load inventory — active setup often leads to subscription at month end.
+    </div>
+@endif
+
+@if($affiliate->is_active && $affiliate->status === 'approved' && ! $affiliate->isSubAffiliate() && ($teamMembers ?? collect())->isNotEmpty())
+    <div class="mb-8 overflow-hidden rounded-xl border border-gray-200 bg-white">
+        <div class="border-b border-gray-200 px-6 py-4">
+            <h2 class="font-semibold text-gray-900">Your team</h2>
+        </div>
+        <div class="divide-y divide-gray-100">
+            @foreach($teamMembers as $member)
+                <div class="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
+                    <div>
+                        <p class="font-medium text-gray-900">{{ $member->name }}</p>
+                        <p class="text-xs text-gray-500">{{ $member->code }} · {{ $member->attributed_businesses_count ?? 0 }} shops · Wallet UGX {{ number_format($member->wallet_balance, 0) }}</p>
+                    </div>
+                    <form method="POST" action="{{ route('affiliate.team.payout') }}" class="flex flex-wrap items-end gap-2">
+                        @csrf
+                        <input type="hidden" name="sub_affiliate_id" value="{{ $member->id }}">
+                        <input type="number" min="1" name="amount" placeholder="Payout UGX" required class="w-32 rounded-lg border-gray-300 text-sm">
+                        <button type="submit" class="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-500">Pay sub-affiliate</button>
+                    </form>
+                </div>
+            @endforeach
+        </div>
+    </div>
+@endif
 
 <div class="overflow-hidden rounded-xl border border-gray-200 bg-white">
     <div class="border-b border-gray-200 px-6 py-4">
