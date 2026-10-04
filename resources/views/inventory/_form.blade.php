@@ -427,11 +427,11 @@
                     <thead class="bg-white">
                         <tr>
                             <th class="px-3 py-2 text-left font-medium text-gray-500">Variant</th>
+                            <th class="px-3 py-2 text-left font-medium text-gray-500">Stock</th>
                             <th class="px-3 py-2 text-left font-medium text-gray-500">Price</th>
                             @if($canViewCost)
                                 <th class="px-3 py-2 text-left font-medium text-gray-500">Cost</th>
                             @endif
-                            <th class="px-3 py-2 text-left font-medium text-gray-500">Stock</th>
                             @if($isEdit && $isVariable && auth()->user()->can('delete-inventory'))
                                 <th class="px-3 py-2 text-left font-medium text-gray-500 w-24"></th>
                             @endif
@@ -963,9 +963,9 @@ document.addEventListener('alpine:init', function () {
 
             tr.innerHTML =
                 '<td class="px-3 py-2 text-gray-900">' + esc(label) + attrsHtml + idHtml + '</td>' +
+                '<td class="px-3 py-2"><input type="number" step="0.001" min="0" name="variants[' + index + '][stock_quantity]" value="' + esc(rowState[key].stock_quantity) + '" class="w-full min-w-[72px] rounded-lg border-gray-300 text-sm variant-field" data-key="' + esc(key) + '" data-field="stock_quantity"></td>' +
                 '<td class="px-3 py-2"><input type="number" step="0.01" min="0" name="variants[' + index + '][price]" value="' + esc(rowState[key].price) + '" class="w-full min-w-[80px] rounded-lg border-gray-300 text-sm variant-field" data-key="' + esc(key) + '" data-field="price"></td>' +
                 (canViewCost ? '<td class="px-3 py-2"><input type="number" step="0.01" min="0" name="variants[' + index + '][cost_price]" value="' + esc(rowState[key].cost_price) + '" class="w-full min-w-[80px] rounded-lg border-gray-300 text-sm variant-field" data-key="' + esc(key) + '" data-field="cost_price"></td>' : '') +
-                '<td class="px-3 py-2"><input type="number" step="0.001" min="0" name="variants[' + index + '][stock_quantity]" value="' + esc(rowState[key].stock_quantity) + '" class="w-full min-w-[72px] rounded-lg border-gray-300 text-sm variant-field" data-key="' + esc(key) + '" data-field="stock_quantity"></td>' +
                 removeHtml;
 
             tbody.appendChild(tr);

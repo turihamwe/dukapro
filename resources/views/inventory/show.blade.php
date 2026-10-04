@@ -182,9 +182,10 @@
                         @endif
                     </div>
                     <div class="text-right">
-                        <p class="text-xs text-gray-500">Available</p>
+                        <p class="text-xs text-gray-500">Stock</p>
                         <p class="text-sm font-semibold text-indigo-700">{{ format_unit_quantity($variant->totalStockQuantity(), $variant->measurement_unit, $variant->business_id) }}</p>
-                        <p class="mt-0.5 text-xs font-medium text-gray-700">@money($variant->price)</p>
+                        <p class="mt-2 text-xs text-gray-500">Price</p>
+                        <p class="text-xs font-medium text-gray-900">@money($variant->price)</p>
                     </div>
                 </x-variant-catalog-item>
             @endforeach

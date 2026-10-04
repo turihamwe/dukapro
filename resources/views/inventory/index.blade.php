@@ -136,15 +136,15 @@
                             <a href="{{ tenant_route('tenant.inventory.show', ['product' => $product]) }}" class="text-xs font-medium text-gray-600 hover:text-gray-900">View</a>
                         </div>
                     @else
-                        @if($product->variants_count === 0)
-                            <p class="text-xs text-gray-500">Sell: <span class="font-semibold text-gray-900">@money($product->price)</span></p>
-                        @endif
                         @if($product->isService() && ($serviceCatalogEnabled ?? false))
                             <p class="text-xs font-medium text-violet-700">No stock tracking</p>
                         @elseif($product->isService())
                             <p class="text-xs text-gray-400">Service (mode off)</p>
                         @else
                             <p class="text-xs {{ $totalStock <= 5 ? 'text-red-600 font-medium' : 'text-gray-500' }}">Stock: {{ $totalStock }}</p>
+                        @endif
+                        @if($product->variants_count === 0)
+                            <p class="text-xs text-gray-500">Sell: <span class="font-semibold text-gray-900">@money($product->price)</span></p>
                         @endif
                         <div class="mt-1 flex flex-wrap justify-end gap-x-3 gap-y-1">
                             <a href="{{ tenant_route('tenant.inventory.show', ['product' => $product]) }}" class="text-xs font-medium text-emerald-600 hover:text-emerald-700">View</a>
@@ -191,8 +191,8 @@
                     @else
                         <x-sortable-th column="brand" class="px-6 py-3">Brand / SKU</x-sortable-th>
                         <x-sortable-th column="cost" align="center" class="px-6 py-3">Cost (UGX)</x-sortable-th>
-                        <x-sortable-th column="sell" align="center" class="px-6 py-3">Sell (UGX)</x-sortable-th>
                         <x-sortable-th column="stock" align="center" class="px-6 py-3">In Stock</x-sortable-th>
+                        <x-sortable-th column="sell" align="center" class="px-6 py-3">Sell (UGX)</x-sortable-th>
                         <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500"></th>
                     @endif
                 </tr>
@@ -268,18 +268,18 @@
                                     —
                                 @endcan
                             </td>
-                            <td class="px-6 py-4 text-center text-sm font-medium text-gray-900">
-                                @if($product->variants_count > 0)
-                                    —
-                                @else
-                                    @money($product->price)
-                                @endif
-                            </td>
                             <td class="px-6 py-4 text-center text-sm {{ $totalStock <= 5 ? 'font-medium text-red-600' : 'text-gray-500' }}">
                                 {{ $totalStock }}
                                 @if($hasBatches)
                                     <button type="button" onclick="document.getElementById('{{ $batchKey }}').classList.toggle('hidden')"
                                             class="mt-1 block w-full text-xs font-medium text-indigo-600 hover:text-indigo-700">Show batches</button>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 text-center text-sm font-medium text-gray-900">
+                                @if($product->variants_count > 0)
+                                    —
+                                @else
+                                    @money($product->price)
                                 @endif
                             </td>
                             <td class="px-6 py-4 text-right whitespace-nowrap">
