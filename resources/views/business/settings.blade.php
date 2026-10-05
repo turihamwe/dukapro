@@ -152,4 +152,9 @@
         <x-button type="submit" variant="primary">Save business profile</x-button>
     </form>
 </x-card>
+
+@include('business._trial-data-cleanup', [
+    'business' => $business,
+    'trialDataSummary' => $trialDataSummary ?? null,
+])
 @endsection

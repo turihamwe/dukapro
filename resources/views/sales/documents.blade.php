@@ -7,6 +7,17 @@
 
 <x-page-header title="Invoices & Receipts" subtitle="Search, audit, and reprint sales documents" />
 
+@can('manage-settings')
+    @if(auth()->user()->business && auth()->user()->business->canDeleteTrialData())
+        <x-alert type="info" class="mb-4">
+            <strong>Before you activate:</strong> use <strong>Delete</strong> in the Action column to remove a test sale.
+            To remove all trial sales, customers, and expenses at once, open
+            <a href="{{ tenant_route('tenant.business.edit') }}#trial-data" class="font-semibold underline">Settings → Trial data cleanup</a>
+            at the bottom of the business profile (owner only).
+        </x-alert>
+    @endif
+@endcan
+
 <x-card :padding="false">
     <form method="GET" action="{{ tenant_route('tenant.sales.documents') }}" class="border-b border-gray-100 p-4 sm:p-6">
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -88,6 +99,16 @@
                                    class="font-medium text-indigo-600 hover:text-indigo-700">
                                     {{ $isInvoice ? 'View invoice' : 'View receipt' }} →
                                 </a>
+                            @endcan
+                            @can('delete', $sale)
+                                <form method="POST"
+                                      action="{{ tenant_route('tenant.sales.destroy', ['sale' => $sale]) }}"
+                                      class="mt-1 inline sm:mt-0 sm:ml-3"
+                                      onsubmit="return confirm('Remove sale {{ $sale->sale_number }}? Stock will not change automatically.');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="font-medium text-red-600 hover:text-red-800">Delete</button>
+                                </form>
                             @endcan
                         </td>
                     </tr>

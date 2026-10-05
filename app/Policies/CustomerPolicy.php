@@ -34,6 +34,12 @@ class CustomerPolicy
 
     public function delete(User $user, Customer $customer): bool
     {
-        return $this->update($user, $customer);
+        if (! $this->update($user, $customer)) {
+            return false;
+        }
+
+        $business = $user->business;
+
+        return $business && $business->canDeleteTrialData();
     }
 }

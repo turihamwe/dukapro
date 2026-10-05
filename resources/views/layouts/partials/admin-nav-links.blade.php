@@ -27,7 +27,7 @@
     </a>
 @endcan
 @if(auth()->user()->can('view-sales-reports') || auth()->user()->can('view-all-reconciliations') || auth()->user()->can('view-expenses') || auth()->user()->can('view-reconciliation-shortages'))
-    @php $reportsOpen = request()->routeIs('tenant.reports.*') || request()->routeIs('tenant.reconciliation.*') || request()->routeIs('tenant.reconciliation-shortages.*') || request()->routeIs('tenant.expenses.index'); @endphp
+    @php $reportsOpen = request()->routeIs('tenant.reports.*') || request()->routeIs('tenant.sales.documents') || request()->routeIs('tenant.reconciliation.*') || request()->routeIs('tenant.reconciliation-shortages.*') || request()->routeIs('tenant.expenses.index'); @endphp
     <div class="reports-nav">
         <button type="button"
                 data-reports-toggle
@@ -40,6 +40,10 @@
             @can('view-sales-reports')
                 <a href="{{ tenant_route('tenant.reports.sales.index') }}"
                    class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('tenant.reports.sales.*') ? 'font-medium text-indigo-700 bg-indigo-50' : 'text-gray-600 hover:bg-gray-100' }}">Sales reports</a>
+            @endcan
+            @can('view-sales-documents')
+                <a href="{{ tenant_route('tenant.sales.documents') }}"
+                   class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('tenant.sales.documents') ? 'font-medium text-indigo-700 bg-indigo-50' : 'text-gray-600 hover:bg-gray-100' }}">Invoices &amp; receipts</a>
             @endcan
             @can('view-all-reconciliations')
                 <a href="{{ tenant_route('tenant.reconciliation.index') }}"

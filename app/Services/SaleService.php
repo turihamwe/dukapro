@@ -430,7 +430,10 @@ class SaleService
         ];
     }
 
-    protected function normalizeCheckoutIdempotencyKey(mixed $key): ?string
+    /**
+     * @param  mixed  $key
+     */
+    protected function normalizeCheckoutIdempotencyKey($key): ?string
     {
         if ($key === null || $key === '') {
             return null;

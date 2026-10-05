@@ -28,6 +28,7 @@ use App\Http\Controllers\ProductAttributeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SalesReportController;
 use App\Http\Controllers\SalesDocumentController;
+use App\Http\Controllers\TrialDataController;
 use App\Http\Controllers\SoldByUnitController;
 use App\Http\Controllers\SuperAdmin\AffiliateController as SuperAdminAffiliateController;
 use App\Http\Controllers\SuperAdmin\PlatformOverviewController;
@@ -211,6 +212,7 @@ Route::middleware(['maintenance'])->group(function () {
                     Route::middleware(['can:manage-settings'])->group(function () {
                         Route::get('/business', [BusinessSettingsController::class, 'edit'])->name('business.edit');
                         Route::put('/business', [BusinessSettingsController::class, 'update'])->name('business.update');
+                        Route::post('/business/trial-data/purge', [TrialDataController::class, 'purge'])->name('business.trial-data.purge');
                         Route::post('/business/efris/connect', [BusinessEfrisController::class, 'connect'])->name('business.efris.connect');
                         Route::post('/onboarding/sole-proprietor', [OnboardingController::class, 'soleProprietor'])->name('onboarding.sole-proprietor');
                     });
@@ -374,6 +376,9 @@ Route::middleware(['maintenance'])->group(function () {
                 Route::get('/sales/documents', [SalesDocumentController::class, 'index'])
                     ->middleware('can:view-sales-documents')
                     ->name('sales.documents');
+                Route::delete('/sales/{sale}', [TrialDataController::class, 'destroySale'])
+                    ->middleware('can:manage-settings')
+                    ->name('sales.destroy');
                 Route::get('/sales/{sale}/receipt', [SalesDocumentController::class, 'showReceipt'])->name('sales.receipt');
                 Route::get('/sales/{sale}/invoice', [SalesDocumentController::class, 'showInvoice'])->name('sales.invoice');
 

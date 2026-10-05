@@ -40,7 +40,12 @@ class ExpensePolicy
 
     public function delete(User $user, Expense $expense): bool
     {
-        return $user->isOwner()
-            && (int) $user->business_id === (int) $expense->business_id;
+        if (! $user->isOwner() || (int) $user->business_id !== (int) $expense->business_id) {
+            return false;
+        }
+
+        $business = $user->business;
+
+        return $business && $business->canDeleteTrialData();
     }
 }

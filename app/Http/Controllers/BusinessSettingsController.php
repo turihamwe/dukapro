@@ -14,6 +14,7 @@ use App\Support\EfrisCompliance;
 use App\Support\DivisibleProductsMode;
 use App\Support\VariablePricingMode;
 use App\Support\WeafPlatformCredentials;
+use App\Services\TrialDataDeletionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -35,7 +36,20 @@ class BusinessSettingsController extends Controller
         $permissionMatrix = app(BusinessPermissionService::class)->matrixForBusiness($business);
         $activeStaffRoles = app(BusinessPermissionService::class)->activeStaffRoles($business);
 
-        return view('business.settings', compact('business', 'capabilities', 'floor', 'branches', 'permissionMatrix', 'activeStaffRoles', 'efrisSetting'));
+        $trialDataSummary = $business->canDeleteTrialData()
+            ? app(TrialDataDeletionService::class)->summary($business)
+            : null;
+
+        return view('business.settings', compact(
+            'business',
+            'capabilities',
+            'floor',
+            'branches',
+            'permissionMatrix',
+            'activeStaffRoles',
+            'efrisSetting',
+            'trialDataSummary'
+        ));
     }
 
     public function update(Request $request)

@@ -449,4 +449,25 @@ class Business extends Model
     {
         return app(\App\Services\BusinessEngagementService::class)->trialDaysRemaining($this);
     }
+
+    public function hasCompletedSubscriptionActivation(): bool
+    {
+        return $this->subscriptionPayments()
+            ->where('status', 'completed')
+            ->exists();
+    }
+
+    /**
+     * Owners may remove test sales while the business is on trial, or before any
+     * successful subscription payment. A past simulate/test payment alone must not
+     * block cleanup after the account is put back on trial.
+     */
+    public function canDeleteTrialData(): bool
+    {
+        if ($this->subscription_status === SubscriptionStatus::TRIAL) {
+            return true;
+        }
+
+        return ! $this->hasCompletedSubscriptionActivation();
+    }
 }

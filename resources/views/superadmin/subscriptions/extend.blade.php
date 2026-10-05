@@ -116,8 +116,8 @@
                                                class="w-20 rounded-lg border border-gray-300 px-2 py-1.5 text-sm">
                                         <span class="text-xs text-gray-500">days</span>
                                         <select name="mode" class="rounded-lg border border-gray-300 px-2 py-1.5 text-sm">
-                                            <option value="active">Paid (active)</option>
                                             <option value="trial" @selected($business->subscription_status === 'trial')>Trial</option>
+                                            <option value="active" @selected($business->subscription_status === 'active')>Paid (active)</option>
                                         </select>
                                     </div>
                                     <input type="text" name="note" maxlength="500" placeholder="Optional note for audit log"

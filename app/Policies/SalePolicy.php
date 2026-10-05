@@ -46,4 +46,15 @@ class SalePolicy
     {
         return in_array($user->role, ['owner', 'manager', 'supervisor', 'cashier'], true);
     }
+
+    public function delete(User $user, Sale $sale): bool
+    {
+        if (! $user->isOwner() || (int) $user->business_id !== (int) $sale->business_id) {
+            return false;
+        }
+
+        $business = $user->business;
+
+        return $business && $business->canDeleteTrialData();
+    }
 }

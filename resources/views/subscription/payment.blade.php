@@ -30,6 +30,15 @@
         @endif
 
         @can('manage-billing')
+        @if($business->canDeleteTrialData())
+            <x-alert type="info" class="mb-6">
+                Before you pay: remove any test sales from
+                <a href="{{ tenant_route('tenant.business.edit') }}#trial-data" class="font-semibold underline">Business profile → Trial data cleanup</a>
+                or
+                <a href="{{ tenant_route('tenant.sales.documents') }}" class="font-semibold underline">Invoices &amp; receipts</a>.
+                After activation, completed sales cannot be deleted.
+            </x-alert>
+        @endif
         <form method="POST" action="{{ route('subscription.initiate') }}" class="space-y-5">
             @csrf
 
