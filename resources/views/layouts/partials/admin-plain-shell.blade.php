@@ -41,6 +41,7 @@
             @include('layouts.partials.admin-nav-links', ['navLink' => $navLink, 'navActive' => $navActive, 'navIdle' => $navIdle, 'mobile' => true])
         </nav>
         <div class="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white p-4">
+            @include('layouts.partials.cashier-mode-switch', ['variant' => 'drawer'])
             @include('layouts.partials.pwa-install', [
                 'buttonClass' => 'mb-2 flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800',
             ])
@@ -68,16 +69,7 @@
                     <span class="capitalize">{{ auth()->user()->role }}</span>
                 </div>
                 <div class="flex items-center gap-2">
-                    @can('switch-cashier-mode')
-                        @if(!\App\Support\CashierMode::isActive() && !show_subscription_expired_overlay())
-                            <form method="POST" action="{{ tenant_route('tenant.cashier-mode.enable') }}">
-                                @csrf
-                                <button type="submit" class="hidden rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 sm:inline-flex">
-                                    Switch to Cashier Mode
-                                </button>
-                            </form>
-                        @endif
-                    @endcan
+                    @include('layouts.partials.cashier-mode-switch', ['variant' => 'header'])
                     <a href="{{ route('logout.get') }}" class="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 lg:hidden">Logout</a>
                 </div>
             </div>
@@ -124,6 +116,9 @@
     backdrop?.addEventListener('click', closeNav);
     drawer?.querySelectorAll('a').forEach(function (link) {
         link.addEventListener('click', closeNav);
+    });
+    drawer?.querySelectorAll('form[action*="cashier-mode"]').forEach(function (form) {
+        form.addEventListener('submit', closeNav);
     });
 })();
 </script>
