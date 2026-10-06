@@ -182,4 +182,81 @@ class SupplierCreditService
             return $payment->fresh(['purchase']);
         });
     }
+
+    /**
+     * Soft-delete a bill and its payments. Does not change inventory.
+     */
+    public function softDeleteBill(SupplierCreditPurchase $purchase, User $user): void
+    {
+        if ((int) $purchase->business_id !== (int) $user->business_id) {
+            abort(404);
+        }
+
+        DB::transaction(function () use ($purchase, $user) {
+            $old = $purchase->toArray();
+            $purchase->loadMissing('payments');
+
+            foreach ($purchase->payments as $payment) {
+                $payment->delete();
+            }
+
+            $purchase->delete();
+
+            AuditLogger::record('supplier_credit_purchase_deleted', $purchase, $old, null, (int) $user->business_id, (int) $user->id);
+        });
+    }
+
+    /**
+     * Soft-delete a payment and recalculate the linked bill balance from remaining payments.
+     */
+    public function softDeletePayment(SupplierCreditPayment $payment, User $user): void
+    {
+        if ((int) $payment->business_id !== (int) $user->business_id) {
+            abort(404);
+        }
+
+        DB::transaction(function () use ($payment, $user) {
+            $old = $payment->toArray();
+            $purchase = $payment->purchase;
+
+            $payment->delete();
+
+            if ($purchase && ! $purchase->trashed()) {
+                $this->syncPurchasePaidAmountFromPayments($purchase);
+            }
+
+            AuditLogger::record('supplier_credit_payment_deleted', $payment, $old, null, (int) $user->business_id, (int) $user->id);
+        });
+    }
+
+    /**
+     * Soft-delete vendor and hide linked bills/payments. Does not change inventory.
+     */
+    public function softDeleteVendor(Supplier $supplier, User $user): void
+    {
+        if ((int) $supplier->business_id !== (int) $user->business_id) {
+            abort(404);
+        }
+
+        DB::transaction(function () use ($supplier, $user) {
+            $old = $supplier->toArray();
+
+            $supplier->creditPurchases()
+                ->orderBy('id')
+                ->each(function (SupplierCreditPurchase $purchase) use ($user) {
+                    $this->softDeleteBill($purchase, $user);
+                });
+
+            $supplier->delete();
+
+            AuditLogger::record('supplier_deleted', $supplier, $old, null, (int) $user->business_id, (int) $user->id);
+        });
+    }
+
+    public function syncPurchasePaidAmountFromPayments(SupplierCreditPurchase $purchase): void
+    {
+        $paid = (float) $purchase->payments()->sum('amount');
+        $purchase->amount_paid = round($paid, 2);
+        $purchase->refreshPaymentStatus();
+    }
 }

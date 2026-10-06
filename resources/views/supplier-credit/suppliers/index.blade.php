@@ -42,7 +42,14 @@
                         <p class="text-xs text-gray-500">Open balance</p>
                         <p class="text-sm font-semibold text-amber-800">@money($supplier->open_balance)</p>
                     </div>
-                    <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.supplier-credit.vendors.edit', ['supplier' => $supplier]) }}">Edit</x-button>
+                    <div class="flex flex-wrap items-center justify-end gap-2">
+                        <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.supplier-credit.vendors.edit', ['supplier' => $supplier]) }}">Edit</x-button>
+                        @include('supplier-credit.partials.delete-button', [
+                            'action' => tenant_route('tenant.supplier-credit.vendors.destroy', ['supplier' => $supplier]),
+                            'confirm' => 'Are you sure you want to delete this vendor? Linked bills and payments will be hidden. Stock already received will not change.',
+                            'label' => 'Delete',
+                        ])
+                    </div>
                 </div>
             </div>
         </x-card>

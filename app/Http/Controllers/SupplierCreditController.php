@@ -212,6 +212,32 @@ class SupplierCreditController extends Controller
             ->with('success', 'Payment recorded.');
     }
 
+    public function destroyBill(Business $business, SupplierCreditPurchase $purchase, SupplierCreditService $service, Request $request)
+    {
+        if ((int) $purchase->business_id !== (int) $business->id) {
+            abort(404);
+        }
+
+        $service->softDeleteBill($purchase, $request->user());
+
+        return redirect()
+            ->to(tenant_route('tenant.supplier-credit.bills.index'))
+            ->with('success', 'Bill removed from active records. Stock levels were not changed.');
+    }
+
+    public function destroyPayment(Business $business, SupplierCreditPayment $payment, SupplierCreditService $service, Request $request)
+    {
+        if ((int) $payment->business_id !== (int) $business->id) {
+            abort(404);
+        }
+
+        $service->softDeletePayment($payment, $request->user());
+
+        return redirect()
+            ->to(tenant_route('tenant.supplier-credit.payments.index'))
+            ->with('success', 'Payment removed. The linked bill balance was updated.');
+    }
+
     /**
      * @param  int|string|null  $supplierId
      */

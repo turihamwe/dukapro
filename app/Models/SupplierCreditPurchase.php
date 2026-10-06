@@ -6,10 +6,11 @@ use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SupplierCreditPurchase extends Model
 {
-    use BelongsToTenant;
+    use BelongsToTenant, SoftDeletes;
 
     public const STATUS_OPEN = 'open';
 

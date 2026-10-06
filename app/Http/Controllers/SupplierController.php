@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Business;
 use App\Models\Supplier;
+use App\Services\SupplierCreditService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -108,24 +109,16 @@ class SupplierController extends Controller
             ->with('success', 'Vendor updated.');
     }
 
-    public function destroy(Business $business, Supplier $supplier)
+    public function destroy(Business $business, Supplier $supplier, SupplierCreditService $service, Request $request)
     {
         if ((int) $supplier->business_id !== (int) $business->id) {
             abort(404);
         }
 
-        if ($supplier->creditPurchases()->exists()) {
-            $supplier->update(['is_active' => false]);
-
-            return redirect()
-                ->to(tenant_route('tenant.supplier-credit.vendors.index'))
-                ->with('success', 'Vendor deactivated. Bill history is kept; you can reactivate under Edit.');
-        }
-
-        $supplier->delete();
+        $service->softDeleteVendor($supplier, $request->user());
 
         return redirect()
             ->to(tenant_route('tenant.supplier-credit.vendors.index'))
-            ->with('success', 'Vendor removed.');
+            ->with('success', 'Vendor and linked bills/payments removed from active records. Stock levels were not changed.');
     }
 }

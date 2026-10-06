@@ -27,12 +27,19 @@
                         </p>
                     @endif
                 </div>
-                <div class="text-right">
+                <div class="flex flex-col items-end gap-2 text-right">
                     <p class="text-lg font-bold text-emerald-700">@money($payment->amount)</p>
-                    @if($payment->purchase)
-                        <a href="{{ tenant_route('tenant.supplier-credit.bills.show', ['purchase' => $payment->purchase]) }}"
-                           class="mt-1 inline-block text-xs font-medium text-indigo-600 hover:text-indigo-800">View bill</a>
-                    @endif
+                    <div class="flex flex-wrap items-center justify-end gap-2">
+                        @if($payment->purchase)
+                            <a href="{{ tenant_route('tenant.supplier-credit.bills.show', ['purchase' => $payment->purchase]) }}"
+                               class="text-xs font-medium text-indigo-600 hover:text-indigo-800">View</a>
+                        @endif
+                        @include('supplier-credit.partials.delete-button', [
+                            'action' => tenant_route('tenant.supplier-credit.payments.destroy', ['payment' => $payment]),
+                            'confirm' => 'Are you sure you want to delete this payment? The bill balance will be recalculated.',
+                            'label' => 'Delete',
+                        ])
+                    </div>
                 </div>
             </div>
         </x-card>

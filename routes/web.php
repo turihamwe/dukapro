@@ -405,7 +405,9 @@ Route::middleware(['maintenance'])->group(function () {
                     Route::get('/financials/balance-sheet', [SupplierFinancialStatementController::class, 'balanceSheet'])->name('financials.balance-sheet');
                     Route::get('/bills', [SupplierCreditController::class, 'bills'])->name('bills.index');
                     Route::get('/bills/{purchase}', [SupplierCreditController::class, 'showBill'])->name('bills.show');
+                    Route::delete('/bills/{purchase}', [SupplierCreditController::class, 'destroyBill'])->name('bills.destroy');
                     Route::get('/payments', [SupplierCreditController::class, 'payments'])->name('payments.index');
+                    Route::delete('/payments/{payment}', [SupplierCreditController::class, 'destroyPayment'])->name('payments.destroy');
                     Route::get('/receives/create', [SupplierCreditController::class, 'create'])->name('receives.create');
                     Route::get('/purchases/create', [SupplierCreditController::class, 'create'])->name('purchases.create');
                     Route::post('/purchases', [SupplierCreditController::class, 'store'])->name('purchases.store');

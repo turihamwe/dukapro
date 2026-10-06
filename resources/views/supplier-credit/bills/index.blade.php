@@ -65,7 +65,14 @@
                             Paid @money($purchase->amount_paid) · Total @money($purchase->total_amount)
                         </p>
                     </div>
-                    <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.supplier-credit.bills.show', ['purchase' => $purchase]) }}">View</x-button>
+                    <div class="flex flex-wrap items-center justify-end gap-2">
+                        <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.supplier-credit.bills.show', ['purchase' => $purchase]) }}">View</x-button>
+                        @include('supplier-credit.partials.delete-button', [
+                            'action' => tenant_route('tenant.supplier-credit.bills.destroy', ['purchase' => $purchase]),
+                            'confirm' => 'Are you sure you want to delete this bill? Stock already received will stay in inventory.',
+                            'label' => 'Delete',
+                        ])
+                    </div>
                 </div>
             </div>
         </x-card>
