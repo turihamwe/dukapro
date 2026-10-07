@@ -305,6 +305,8 @@ Route::middleware(['maintenance'])->group(function () {
                     Route::middleware(['can:top-up-inventory'])->group(function () {
                         Route::get('/top-up', [InventoryController::class, 'topUp'])->name('top-up');
                         Route::post('/top-up', [InventoryController::class, 'storeTopUp'])->name('top-up.store');
+                        Route::get('/branch-transfer/products', [InventoryController::class, 'branchTransferProducts'])->name('branch-transfer.products');
+                        Route::post('/branch-transfer', [InventoryController::class, 'storeBranchTransfer'])->name('branch-transfer.store');
                     });
                     Route::get('/{product}', [InventoryController::class, 'show'])->name('show');
                     Route::middleware(['can:update-inventory'])->group(function () {

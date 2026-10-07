@@ -17,6 +17,7 @@ use App\Support\BatchMode;
 use App\Support\InventoryVariantSubmission;
 use App\Scopes\BranchScope;
 use App\Services\BranchResolver;
+use App\Services\BranchStockTransferService;
 use App\Services\CatalogDiscoveryService;
 use App\Services\LowStockAlertService;
 use App\Services\ProductBatchService;
@@ -35,16 +36,20 @@ class InventoryController extends Controller
 
     protected LowStockAlertService $lowStockAlertService;
 
+    protected BranchStockTransferService $branchTransferService;
+
     public function __construct(
         ProductInventoryService $inventoryService,
         CatalogDiscoveryService $catalogDiscovery,
         ProductBatchService $batchService,
-        LowStockAlertService $lowStockAlertService
+        LowStockAlertService $lowStockAlertService,
+        BranchStockTransferService $branchTransferService
     ) {
         $this->inventoryService = $inventoryService;
         $this->catalogDiscovery = $catalogDiscovery;
         $this->batchService = $batchService;
         $this->lowStockAlertService = $lowStockAlertService;
+        $this->branchTransferService = $branchTransferService;
         $this->authorizeResource(Product::class, 'product');
     }
 
@@ -114,7 +119,26 @@ class InventoryController extends Controller
 
         $serviceCatalogEnabled = BusinessModeCompliance::serviceCatalogActive($business);
 
-        return view('inventory.index', compact('products', 'search', 'business', 'branches', 'branchId', 'stockFilter', 'serviceCatalogEnabled'));
+        $transferBranches = Branch::query()
+            ->where('business_id', $business->id)
+            ->where('is_active', true)
+            ->orderByDesc('is_default')
+            ->orderBy('name')
+            ->pluck('name', 'id');
+
+        $canBranchTransfer = $request->user()->can('top-up-inventory') && $transferBranches->count() >= 2;
+
+        return view('inventory.index', compact(
+            'products',
+            'search',
+            'business',
+            'branches',
+            'branchId',
+            'stockFilter',
+            'serviceCatalogEnabled',
+            'transferBranches',
+            'canBranchTransfer'
+        ));
     }
 
     public function show(Business $business, Product $product)
@@ -214,6 +238,118 @@ class InventoryController extends Controller
                 'product_id' => $data['product_id'],
             ])))
             ->with('success', 'Stock topped up for ' . $target->displayName() . '.');
+    }
+
+    public function branchTransferProducts(Request $request)
+    {
+        abort_unless($request->user()->can('top-up-inventory'), 403);
+
+        $business = $request->user()->business;
+        $fromBranchId = (int) $request->query('from_branch_id');
+        $userBranchId = $request->user()->branch_id ? (int) $request->user()->branch_id : null;
+
+        if ($userBranchId && $fromBranchId !== $userBranchId) {
+            abort(403);
+        }
+
+        $branchExists = Branch::query()
+            ->where('business_id', $business->id)
+            ->where('is_active', true)
+            ->whereKey($fromBranchId)
+            ->exists();
+
+        abort_unless($branchExists, 422);
+
+        $products = Product::query()
+            ->withoutGlobalScope(BranchScope::class)
+            ->catalog()
+            ->where('business_id', $business->id)
+            ->where('branch_id', $fromBranchId)
+            ->where('is_active', true)
+            ->where('is_service', false)
+            ->with(['variants' => fn ($q) => $q->where('is_active', true)->orderBy('id')])
+            ->orderBy('name')
+            ->get(['id', 'name', 'sku', 'stock_quantity', 'variant_attributes']);
+
+        $payload = $products->map(function (Product $product) {
+            if ($product->isVariableParent()) {
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'is_variable' => true,
+                    'variants' => $product->variants->map(function (Product $variant) {
+                        return [
+                            'id' => $variant->id,
+                            'label' => $variant->displayName(),
+                            'available' => $this->batchService->availableStock($variant),
+                        ];
+                    })->values(),
+                ];
+            }
+
+            return [
+                'id' => $product->id,
+                'name' => $product->displayName(),
+                'is_variable' => false,
+                'available' => $this->batchService->availableStock($product),
+                'variants' => [],
+            ];
+        })->values();
+
+        return response()->json($payload);
+    }
+
+    public function storeBranchTransfer(Request $request)
+    {
+        abort_unless($request->user()->can('top-up-inventory'), 403);
+
+        $business = $request->user()->business;
+        $data = $request->validate([
+            'from_branch_id' => [
+                'required',
+                'integer',
+                Rule::exists('branches', 'id')->where(fn ($q) => $q->where('business_id', $business->id)->where('is_active', true)),
+            ],
+            'to_branch_id' => [
+                'required',
+                'integer',
+                'different:from_branch_id',
+                Rule::exists('branches', 'id')->where(fn ($q) => $q->where('business_id', $business->id)->where('is_active', true)),
+            ],
+            'product_id' => 'required|integer|exists:products,id',
+            'variant_id' => 'nullable|integer',
+            'quantity' => 'required|numeric|min:0.001',
+        ]);
+
+        $catalogProduct = Product::query()
+            ->withoutGlobalScope(BranchScope::class)
+            ->where('business_id', $business->id)
+            ->whereNull('parent_id')
+            ->findOrFail($data['product_id']);
+
+        $source = $catalogProduct->isVariableParent() && ! empty($data['variant_id'])
+            ? $catalogProduct->variants()->whereKey($data['variant_id'])->firstOrFail()
+            : $catalogProduct;
+
+        $this->authorize('topUp', $source);
+
+        $transfer = $this->branchTransferService->transfer($request->user(), $data);
+
+        AuditLogger::record('branch_stock_transferred', $transfer->fromProduct, null, [
+            'transfer_id' => $transfer->id,
+            'from_branch_id' => $transfer->from_branch_id,
+            'to_branch_id' => $transfer->to_branch_id,
+            'from_product_id' => $transfer->from_product_id,
+            'to_product_id' => $transfer->to_product_id,
+            'quantity' => $transfer->quantity,
+        ]);
+
+        return redirect()
+            ->to(tenant_route('tenant.inventory.index'))
+            ->with('success', 'Transferred ' . format_unit_quantity($transfer->quantity, $transfer->fromProduct->measurement_unit ?? 'piece', $business->id)
+                . ' of ' . $transfer->fromProduct->displayName()
+                . ' from ' . $transfer->fromBranch->name
+                . ' to ' . $transfer->toBranch->name . '.');
     }
 
     public function storeBatch(Request $request, Business $business, Product $product)

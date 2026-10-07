@@ -13,6 +13,9 @@
         @can('top-up-inventory')
             <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.inventory.top-up') }}">Top-up Stock</x-button>
         @endcan
+        @if(!empty($canBranchTransfer))
+            <x-button variant="secondary" size="sm" type="button" data-open-branch-transfer>Transfer Stock</x-button>
+        @endif
         @can('use-catalog-variants')
             <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.inventory.attributes.index') }}">Attributes</x-button>
         @endcan
@@ -318,6 +321,8 @@
 </x-card>
 
 <div class="mt-6">{{ $products->links() }}</div>
+@include('inventory.partials.branch-transfer-modal')
+
 @endsection
 
 @push('scripts')
