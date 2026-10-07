@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Helpers\AuditLogger;
 use App\Models\Business;
 use App\Models\PaymentWallet;
 use App\Models\User;
@@ -117,12 +118,23 @@ class PaymentWalletService
             abort(404);
         }
 
-        return DB::transaction(function () use ($wallet, $amount) {
+        return DB::transaction(function () use ($wallet, $amount, $user) {
             $locked = PaymentWallet::query()->whereKey($wallet->id)->lockForUpdate()->firstOrFail();
-            $locked->current_balance = round((float) $locked->current_balance + $amount, 2);
+            $oldBalance = (float) $locked->current_balance;
+            $locked->current_balance = round($oldBalance + $amount, 2);
             $locked->save();
+            $fresh = $locked->fresh();
 
-            return $locked->fresh();
+            AuditLogger::record(
+                'payment_wallet_deposit',
+                $fresh,
+                ['current_balance' => $oldBalance],
+                ['current_balance' => $fresh->current_balance, 'amount' => $amount],
+                (int) $user->business_id,
+                (int) $user->id
+            );
+
+            return $fresh;
         });
     }
 
@@ -140,7 +152,7 @@ class PaymentWalletService
             abort(404);
         }
 
-        return DB::transaction(function () use ($wallet, $amount) {
+        return DB::transaction(function () use ($wallet, $amount, $user) {
             $locked = PaymentWallet::query()->whereKey($wallet->id)->lockForUpdate()->firstOrFail();
 
             if ((float) $locked->current_balance + 0.009 < $amount) {
@@ -149,10 +161,21 @@ class PaymentWalletService
                 ]);
             }
 
-            $locked->current_balance = round((float) $locked->current_balance - $amount, 2);
+            $oldBalance = (float) $locked->current_balance;
+            $locked->current_balance = round($oldBalance - $amount, 2);
             $locked->save();
+            $fresh = $locked->fresh();
 
-            return $locked->fresh();
+            AuditLogger::record(
+                'payment_wallet_withdraw',
+                $fresh,
+                ['current_balance' => $oldBalance],
+                ['current_balance' => $fresh->current_balance, 'amount' => $amount],
+                (int) $user->business_id,
+                (int) $user->id
+            );
+
+            return $fresh;
         });
     }
 
@@ -160,7 +183,7 @@ class PaymentWalletService
     {
         $opening = round((float) ($data['opening_balance'] ?? 0), 2);
 
-        return PaymentWallet::create([
+        $wallet = PaymentWallet::create([
             'business_id' => (int) $user->business_id,
             'name' => $data['name'],
             'type' => $data['type'] ?? PaymentWallet::TYPE_CASH,
@@ -169,5 +192,9 @@ class PaymentWalletService
             'is_active' => true,
             'sort_order' => (int) ($data['sort_order'] ?? 0),
         ]);
+
+        AuditLogger::record('payment_wallet_created', $wallet, null, $wallet->toArray(), (int) $user->business_id, (int) $user->id);
+
+        return $wallet;
     }
 }

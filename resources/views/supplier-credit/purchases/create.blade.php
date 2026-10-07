@@ -73,7 +73,12 @@
             @endif
         </x-card>
     @empty
-        <x-card class="text-center text-sm text-gray-500">No products found.</x-card>
+        <x-card class="py-6 text-center text-sm text-gray-500">
+            No products found.
+            @can('create', App\Models\Product::class)
+                <a href="{{ tenant_route('tenant.inventory.create') }}" class="font-medium text-indigo-600 hover:text-indigo-800">Add product</a>
+            @endcan
+        </x-card>
     @endforelse
 </div>
 

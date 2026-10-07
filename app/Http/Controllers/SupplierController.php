@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\AuditLogger;
 use App\Models\Business;
 use App\Models\Supplier;
 use App\Services\SupplierCreditService;
@@ -71,6 +72,8 @@ class SupplierController extends Controller
             $supplierCreditService->ensureOpeningBalanceBill($request->user(), $supplier, $openingBalance);
         }
 
+        AuditLogger::record('supplier_created', $supplier, null, $supplier->fresh()->toArray());
+
         $message = $openingBalance > 0
             ? 'Vendor added with an opening balance bill of ' . number_format($openingBalance, 2) . '.'
             : 'Vendor added.';
@@ -130,6 +133,8 @@ class SupplierController extends Controller
             }
         }
 
+        $old = $supplier->toArray();
+
         $supplier->update([
             'name' => $data['name'],
             'phone' => $data['phone'] ?? null,
@@ -144,6 +149,8 @@ class SupplierController extends Controller
         if (! $supplier->hasOpeningBalanceBill() && $openingBalance > 0) {
             $supplierCreditService->ensureOpeningBalanceBill($request->user(), $supplier->fresh(), $openingBalance);
         }
+
+        AuditLogger::record('supplier_updated', $supplier, $old, $supplier->fresh()->toArray());
 
         return redirect()
             ->to(tenant_route('tenant.supplier-credit.vendors.index'))

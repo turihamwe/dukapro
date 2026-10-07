@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\AuditLogger;
 use App\Models\Business;
 use App\Models\PaymentWallet;
 use App\Services\PaymentWalletService;
@@ -65,12 +66,23 @@ class PaymentWalletController extends Controller
             'sort_order' => 'nullable|integer|min:0|max:9999',
         ]);
 
+        $old = $wallet->toArray();
+
         $wallet->update([
             'name' => $data['name'],
             'type' => $data['type'],
             'is_active' => $request->boolean('is_active', true),
             'sort_order' => (int) ($data['sort_order'] ?? $wallet->sort_order),
         ]);
+
+        AuditLogger::record(
+            'payment_wallet_updated',
+            $wallet,
+            $old,
+            $wallet->fresh()->toArray(),
+            (int) $business->id,
+            (int) $request->user()->id
+        );
 
         return redirect()
             ->to(tenant_route('tenant.wallets.index'))

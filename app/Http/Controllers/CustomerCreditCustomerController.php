@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\AuditLogger;
 use App\Models\Business;
 use App\Models\Customer;
 use App\Services\CustomerCreditService;
@@ -105,6 +106,8 @@ class CustomerCreditCustomerController extends Controller
             $creditService->ensureOpeningBalanceEntry($request->user(), $customer, $openingBalance);
         }
 
+        AuditLogger::record('customer_credit_customer_created', $customer, null, $customer->fresh()->toArray());
+
         $message = $openingBalance > 0
             ? 'Customer added with opening balance of ' . number_format($openingBalance, 2) . '.'
             : 'Customer added.';
@@ -172,6 +175,8 @@ class CustomerCreditCustomerController extends Controller
             }
         }
 
+        $old = $customer->toArray();
+
         $customer->update([
             'name' => $data['name'],
             'company_name' => $data['company_name'] ?? null,
@@ -191,6 +196,8 @@ class CustomerCreditCustomerController extends Controller
         if (! $customer->hasOpeningBalanceEntry() && $openingBalance > 0) {
             $creditService->ensureOpeningBalanceEntry($request->user(), $customer->fresh(), $openingBalance);
         }
+
+        AuditLogger::record('customer_credit_customer_updated', $customer, $old, $customer->fresh()->toArray());
 
         return redirect()
             ->to(tenant_route('tenant.customer-credit.customers.index'))
