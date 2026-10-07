@@ -77,7 +77,6 @@
     var productSelect = document.getElementById('transfer-product');
     var variantWrap = document.getElementById('transfer-variant-wrap');
     var variantSelect = document.getElementById('transfer-variant');
-    var qtyInput = document.getElementById('transfer-quantity');
     var availableHint = document.getElementById('transfer-available-hint');
     var catalog = [];
 
@@ -161,6 +160,12 @@
     function loadProducts() {
         if (!fromSelect || !productSelect) return;
         var fromId = fromSelect.value;
+        if (!fromSelect.disabled && fromSelect.value) {
+            fromId = fromSelect.value;
+        } else {
+            var hidden = document.querySelector('#branch-transfer-modal input[name="from_branch_id"][type="hidden"]');
+            if (hidden) fromId = hidden.value;
+        }
         if (!fromId) return;
         productSelect.disabled = true;
         productSelect.innerHTML = '<option value="">Loading…</option>';

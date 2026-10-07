@@ -13,6 +13,8 @@ use Illuminate\Validation\ValidationException;
 
 class BranchStockTransferService
 {
+    public const DESTINATION_MATCH_MESSAGE = 'No matching product exists at the destination branch. Add the same product there first (matching name/SKU and variant).';
+
     protected ProductBatchService $batchService;
 
     protected ProductInventoryService $inventoryService;
@@ -83,7 +85,7 @@ class BranchStockTransferService
         $destination = $this->resolveCounterpart($source, $toBranchId);
         if (! $destination) {
             throw ValidationException::withMessages([
-                'to_branch_id' => 'No matching product exists at the destination branch. Add the same product there first (matching name/SKU and variant).',
+                'to_branch_id' => self::DESTINATION_MATCH_MESSAGE,
             ]);
         }
 
