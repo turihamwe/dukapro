@@ -8,7 +8,9 @@ use App\Models\Customer;
 use App\Models\DebtLedgerEntry;
 use App\Models\Sale;
 use App\Models\User;
+use App\Support\CustomerCreditMode;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class DebtLedgerService
 {
@@ -38,6 +40,12 @@ class DebtLedgerService
         ?\Carbon\Carbon $dueDate = null
     ): DebtLedgerEntry {
         return DB::transaction(function () use ($customer, $type, $amount, $user, $sale, $description, $dueDate) {
+            if (! CustomerCreditMode::active($user->business)) {
+                throw ValidationException::withMessages([
+                    'customer_credit' => 'Customer credit is not enabled for this business.',
+                ]);
+            }
+
             $customer = Customer::where('id', $customer->id)->lockForUpdate()->firstOrFail();
             $oldBalance = $customer->outstanding_balance;
 

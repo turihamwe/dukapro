@@ -20,12 +20,6 @@
         <span>👨‍🍳</span> Kitchen
     </a>
 @endcan
-@can('view-customers')
-    <a href="{{ tenant_route('tenant.contacts.index') }}"
-       class="{{ $navLink }} {{ request()->routeIs('tenant.contacts.*') ? $navActive : $navIdle }}">
-        <span>👥</span> Contacts
-    </a>
-@endcan
 @if(auth()->user()->can('view-sales-reports') || auth()->user()->can('view-all-reconciliations') || auth()->user()->can('view-expenses') || auth()->user()->can('view-reconciliation-shortages'))
     @php $reportsOpen = request()->routeIs('tenant.reports.*') || request()->routeIs('tenant.sales.documents') || request()->routeIs('tenant.reconciliation.*') || request()->routeIs('tenant.reconciliation-shortages.*') || request()->routeIs('tenant.expenses.index'); @endphp
     <div class="reports-nav">
@@ -80,6 +74,14 @@
 @endcan
 @can('access-supplier-credit')
     @include('layouts.partials.purchases-nav-dropdown', ['theme' => 'plain', 'navLink' => $navLink, 'navActive' => $navActive, 'navIdle' => $navIdle])
+@endcan
+@can('access-customer-credit')
+    @include('layouts.partials.receivables-nav-dropdown', ['theme' => 'plain', 'navLink' => $navLink, 'navActive' => $navActive, 'navIdle' => $navIdle])
+@elsecan('view-customers')
+    <a href="{{ tenant_route('tenant.contacts.index') }}"
+       class="{{ $navLink }} {{ request()->routeIs('tenant.contacts.*') ? $navActive : $navIdle }}">
+        <span>👥</span> Contacts
+    </a>
 @endcan
 <a href="{{ tenant_route('tenant.downloads.index') }}"
    class="{{ $navLink }} {{ request()->routeIs('tenant.downloads.*') ? $navActive : $navIdle }}">

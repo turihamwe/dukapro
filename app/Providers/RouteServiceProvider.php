@@ -6,6 +6,7 @@ use App\Models\Branch;
 use App\Models\Brand;
 use App\Models\Business;
 use App\Models\Customer;
+use App\Models\DebtLedgerEntry;
 use App\Models\EndOfDayReconciliation;
 use App\Models\Expense;
 use App\Models\Product;
@@ -76,6 +77,10 @@ class RouteServiceProvider extends ServiceProvider
 
         Route::bind('supplier', function ($value, $route) {
             return $this->resolveTenantRecord(Supplier::class, $value, $route);
+        });
+
+        Route::bind('ledgerEntry', function ($value, $route) {
+            return $this->resolveTenantRecord(DebtLedgerEntry::class, $value, $route);
         });
 
         $this->configureRateLimiting();

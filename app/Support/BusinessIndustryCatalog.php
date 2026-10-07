@@ -291,6 +291,21 @@ class BusinessIndustryCatalog
         ];
     }
 
+    public static function subcategoryEnablesCustomerCreditMode(?string $master, ?string $subcategory): bool
+    {
+        return self::subcategoryEnablesSupplierCreditMode($master, $subcategory);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function customerCreditRegistrationPreset(): array
+    {
+        return [
+            'customer_credit_mode' => true,
+        ];
+    }
+
     /**
      * Operating mode derived from industry pick at registration (no separate signup question).
      */

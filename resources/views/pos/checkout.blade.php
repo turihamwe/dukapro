@@ -142,11 +142,13 @@
                     <option value="cash">Cash</option>
                     <option value="mobile_money">Mobile Money</option>
                     <option value="bank">{{ ($waiterMode ?? false) ? 'Merchant Code / Bank' : 'Bank Transfer' }}</option>
-                    @if($waiterMode ?? false)
-                        <option value="credit">Credit Tab (unpaid)</option>
-                    @else
-                        <option value="invoice">Invoice</option>
-                        <option value="credit">Credit (on account)</option>
+                    @if($customerCreditMode ?? false)
+                        @if($waiterMode ?? false)
+                            <option value="credit">Credit Tab (unpaid)</option>
+                        @else
+                            <option value="invoice">Invoice</option>
+                            <option value="credit">Credit (on account)</option>
+                        @endif
                     @endif
                 </x-select>
 
@@ -159,7 +161,7 @@
                 </div>
                 @endif
 
-                <div id="customerSelectWrap" class="hidden space-y-2">
+                <div id="customerSelectWrap" class="hidden space-y-2" @if(!($customerCreditMode ?? false)) data-credit-disabled="1" @endif>
                     <x-select id="customerId" label="{{ ($waiterMode ?? false) ? 'Customer (optional for tabs)' : 'Credit Customer' }}">
                         <option value="">{{ ($waiterMode ?? false) ? 'Walk-in / no customer' : 'Select customer' }}</option>
                         @foreach($customers as $c)

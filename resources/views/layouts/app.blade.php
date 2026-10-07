@@ -95,8 +95,28 @@
                             if ($user->can('submit-reconciliation')) {
                                 $navItems[] = ['route' => 'tenant.reconciliation.create', 'match' => 'tenant.reconciliation.*', 'icon' => '💰', 'label' => 'EOD'];
                             }
-                            if ($user->can('manage-debts')) {
-                                $navItems[] = ['route' => 'tenant.contacts.index', 'match' => 'tenant.contacts.*', 'icon' => '📒', 'label' => 'Contacts'];
+                            if ($user->can('access-supplier-credit')) {
+                                $navItems[] = [
+                                    'route' => 'tenant.supplier-credit.overview.index',
+                                    'match' => 'tenant.supplier-credit.*',
+                                    'icon' => '🧾',
+                                    'label' => 'Purchases',
+                                ];
+                            }
+                            if ($user->can('access-customer-credit')) {
+                                $navItems[] = [
+                                    'route' => 'tenant.customer-credit.customers.index',
+                                    'match' => 'tenant.customer-credit.*',
+                                    'icon' => '📋',
+                                    'label' => 'Receivables',
+                                ];
+                            } elseif ($user->can('view-customers')) {
+                                $navItems[] = [
+                                    'route' => 'tenant.contacts.index',
+                                    'match' => 'tenant.contacts.*',
+                                    'icon' => '📒',
+                                    'label' => 'Contacts',
+                                ];
                             }
                         } catch (\Throwable $e) {
                             $navItems = [];

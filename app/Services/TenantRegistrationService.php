@@ -90,6 +90,13 @@ class TenantRegistrationService
                 $settings = array_merge($settings, BusinessIndustryCatalog::supplierCreditRegistrationPreset());
             }
 
+            if (BusinessIndustryCatalog::subcategoryEnablesCustomerCreditMode(
+                $data['business_category'],
+                $data['business_subcategory']
+            )) {
+                $settings = array_merge($settings, BusinessIndustryCatalog::customerCreditRegistrationPreset());
+            }
+
             $business->update(['settings' => $settings]);
 
             app(BusinessModuleService::class)->syncFromLegacySettings(

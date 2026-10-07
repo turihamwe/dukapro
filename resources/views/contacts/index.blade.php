@@ -15,8 +15,10 @@
 <div class="mb-4 flex gap-2">
     <a href="{{ tenant_route('tenant.contacts.index', ['filter' => 'all']) }}"
        class="rounded-full border px-3 py-1 text-xs font-medium {{ $filter === 'all' ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-gray-200 bg-white text-gray-700' }}">All</a>
-    <a href="{{ tenant_route('tenant.contacts.index', ['filter' => 'credit']) }}"
-       class="rounded-full border px-3 py-1 text-xs font-medium {{ $filter === 'credit' ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-gray-200 bg-white text-gray-700' }}">Credit customers</a>
+    @if(auth()->user()->business && auth()->user()->business->usesCustomerCreditMode())
+        <a href="{{ tenant_route('tenant.contacts.index', ['filter' => 'credit']) }}"
+           class="rounded-full border px-3 py-1 text-xs font-medium {{ $filter === 'credit' ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-gray-200 bg-white text-gray-700' }}">Credit customers</a>
+    @endif
 </div>
 
 <x-sortable-table>

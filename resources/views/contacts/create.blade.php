@@ -17,15 +17,12 @@
         <x-textarea name="address" label="Address" rows="2"></x-textarea>
         <x-textarea name="notes" label="Notes" rows="2" placeholder="Internal notes about this contact"></x-textarea>
 
-        <label class="flex items-center gap-2 text-sm text-gray-700">
-            <input type="checkbox" name="is_credit_customer" value="1" class="rounded border-gray-300 text-indigo-600" {{ old('is_credit_customer') ? 'checked' : '' }}>
-            Credit customer (can buy on account)
-        </label>
-
-        <div class="grid gap-4 sm:grid-cols-2">
-            <x-input type="number" step="0.01" name="credit_limit" label="Credit limit" value="{{ old('credit_limit', 0) }}" />
-            <x-input type="number" step="1" min="1" max="365" name="payment_terms_days" label="Payment terms (days)" value="{{ old('payment_terms_days', 30) }}" />
-        </div>
+        @if(auth()->user()->business && auth()->user()->business->usesCustomerCreditMode())
+            <p class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                For credit limits and receivables, use
+                <a href="{{ tenant_route('tenant.customer-credit.customers.index') }}" class="font-semibold underline">Receivables → Customers</a>.
+            </p>
+        @endif
 
         <x-button variant="primary" type="submit">Save contact</x-button>
     </form>

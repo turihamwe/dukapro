@@ -288,6 +288,11 @@ class Business extends Model
         return \App\Support\SupplierCreditMode::active($this);
     }
 
+    public function usesCustomerCreditMode(): bool
+    {
+        return \App\Support\CustomerCreditMode::active($this);
+    }
+
     public function isHospitality(): bool
     {
         return \App\Enums\BusinessType::isHospitality($this->business_type);

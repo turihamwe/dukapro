@@ -237,6 +237,14 @@ class AuthServiceProvider extends ServiceProvider
             return $user->isOwner() || $user->isManager() || $user->can('top-up-inventory');
         });
 
+        Gate::define('access-customer-credit', function (User $user) {
+            if (! $user->business || ! \App\Support\CustomerCreditMode::active($user->business)) {
+                return false;
+            }
+
+            return $user->isOwner() || $user->isManager() || $user->isSupervisor();
+        });
+
         Gate::define('submit-reconciliation', function (User $user) {
             if ($user->isCashier()) {
                 return true;

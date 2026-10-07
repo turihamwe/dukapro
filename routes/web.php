@@ -64,6 +64,8 @@ use App\Http\Controllers\DownloadsController;
 use App\Http\Controllers\HospitalityBookingController;
 use App\Http\Controllers\HospitalityController;
 use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\CustomerCreditController;
+use App\Http\Controllers\CustomerCreditCustomerController;
 use App\Http\Controllers\SupplierCreditController;
 use App\Http\Controllers\SupplierFinancialStatementController;
 use App\Http\Controllers\PwaManifestController;
@@ -396,6 +398,22 @@ Route::middleware(['maintenance'])->group(function () {
                     Route::post('/bookings/{booking}/check-in', [HospitalityBookingController::class, 'checkIn'])->name('bookings.check-in');
                     Route::post('/bookings/{booking}/check-out', [HospitalityBookingController::class, 'checkOut'])->name('bookings.check-out');
                     Route::post('/bookings/{booking}/cancel', [HospitalityBookingController::class, 'cancel'])->name('bookings.cancel');
+                });
+
+                Route::prefix('customer-credit')->name('customer-credit.')->middleware(['customer.credit', 'can:access-customer-credit'])->group(function () {
+                    Route::get('/', [CustomerCreditController::class, 'index'])->name('index');
+                    Route::get('/customers', [CustomerCreditCustomerController::class, 'index'])->name('customers.index');
+                    Route::post('/customers', [CustomerCreditCustomerController::class, 'store'])->name('customers.store');
+                    Route::get('/customers/{customer}', [CustomerCreditCustomerController::class, 'show'])->name('customers.show');
+                    Route::get('/customers/{customer}/edit', [CustomerCreditCustomerController::class, 'edit'])->name('customers.edit');
+                    Route::put('/customers/{customer}', [CustomerCreditCustomerController::class, 'update'])->name('customers.update');
+                    Route::delete('/customers/{customer}', [CustomerCreditCustomerController::class, 'destroy'])->name('customers.destroy');
+                    Route::post('/customers/{customer}/payments', [CustomerCreditController::class, 'recordPayment'])->name('customers.payments.store');
+                    Route::get('/invoices', [CustomerCreditController::class, 'invoices'])->name('invoices.index');
+                    Route::get('/invoices/{sale}', [CustomerCreditController::class, 'showInvoice'])->name('invoices.show');
+                    Route::delete('/invoices/{sale}', [CustomerCreditController::class, 'destroyInvoice'])->name('invoices.destroy');
+                    Route::get('/payments', [CustomerCreditController::class, 'payments'])->name('payments.index');
+                    Route::delete('/payments/{ledgerEntry}', [CustomerCreditController::class, 'destroyPayment'])->name('payments.destroy');
                 });
 
                 Route::prefix('supplier-credit')->name('supplier-credit.')->middleware(['supplier.credit', 'can:access-supplier-credit'])->group(function () {

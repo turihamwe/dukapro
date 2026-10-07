@@ -12,7 +12,7 @@
 </x-page-header>
 
 <div class="mb-6 grid gap-4 sm:grid-cols-3">
-    @if($customer->is_credit_customer)
+    @if($customer->is_credit_customer && auth()->user()->business && auth()->user()->business->usesCustomerCreditMode())
         <x-stat-card label="Outstanding" :value="format_money($customer->outstanding_balance)" accent="amber" />
         <x-stat-card label="Credit Limit" :value="format_money($customer->credit_limit)" accent="indigo" />
     @endif
@@ -27,7 +27,7 @@
     </x-card>
 @endif
 
-@if($customer->is_credit_customer)
+@if($customer->is_credit_customer && auth()->user()->business && auth()->user()->business->usesCustomerCreditMode())
     <x-card class="mb-6">
         <h2 class="mb-4 text-sm font-semibold text-gray-900">Record Payment</h2>
         <form method="POST" action="{{ tenant_route('tenant.contacts.payment', ['customer' => $customer]) }}" class="space-y-4">

@@ -82,6 +82,7 @@ class BusinessSettingsController extends Controller
             'divisible_products_enabled' => 'nullable|boolean',
             'branch_batch_mode' => 'nullable|array',
             'supplier_credit_mode' => 'nullable|boolean',
+            'customer_credit_mode' => 'nullable|boolean',
             'role_permissions' => 'nullable|array',
             'efris.enabled' => 'nullable|boolean',
             'efris.api_token' => 'nullable|string|max:500',
@@ -197,6 +198,7 @@ class BusinessSettingsController extends Controller
         }
 
         $settings['supplier_credit_mode'] = $request->boolean('supplier_credit_mode');
+        $settings['customer_credit_mode'] = $request->boolean('customer_credit_mode');
 
         $business->settings = $settings;
         $business->save();

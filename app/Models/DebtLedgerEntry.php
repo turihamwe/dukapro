@@ -6,10 +6,11 @@ use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class DebtLedgerEntry extends Model
 {
-    use BelongsToTenant, HasFactory;
+    use BelongsToTenant, HasFactory, SoftDeletes;
 
     protected $fillable = [
         'business_id',
@@ -21,12 +22,14 @@ class DebtLedgerEntry extends Model
         'balance_after',
         'description',
         'due_date',
+        'is_opening_balance',
     ];
 
     protected $casts = [
         'amount' => 'float',
         'balance_after' => 'float',
         'due_date' => 'date',
+        'is_opening_balance' => 'boolean',
     ];
 
     public function business(): BelongsTo

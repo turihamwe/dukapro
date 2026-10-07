@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Customer extends Model
@@ -24,6 +25,7 @@ class Customer extends Model
         'credit_limit',
         'payment_terms_days',
         'outstanding_balance',
+        'opening_balance',
         'is_active',
         'is_credit_customer',
     ];
@@ -32,6 +34,7 @@ class Customer extends Model
         'credit_limit' => 'float',
         'payment_terms_days' => 'integer',
         'outstanding_balance' => 'float',
+        'opening_balance' => 'float',
         'is_active' => 'boolean',
         'is_credit_customer' => 'boolean',
     ];
@@ -49,5 +52,16 @@ class Customer extends Model
     public function sales(): HasMany
     {
         return $this->hasMany(Sale::class);
+    }
+
+    public function openingBalanceEntry(): HasOne
+    {
+        return $this->hasOne(DebtLedgerEntry::class)
+            ->where('is_opening_balance', true);
+    }
+
+    public function hasOpeningBalanceEntry(): bool
+    {
+        return $this->openingBalanceEntry()->exists();
     }
 }

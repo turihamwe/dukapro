@@ -7,6 +7,7 @@ use App\Models\Business;
 use App\Models\Customer;
 use App\Services\CustomerService;
 use App\Services\DebtLedgerService;
+use App\Support\CustomerCreditMode;
 use Illuminate\Http\Request;
 
 class CustomerDebtController extends Controller
@@ -29,7 +30,7 @@ class CustomerDebtController extends Controller
 
         $query = Customer::withCount('debtEntries')->orderBy('name');
 
-        if ($filter === 'credit') {
+        if ($filter === 'credit' && CustomerCreditMode::active($request->user()->business)) {
             $query->where('is_credit_customer', true);
         }
 
@@ -73,7 +74,7 @@ class CustomerDebtController extends Controller
             }
         }
 
-        $isCredit = $request->boolean('is_credit_customer');
+        $isCredit = $request->boolean('is_credit_customer') && CustomerCreditMode::active($request->user()->business);
 
         $contact = Customer::create([
             'business_id' => $businessId,
@@ -129,7 +130,7 @@ class CustomerDebtController extends Controller
             'is_active' => 'nullable|boolean',
         ]);
 
-        $isCredit = $request->boolean('is_credit_customer');
+        $isCredit = $request->boolean('is_credit_customer') && CustomerCreditMode::active($business);
         $old = $customer->toArray();
         $normalizedPhone = $this->customerService->preparePhoneForStorage($data['phone'] ?? null);
 
@@ -176,6 +177,10 @@ class CustomerDebtController extends Controller
     public function recordPayment(Request $request, Business $business, Customer $customer)
     {
         $this->authorize('view', $customer);
+
+        if (! CustomerCreditMode::active($business)) {
+            abort(404);
+        }
 
         $data = $request->validate([
             'amount' => 'required|numeric|min:0.01',

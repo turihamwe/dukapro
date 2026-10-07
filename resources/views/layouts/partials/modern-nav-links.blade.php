@@ -79,13 +79,6 @@
         @endif
     </a>
 @endcan
-@can('view-customers')
-    <a href="{{ tenant_route('tenant.contacts.index') }}"
-       class="modern-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] {{ request()->routeIs('tenant.contacts.*') ? $navActive : $navIdle }}">
-        <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-        Contacts
-    </a>
-@endcan
 @can('access-hospitality')
     <a href="{{ tenant_route('tenant.hospitality.index') }}"
        class="modern-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] {{ request()->routeIs('tenant.hospitality.*') ? $navActive : $navIdle }}">
@@ -102,6 +95,15 @@
 @endcan
 @can('access-supplier-credit')
     @include('layouts.partials.purchases-nav-dropdown', ['theme' => 'modern', 'navActive' => $navActive, 'navIdle' => $navIdle])
+@endcan
+@can('access-customer-credit')
+    @include('layouts.partials.receivables-nav-dropdown', ['theme' => 'modern', 'navActive' => $navActive, 'navIdle' => $navIdle])
+@elsecan('view-customers')
+    <a href="{{ tenant_route('tenant.contacts.index') }}"
+       class="modern-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] {{ request()->routeIs('tenant.contacts.*') ? $navActive : $navIdle }}">
+        <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        Contacts
+    </a>
 @endcan
 <a href="{{ tenant_route('tenant.downloads.index') }}"
    class="modern-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] {{ request()->routeIs('tenant.downloads.*') ? $navActive : $navIdle }}">

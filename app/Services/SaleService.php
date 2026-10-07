@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Scopes\BranchScope;
 use App\Support\BusinessModeCompliance;
 use App\Support\DivisibleProductsMode;
+use App\Support\CustomerCreditMode;
 use App\Support\VariablePricingMode;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -348,6 +349,12 @@ class SaleService
                         $user->id
                     );
                 }
+            }
+
+            if ($isCreditSale && ! CustomerCreditMode::active($business)) {
+                throw ValidationException::withMessages([
+                    'payment_method' => 'Customer credit is not enabled for this business.',
+                ]);
             }
 
             if ($isCreditSale && $creditCustomer) {

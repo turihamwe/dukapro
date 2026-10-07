@@ -97,10 +97,14 @@ class PosController extends Controller
             return $product;
         })->values();
 
-        $customers = Customer::where('is_active', true)
-            ->where('is_credit_customer', true)
-            ->orderBy('name')
-            ->get(['id', 'name', 'phone', 'outstanding_balance', 'credit_limit', 'payment_terms_days']);
+        $customerCreditMode = $business->usesCustomerCreditMode();
+
+        $customers = $customerCreditMode
+            ? Customer::where('is_active', true)
+                ->where('is_credit_customer', true)
+                ->orderBy('name')
+                ->get(['id', 'name', 'phone', 'outstanding_balance', 'credit_limit', 'payment_terms_days'])
+            : collect();
 
         $floorStaff = $waiterMode
             ? app(\App\Services\WaiterShiftService::class)->activeFloorStaff($business, $request->user())
@@ -127,7 +131,8 @@ class PosController extends Controller
             'variablePricingMode',
             'divisibleProductsMode',
             'posOfflineEnabled',
-            'efrisCheckoutAvailable'
+            'efrisCheckoutAvailable',
+            'customerCreditMode'
         ));
     }
 
@@ -177,6 +182,12 @@ class PosController extends Controller
     {
         $business = $request->user()->business;
         $businessId = (int) $business->id;
+
+        if (! $business->usesCustomerCreditMode()) {
+            return response()->json([
+                'message' => 'Customer credit is not enabled for this business.',
+            ], 422);
+        }
 
         $forInvoice = $request->boolean('for_invoice');
 
@@ -270,6 +281,13 @@ class PosController extends Controller
         }
 
         $data['is_credit_sale'] = in_array($data['payment_method'] ?? '', ['credit', 'invoice'], true);
+
+        if ($data['is_credit_sale'] && ! $business->usesCustomerCreditMode()) {
+            return response()->json([
+                'message' => 'Customer credit is not enabled for this business.',
+                'errors' => ['payment_method' => ['Enable customer credit in business settings to use credit sales.']],
+            ], 422);
+        }
 
         if ($data['is_credit_sale'] && ! $business->usesWaiterAssignment() && empty($data['customer_id'])) {
             return response()->json([
