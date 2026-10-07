@@ -34,11 +34,12 @@
                         <td class="px-6 py-4 text-sm text-gray-500">{{ $employee->email }}</td>
                         <td class="px-6 py-4 text-right">
                             @can('delete', $employee)
-                                <form method="POST" action="{{ tenant_route('tenant.employees.destroy', ['employee' => $employee]) }}" class="inline" onsubmit="return confirm('Remove this employee?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="text-sm font-medium text-red-600 hover:text-red-700">Remove</button>
-                                </form>
+                                <x-delete-confirm-button
+                                    :action="tenant_route('tenant.employees.destroy', ['employee' => $employee])"
+                                    message="Are you sure you want to delete this item?"
+                                    detail="Remove this employee?"
+                                    label="Remove"
+                                />
                             @endcan
                         </td>
                     </tr>

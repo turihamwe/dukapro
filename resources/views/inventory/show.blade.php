@@ -22,10 +22,15 @@
             <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.inventory.top-up') }}">Top-up Stock</x-button>
         @endcan
         @can('delete', $product)
-            <form method="POST" action="{{ tenant_route('tenant.inventory.destroy', ['product' => $product]) }}" class="inline" onsubmit="return confirm('Delete this product?')">
+            <form method="POST" action="{{ tenant_route('tenant.inventory.destroy', ['product' => $product]) }}" class="inline">
                 @csrf
                 @method('DELETE')
-                <x-button variant="secondary" size="sm" type="submit" class="!border-rose-300 !text-rose-700 hover:!bg-rose-50">Delete</x-button>
+                <x-button variant="secondary" size="sm" type="button" class="!border-rose-300 !text-rose-700 hover:!bg-rose-50"
+                          data-delete-confirm
+                          data-delete-message="Are you sure you want to delete this item?"
+                          data-delete-detail="Delete this product?">
+                    Delete
+                </x-button>
             </form>
         @endcan
     </x-slot>

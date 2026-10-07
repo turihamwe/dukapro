@@ -47,10 +47,13 @@
                 </div>
             </form>
             @can('delete-inventory')
-                <form method="POST" action="{{ tenant_route('tenant.inventory.attributes.destroy', ['attribute' => $attribute]) }}" class="mt-3" onsubmit="return confirm('Remove this attribute?')">
-                    @csrf @method('DELETE')
-                    <button type="submit" class="text-sm font-medium text-red-600 hover:text-red-700">Delete attribute</button>
-                </form>
+                <x-delete-confirm-button
+                    :action="tenant_route('tenant.inventory.attributes.destroy', ['attribute' => $attribute])"
+                    message="Are you sure you want to delete this item?"
+                    detail="Remove this attribute?"
+                    label="Delete attribute"
+                    class="mt-3 block"
+                />
             @endcan
         </x-card>
     @empty

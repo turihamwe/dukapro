@@ -29,11 +29,16 @@
                            class="inline-flex items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100">Edit</a>
                     @endcan
                     @can('delete', $member)
-                        <form method="POST" action="{{ tenant_route('tenant.staff.destroy', ['employee' => $member]) }}" onsubmit="return confirm('Remove this staff member?')">
+                        <form method="POST" action="{{ tenant_route('tenant.staff.destroy', ['employee' => $member]) }}" class="w-full">
                             @csrf
                             @method('DELETE')
-                            <button type="submit"
-                                    class="inline-flex w-full items-center justify-center rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100">Remove</button>
+                            <button type="button"
+                                    class="inline-flex w-full items-center justify-center rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100"
+                                    data-delete-confirm
+                                    data-delete-message="Are you sure you want to delete this item?"
+                                    data-delete-detail="Remove this staff member?">
+                                Remove
+                            </button>
                         </form>
                     @endcan
                 </div>
@@ -73,11 +78,12 @@
                                     <a href="{{ tenant_route('tenant.staff.edit', ['employee' => $member]) }}" class="font-medium text-indigo-600 hover:text-indigo-700">Edit</a>
                                 @endcan
                                 @can('delete', $member)
-                                    <form method="POST" action="{{ tenant_route('tenant.staff.destroy', ['employee' => $member]) }}" class="inline" onsubmit="return confirm('Remove this staff member?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="font-medium text-red-600 hover:text-red-700">Remove</button>
-                                    </form>
+                                    <x-delete-confirm-button
+                                        :action="tenant_route('tenant.staff.destroy', ['employee' => $member])"
+                                        message="Are you sure you want to delete this item?"
+                                        detail="Remove this staff member?"
+                                        label="Remove"
+                                    />
                                 @endcan
                             </div>
                         </td>

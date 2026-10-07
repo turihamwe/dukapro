@@ -52,10 +52,12 @@
                                 <a href="{{ tenant_route('tenant.brands.edit', ['brand' => $brand]) }}" class="text-sm font-medium text-indigo-600 hover:text-indigo-700">Edit</a>
                             @endcan
                             @can('delete', $brand)
-                                <form method="POST" action="{{ tenant_route('tenant.brands.destroy', ['brand' => $brand]) }}" class="ml-3 inline" onsubmit="return confirm('Delete this brand? Products will be unassigned.')">
-                                    @csrf @method('DELETE')
-                                    <button type="submit" class="text-sm font-medium text-red-600 hover:text-red-700">Delete</button>
-                                </form>
+                                <x-delete-confirm-button
+                                    :action="tenant_route('tenant.brands.destroy', ['brand' => $brand])"
+                                    message="Are you sure you want to delete this item?"
+                                    detail="Delete this brand? Products will be unassigned."
+                                    class="ml-3"
+                                />
                             @endcan
                         </td>
                     </tr>

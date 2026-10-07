@@ -33,10 +33,16 @@
                 @endif
                 <a href="{{ route('superadmin.entities.edit', [$entity, $item->id]) }}" class="rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500">Edit</a>
                 @if($config['deletable'] ?? true)
-                    <form method="POST" action="{{ route('superadmin.entities.destroy', [$entity, $item->id]) }}" onsubmit="return confirm('Delete this record?')">
+                    <form method="POST" action="{{ route('superadmin.entities.destroy', [$entity, $item->id]) }}">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50">Delete</button>
+                        <button type="button"
+                                class="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+                                data-delete-confirm
+                                data-delete-message="Are you sure you want to delete this item?"
+                                data-delete-detail="Delete this record?">
+                            Delete
+                        </button>
                     </form>
                 @endif
             @endcan

@@ -47,11 +47,13 @@
                         <td class="px-6 py-4 text-right text-sm">
                             <a href="{{ tenant_route('tenant.branches.edit', ['branch' => $branch]) }}" class="font-medium text-indigo-600 hover:text-indigo-700">Edit</a>
                             @if(! $branch->is_default && $branch->users_count === 0)
-                                <form method="POST" action="{{ tenant_route('tenant.branches.destroy', ['branch' => $branch]) }}" class="ml-3 inline" onsubmit="return confirm('Remove this branch?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="font-medium text-red-600 hover:text-red-700">Remove</button>
-                                </form>
+                                <x-delete-confirm-button
+                                    :action="tenant_route('tenant.branches.destroy', ['branch' => $branch])"
+                                    message="Are you sure you want to delete this item?"
+                                    detail="Remove this branch?"
+                                    label="Remove"
+                                    class="ml-3"
+                                />
                             @endif
                         </td>
                     </tr>

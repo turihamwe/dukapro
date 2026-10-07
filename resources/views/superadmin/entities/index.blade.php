@@ -228,11 +228,12 @@
                                     <a href="{{ route('superadmin.entities.edit', [$entity, $record->id]) }}" class="ml-3 text-gray-600 hover:text-gray-900">Edit</a>
                                 @endif
                                 @if(($config['deletable'] ?? true) && empty($showTrashed))
-                                    <form method="POST" action="{{ route('superadmin.entities.destroy', [$entity, $record->id]) }}" class="ml-3 inline" onsubmit="return confirm('Delete this record?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="text-red-600 hover:text-red-800">Delete</button>
-                                    </form>
+                                    <x-delete-confirm-button
+                                        :action="route('superadmin.entities.destroy', [$entity, $record->id])"
+                                        message="Are you sure you want to delete this item?"
+                                        detail="Delete this record?"
+                                        class="ml-3"
+                                    />
                                 @endif
                                 @if(! empty($showTrashed) && ! empty($supportsSoftDeletes))
                                     <form method="POST" action="{{ route('superadmin.entities.restore', [$entity, $record->id]) }}" class="ml-3 inline" onsubmit="return confirm('Restore this record?')">

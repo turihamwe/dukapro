@@ -138,9 +138,15 @@
                                             @csrf
                                             <button type="submit" class="rounded-lg border border-emerald-200 px-2.5 py-1 text-xs font-semibold text-emerald-800 hover:bg-emerald-50">Check in</button>
                                         </form>
-                                        <form method="POST" action="{{ tenant_route('tenant.hospitality.bookings.cancel', ['booking' => $booking->id]) }}" onsubmit="return confirm('Cancel this booking?');">
+                                        <form method="POST" action="{{ tenant_route('tenant.hospitality.bookings.cancel', ['booking' => $booking->id]) }}">
                                             @csrf
-                                            <button type="submit" class="rounded-lg border border-gray-200 px-2.5 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50">Cancel</button>
+                                            <button type="button"
+                                                    class="rounded-lg border border-gray-200 px-2.5 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                                                    data-delete-confirm
+                                                    data-delete-message="Are you sure you want to delete this item?"
+                                                    data-delete-detail="Cancel this booking?">
+                                                Cancel
+                                            </button>
                                         </form>
                                     @elseif($booking->status === HospitalityBookingStatus::CHECKED_IN)
                                         <form method="POST" action="{{ tenant_route('tenant.hospitality.bookings.check-out', ['booking' => $booking->id]) }}">

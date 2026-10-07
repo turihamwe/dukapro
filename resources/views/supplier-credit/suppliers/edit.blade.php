@@ -27,20 +27,28 @@
         <p class="text-sm text-amber-950">
             This vendor has bill history. Removing them will <strong>deactivate</strong> instead of deleting records.
         </p>
-        <form method="POST" action="{{ tenant_route('tenant.supplier-credit.vendors.destroy', ['supplier' => $supplier]) }}" class="mt-3"
-              onsubmit="return confirm('Deactivate this vendor? They will be hidden from new restocks but bills stay on file.');">
+        <form method="POST" action="{{ tenant_route('tenant.supplier-credit.vendors.destroy', ['supplier' => $supplier]) }}" class="mt-3">
             @csrf
             @method('DELETE')
-            <x-button variant="danger" size="sm" type="submit">Deactivate vendor</x-button>
+            <x-button variant="danger" size="sm" type="button"
+                      data-delete-confirm
+                      data-delete-message="Are you sure you want to delete this item?"
+                      data-delete-detail="Deactivate this vendor? They will be hidden from new restocks but bills stay on file.">
+                Deactivate vendor
+            </x-button>
         </form>
     </x-card>
 @else
     <x-card class="mt-6 !p-4">
-        <form method="POST" action="{{ tenant_route('tenant.supplier-credit.vendors.destroy', ['supplier' => $supplier]) }}"
-              onsubmit="return confirm('Permanently remove this vendor?');">
+        <form method="POST" action="{{ tenant_route('tenant.supplier-credit.vendors.destroy', ['supplier' => $supplier]) }}">
             @csrf
             @method('DELETE')
-            <x-button variant="danger" size="sm" type="submit">Delete vendor</x-button>
+            <x-button variant="danger" size="sm" type="button"
+                      data-delete-confirm
+                      data-delete-message="Are you sure you want to delete this item?"
+                      data-delete-detail="Permanently remove this vendor?">
+                Delete vendor
+            </x-button>
         </form>
     </x-card>
 @endif

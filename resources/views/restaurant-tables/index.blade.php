@@ -35,11 +35,13 @@
                         </td>
                         <td class="px-6 py-4 text-right text-sm">
                             <a href="{{ tenant_route('tenant.restaurant-tables.edit', ['restaurantTable' => $table]) }}" class="font-medium text-indigo-600 hover:text-indigo-700">Edit</a>
-                            <form method="POST" action="{{ tenant_route('tenant.restaurant-tables.destroy', ['restaurantTable' => $table]) }}" class="ml-3 inline" onsubmit="return confirm('Remove this table?')">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="font-medium text-red-600 hover:text-red-700">Remove</button>
-                            </form>
+                            <x-delete-confirm-button
+                                :action="tenant_route('tenant.restaurant-tables.destroy', ['restaurantTable' => $table])"
+                                message="Are you sure you want to delete this item?"
+                                detail="Remove this table?"
+                                label="Remove"
+                                class="ml-3"
+                            />
                         </td>
                     </tr>
                 @empty

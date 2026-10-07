@@ -22,6 +22,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: Inter, system-ui, sans-serif; }
+        [x-cloak] { display: none !important; }
         .theme-modern .modern-app { min-height: 100vh; min-height: 100dvh; }
         .theme-modern .modern-sidebar { background: transparent; }
         .theme-modern .modern-nav-link { min-height: 44px; }
@@ -157,8 +158,9 @@
     @include('layouts.partials.pwa-head')
     @stack('styles')
 </head>
-<body class="h-full bg-gray-50 text-gray-900 antialiased @stack('body-class')">
+<body class="h-full bg-gray-50 text-gray-900 antialiased @stack('body-class')" x-data>
     @yield('body')
+    <x-delete-confirm-modal />
     @stack('modals')
     @include('layouts.partials.whatsapp-float')
     <script>
@@ -209,6 +211,7 @@
     </script>
     @include('layouts.partials.sortable-table-alpine')
     @include('layouts.partials.pwa-install-alpine')
+    @include('layouts.partials.delete-confirm-alpine')
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     @stack('scripts')
     @include('layouts.partials.client-error-tracker')

@@ -40,8 +40,7 @@
         @else
             <form method="POST"
                   action="{{ tenant_route('tenant.business.trial-data.purge') }}"
-                  class="mt-5 space-y-3"
-                  onsubmit="return confirm('Remove all trial sales and related data? Products and stock will stay as they are. This cannot be undone.');">
+                  class="mt-5 space-y-3">
                 @csrf
                 <x-input type="text"
                          name="confirm_name"
@@ -49,8 +48,11 @@
                          value="{{ old('confirm_name') }}"
                          placeholder="{{ $business->name }}"
                          required />
-                <button type="submit"
-                        class="inline-flex items-center rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700">
+                <button type="button"
+                        class="inline-flex items-center rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700"
+                        data-delete-confirm
+                        data-delete-message="Are you sure you want to delete this item?"
+                        data-delete-detail="Remove all trial sales and related data? Products and stock will stay as they are. This cannot be undone.">
                     Remove all trial activity
                 </button>
             </form>

@@ -101,14 +101,13 @@
                                 </a>
                             @endcan
                             @can('delete', $sale)
-                                <form method="POST"
-                                      action="{{ tenant_route('tenant.sales.destroy', ['sale' => $sale]) }}"
-                                      class="mt-1 inline sm:mt-0 sm:ml-3"
-                                      onsubmit="return confirm('Remove sale {{ $sale->sale_number }}? Stock will not change automatically.');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="font-medium text-red-600 hover:text-red-800">Delete</button>
-                                </form>
+                                <x-delete-confirm-button
+                                    :action="tenant_route('tenant.sales.destroy', ['sale' => $sale])"
+                                    message="Are you sure you want to delete this item?"
+                                    :detail="'Remove sale ' . $sale->sale_number . '? Stock will not change automatically.'"
+                                    label="Delete"
+                                    class="mt-1 sm:mt-0 sm:ml-3"
+                                />
                             @endcan
                         </td>
                     </tr>

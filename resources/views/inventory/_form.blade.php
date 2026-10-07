@@ -870,10 +870,21 @@ document.addEventListener('alpine:init', function () {
     }
 
     function removeVariantLine(variantId, label) {
-        var message = 'Remove this variant line?\n\n'
-            + (label ? label + '\n\n' : '')
+        var detail = (label ? label + ' — ' : '')
             + 'It will be hidden from POS and inventory (soft delete). Past sales on receipts are kept. Save the product to apply.';
-        if (!window.confirm(message)) return;
+        if (typeof window.requestDeleteConfirmation === 'function') {
+            window.requestDeleteConfirmation({
+                message: 'Are you sure you want to delete this item?',
+                detail: detail,
+                onConfirm: function () {
+                    deletedVariantIds[variantId] = true;
+                    updateAttributeCheckboxLocks();
+                    rebuildVariantTable();
+                    renderDeletedVariantInputs();
+                },
+            });
+            return;
+        }
         deletedVariantIds[variantId] = true;
         updateAttributeCheckboxLocks();
         rebuildVariantTable();
