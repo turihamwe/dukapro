@@ -53,8 +53,23 @@ class ReconciliationController extends Controller
         }
         $shortages = $reconciliation->shortages()->with('user')->get();
         $bossPhone = $this->resolveBossPhone($business);
+        $bossEmail = $this->resolveBossEmail($business);
+        $shareMessage = $this->reconciliationService->shareMessage($reconciliation);
         $whatsAppUrl = $this->reconciliationService->whatsAppShareUrl($reconciliation, $bossPhone);
-        return view('reconciliation.show', compact('business', 'reconciliation', 'report', 'tradingReport', 'whatsAppUrl', 'bossPhone', 'shortages'));
+        $emailShareUrl = $this->reconciliationService->emailShareUrl($reconciliation, $bossEmail);
+
+        return view('reconciliation.show', compact(
+            'business',
+            'reconciliation',
+            'report',
+            'tradingReport',
+            'whatsAppUrl',
+            'emailShareUrl',
+            'shareMessage',
+            'bossPhone',
+            'bossEmail',
+            'shortages'
+        ));
     }
 
     public function daily(Request $request)
@@ -85,7 +100,22 @@ class ReconciliationController extends Controller
         $report = $this->reconciliationService->buildReportDetails($reconciliation);
         $shortages = $reconciliation->shortages()->with('user')->get();
 
-        return view('reconciliation.print', compact('reconciliation', 'report', 'shortages'));
+        $business = $reconciliation->business;
+        $bossPhone = $this->resolveBossPhone($business);
+        $bossEmail = $this->resolveBossEmail($business);
+        $shareMessage = $this->reconciliationService->shareMessage($reconciliation);
+        $whatsAppUrl = $this->reconciliationService->whatsAppShareUrl($reconciliation, $bossPhone);
+        $emailShareUrl = $this->reconciliationService->emailShareUrl($reconciliation, $bossEmail);
+
+        return view('reconciliation.print', compact(
+            'reconciliation',
+            'report',
+            'shortages',
+            'whatsAppUrl',
+            'emailShareUrl',
+            'shareMessage',
+            'bossPhone'
+        ));
     }
 
     public function create(Request $request)
@@ -248,5 +278,16 @@ class ReconciliationController extends Controller
         $owner = $business->users()->where('role', 'owner')->first();
 
         return $owner->phone ?? null;
+    }
+
+    protected function resolveBossEmail(Business $business): ?string
+    {
+        if ($business->email) {
+            return $business->email;
+        }
+
+        $owner = $business->users()->where('role', 'owner')->first();
+
+        return $owner->email ?? null;
     }
 }

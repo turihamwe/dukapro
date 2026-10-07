@@ -10,6 +10,15 @@
         @if($balance > 0)
             <x-button variant="primary" size="sm" type="button" onclick="openAppModal('bill-payment-modal-{{ $purchase->id }}')">Make payment</x-button>
         @endif
+        <x-document-share-toolbar
+            layout="inline"
+            print-label="Print"
+            :whats-app-href="$shareWhatsAppUrl"
+            :whats-app-message="$shareMessage"
+            :default-phone="optional($purchase->supplier)->phone"
+            :show-phone-input="false"
+            :email-href="$shareEmailUrl"
+        />
     </x-slot>
 </x-page-header>
 

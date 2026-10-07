@@ -564,6 +564,16 @@ if (! function_exists('whatsapp_share_url')) {
     }
 }
 
+if (! function_exists('mailto_share_url')) {
+    function mailto_share_url(?string $recipientEmail, string $subject, string $body): string
+    {
+        $query = 'subject=' . rawurlencode($subject) . '&body=' . rawurlencode($body);
+        $to = trim((string) $recipientEmail);
+
+        return $to !== '' ? 'mailto:' . $to . '?' . $query : 'mailto:?' . $query;
+    }
+}
+
 if (! function_exists('whatsapp_float_enabled')) {
     function whatsapp_float_enabled(): bool
     {

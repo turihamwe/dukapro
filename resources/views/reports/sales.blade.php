@@ -8,9 +8,13 @@
 @endphp
 <x-page-header title="Sales Reports" subtitle="{{ $label }}{{ !empty($branchName) ? ' · ' . $branchName : '' }}">
     <x-slot name="actions">
-        <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.reports.sales.print', array_merge(['period' => $period], $branchQuery)) }}" target="_blank">
-            Print summary
-        </x-button>
+        <x-document-share-toolbar
+            layout="inline"
+            print-label="Print"
+            :print-href="tenant_route('tenant.reports.sales.print', array_merge(['period' => $period], $branchQuery))"
+            :whats-app-href="$shareWhatsAppUrl"
+            :email-href="$shareEmailUrl"
+        />
     </x-slot>
 </x-page-header>
 

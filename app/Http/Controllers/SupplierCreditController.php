@@ -91,11 +91,19 @@ class SupplierCreditController extends Controller
         ]);
 
         $wallets = app(PaymentWalletService::class)->activeForBusiness((int) $business->id);
+        $balance = $purchase->balanceDue();
+        $shareMessage = \App\Support\ReportShareMessages::supplierBill($business, $purchase, $balance);
+        $vendor = optional($purchase->supplier)->name ?? 'Vendor';
+        $shareSubject = 'Supplier bill — ' . $vendor . ' — ' . $business->name;
 
         return view('supplier-credit.bills.show', [
+            'business' => $business,
             'purchase' => $purchase,
-            'balance' => $purchase->balanceDue(),
+            'balance' => $balance,
             'wallets' => $wallets,
+            'shareWhatsAppUrl' => whatsapp_share_url(optional($purchase->supplier)->phone, $shareMessage),
+            'shareEmailUrl' => mailto_share_url(optional($purchase->supplier)->email ?: $business->email, $shareSubject, $shareMessage),
+            'shareMessage' => $shareMessage,
         ]);
     }
 

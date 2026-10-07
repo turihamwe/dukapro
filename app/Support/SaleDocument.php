@@ -74,6 +74,23 @@ class SaleDocument
         return whatsapp_share_url($phone, self::message($sale));
     }
 
+    public static function emailSubject(Sale $sale): string
+    {
+        $sale = self::load($sale);
+        $kind = self::title($sale);
+
+        return "{$kind} {$sale->sale_number} — {$sale->business->name}";
+    }
+
+    public static function emailShareUrl(Sale $sale, ?string $recipientEmail = null): string
+    {
+        return mailto_share_url(
+            $recipientEmail ?: optional($sale->customer)->email,
+            self::emailSubject($sale),
+            self::message($sale)
+        );
+    }
+
     public static function pairedMessage(Sale $sale): string
     {
         $sale = self::load($sale);

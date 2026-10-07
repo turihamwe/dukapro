@@ -311,34 +311,44 @@
             <input type="tel" id="receiptCustomerPhone" placeholder="e.g. 0700123456"
                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
         </div>
-        <div id="singlePrintActions" class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div id="receiptShareToolbar" class="mt-4 flex flex-wrap items-center gap-2">
             <button type="button" id="receiptPrintBtn"
-                    class="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50">
-                Print receipt
+                    class="inline-flex shrink-0 items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50">
+                Print
             </button>
-            <a id="receiptWhatsAppBtn" href="#" target="_blank" rel="noopener noreferrer"
-               class="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-[#25D366] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1ebe5d]">
-                Send to WhatsApp
-            </a>
-        </div>
-        <div id="pairedPrintActions" class="mt-4 hidden space-y-2">
-            <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <button type="button" id="receiptPrintInvoiceBtn"
-                        class="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-100">
-                    Print invoice
-                </button>
-                <button type="button" id="receiptPrintReceiptBtn"
-                        class="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50">
-                    Print receipt
-                </button>
-            </div>
-            <a id="pairedWhatsAppBtn" href="#" target="_blank" rel="noopener noreferrer"
-               class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-[#25D366] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1ebe5d]">
-                Send invoice &amp; receipt to WhatsApp
-            </a>
+            <details id="receiptPrintMenu" class="relative hidden">
+                <summary class="inline-flex shrink-0 cursor-pointer list-none items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 [&::-webkit-details-marker]:hidden">
+                    Print
+                </summary>
+                <div class="absolute left-0 z-30 mt-1 min-w-[9.5rem] rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
+                    <button type="button" id="receiptPrintInvoiceBtn"
+                            class="block w-full px-3 py-2 text-left text-xs font-medium text-amber-900 hover:bg-amber-50">
+                        Print invoice
+                    </button>
+                    <button type="button" id="receiptPrintReceiptBtn"
+                            class="block w-full px-3 py-2 text-left text-xs font-medium text-gray-800 hover:bg-gray-50">
+                        Print receipt
+                    </button>
+                </div>
+            </details>
+            <details id="receiptShareMenu" class="relative">
+                <summary class="inline-flex shrink-0 cursor-pointer list-none items-center justify-center rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-indigo-700 [&::-webkit-details-marker]:hidden">
+                    Share
+                </summary>
+                <div class="absolute left-0 z-30 mt-1 min-w-[9.5rem] rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
+                    <a id="receiptWhatsAppBtn" href="#" target="_blank" rel="noopener noreferrer"
+                       class="block px-3 py-2 text-xs font-medium text-[#128C7E] hover:bg-emerald-50">
+                        WhatsApp
+                    </a>
+                    <a id="receiptEmailBtn" href="#" target="_blank" rel="noopener noreferrer"
+                       class="block px-3 py-2 text-xs font-medium text-sky-800 hover:bg-sky-50">
+                        Email
+                    </a>
+                </div>
+            </details>
         </div>
         <button type="button" id="receiptDoneBtn"
-                class="mt-3 w-full min-h-[44px] rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
+                class="mt-3 w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
             Back
         </button>
     </div>
@@ -377,7 +387,7 @@
         return currencySample.replace(/[\d,.]+/, Number(amount).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
     }
 
-    var pendingReceipt = { url: '', invoiceUrl: '', receiptUrl: '', message: '', isInvoice: false, isPaired: false };
+    var pendingReceipt = { url: '', invoiceUrl: '', receiptUrl: '', message: '', emailSubject: '', customerEmail: '', isInvoice: false, isPaired: false };
     var invoiceCustomerId = null;
     var checkoutInProgress = false;
     var pendingCheckoutIdempotencyKey = null;
@@ -530,14 +540,26 @@
         return 'Unexpected server response (HTTP ' + res.status + '). Refresh the POS page and try again.';
     }
 
-    function updateReceiptWhatsAppLink() {
+    function buildMailtoUrl(email, subject, body) {
+        var query = 'subject=' + encodeURIComponent(subject || '') + '&body=' + encodeURIComponent(body || '');
+        var to = (email || '').trim();
+        return to ? 'mailto:' + to + '?' + query : 'mailto:?' + query;
+    }
+
+    function updateReceiptShareLinks() {
         var phoneEl = document.getElementById('receiptCustomerPhone');
-        if (!phoneEl || !pendingReceipt.message) return;
-        var url = buildWhatsAppUrl(phoneEl.value, pendingReceipt.message);
+        if (!pendingReceipt.message) return;
+        var phone = phoneEl ? phoneEl.value : '';
         var whatsappBtn = document.getElementById('receiptWhatsAppBtn');
-        var pairedWhatsAppBtn = document.getElementById('pairedWhatsAppBtn');
-        if (whatsappBtn) whatsappBtn.href = url;
-        if (pairedWhatsAppBtn) pairedWhatsAppBtn.href = url;
+        var emailBtn = document.getElementById('receiptEmailBtn');
+        if (whatsappBtn) whatsappBtn.href = buildWhatsAppUrl(phone, pendingReceipt.message);
+        if (emailBtn) {
+            emailBtn.href = buildMailtoUrl(
+                pendingReceipt.customerEmail,
+                pendingReceipt.emailSubject,
+                pendingReceipt.message
+            );
+        }
     }
 
     function showReceiptModal(data) {
@@ -545,6 +567,8 @@
         pendingReceipt.receiptUrl = data.receipt_url || '';
         pendingReceipt.url = pendingReceipt.invoiceUrl || pendingReceipt.receiptUrl || '';
         pendingReceipt.message = data.receipt_message || '';
+        pendingReceipt.emailSubject = data.email_subject || '';
+        pendingReceipt.customerEmail = data.customer_email || '';
         pendingReceipt.isPaired = !!(data.is_paired_documents || data.document_type === 'invoice_pair');
         pendingReceipt.isInvoice = pendingReceipt.isPaired || data.document_type === 'invoice';
 
@@ -563,13 +587,19 @@
                 ? 'Print the invoice or send it to the customer on WhatsApp.'
                 : 'Send an e-receipt to the customer or print a copy.');
 
-        document.getElementById('singlePrintActions').classList.toggle('hidden', isPaired);
-        document.getElementById('pairedPrintActions').classList.toggle('hidden', !isPaired);
+        var printBtn = document.getElementById('receiptPrintBtn');
+        var printMenu = document.getElementById('receiptPrintMenu');
+        var shareToolbar = document.getElementById('receiptShareToolbar');
 
-        if (!isPaired) {
-            document.getElementById('receiptPrintBtn').textContent = isInvoiceOnly ? 'Print invoice' : 'Print receipt';
-            document.getElementById('receiptWhatsAppBtn').textContent = isInvoiceOnly ? 'Send to WhatsApp' : 'Send WhatsApp';
+        if (isPaired) {
+            printBtn.classList.add('hidden');
+            printMenu.classList.remove('hidden');
+        } else {
+            printBtn.classList.remove('hidden');
+            printMenu.classList.add('hidden');
+            printBtn.textContent = isInvoiceOnly ? 'Print invoice' : 'Print receipt';
         }
+        if (shareToolbar) shareToolbar.classList.remove('hidden');
 
         var phoneEl = document.getElementById('receiptCustomerPhone');
         var phoneWrap = document.getElementById('receiptPhoneWrap');
@@ -581,7 +611,7 @@
         }
         phoneEl.value = phone || '';
         phoneWrap.classList.remove('hidden');
-        updateReceiptWhatsAppLink();
+        updateReceiptShareLinks();
         openAppModal('saleReceiptModal');
         if (!phone && (isPaired || isInvoiceOnly)) {
             phoneEl.focus();
@@ -601,14 +631,13 @@
         document.getElementById('saleReceiptSubtitle').textContent =
             lineCount + ' item(s) · ' + formatMoney(total) + ' — queued for automatic sync when connectivity returns.';
 
-        document.getElementById('singlePrintActions').classList.add('hidden');
-        document.getElementById('pairedPrintActions').classList.add('hidden');
+        document.getElementById('receiptShareToolbar').classList.add('hidden');
         document.getElementById('receiptPhoneWrap').classList.add('hidden');
 
         openAppModal('saleReceiptModal');
     }
 
-    document.getElementById('receiptCustomerPhone').addEventListener('input', updateReceiptWhatsAppLink);
+    document.getElementById('receiptCustomerPhone').addEventListener('input', updateReceiptShareLinks);
     document.getElementById('receiptPrintBtn').addEventListener('click', function () {
         if (pendingReceipt.url) window.open(pendingReceipt.url, '_blank');
     });

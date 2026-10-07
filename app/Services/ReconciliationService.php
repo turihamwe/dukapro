@@ -365,27 +365,12 @@ class ReconciliationService
         return rtrim(rtrim(number_format($quantity, 2, '.', ''), '0'), '.');
     }
 
-    public function whatsAppShareUrl(EndOfDayReconciliation $reconciliation, ?string $recipientPhone = null): ?string
+    public function shareMessage(EndOfDayReconciliation $reconciliation): string
     {
-        if (! $recipientPhone) {
-            return null;
-        }
-
-        $digits = preg_replace('/\D+/', '', $recipientPhone);
-        if ($digits === '') {
-            return null;
-        }
-
-        if (strlen($digits) === 9 && $digits[0] === '0') {
-            $digits = '256' . substr($digits, 1);
-        } elseif (strlen($digits) === 10 && $digits[0] === '0') {
-            $digits = '256' . substr($digits, 1);
-        }
-
         $business = $reconciliation->business;
         $dateLabel = $reconciliation->reconciliation_date->format('M j, Y');
 
-        $message = implode("\n", array_filter([
+        return implode("\n", array_filter([
             "EOD Report - {$business->name}",
             "Date: {$dateLabel}",
             "Cashier: {$reconciliation->user->name}",
@@ -402,7 +387,19 @@ class ReconciliationService
             '• ' . ReconciliationVariance::extraCashLabel() . ': ' . format_money($reconciliation->extra_cash ?? 0, $business),
             ReconciliationVariance::whatsAppVarianceLine($reconciliation->missing_money ?? 0, $business),
         ]));
+    }
 
-        return 'https://wa.me/' . $digits . '?text=' . rawurlencode($message);
+    public function whatsAppShareUrl(EndOfDayReconciliation $reconciliation, ?string $recipientPhone = null): string
+    {
+        return whatsapp_share_url($recipientPhone, $this->shareMessage($reconciliation));
+    }
+
+    public function emailShareUrl(EndOfDayReconciliation $reconciliation, ?string $recipientEmail = null): string
+    {
+        $business = $reconciliation->business;
+        $dateLabel = $reconciliation->reconciliation_date->format('M j, Y');
+        $subject = "EOD Report — {$dateLabel} — {$business->name}";
+
+        return mailto_share_url($recipientEmail, $subject, $this->shareMessage($reconciliation));
     }
 }

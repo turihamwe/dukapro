@@ -22,10 +22,16 @@
                 button-class="inline-flex items-center rounded-lg border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50"
             />
         @endcan
-        <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.reconciliation.print', ['reconciliation' => $reconciliation]) }}" target="_blank">Print / PDF</x-button>
-        @if($whatsAppUrl)
-            <x-button variant="primary" size="sm" href="{{ $whatsAppUrl }}" target="_blank" rel="noopener">Share on WhatsApp</x-button>
-        @endif
+        <x-document-share-toolbar
+            layout="inline"
+            print-label="Print"
+            :print-href="tenant_route('tenant.reconciliation.print', ['reconciliation' => $reconciliation])"
+            :whats-app-href="$whatsAppUrl"
+            :whats-app-message="$shareMessage"
+            :default-phone="$bossPhone"
+            :show-phone-input="false"
+            :email-href="$emailShareUrl"
+        />
     </x-slot>
 </x-page-header>
 
@@ -44,9 +50,4 @@
     'hideExecutiveSummary' => filled($reconciliation->executive_summary),
 ])
 
-@if(!$whatsAppUrl && $bossPhone === null)
-    <x-card class="mt-4">
-        <p class="text-sm text-gray-600">Add a business phone number in <a href="{{ tenant_route('tenant.business.edit') }}" class="font-medium text-indigo-600 hover:text-indigo-700">Business settings</a> to enable WhatsApp sharing with the owner.</p>
-    </x-card>
-@endif
 @endsection

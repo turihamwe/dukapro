@@ -6,7 +6,12 @@
 @section('content')
 <x-page-header title="Balance sheet" subtitle="Position as of {{ $end->format('M j, Y') }}">
     <x-slot name="actions">
-        <x-button variant="secondary" size="sm" type="button" onclick="window.print()">Print</x-button>
+        <x-document-share-toolbar
+            layout="inline"
+            print-label="Print"
+            :whats-app-href="$shareWhatsAppUrl"
+            :email-href="$shareEmailUrl"
+        />
     </x-slot>
 </x-page-header>
 

@@ -8,6 +8,7 @@ use App\Models\Sale;
 use App\Scopes\BranchScope;
 use App\Support\AnalyticsDateRange;
 use App\Support\ReportPeriodResolver;
+use App\Support\ReportShareMessages;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -76,9 +77,22 @@ class SalesReportController extends Controller
             'bank' => (float) ($summary['bank']->total ?? 0),
         ];
 
+        $shareMessage = ReportShareMessages::salesSummary(
+            $business,
+            $label,
+            $totals,
+            $branchMeta['branchName'] ?? null
+        );
+        $shareSubject = 'Sales report — ' . $label . ' — ' . $business->name;
+
         return array_merge(
-            compact('period', 'label', 'dailyBreakdown', 'totals', 'range'),
-            $branchMeta
+            compact('period', 'label', 'dailyBreakdown', 'totals', 'range', 'business'),
+            $branchMeta,
+            [
+                'shareMessage' => $shareMessage,
+                'shareWhatsAppUrl' => whatsapp_share_url(null, $shareMessage),
+                'shareEmailUrl' => mailto_share_url($business->email, $shareSubject, $shareMessage),
+            ]
         );
     }
 
@@ -134,6 +148,14 @@ class SalesReportController extends Controller
             ->orderByDesc('total_revenue')
             ->get();
 
+        $shareMessage = ReportShareMessages::salesDay(
+            $business,
+            $label,
+            $totals,
+            $branchMeta['branchName'] ?? null
+        );
+        $shareSubject = 'Daily sales — ' . $label . ' — ' . $business->name;
+
         return array_merge([
             'period' => $period,
             'label' => $label,
@@ -141,6 +163,10 @@ class SalesReportController extends Controller
             'totals' => $totals,
             'sales' => $sales,
             'productSummary' => $productSummary,
+            'business' => $business,
+            'shareMessage' => $shareMessage,
+            'shareWhatsAppUrl' => whatsapp_share_url(null, $shareMessage),
+            'shareEmailUrl' => mailto_share_url($business->email, $shareSubject, $shareMessage),
         ], $branchMeta);
     }
 

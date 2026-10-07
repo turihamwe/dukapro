@@ -334,7 +334,9 @@ class PosController extends Controller
                 'receipt_url' => SaleDocument::receiptUrl($sale),
                 'invoice_url' => SaleDocument::isInvoice($sale) ? SaleDocument::invoiceUrl($sale) : null,
                 'receipt_message' => SaleDocument::message($sale),
+                'email_subject' => SaleDocument::emailSubject($sale),
                 'customer_phone' => $customerPhone,
+                'customer_email' => optional($sale->customer)->email,
                 'customer_name' => optional($sale->customer)->name,
             ]);
         }

@@ -2,6 +2,15 @@
 
 @section('title', 'Sales Report — ' . $label)
 
+@push('print-actions')
+    <x-document-share-toolbar
+        layout="inline"
+        :show-print="false"
+        :whats-app-href="$shareWhatsAppUrl"
+        :email-href="$shareEmailUrl"
+    />
+@endpush
+
 @section('content')
 <div class="mb-8 border-b border-gray-200 pb-6">
     <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ platform_brand('name') }} Sales Report</p>

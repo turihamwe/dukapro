@@ -91,6 +91,7 @@ class SalesDocumentController extends Controller
             'sale' => $sale,
             'receiptMessage' => $receiptMessage,
             'whatsAppUrl' => SaleDocument::whatsAppUrl($sale, $defaultPhone),
+            'emailShareUrl' => SaleDocument::emailShareUrl($sale),
             'defaultPhone' => $defaultPhone,
         ]);
     }
@@ -107,13 +108,16 @@ class SalesDocumentController extends Controller
         $sale = SaleDocument::load($sale);
         $defaultPhone = $request->query('phone') ?: optional($sale->customer)->phone;
 
+        $invoiceMessage = SaleDocument::hasCompanionReceipt($sale)
+            ? SaleDocument::pairedMessage($sale)
+            : SaleDocument::message($sale);
+
         return view('sales.invoice', [
             'business' => $business,
             'sale' => $sale,
-            'invoiceMessage' => SaleDocument::hasCompanionReceipt($sale)
-                ? SaleDocument::pairedMessage($sale)
-                : SaleDocument::message($sale),
+            'invoiceMessage' => $invoiceMessage,
             'whatsAppUrl' => SaleDocument::whatsAppUrl($sale, $defaultPhone),
+            'emailShareUrl' => SaleDocument::emailShareUrl($sale),
             'defaultPhone' => $defaultPhone,
         ]);
     }

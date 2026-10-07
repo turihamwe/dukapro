@@ -8,6 +8,6 @@
         @endif
     </div>
     @if(isset($actions))
-        <div class="flex shrink-0 items-center gap-2">{{ $actions }}</div>
+        <div class="flex w-full flex-wrap items-stretch gap-2 sm:w-auto sm:justify-end">{{ $actions }}</div>
     @endif
 </div>

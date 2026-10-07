@@ -16,11 +16,12 @@
 </head>
 <body class="bg-white text-gray-900 antialiased">
     <div class="no-print border-b border-gray-200 bg-gray-50 px-4 py-3">
-        <div class="mx-auto flex max-w-4xl items-center justify-between gap-4">
+        <div class="mx-auto flex max-w-4xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p class="text-sm text-gray-600">Preview — use your browser's print dialog to save as PDF.</p>
-            <div class="flex gap-2">
-                <button type="button" onclick="window.print()" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Print / Save PDF</button>
-                <button type="button" onclick="window.close()" class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Close</button>
+            <div class="flex w-full flex-wrap items-stretch gap-2 sm:w-auto sm:justify-end">
+                @stack('print-actions')
+                <button type="button" onclick="window.print()" class="inline-flex shrink-0 items-center justify-center rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-indigo-700">Print</button>
+                <button type="button" onclick="window.close()" class="inline-flex shrink-0 items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50">Close</button>
             </div>
         </div>
     </div>

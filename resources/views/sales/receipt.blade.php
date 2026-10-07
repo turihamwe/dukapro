@@ -137,54 +137,22 @@
     @endif
 </div>
 
-<div class="no-print mx-auto mt-8 max-w-md rounded-xl border border-gray-200 bg-gray-50 p-4">
-    <p class="text-sm font-semibold text-gray-900">Send to customer</p>
-    <p class="mt-1 text-xs text-gray-500">Enter the customer's WhatsApp number, or leave blank to pick a contact in WhatsApp.</p>
-    <div class="mt-3 flex flex-col gap-2 sm:flex-row">
-        <input type="tel" id="receiptPhone" value="{{ old('phone', $defaultPhone) }}" placeholder="e.g. 0700123456"
-               class="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm">
-        <a id="whatsappShareBtn" href="{{ $whatsAppUrl }}" target="_blank" rel="noopener noreferrer"
-           class="inline-flex items-center justify-center rounded-lg bg-[#25D366] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1ebe5d]">
-            WhatsApp
-        </a>
-    </div>
+<x-document-share-toolbar
+    layout="panel"
+    print-label="Print"
+    :whats-app-href="$whatsAppUrl"
+    :whats-app-message="$receiptMessage"
+    :default-phone="$defaultPhone"
+    :show-phone-input="true"
+    :email-href="$emailShareUrl"
+>
     @if(\App\Support\SaleDocument::hasCompanionReceipt($sale))
-        <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div class="mt-3 w-full">
             <a href="{{ \App\Support\SaleDocument::invoiceUrl($sale) }}" target="_blank"
-               class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50">
+               class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50">
                 View invoice
             </a>
-            <button type="button" onclick="window.print()"
-                    class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50">
-                Print receipt
-            </button>
         </div>
     @endif
-</div>
+</x-document-share-toolbar>
 @endsection
-
-@push('scripts')
-<script>
-(function () {
-    var phoneInput = document.getElementById('receiptPhone');
-    var whatsappBtn = document.getElementById('whatsappShareBtn');
-    var message = @json($receiptMessage);
-
-    function normalizePhone(value) {
-        var digits = (value || '').replace(/\D/g, '');
-        if (digits.length === 9) return '256' + digits;
-        if (digits.length === 10 && digits.charAt(0) === '0') return '256' + digits.slice(1);
-        return digits;
-    }
-
-    function updateWhatsAppLink() {
-        var digits = normalizePhone(phoneInput.value);
-        var base = digits ? 'https://wa.me/' + digits : 'https://wa.me/';
-        whatsappBtn.href = base + '?text=' + encodeURIComponent(message);
-    }
-
-    phoneInput.addEventListener('input', updateWhatsAppLink);
-    updateWhatsAppLink();
-})();
-</script>
-@endpush

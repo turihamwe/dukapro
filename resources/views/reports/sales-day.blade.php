@@ -11,9 +11,13 @@
         <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.reports.sales.index', array_merge(['period' => $period], $branchQuery)) }}">
             Back to summary
         </x-button>
-        <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.reports.sales.day.print', array_merge(['date' => $date, 'period' => $period], $branchQuery)) }}" target="_blank">
-            Print / PDF
-        </x-button>
+        <x-document-share-toolbar
+            layout="inline"
+            print-label="Print"
+            :print-href="tenant_route('tenant.reports.sales.day.print', array_merge(['date' => $date, 'period' => $period], $branchQuery))"
+            :whats-app-href="$shareWhatsAppUrl"
+            :email-href="$shareEmailUrl"
+        />
     </x-slot>
 </x-page-header>
 
