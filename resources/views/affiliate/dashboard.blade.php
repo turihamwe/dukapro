@@ -212,16 +212,15 @@
 </div>
 
 @php
-    $activityWindow = $catalogActivity['window_days'] ?? 30;
     $featuredShop = $catalogActivity['featured'] ?? null;
     $activeLeaders = $catalogActivity['leaders'] ?? collect();
 @endphp
 @if($activeLeaders->isNotEmpty())
     <div class="mb-8 overflow-hidden rounded-xl border border-sky-200 bg-gradient-to-br from-sky-50 via-white to-emerald-50/40">
         <div class="border-b border-sky-100/80 px-6 py-4">
-            <h2 class="font-semibold text-gray-900">Most active shops to support</h2>
+            <h2 class="font-semibold text-gray-900">Shops with the strongest product setup</h2>
             <p class="mt-1 text-xs text-gray-600">
-                Referred businesses adding catalog items in the last {{ $activityWindow }} days — reach out before trial ends to help them subscribe.
+                Ranked by total products in their catalog — shops with a substantial inventory are your best leads for monthly subscription follow-up.
             </p>
         </div>
         @if($featuredShop)
@@ -230,15 +229,15 @@
                 $trialDays = $featuredBusiness->trialDaysRemaining();
             @endphp
             <div class="border-b border-sky-100/80 px-6 py-5">
-                <p class="text-[11px] font-semibold uppercase tracking-wide text-sky-800">Top activity</p>
+                <p class="text-[11px] font-semibold uppercase tracking-wide text-sky-800">Top setup</p>
                 <div class="mt-3 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div class="min-w-0">
                         <p class="text-lg font-bold text-gray-900">{{ $featuredBusiness->name }}</p>
                         <p class="mt-1 text-sm text-gray-600">
-                            <span class="font-semibold text-emerald-700">{{ number_format($featuredShop['products_added']) }}</span>
-                            new {{ \Illuminate\Support\Str::plural('product', $featuredShop['products_added']) }} in {{ $activityWindow }} days
+                            <span class="font-semibold text-emerald-700">{{ number_format($featuredShop['total_products']) }}</span>
+                            {{ \Illuminate\Support\Str::plural('product', $featuredShop['total_products']) }} in catalog
                             @if($featuredShop['last_product_at'])
-                                · last added {{ $featuredShop['last_product_at']->diffForHumans() }}
+                                · last updated {{ $featuredShop['last_product_at']->diffForHumans() }}
                             @endif
                         </p>
                         @if(! $affiliate->isSubAffiliate() && $featuredBusiness->referringAffiliate)
@@ -270,7 +269,7 @@
         @endif
         @if($activeLeaders->count() > 1)
             <div class="px-6 py-4">
-                <p class="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">Also building their catalog</p>
+                <p class="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">Other engaged leads</p>
                 <ul class="divide-y divide-gray-100 rounded-lg border border-gray-100 bg-white/80">
                     @foreach($activeLeaders->skip(1) as $row)
                         @php $shop = $row['business']; @endphp
@@ -278,9 +277,9 @@
                             <div class="min-w-0">
                                 <p class="font-medium text-gray-900">{{ $shop->name }}</p>
                                 <p class="text-xs text-gray-500">
-                                    {{ number_format($row['products_added']) }} products ·
+                                    {{ number_format($row['total_products']) }} {{ \Illuminate\Support\Str::plural('product', $row['total_products']) }} in catalog
                                     @if($row['last_product_at'])
-                                        last {{ $row['last_product_at']->diffForHumans() }}
+                                        · last updated {{ $row['last_product_at']->diffForHumans() }}
                                     @endif
                                 </p>
                             </div>
@@ -298,7 +297,7 @@
     </div>
 @elseif(($stats['onboarded_count'] ?? 0) > 0)
     <div class="mb-8 rounded-xl border border-dashed border-gray-200 bg-gray-50 px-6 py-4 text-sm text-gray-600">
-        No referred shops have added new products in the last {{ $activityWindow }} days yet. Nudge them to load inventory — active setup often leads to subscription at month end.
+        None of your referred shops have products in their catalog yet. Encourage them to load inventory — shops with a full product setup are the most likely to convert to a paid monthly subscription.
     </div>
 @endif
 
