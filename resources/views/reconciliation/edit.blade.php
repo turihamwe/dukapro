@@ -1,11 +1,15 @@
-@extends('layouts.cashier')
+@extends(auth()->user()->usesCashierExperience() ? 'layouts.cashier' : 'layouts.admin')
 
-@section('title', 'Edit Shift Report')
+@section('title', 'Edit EOD Report')
 @section('container_class', 'max-w-2xl')
 @section('main_class', 'lg:!py-2')
 
 @section('content')
-<x-page-header title="Edit Today's Shift Report" subtitle="Update your end-of-day balancing for {{ $reconciliation->reconciliation_date->format('M j, Y') }}." class="!mb-4 lg:!mb-3" />
+<x-page-header title="Edit end-of-day report" subtitle="{{ $reconciliation->user->name }} · {{ $reconciliation->reconciliation_date->format('M j, Y') }}" class="!mb-4 lg:!mb-3">
+    <x-slot name="actions">
+        <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.reconciliation.show', ['reconciliation' => $reconciliation]) }}">Back to report</x-button>
+    </x-slot>
+</x-page-header>
 
 <x-card>
     <form method="POST" action="{{ tenant_route('tenant.reconciliation.update', ['reconciliation' => $reconciliation]) }}" class="space-y-4 lg:space-y-3">

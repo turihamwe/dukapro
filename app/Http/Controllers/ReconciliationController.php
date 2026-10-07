@@ -20,7 +20,8 @@ class ReconciliationController extends Controller
         $this->reconciliationService = $reconciliationService;
         $this->middleware('can:view-reconciliation-history')->only(['index', 'show', 'print', 'daily']);
         $this->middleware('can:view-all-reconciliations')->only(['daily']);
-        $this->middleware('can:submit-reconciliation')->only(['create', 'store', 'edit', 'update']);
+        $this->middleware('can:submit-reconciliation')->only(['create', 'store']);
+        $this->middleware(['can:manage-reconciliation-reports', 'management.access'])->only(['edit', 'update', 'destroy']);
     }
 
     public function index(Request $request)
@@ -53,9 +54,7 @@ class ReconciliationController extends Controller
         $shortages = $reconciliation->shortages()->with('user')->get();
         $bossPhone = $this->resolveBossPhone($business);
         $whatsAppUrl = $this->reconciliationService->whatsAppShareUrl($reconciliation, $bossPhone);
-        $canEdit = $this->canEditReconciliation($request, $reconciliation);
-
-        return view('reconciliation.show', compact('business', 'reconciliation', 'report', 'tradingReport', 'whatsAppUrl', 'bossPhone', 'shortages', 'canEdit'));
+        return view('reconciliation.show', compact('business', 'reconciliation', 'report', 'tradingReport', 'whatsAppUrl', 'bossPhone', 'shortages'));
     }
 
     public function daily(Request $request)
@@ -118,7 +117,7 @@ class ReconciliationController extends Controller
 
     public function edit(Request $request, Business $business, EndOfDayReconciliation $reconciliation)
     {
-        $this->authorizeEditableReconciliation($request, $reconciliation);
+        $this->authorizeManageReconciliation($request, $reconciliation);
 
         $date = $reconciliation->reconciliation_date->toDateString();
         $expected = $this->reconciliationService->calculateExpectedTotals(
@@ -161,10 +160,9 @@ class ReconciliationController extends Controller
 
     public function update(Request $request, Business $business, EndOfDayReconciliation $reconciliation)
     {
-        $this->authorizeEditableReconciliation($request, $reconciliation);
+        $this->authorizeManageReconciliation($request, $reconciliation);
 
         $data = $this->submissionPayload($request, $this->validatedSubmission($request));
-        $this->assertEditableDate(Carbon::parse($data['reconciliation_date']));
 
         $old = $reconciliation->toArray();
 
@@ -176,6 +174,17 @@ class ReconciliationController extends Controller
 
         return redirect()->to(tenant_route('tenant.reconciliation.show', ['reconciliation' => $reconciliation]))
             ->with('success', ReconciliationVariance::successMessage($reconciliation->missing_money ?? 0, $reconciliation->business));
+    }
+
+    public function destroy(Request $request, Business $business, EndOfDayReconciliation $reconciliation)
+    {
+        $this->authorizeManageReconciliation($request, $reconciliation);
+
+        $this->reconciliationService->softDeleteReport($reconciliation, $request->user());
+
+        return redirect()
+            ->to(tenant_route('tenant.reconciliation.index'))
+            ->with('success', 'End-of-day report removed. Sales and transaction history were not changed.');
     }
 
     protected function validatedSubmission(Request $request): array
@@ -209,22 +218,18 @@ class ReconciliationController extends Controller
         abort_unless($date->isToday(), 403, 'Only today\'s reconciliation can be submitted or edited.');
     }
 
-    protected function canEditReconciliation(Request $request, EndOfDayReconciliation $reconciliation): bool
+    protected function canManageReconciliationReports(Request $request, EndOfDayReconciliation $reconciliation): bool
     {
-        if (! Gate::allows('submit-reconciliation')) {
+        if (! Gate::allows('manage-reconciliation-reports')) {
             return false;
         }
 
-        if ((int) $reconciliation->user_id !== (int) $request->user()->id) {
-            return false;
-        }
-
-        return Carbon::parse($reconciliation->reconciliation_date)->isToday();
+        return (int) $reconciliation->business_id === (int) $request->user()->business_id;
     }
 
-    protected function authorizeEditableReconciliation(Request $request, EndOfDayReconciliation $reconciliation): void
+    protected function authorizeManageReconciliation(Request $request, EndOfDayReconciliation $reconciliation): void
     {
-        abort_unless($this->canEditReconciliation($request, $reconciliation), 403);
+        abort_unless($this->canManageReconciliationReports($request, $reconciliation), 403);
     }
 
     protected function authorizeReconciliation(Request $request, EndOfDayReconciliation $reconciliation): void

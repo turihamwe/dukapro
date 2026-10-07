@@ -46,6 +46,11 @@ class PermissionRegistry
                 'description' => 'Close shift and submit balancing',
                 'roles' => [UserRole::MANAGER, UserRole::SUPERVISOR],
             ],
+            'manage-reconciliation-reports' => [
+                'label' => 'Edit & delete EOD reports',
+                'description' => 'Correct or remove submitted shift reconciliations',
+                'roles' => [UserRole::MANAGER, UserRole::SUPERVISOR],
+            ],
             'view-cost-prices' => [
                 'label' => 'View cost prices',
                 'description' => 'See purchase cost and margins',
@@ -101,6 +106,9 @@ class PermissionRegistry
 
             case 'submit-reconciliation':
                 return $user->isCashier();
+
+            case 'manage-reconciliation-reports':
+                return $user->isManager();
 
             case 'view-cost-prices':
                 if ($user->canSwitchToCashierMode() && CashierMode::isActive()) {

@@ -48,7 +48,7 @@
                         </p>
                     </div>
                 </div>
-                <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.reconciliation.show', ['reconciliation' => $recon]) }}">View</x-button>
+                @include('reconciliation.partials.list-actions', ['recon' => $recon])
             </div>
         </x-card>
     @empty
@@ -95,7 +95,7 @@
                             @endif
                         </td>
                         <td class="px-6 py-4 text-right text-sm">
-                            <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.reconciliation.show', ['reconciliation' => $recon]) }}">View</x-button>
+                            @include('reconciliation.partials.list-actions', ['recon' => $recon])
                         </td>
                     </tr>
                 @empty

@@ -3,10 +3,13 @@
 namespace App\Services;
 
 use App\Models\Business;
+use App\Helpers\AuditLogger;
 use App\Models\EndOfDayReconciliation;
 use App\Models\Expense;
+use App\Models\ReconciliationShortage;
 use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Models\ShiftWaiterBalance;
 use App\Models\User;
 use App\Support\ReconciliationVariance;
 use Carbon\Carbon;
@@ -189,6 +192,37 @@ class ReconciliationService
         }
 
         return $reconciliation->fresh();
+    }
+
+    public function softDeleteReport(EndOfDayReconciliation $reconciliation, User $actor): void
+    {
+        if ((int) $reconciliation->business_id !== (int) $actor->business_id) {
+            abort(404);
+        }
+
+        DB::transaction(function () use ($reconciliation, $actor) {
+            $old = $reconciliation->toArray();
+
+            ReconciliationShortage::query()
+                ->where('end_of_day_reconciliation_id', $reconciliation->id)
+                ->where('status', ReconciliationShortage::STATUS_PENDING)
+                ->delete();
+
+            ShiftWaiterBalance::query()
+                ->where('end_of_day_reconciliation_id', $reconciliation->id)
+                ->update(['end_of_day_reconciliation_id' => null]);
+
+            $reconciliation->delete();
+
+            AuditLogger::record(
+                'reconciliation_deleted',
+                $reconciliation,
+                $old,
+                null,
+                (int) $actor->business_id,
+                (int) $actor->id
+            );
+        });
     }
 
     public function buildReportDetails(EndOfDayReconciliation $reconciliation): array

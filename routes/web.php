@@ -464,8 +464,12 @@ Route::middleware(['maintenance'])->group(function () {
                     Route::middleware(['can:submit-reconciliation'])->group(function () {
                         Route::get('/create', [ReconciliationController::class, 'create'])->name('create');
                         Route::post('/', [ReconciliationController::class, 'store'])->name('store');
+                    });
+
+                    Route::middleware(['can:manage-reconciliation-reports', 'management.access'])->group(function () {
                         Route::get('/{reconciliation}/edit', [ReconciliationController::class, 'edit'])->name('edit');
                         Route::put('/{reconciliation}', [ReconciliationController::class, 'update'])->name('update');
+                        Route::delete('/{reconciliation}', [ReconciliationController::class, 'destroy'])->name('destroy');
                     });
 
                     Route::middleware(['can:view-reconciliation-history'])->group(function () {

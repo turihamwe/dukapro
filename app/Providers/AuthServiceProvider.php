@@ -261,6 +261,16 @@ class AuthServiceProvider extends ServiceProvider
             return $user->canSwitchToCashierMode() && CashierMode::isActive();
         });
 
+        Gate::define('manage-reconciliation-reports', function (User $user) use ($permissions) {
+            if ($user->canSwitchToCashierMode() && CashierMode::isActive()) {
+                return false;
+            }
+
+            $default = $user->isOwner() || $user->isManager();
+
+            return $permissions->allows($user, 'manage-reconciliation-reports', $default);
+        });
+
         Gate::define('view-reconciliation-history', function (User $user) {
             return in_array($user->role, UserRole::all(), true);
         });

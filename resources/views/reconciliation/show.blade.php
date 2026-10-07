@@ -12,9 +12,16 @@
     subtitle="{{ $reconciliation->reconciliation_date->format('l, M j, Y') }} · {{ $reconciliation->user->name }}">
     <x-slot name="actions">
         <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.reconciliation.index') }}">All reports</x-button>
-        @if(! empty($canEdit))
+        @can('manage-reconciliation-reports')
             <x-button variant="primary" size="sm" href="{{ tenant_route('tenant.reconciliation.edit', ['reconciliation' => $reconciliation]) }}">Edit report</x-button>
-        @endif
+            <x-delete-confirm-button
+                :action="tenant_route('tenant.reconciliation.destroy', ['reconciliation' => $reconciliation])"
+                message="Remove this end-of-day report?"
+                detail="Sales and POS history stay unchanged. Pending shortages from this report will be cleared."
+                label="Delete report"
+                button-class="inline-flex items-center rounded-lg border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50"
+            />
+        @endcan
         <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.reconciliation.print', ['reconciliation' => $reconciliation]) }}" target="_blank">Print / PDF</x-button>
         @if($whatsAppUrl)
             <x-button variant="primary" size="sm" href="{{ $whatsAppUrl }}" target="_blank" rel="noopener">Share on WhatsApp</x-button>
