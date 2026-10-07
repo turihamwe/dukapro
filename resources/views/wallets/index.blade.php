@@ -28,10 +28,48 @@
         </x-card>
     @empty
         <x-card class="sm:col-span-2 lg:col-span-3 text-sm text-gray-600">
-            No wallets yet. Add your cash till, MTN MoMo, or bank account below to track where money sits.
+            No active payment accounts yet. Balances appear here once accounts exist and receivable or payable payments are linked to wallets.
         </x-card>
     @endforelse
 </div>
+
+@if($wallets->isNotEmpty())
+    <h2 class="mb-3 text-sm font-semibold text-gray-900">All accounts</h2>
+    <div class="space-y-3">
+        @foreach($wallets as $wallet)
+            <x-card :padding="false" class="p-4">
+                <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:items-end">
+                    <div>
+                        <p class="mb-1 text-xs font-medium text-gray-700">Name</p>
+                        <p class="text-sm font-semibold text-gray-900">{{ $wallet->name }}</p>
+                    </div>
+                    <div>
+                        <p class="mb-1 text-xs font-medium text-gray-700">Type</p>
+                        <p class="text-sm text-gray-900">{{ $wallet->typeLabel() }}</p>
+                    </div>
+                    <div>
+                        <p class="mb-1 text-xs font-medium text-gray-700">Current balance</p>
+                        <p class="text-sm font-semibold text-emerald-700">@money($wallet->current_balance)</p>
+                    </div>
+                    <div>
+                        <p class="mb-1 text-xs font-medium text-gray-700">Status</p>
+                        <p class="text-sm text-gray-900">
+                            @if($wallet->is_active)
+                                <span class="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">Active</span>
+                            @else
+                                <span class="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">Inactive</span>
+                            @endif
+                        </p>
+                    </div>
+                </div>
+            </x-card>
+        @endforeach
+    </div>
+@endif
+
+{{--
+Wallet management (create / edit) — commented out until edit functionality is requested.
+Uncomment this block and restore the "Add wallet" + "Manage wallets" sections below.
 
 <x-card class="mb-8">
     <h2 class="mb-4 text-sm font-semibold text-gray-900">Add wallet</h2>
@@ -80,4 +118,5 @@
         @endforeach
     </div>
 @endif
+--}}
 @endsection

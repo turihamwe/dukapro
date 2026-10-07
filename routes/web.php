@@ -444,7 +444,7 @@ Route::middleware(['maintenance'])->group(function () {
 
                 Route::get('/operations', [OperationsController::class, 'index'])->name('operations.index');
 
-                Route::prefix('wallets')->name('wallets.')->middleware('can:manage-wallets')->group(function () {
+                Route::prefix('wallets')->name('wallets.')->middleware(['can:manage-wallets', 'payment.wallets'])->group(function () {
                     Route::get('/', [PaymentWalletController::class, 'index'])->name('index');
                     Route::post('/', [PaymentWalletController::class, 'store'])->name('store');
                     Route::put('/{wallet}', [PaymentWalletController::class, 'update'])->name('update');

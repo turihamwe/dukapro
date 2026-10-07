@@ -143,6 +143,8 @@
 
         @include('business._customer-credit-settings', ['business' => $business])
 
+        @include('business._payment-wallets-settings', ['business' => $business])
+
         @include('business._variable-pricing-settings', ['business' => $business])
 
         @include('business._divisible-products-settings', ['business' => $business])

@@ -45,7 +45,7 @@ class SupplierCreditController extends Controller
         ]);
     }
 
-    public function bills(Request $request)
+    public function bills(Request $request, PaymentWalletService $walletService)
     {
         $status = $request->input('status');
         $allowed = [
@@ -67,10 +67,13 @@ class SupplierCreditController extends Controller
             ->selectRaw('COALESCE(SUM(total_amount - amount_paid), 0) as total')
             ->value('total');
 
+        $businessId = (int) $request->user()->business_id;
+
         return view('supplier-credit.bills.index', [
             'purchases' => $purchases,
             'totalPayable' => $totalPayable,
             'statusFilter' => in_array($status, $allowed, true) ? $status : null,
+            'wallets' => $walletService->activeForBusiness($businessId),
         ]);
     }
 
@@ -221,9 +224,7 @@ class SupplierCreditController extends Controller
             $wallet
         );
 
-        return redirect()
-            ->to(tenant_route('tenant.supplier-credit.bills.show', ['purchase' => $purchase->fresh()]))
-            ->with('success', 'Payment recorded.');
+        return back()->with('success', 'Payment recorded.');
     }
 
     public function destroyBill(Business $business, SupplierCreditPurchase $purchase, SupplierCreditService $service, Request $request)

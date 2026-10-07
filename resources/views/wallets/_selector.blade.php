@@ -2,11 +2,12 @@
     $wallets = $wallets ?? collect();
     $name = $name ?? 'payment_wallet_id';
     $label = $label ?? 'Account / wallet';
-    $required = $required ?? $wallets->isNotEmpty();
+    $walletsEnabled = auth()->user() && auth()->user()->business && auth()->user()->business->usesPaymentWalletsMode();
+    $required = $required ?? ($walletsEnabled && $wallets->isNotEmpty());
     $selected = old($name);
 @endphp
 
-@if($wallets->isNotEmpty())
+@if($walletsEnabled && $wallets->isNotEmpty())
     <x-select :name="$name" :label="$label" :required="$required">
         @unless($required)
             <option value="">— None —</option>

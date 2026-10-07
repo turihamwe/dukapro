@@ -130,6 +130,10 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('manage-wallets', function (User $user) {
+            if (! $user->business || ! \App\Support\PaymentWalletMode::active($user->business)) {
+                return false;
+            }
+
             return $user->isOwner() || $user->isManager();
         });
 

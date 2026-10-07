@@ -78,5 +78,6 @@ class Kernel extends HttpKernel
         'hospitality' => \App\Http\Middleware\EnsureHospitalityModeActive::class,
         'supplier.credit' => \App\Http\Middleware\EnsureSupplierCreditModeActive::class,
         'customer.credit' => \App\Http\Middleware\EnsureCustomerCreditModeActive::class,
+        'payment.wallets' => \App\Http\Middleware\EnsurePaymentWalletModeActive::class,
     ];
 }

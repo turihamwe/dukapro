@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\Business;
 use App\Models\PaymentWallet;
 use App\Models\User;
+use App\Support\PaymentWalletMode;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -11,6 +13,12 @@ class PaymentWalletService
 {
     public function activeForBusiness(int $businessId)
     {
+        $business = Business::query()->find($businessId);
+
+        if (! PaymentWalletMode::active($business)) {
+            return collect();
+        }
+
         return PaymentWallet::query()
             ->where('business_id', $businessId)
             ->where('is_active', true)
@@ -21,6 +29,15 @@ class PaymentWalletService
 
     public function summaryForBusiness(int $businessId): array
     {
+        $business = Business::query()->find($businessId);
+
+        if (! PaymentWalletMode::active($business)) {
+            return [
+                'wallets' => collect(),
+                'total_liquid' => 0.0,
+            ];
+        }
+
         $wallets = PaymentWallet::query()
             ->where('business_id', $businessId)
             ->where('is_active', true)
@@ -36,6 +53,18 @@ class PaymentWalletService
 
     public function resolveForBusiness(int $businessId, ?int $walletId): ?PaymentWallet
     {
+        $business = Business::query()->find($businessId);
+
+        if (! PaymentWalletMode::active($business)) {
+            if ($walletId) {
+                throw ValidationException::withMessages([
+                    'payment_wallet_id' => 'Payment wallets are not enabled for this business.',
+                ]);
+            }
+
+            return null;
+        }
+
         if (! $walletId) {
             return null;
         }
@@ -56,6 +85,12 @@ class PaymentWalletService
 
     public function assertWalletRequired(int $businessId, ?int $walletId): void
     {
+        $business = Business::query()->find($businessId);
+
+        if (! PaymentWalletMode::active($business)) {
+            return;
+        }
+
         $hasWallets = PaymentWallet::query()
             ->where('business_id', $businessId)
             ->where('is_active', true)

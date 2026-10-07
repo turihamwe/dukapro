@@ -20,7 +20,7 @@ class CustomerCreditCustomerController extends Controller
         $this->middleware('management.access');
     }
 
-    public function index(Request $request)
+    public function index(Request $request, PaymentWalletService $walletService)
     {
         $customers = Customer::query()
             ->where('is_credit_customer', true)
@@ -29,8 +29,11 @@ class CustomerCreditCustomerController extends Controller
             ->withCount('debtEntries')
             ->paginate(25);
 
+        $businessId = (int) $request->user()->business_id;
+
         return view('customer-credit.customers.index', [
             'customers' => $customers,
+            'wallets' => $walletService->activeForBusiness($businessId),
         ]);
     }
 

@@ -13,6 +13,7 @@ class PaymentWalletController extends Controller
     public function __construct()
     {
         $this->middleware('can:manage-wallets');
+        $this->middleware('payment.wallets');
         $this->middleware('management.access');
     }
 

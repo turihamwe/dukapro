@@ -8,7 +8,7 @@
     <x-slot name="actions">
         <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.supplier-credit.bills.index') }}">All bills</x-button>
         @if($balance > 0)
-            <x-button variant="primary" size="sm" type="button" id="open-bill-payment-modal">Make payment</x-button>
+            <x-button variant="primary" size="sm" type="button" onclick="openAppModal('bill-payment-modal-{{ $purchase->id }}')">Make payment</x-button>
         @endif
     </x-slot>
 </x-page-header>
@@ -85,55 +85,18 @@
 
 @if($balance > 0)
 @push('modals')
-<div id="bill-payment-modal" class="app-modal-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="bill-payment-title">
-    <div class="app-modal-panel">
-        <form method="POST" action="{{ tenant_route('tenant.supplier-credit.purchases.payments.store', ['purchase' => $purchase]) }}" class="flex min-h-0 flex-1 flex-col">
-            @csrf
-            <div class="app-modal-header">
-                <h2 id="bill-payment-title" class="text-lg font-semibold text-gray-900">Make payment</h2>
-                <button type="button" id="close-bill-payment-modal" class="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600">&times;</button>
-            </div>
-            <div class="app-modal-body space-y-4">
-                <p class="text-sm text-gray-600">Remaining balance: <span class="font-semibold text-amber-800">@money($balance)</span></p>
-                <x-input type="number" step="0.01" min="0.01" max="{{ $balance }}" name="amount" label="Amount" value="{{ old('amount') }}" required />
-                @include('wallets._selector', ['wallets' => $wallets ?? collect(), 'label' => 'Paid from account / wallet'])
-                <x-select name="payment_method" label="Method">
-                    <option value="cash" @selected(old('payment_method', 'cash') === 'cash')>Cash</option>
-                    <option value="mobile_money" @selected(old('payment_method') === 'mobile_money')>Mobile Money</option>
-                    <option value="bank" @selected(old('payment_method') === 'bank')>Bank</option>
-                </x-select>
-                <x-input type="text" name="reference" label="Reference (optional)" value="{{ old('reference') }}" />
-                <x-input type="datetime-local" name="paid_at" label="Date & time (optional)" value="{{ old('paid_at') }}" />
-                <x-textarea name="notes" label="Notes (optional)" rows="2">{{ old('notes') }}</x-textarea>
-            </div>
-            <div class="app-modal-footer">
-                <x-button variant="secondary" type="button" id="cancel-bill-payment-modal">Cancel</x-button>
-                <x-button variant="primary" type="submit">Record payment</x-button>
-            </div>
-        </form>
-    </div>
-</div>
+    @include('supplier-credit.bills._payment-modal', [
+        'purchase' => $purchase,
+        'balance' => $balance,
+        'wallets' => $wallets ?? collect(),
+    ])
 @endpush
 
 @push('scripts')
 <script>
 (function () {
-    var modal = document.getElementById('bill-payment-modal');
-    var openBtn = document.getElementById('open-bill-payment-modal');
-    var closeBtn = document.getElementById('close-bill-payment-modal');
-    var cancelBtn = document.getElementById('cancel-bill-payment-modal');
-
-    if (openBtn && modal) openBtn.addEventListener('click', function () {
-        window.openAppModal(modal);
-    });
-    if (closeBtn && modal) closeBtn.addEventListener('click', function () {
-        window.closeAppModal(modal);
-    });
-    if (cancelBtn && modal) cancelBtn.addEventListener('click', function () {
-        window.closeAppModal(modal);
-    });
-
-    @if($errors->any() && old('amount'))
+    @if($errors->any() && (string) old('_payment_purchase_id') === (string) $purchase->id)
+        var modal = document.getElementById('bill-payment-modal-{{ $purchase->id }}');
         if (modal) window.openAppModal(modal);
     @endif
 })();

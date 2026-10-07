@@ -11,7 +11,7 @@
             <p class="mt-1 text-xs text-gray-500">Internal liquidity across cash, mobile money, and bank.</p>
         </div>
         @can('manage-wallets')
-            <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.wallets.index') }}">Manage wallets</x-button>
+            <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.wallets.index') }}">View wallets</x-button>
         @endcan
     </div>
     <p class="mt-4 text-2xl font-bold text-emerald-700">{{ format_money($totalLiquid) }}</p>

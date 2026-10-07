@@ -70,6 +70,9 @@
                         </p>
                     </div>
                     <div class="flex flex-wrap items-center justify-end gap-2">
+                        @if($balance > 0)
+                            <x-button variant="primary" size="sm" type="button" onclick="openAppModal('bill-payment-modal-{{ $purchase->id }}')">Make payment</x-button>
+                        @endif
                         <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.supplier-credit.bills.show', ['purchase' => $purchase]) }}">View</x-button>
                         @include('supplier-credit.partials.delete-button', [
                             'action' => tenant_route('tenant.supplier-credit.bills.destroy', ['purchase' => $purchase]),
@@ -89,4 +92,26 @@
 </div>
 
 <div class="mt-6">{{ $purchases->links() }}</div>
+
+@push('modals')
+    @foreach($purchases as $purchase)
+        @if($purchase->balanceDue() > 0)
+            @include('supplier-credit.bills._payment-modal', [
+                'purchase' => $purchase,
+                'wallets' => $wallets ?? collect(),
+            ])
+        @endif
+    @endforeach
+@endpush
+
+@if($errors->any() && old('_payment_purchase_id'))
+@push('scripts')
+<script>
+(function () {
+    var modal = document.getElementById('bill-payment-modal-{{ old('_payment_purchase_id') }}');
+    if (modal) window.openAppModal(modal);
+})();
+</script>
+@endpush
+@endif
 @endsection

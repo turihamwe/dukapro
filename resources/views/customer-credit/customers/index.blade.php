@@ -32,6 +32,7 @@
                     <p class="mt-1 text-xs text-gray-500">{{ $customer->phone ?? '—' }} · Outstanding @money($customer->outstanding_balance)</p>
                 </div>
                 <div class="flex shrink-0 items-center gap-2">
+                    <x-button variant="success" size="sm" type="button" onclick="openAppModal('customer-payment-modal-{{ $customer->id }}')">Record payment</x-button>
                     <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.customer-credit.customers.edit', ['customer' => $customer]) }}">Edit</x-button>
                     @include('customer-credit.partials.delete-button', [
                         'action' => tenant_route('tenant.customer-credit.customers.destroy', ['customer' => $customer]),
@@ -46,4 +47,24 @@
 </div>
 
 <div class="mt-6">{{ $customers->links() }}</div>
+
+@push('modals')
+    @foreach($customers as $customer)
+        @include('customer-credit.customers._payment-modal', [
+            'customer' => $customer,
+            'wallets' => $wallets ?? collect(),
+        ])
+    @endforeach
+@endpush
+
+@if($errors->any() && old('_payment_customer_id'))
+@push('scripts')
+<script>
+(function () {
+    var modal = document.getElementById('customer-payment-modal-{{ old('_payment_customer_id') }}');
+    if (modal) window.openAppModal(modal);
+})();
+</script>
+@endpush
+@endif
 @endsection
