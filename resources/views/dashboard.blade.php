@@ -20,6 +20,10 @@
 @endif
 
 {{-- Owner summary cards --}}
+@if(isset($walletSummary) && $walletSummary)
+    @include('wallets._dashboard-summary', ['walletSummary' => $walletSummary])
+@endif
+
 @if($summaryCards)
 <div class="mb-6 grid grid-cols-2 gap-4 xl:grid-cols-4">
     <x-stat-card label="Total stock value" :value="format_money($summaryCards['inventory_value'])" accent="indigo" />

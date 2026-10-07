@@ -26,6 +26,9 @@
                     @if($payment->description)
                         <p class="mt-1 text-xs text-gray-500">{{ $payment->description }}</p>
                     @endif
+                    @if($payment->paymentWallet)
+                        <p class="mt-1 text-xs text-emerald-700">Deposited to {{ $payment->paymentWallet->name }}</p>
+                    @endif
                 </div>
                 @include('customer-credit.partials.delete-button', [
                     'action' => tenant_route('tenant.customer-credit.payments.destroy', ['ledgerEntry' => $payment]),

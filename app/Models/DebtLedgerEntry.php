@@ -23,6 +23,7 @@ class DebtLedgerEntry extends Model
         'description',
         'due_date',
         'is_opening_balance',
+        'payment_wallet_id',
     ];
 
     protected $casts = [
@@ -50,5 +51,10 @@ class DebtLedgerEntry extends Model
     public function sale(): BelongsTo
     {
         return $this->belongsTo(Sale::class);
+    }
+
+    public function paymentWallet(): BelongsTo
+    {
+        return $this->belongsTo(PaymentWallet::class, 'payment_wallet_id');
     }
 }

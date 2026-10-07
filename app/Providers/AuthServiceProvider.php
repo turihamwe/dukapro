@@ -129,6 +129,10 @@ class AuthServiceProvider extends ServiceProvider
             return $user->isOwner() || $user->isManager();
         });
 
+        Gate::define('manage-wallets', function (User $user) {
+            return $user->isOwner() || $user->isManager();
+        });
+
         Gate::define('view-customers', function (User $user) {
             return $user->isOwner() || $user->isManager() || $user->isSupervisor();
         });

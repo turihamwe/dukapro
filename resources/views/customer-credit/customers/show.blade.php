@@ -20,13 +20,12 @@
     <h2 class="mb-4 text-sm font-semibold text-gray-900">Record payment received</h2>
     <form method="POST" action="{{ tenant_route('tenant.customer-credit.customers.payments.store', ['customer' => $customer]) }}" class="space-y-4">
         @csrf
-        <div class="grid gap-4 sm:grid-cols-3">
-            <div class="sm:col-span-2">
-                <x-input type="number" step="0.01" name="amount" placeholder="Amount" required />
-            </div>
-            <x-button variant="success" type="submit">Record payment</x-button>
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <x-input type="number" step="0.01" name="amount" label="Amount" required />
+            @include('wallets._selector', ['wallets' => $wallets, 'label' => 'Deposit to account / wallet'])
         </div>
         <x-input type="text" name="description" placeholder="Note (optional)" />
+        <x-button variant="success" type="submit">Record payment</x-button>
     </form>
 </x-card>
 

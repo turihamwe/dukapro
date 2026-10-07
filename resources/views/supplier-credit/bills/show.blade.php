@@ -75,6 +75,7 @@
                         {{ $payment->paid_at->format('M j, Y g:i A') }}
                         @if($payment->payment_method) · {{ $payment->payment_method }} @endif
                         @if($payment->reference) · {{ $payment->reference }} @endif
+                        @if($payment->paymentWallet) · {{ $payment->paymentWallet->name }} @endif
                     </span>
                 </li>
             @endforeach
@@ -95,6 +96,7 @@
             <div class="app-modal-body space-y-4">
                 <p class="text-sm text-gray-600">Remaining balance: <span class="font-semibold text-amber-800">@money($balance)</span></p>
                 <x-input type="number" step="0.01" min="0.01" max="{{ $balance }}" name="amount" label="Amount" value="{{ old('amount') }}" required />
+                @include('wallets._selector', ['wallets' => $wallets ?? collect(), 'label' => 'Paid from account / wallet'])
                 <x-select name="payment_method" label="Method">
                     <option value="cash" @selected(old('payment_method', 'cash') === 'cash')>Cash</option>
                     <option value="mobile_money" @selected(old('payment_method') === 'mobile_money')>Mobile Money</option>

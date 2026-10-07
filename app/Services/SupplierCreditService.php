@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Helpers\AuditLogger;
 use App\Models\Product;
 use App\Models\Supplier;
+use App\Models\PaymentWallet;
 use App\Models\SupplierCreditPayment;
 use App\Models\SupplierCreditPurchase;
 use App\Models\User;
@@ -23,10 +24,17 @@ class SupplierCreditService
     /** @var ProductBatchService */
     protected $batchService;
 
-    public function __construct(ProductInventoryService $inventoryService, ProductBatchService $batchService)
-    {
+    /** @var PaymentWalletService */
+    protected $walletService;
+
+    public function __construct(
+        ProductInventoryService $inventoryService,
+        ProductBatchService $batchService,
+        PaymentWalletService $walletService
+    ) {
         $this->inventoryService = $inventoryService;
         $this->batchService = $batchService;
+        $this->walletService = $walletService;
     }
 
     public function recordCreditPurchase(
@@ -136,7 +144,8 @@ class SupplierCreditService
         ?string $paymentMethod = null,
         ?string $reference = null,
         ?string $notes = null,
-        ?\DateTimeInterface $paidAt = null
+        ?\DateTimeInterface $paidAt = null,
+        ?PaymentWallet $wallet = null
     ): SupplierCreditPayment {
         if (! SupplierCreditMode::active($user->business)) {
             throw ValidationException::withMessages([
@@ -163,7 +172,11 @@ class SupplierCreditService
             ]);
         }
 
-        return DB::transaction(function () use ($user, $purchase, $amount, $paymentMethod, $reference, $notes, $paidAt) {
+        return DB::transaction(function () use ($user, $purchase, $amount, $paymentMethod, $reference, $notes, $paidAt, $wallet) {
+            if ($wallet) {
+                $this->walletService->withdraw($wallet, $amount, $user);
+            }
+
             $payment = SupplierCreditPayment::create([
                 'business_id' => $purchase->business_id,
                 'supplier_id' => $purchase->supplier_id,
@@ -174,6 +187,7 @@ class SupplierCreditService
                 'payment_method' => $paymentMethod,
                 'reference' => $reference,
                 'notes' => $notes,
+                'payment_wallet_id' => $wallet ? $wallet->id : null,
             ]);
 
             $purchase->amount_paid = round((float) $purchase->amount_paid + $amount, 2);
@@ -199,6 +213,7 @@ class SupplierCreditService
             $purchase->loadMissing('payments');
 
             foreach ($purchase->payments as $payment) {
+                $this->restoreWalletForDeletedPayment($payment, $user);
                 $payment->delete();
             }
 
@@ -220,6 +235,8 @@ class SupplierCreditService
         DB::transaction(function () use ($payment, $user) {
             $old = $payment->toArray();
             $purchase = $payment->purchase;
+
+            $this->restoreWalletForDeletedPayment($payment, $user);
 
             $payment->delete();
 
@@ -306,5 +323,19 @@ class SupplierCreditService
 
             return $purchase;
         });
+    }
+
+    protected function restoreWalletForDeletedPayment(SupplierCreditPayment $payment, User $user): void
+    {
+        if (! $payment->payment_wallet_id) {
+            return;
+        }
+
+        $payment->loadMissing('paymentWallet');
+        $wallet = $payment->paymentWallet;
+
+        if ($wallet) {
+            $this->walletService->deposit($wallet, (float) $payment->amount, $user);
+        }
     }
 }

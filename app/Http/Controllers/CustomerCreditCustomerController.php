@@ -6,6 +6,7 @@ use App\Models\Business;
 use App\Models\Customer;
 use App\Services\CustomerCreditService;
 use App\Services\CustomerService;
+use App\Services\PaymentWalletService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -42,10 +43,13 @@ class CustomerCreditCustomerController extends Controller
         $entries = $customer->debtEntries()->with('user', 'sale')->latest()->paginate(25);
         $creditSales = $customer->sales()->where('is_credit_sale', true)->latest()->limit(10)->get();
 
+        $wallets = app(PaymentWalletService::class)->activeForBusiness((int) $business->id);
+
         return view('customer-credit.customers.show', [
             'customer' => $customer->load('openingBalanceEntry'),
             'entries' => $entries,
             'creditSales' => $creditSales,
+            'wallets' => $wallets,
         ]);
     }
 

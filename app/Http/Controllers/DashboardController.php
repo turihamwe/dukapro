@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\DashboardService;
 use App\Services\LowStockAlertService;
 use App\Services\OnboardingService;
+use App\Services\PaymentWalletService;
 use App\Support\AnalyticsDateRange;
 use Illuminate\Http\Request;
 
@@ -46,6 +47,10 @@ class DashboardController extends Controller
             ? $this->dashboardService->modernPayload($business)
             : null;
 
+        $walletSummary = $user->can('manage-wallets')
+            ? app(PaymentWalletService::class)->summaryForBusiness((int) $business->id)
+            : null;
+
         return view('dashboard', [
             'business' => $business,
             'onboarding' => $onboarding,
@@ -58,6 +63,7 @@ class DashboardController extends Controller
             'revenueChart' => $payload['revenue_chart'] ?? null,
             'stockChart' => $payload['stock_chart'] ?? null,
             'lowStockItems' => $lowStockItems,
+            'walletSummary' => $walletSummary,
         ]);
     }
 

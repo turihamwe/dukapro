@@ -70,6 +70,7 @@ use App\Http\Controllers\SupplierCreditController;
 use App\Http\Controllers\SupplierFinancialStatementController;
 use App\Http\Controllers\PwaManifestController;
 use App\Http\Controllers\OperationsController;
+use App\Http\Controllers\PaymentWalletController;
 use App\Http\Controllers\WaiterShiftController;
 use App\Http\Controllers\RestaurantOrderController;
 use App\Http\Controllers\RestaurantTableController;
@@ -442,6 +443,13 @@ Route::middleware(['maintenance'])->group(function () {
                 });
 
                 Route::get('/operations', [OperationsController::class, 'index'])->name('operations.index');
+
+                Route::prefix('wallets')->name('wallets.')->middleware('can:manage-wallets')->group(function () {
+                    Route::get('/', [PaymentWalletController::class, 'index'])->name('index');
+                    Route::post('/', [PaymentWalletController::class, 'store'])->name('store');
+                    Route::put('/{wallet}', [PaymentWalletController::class, 'update'])->name('update');
+                });
+
                 Route::get('/downloads', [DownloadsController::class, 'index'])->name('downloads.index');
 
                 Route::prefix('reconciliation')->name('reconciliation.')->group(function () {

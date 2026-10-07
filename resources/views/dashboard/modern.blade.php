@@ -8,6 +8,10 @@
     $m = $modernPayload;
 @endphp
 
+@if(isset($walletSummary) && $walletSummary)
+    @include('wallets._dashboard-summary', ['walletSummary' => $walletSummary])
+@endif
+
 @if($m)
 @php
     $s = $m['summary'];

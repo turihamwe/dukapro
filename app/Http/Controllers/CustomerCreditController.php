@@ -8,6 +8,7 @@ use App\Models\DebtLedgerEntry;
 use App\Models\Sale;
 use App\Services\CustomerCreditService;
 use App\Services\DebtLedgerService;
+use App\Services\PaymentWalletService;
 use Illuminate\Http\Request;
 
 class CustomerCreditController extends Controller
@@ -86,7 +87,7 @@ class CustomerCreditController extends Controller
     public function payments(Request $request)
     {
         $payments = DebtLedgerEntry::query()
-            ->with(['customer', 'user'])
+            ->with(['customer', 'user', 'paymentWallet'])
             ->where('type', 'payment')
             ->latest()
             ->paginate(25);
@@ -109,8 +110,13 @@ class CustomerCreditController extends Controller
             ->with('success', 'Payment removed and customer balance updated.');
     }
 
-    public function recordPayment(Request $request, Business $business, Customer $customer, DebtLedgerService $debtLedgerService)
-    {
+    public function recordPayment(
+        Request $request,
+        Business $business,
+        Customer $customer,
+        DebtLedgerService $debtLedgerService,
+        PaymentWalletService $walletService
+    ) {
         if ((int) $customer->business_id !== (int) $business->id) {
             abort(404);
         }
@@ -118,13 +124,18 @@ class CustomerCreditController extends Controller
         $data = $request->validate([
             'amount' => 'required|numeric|min:0.01',
             'description' => 'nullable|string|max:255',
+            'payment_wallet_id' => 'nullable|integer',
         ]);
+
+        $walletService->assertWalletRequired((int) $business->id, $data['payment_wallet_id'] ?? null);
+        $wallet = $walletService->resolveForBusiness((int) $business->id, $data['payment_wallet_id'] ?? null);
 
         $debtLedgerService->recordPayment(
             $customer,
             $data['amount'],
             $request->user(),
-            $data['description'] ?? null
+            $data['description'] ?? null,
+            $wallet
         );
 
         return back()->with('success', 'Payment recorded.');

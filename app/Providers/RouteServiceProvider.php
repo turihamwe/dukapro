@@ -7,6 +7,7 @@ use App\Models\Brand;
 use App\Models\Business;
 use App\Models\Customer;
 use App\Models\DebtLedgerEntry;
+use App\Models\PaymentWallet;
 use App\Models\EndOfDayReconciliation;
 use App\Models\Expense;
 use App\Models\Product;
@@ -81,6 +82,10 @@ class RouteServiceProvider extends ServiceProvider
 
         Route::bind('ledgerEntry', function ($value, $route) {
             return $this->resolveTenantRecord(DebtLedgerEntry::class, $value, $route);
+        });
+
+        Route::bind('wallet', function ($value, $route) {
+            return $this->resolveTenantRecord(PaymentWallet::class, $value, $route);
         });
 
         $this->configureRateLimiting();

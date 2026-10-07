@@ -21,6 +21,7 @@ class SupplierCreditPayment extends Model
         'payment_method',
         'reference',
         'notes',
+        'payment_wallet_id',
     ];
 
     protected $casts = [
@@ -41,5 +42,10 @@ class SupplierCreditPayment extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function paymentWallet(): BelongsTo
+    {
+        return $this->belongsTo(PaymentWallet::class, 'payment_wallet_id');
     }
 }

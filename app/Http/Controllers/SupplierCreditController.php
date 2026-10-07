@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierCreditPayment;
 use App\Models\SupplierCreditPurchase;
+use App\Services\PaymentWalletService;
 use App\Services\SupplierCreditOverviewService;
 use App\Services\SupplierCreditService;
 use App\Support\ReportPeriodResolver;
@@ -82,13 +83,16 @@ class SupplierCreditController extends Controller
         $purchase->load([
             'supplier',
             'lines.product',
-            'payments' => fn ($q) => $q->orderByDesc('paid_at')->orderByDesc('id'),
+            'payments' => fn ($q) => $q->with('paymentWallet')->orderByDesc('paid_at')->orderByDesc('id'),
             'user',
         ]);
+
+        $wallets = app(PaymentWalletService::class)->activeForBusiness((int) $business->id);
 
         return view('supplier-credit.bills.show', [
             'purchase' => $purchase,
             'balance' => $purchase->balanceDue(),
+            'wallets' => $wallets,
         ]);
     }
 
@@ -181,8 +185,13 @@ class SupplierCreditController extends Controller
             ->with('success', 'Credit purchase recorded and stock updated.');
     }
 
-    public function storePayment(Request $request, Business $business, SupplierCreditPurchase $purchase, SupplierCreditService $service)
-    {
+    public function storePayment(
+        Request $request,
+        Business $business,
+        SupplierCreditPurchase $purchase,
+        SupplierCreditService $service,
+        PaymentWalletService $walletService
+    ) {
         if ((int) $purchase->business_id !== (int) $business->id) {
             abort(404);
         }
@@ -193,9 +202,13 @@ class SupplierCreditController extends Controller
             'reference' => 'nullable|string|max:100',
             'notes' => 'nullable|string|max:2000',
             'paid_at' => 'nullable|date',
+            'payment_wallet_id' => 'nullable|integer',
         ]);
 
         $paidAt = ! empty($data['paid_at']) ? new \DateTimeImmutable($data['paid_at']) : null;
+
+        $walletService->assertWalletRequired((int) $business->id, $data['payment_wallet_id'] ?? null);
+        $wallet = $walletService->resolveForBusiness((int) $business->id, $data['payment_wallet_id'] ?? null);
 
         $service->recordPayment(
             $request->user(),
@@ -204,7 +217,8 @@ class SupplierCreditController extends Controller
             $data['payment_method'] ?? null,
             $data['reference'] ?? null,
             $data['notes'] ?? null,
-            $paidAt
+            $paidAt,
+            $wallet
         );
 
         return redirect()

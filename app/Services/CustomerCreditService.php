@@ -19,9 +19,13 @@ class CustomerCreditService
     /** @var DebtLedgerService */
     protected $debtLedgerService;
 
-    public function __construct(DebtLedgerService $debtLedgerService)
+    /** @var PaymentWalletService */
+    protected $walletService;
+
+    public function __construct(DebtLedgerService $debtLedgerService, PaymentWalletService $walletService)
     {
         $this->debtLedgerService = $debtLedgerService;
+        $this->walletService = $walletService;
     }
 
     /**
@@ -129,6 +133,8 @@ class CustomerCreditService
             $old = $entry->toArray();
             $customer = $entry->customer;
 
+            $this->reverseWalletForDeletedPayment($entry, $user);
+
             $entry->delete();
 
             AuditLogger::record('customer_credit_payment_deleted', $entry, $old, null, (int) $user->business_id, (int) $user->id);
@@ -209,5 +215,19 @@ class CustomerCreditService
             });
 
         $customer->update(['outstanding_balance' => round($balance, 2)]);
+    }
+
+    protected function reverseWalletForDeletedPayment(DebtLedgerEntry $entry, User $user): void
+    {
+        if (! $entry->payment_wallet_id) {
+            return;
+        }
+
+        $entry->loadMissing('paymentWallet');
+        $wallet = $entry->paymentWallet;
+
+        if ($wallet) {
+            $this->walletService->withdraw($wallet, (float) $entry->amount, $user);
+        }
     }
 }

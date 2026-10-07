@@ -83,6 +83,12 @@
         <span>👥</span> Contacts
     </a>
 @endcan
+@can('manage-wallets')
+    <a href="{{ tenant_route('tenant.wallets.index') }}"
+       class="{{ $navLink }} {{ request()->routeIs('tenant.wallets.*') ? $navActive : $navIdle }}">
+        <span>💳</span> Wallets
+    </a>
+@endcan
 <a href="{{ tenant_route('tenant.downloads.index') }}"
    class="{{ $navLink }} {{ request()->routeIs('tenant.downloads.*') ? $navActive : $navIdle }}">
     <span>📲</span> Downloads

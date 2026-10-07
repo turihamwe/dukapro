@@ -6,6 +6,7 @@ use App\Enums\DebtEntryType;
 use App\Helpers\AuditLogger;
 use App\Models\Customer;
 use App\Models\DebtLedgerEntry;
+use App\Models\PaymentWallet;
 use App\Models\Sale;
 use App\Models\User;
 use App\Support\CustomerCreditMode;
@@ -14,6 +15,14 @@ use Illuminate\Validation\ValidationException;
 
 class DebtLedgerService
 {
+    /** @var PaymentWalletService */
+    protected $walletService;
+
+    public function __construct(PaymentWalletService $walletService)
+    {
+        $this->walletService = $walletService;
+    }
+
     public function recordDebit(
         Customer $customer,
         float $amount,
@@ -22,12 +31,26 @@ class DebtLedgerService
         ?string $description = null,
         ?\Carbon\Carbon $dueDate = null
     ): DebtLedgerEntry {
-        return $this->recordEntry($customer, DebtEntryType::DEBIT, $amount, $user, $sale, $description, $dueDate);
+        return $this->recordEntry($customer, DebtEntryType::DEBIT, $amount, $user, $sale, $description, $dueDate, null);
     }
 
-    public function recordPayment(Customer $customer, float $amount, User $user, ?string $description = null): DebtLedgerEntry
-    {
-        return $this->recordEntry($customer, DebtEntryType::PAYMENT, $amount, $user, null, $description ?? 'Debt payment received');
+    public function recordPayment(
+        Customer $customer,
+        float $amount,
+        User $user,
+        ?string $description = null,
+        ?PaymentWallet $wallet = null
+    ): DebtLedgerEntry {
+        return $this->recordEntry(
+            $customer,
+            DebtEntryType::PAYMENT,
+            $amount,
+            $user,
+            null,
+            $description ?? 'Debt payment received',
+            null,
+            $wallet
+        );
     }
 
     protected function recordEntry(
@@ -37,13 +60,18 @@ class DebtLedgerService
         User $user,
         ?Sale $sale = null,
         ?string $description = null,
-        ?\Carbon\Carbon $dueDate = null
+        ?\Carbon\Carbon $dueDate = null,
+        ?PaymentWallet $wallet = null
     ): DebtLedgerEntry {
-        return DB::transaction(function () use ($customer, $type, $amount, $user, $sale, $description, $dueDate) {
+        return DB::transaction(function () use ($customer, $type, $amount, $user, $sale, $description, $dueDate, $wallet) {
             if (! CustomerCreditMode::active($user->business)) {
                 throw ValidationException::withMessages([
                     'customer_credit' => 'Customer credit is not enabled for this business.',
                 ]);
+            }
+
+            if ($type === DebtEntryType::PAYMENT && $wallet) {
+                $this->walletService->deposit($wallet, $amount, $user);
             }
 
             $customer = Customer::where('id', $customer->id)->lockForUpdate()->firstOrFail();
@@ -67,6 +95,7 @@ class DebtLedgerService
                 'balance_after' => $newBalance,
                 'description' => $description ?? ucfirst($type) . ' entry',
                 'due_date' => $type === DebtEntryType::DEBIT ? optional($dueDate)->toDateString() : null,
+                'payment_wallet_id' => $type === DebtEntryType::PAYMENT && $wallet ? $wallet->id : null,
             ]);
 
             AuditLogger::record(
