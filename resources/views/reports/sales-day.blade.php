@@ -6,7 +6,7 @@
 @php
     $branchQuery = $branchQuery ?? [];
 @endphp
-<x-page-header title="Daily Sales Report" :subtitle="$label . (!empty($branchName) ? ' · ' . $branchName : '')">
+<x-page-header title="Daily Sales Report" :subtitle="$label . (!empty($branchName) ? ' · ' . $branchName : '') . (!empty($reportAllBranches) ? ' (consolidated)' : '')">
     <x-slot name="actions">
         <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.reports.sales.index', array_merge(['period' => $period], $branchQuery)) }}">
             Back to summary

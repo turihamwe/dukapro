@@ -6,7 +6,7 @@
 @php
     $branchQuery = $branchQuery ?? [];
 @endphp
-<x-page-header title="Sales Reports" subtitle="{{ $label }}{{ !empty($branchName) ? ' · ' . $branchName : '' }}">
+<x-page-header title="Sales Reports" subtitle="{{ $label }}{{ !empty($branchName) ? ' · ' . $branchName : '' }}{{ !empty($reportAllBranches) ? ' (consolidated)' : '' }}">
     <x-slot name="actions">
         <x-document-share-toolbar
             layout="inline"

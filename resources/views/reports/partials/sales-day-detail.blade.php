@@ -56,6 +56,9 @@
                         <p class="text-xs text-gray-500">
                             {{ optional($sale->completed_at)->format('g:i A') ?? '—' }}
                             · {{ ucfirst(str_replace('_', ' ', $sale->payment_method)) }}
+                            @if(!empty($reportAllBranches) && optional($sale->branch)->name)
+                                · {{ $sale->branch->name }}
+                            @endif
                         </p>
                     </div>
                     <div class="text-right">

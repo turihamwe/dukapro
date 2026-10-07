@@ -2,6 +2,7 @@
     $branchQuery = $branchQuery ?? [];
     $period = $period ?? request('period', 'daily');
     $branchFormAction = $branchFormAction ?? tenant_route('tenant.reports.sales.index');
+    $reportAllBranches = !empty($reportAllBranches);
 @endphp
 
 @if(!empty($showBranchPicker) && ($branches ?? collect())->isNotEmpty())
@@ -16,11 +17,24 @@
         <select id="sales-report-branch" name="branch_id" onchange="this.form.submit()"
                 class="w-full max-w-xs rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
             @foreach($branches as $id => $name)
-                <option value="{{ $id }}" @selected((int) ($branchId ?? 0) === (int) $id)>{{ $name }}</option>
+                <option value="{{ $id }}" @selected(! $reportAllBranches && (int) ($branchId ?? 0) === (int) $id)>{{ $name }}</option>
             @endforeach
+            <option value="all" @selected($reportAllBranches)>All branches (entire business)</option>
         </select>
-        <p class="text-xs text-gray-500 sm:ml-2">Sales totals are for the selected branch only.</p>
+        <p class="text-xs text-gray-500 sm:ml-2">
+            @if($reportAllBranches)
+                <span class="font-medium text-indigo-700">Consolidated</span> — totals include all active branches.
+            @else
+                Sales totals are for the selected branch only.
+            @endif
+        </p>
     </form>
 @elseif(!empty($branchName))
-    <p class="mb-4 text-sm text-gray-600">Branch: <span class="font-medium text-gray-900">{{ $branchName }}</span></p>
+    <p class="mb-4 text-sm text-gray-600">
+        Branch:
+        <span class="font-medium text-gray-900">{{ $branchName }}</span>
+        @if($reportAllBranches)
+            <span class="ml-2 inline-flex items-center rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-800">Entire business</span>
+        @endif
+    </p>
 @endif

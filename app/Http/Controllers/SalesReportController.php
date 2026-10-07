@@ -54,7 +54,13 @@ class SalesReportController extends Controller
         $range = new AnalyticsDateRange($period, $label, $start, $end);
 
         $branchMeta = $this->resolveReportBranch($request, $business);
-        $salesQuery = $this->baseSalesQuery($business->id, $range->start, $range->end, $branchMeta['branchId']);
+        $salesQuery = $this->baseSalesQuery(
+            $business->id,
+            $range->start,
+            $range->end,
+            $branchMeta['branchId'],
+            $branchMeta['activeBranchIds'] ?? null
+        );
 
         $summary = (clone $salesQuery)
             ->select('payment_method', DB::raw('COUNT(*) as count'), DB::raw('SUM(total) as total'))
@@ -106,7 +112,13 @@ class SalesReportController extends Controller
 
         $branchMeta = $this->resolveReportBranch($request, $business);
         $branchId = $branchMeta['branchId'];
-        $salesQuery = $this->baseSalesQuery($business->id, $start, $end, $branchId);
+        $salesQuery = $this->baseSalesQuery(
+            $business->id,
+            $start,
+            $end,
+            $branchId,
+            $branchMeta['activeBranchIds'] ?? null
+        );
 
         $summary = (clone $salesQuery)
             ->select('payment_method', DB::raw('COUNT(*) as count'), DB::raw('SUM(total) as total'))
@@ -123,10 +135,15 @@ class SalesReportController extends Controller
             'bank' => (float) ($summary['bank']->total ?? 0),
         ];
 
+        $saleRelations = ['user:id,name,role', 'items:id,sale_id,product_name,quantity,unit_price,subtotal'];
+        if (! empty($branchMeta['reportAllBranches'])) {
+            $saleRelations[] = 'branch:id,name';
+        }
+
         $sales = (clone $salesQuery)
-            ->with(['user:id,name,role', 'items:id,sale_id,product_name,quantity,unit_price,subtotal'])
+            ->with($saleRelations)
             ->orderByDesc('completed_at')
-            ->get(['id', 'sale_number', 'user_id', 'total', 'payment_method', 'completed_at']);
+            ->get(['id', 'sale_number', 'user_id', 'branch_id', 'total', 'payment_method', 'completed_at']);
 
         $productSummaryQuery = DB::table('sale_items')
             ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
@@ -136,6 +153,11 @@ class SalesReportController extends Controller
 
         if ($branchId !== null) {
             $productSummaryQuery->where('sales.branch_id', $branchId);
+        } elseif (! empty($branchMeta['activeBranchIds'])) {
+            $ids = $branchMeta['activeBranchIds'];
+            $productSummaryQuery->where(function ($query) use ($ids) {
+                $query->whereIn('sales.branch_id', $ids)->orWhereNull('sales.branch_id');
+            });
         }
 
         $productSummary = $productSummaryQuery->select(
@@ -170,8 +192,13 @@ class SalesReportController extends Controller
         ], $branchMeta);
     }
 
-    protected function baseSalesQuery(int $businessId, Carbon $start, Carbon $end, ?int $branchId = null)
-    {
+    protected function baseSalesQuery(
+        int $businessId,
+        Carbon $start,
+        Carbon $end,
+        ?int $branchId = null,
+        ?array $activeBranchIds = null
+    ) {
         $query = Sale::query()
             ->where('business_id', $businessId)
             ->where('status', 'completed')
@@ -180,6 +207,12 @@ class SalesReportController extends Controller
         if ($branchId !== null) {
             $query->withoutGlobalScope(BranchScope::class)
                 ->where('sales.branch_id', $branchId);
+        } elseif ($activeBranchIds !== null && $activeBranchIds !== []) {
+            $query->withoutGlobalScope(BranchScope::class)
+                ->where(function ($builder) use ($activeBranchIds) {
+                    $builder->whereIn('sales.branch_id', $activeBranchIds)
+                        ->orWhereNull('sales.branch_id');
+                });
         }
 
         return $query;
@@ -191,13 +224,16 @@ class SalesReportController extends Controller
      *     branchName: ?string,
      *     branches: \Illuminate\Support\Collection<int, string>,
      *     showBranchPicker: bool,
-     *     branchQuery: array<string, int>
+     *     branchQuery: array<string, int|string>,
+     *     reportAllBranches: bool,
+     *     activeBranchIds: ?array<int, int>
      * }
      */
     protected function resolveReportBranch(Request $request, Business $business): array
     {
         $user = $request->user();
         $branches = $this->activeBranches($business->id);
+        $activeBranchIds = $branches->pluck('id')->map(fn ($id) => (int) $id)->all();
 
         if ($user->branch_id) {
             $branch = $branches->firstWhere('id', (int) $user->branch_id)
@@ -209,6 +245,8 @@ class SalesReportController extends Controller
                 'branches' => collect(),
                 'showBranchPicker' => false,
                 'branchQuery' => ['branch_id' => (int) $user->branch_id],
+                'reportAllBranches' => false,
+                'activeBranchIds' => null,
             ];
         }
 
@@ -222,6 +260,8 @@ class SalesReportController extends Controller
                 'branches' => collect(),
                 'showBranchPicker' => false,
                 'branchQuery' => $branchId ? ['branch_id' => $branchId] : [],
+                'reportAllBranches' => false,
+                'activeBranchIds' => null,
             ];
         }
 
@@ -235,10 +275,25 @@ class SalesReportController extends Controller
                 'branches' => collect(),
                 'showBranchPicker' => false,
                 'branchQuery' => $branchId ? ['branch_id' => $branchId] : [],
+                'reportAllBranches' => false,
+                'activeBranchIds' => null,
             ];
         }
 
         $selectedId = $request->input('branch_id');
+
+        if ($selectedId === 'all') {
+            return [
+                'branchId' => null,
+                'branchName' => 'All branches',
+                'branches' => $branches->pluck('name', 'id'),
+                'showBranchPicker' => true,
+                'branchQuery' => ['branch_id' => 'all'],
+                'reportAllBranches' => true,
+                'activeBranchIds' => $activeBranchIds,
+            ];
+        }
+
         $branch = null;
         if ($selectedId !== null && $selectedId !== '') {
             $branch = $branches->firstWhere('id', (int) $selectedId);
@@ -255,6 +310,8 @@ class SalesReportController extends Controller
             'branches' => $branches->pluck('name', 'id'),
             'showBranchPicker' => true,
             'branchQuery' => $branchId ? ['branch_id' => $branchId] : [],
+            'reportAllBranches' => false,
+            'activeBranchIds' => null,
         ];
     }
 
