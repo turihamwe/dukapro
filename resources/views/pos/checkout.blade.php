@@ -193,10 +193,10 @@
                     <x-button id="sendKitchenBtn" variant="success" size="lg" type="button" class="w-full min-h-[44px]" disabled>Send to Kitchen</x-button>
                     <button type="button" id="togglePayNowBtn" class="w-full text-center text-xs font-medium text-indigo-600 hover:text-indigo-800">Pay now (Counter sales)</button>
                 @else
-                <x-button id="checkoutBtn" variant="success" size="lg" type="button" class="w-full min-h-[44px]" disabled>Complete Sale</x-button>
+                <x-button id="checkoutBtn" variant="success" size="lg" type="button" class="js-checkout-submit w-full min-h-[44px]" disabled>Complete Sale</x-button>
                 @endif
                 @if($restaurantMode ?? false)
-                    <x-button id="checkoutBtn" variant="secondary" size="lg" type="button" class="hidden w-full min-h-[44px]" disabled>Complete paid sale</x-button>
+                    <x-button id="checkoutPayBtn" variant="secondary" size="lg" type="button" class="js-checkout-submit hidden w-full min-h-[44px]" disabled>Complete paid sale</x-button>
                 @endif
                 </div>
             </div>
@@ -380,13 +380,11 @@
     var pendingReceipt = { url: '', invoiceUrl: '', receiptUrl: '', message: '', isInvoice: false, isPaired: false };
     var invoiceCustomerId = null;
     var checkoutInProgress = false;
+    var pendingCheckoutIdempotencyKey = null;
+    var checkoutRequestTimeoutMs = 90000;
 
-    function releaseCheckoutLock() {
-        checkoutInProgress = false;
-        var checkoutBtn = document.getElementById('checkoutBtn');
-        if (checkoutBtn) {
-            checkoutBtn.disabled = cart.length === 0;
-        }
+    function getCheckoutSubmitButtons() {
+        return document.querySelectorAll('.js-checkout-submit');
     }
 
     function generateCheckoutIdempotencyKey() {
@@ -395,6 +393,70 @@
         }
 
         return 'chk-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 14);
+    }
+
+    function ensureCheckoutIdempotencyKey() {
+        if (!pendingCheckoutIdempotencyKey) {
+            pendingCheckoutIdempotencyKey = generateCheckoutIdempotencyKey();
+        }
+
+        return pendingCheckoutIdempotencyKey;
+    }
+
+    function clearCheckoutIdempotencyKey() {
+        pendingCheckoutIdempotencyKey = null;
+    }
+
+    function cacheCheckoutButtonLabels() {
+        getCheckoutSubmitButtons().forEach(function (btn) {
+            btn.dataset.checkoutIdleLabel = btn.textContent.trim();
+        });
+    }
+
+    function setCheckoutButtonsProcessing(isProcessing) {
+        getCheckoutSubmitButtons().forEach(function (btn) {
+            if (isProcessing) {
+                if (!btn.dataset.checkoutIdleLabel) {
+                    btn.dataset.checkoutIdleLabel = btn.textContent.trim();
+                }
+                btn.disabled = true;
+                btn.setAttribute('aria-busy', 'true');
+                btn.classList.add('pointer-events-none', 'opacity-80');
+                btn.textContent = 'Processing…';
+            } else {
+                btn.removeAttribute('aria-busy');
+                btn.classList.remove('pointer-events-none', 'opacity-80');
+                if (btn.dataset.checkoutIdleLabel) {
+                    btn.textContent = btn.dataset.checkoutIdleLabel;
+                }
+                btn.disabled = cart.length === 0;
+            }
+        });
+
+        var sendBtn = document.getElementById('sendKitchenBtn');
+        if (sendBtn) {
+            sendBtn.disabled = isProcessing || cart.length === 0;
+        }
+    }
+
+    function activateCheckoutLock() {
+        if (checkoutInProgress) {
+            return false;
+        }
+
+        checkoutInProgress = true;
+        cacheCheckoutButtonLabels();
+        setCheckoutButtonsProcessing(true);
+
+        return true;
+    }
+
+    function releaseCheckoutLock() {
+        checkoutInProgress = false;
+        setCheckoutButtonsProcessing(false);
+        if (!restaurantMode) {
+            updateCheckoutButtonLabel();
+        }
     }
 
     function whenOfflineReady(fn) {
@@ -777,19 +839,21 @@
     }
 
     function renderCart() {
+        if (!checkoutInProgress) {
+            clearCheckoutIdempotencyKey();
+        }
+
         var wrap = document.getElementById('cartItems');
         var totals = updateCartTotals();
         var hasItems = totals.hasItems;
-        if (!restaurantMode) {
-            document.getElementById('checkoutBtn').disabled = !hasItems;
+        if (!checkoutInProgress) {
+            getCheckoutSubmitButtons().forEach(function (btn) {
+                btn.disabled = !hasItems;
+            });
         }
         var sendBtn = document.getElementById('sendKitchenBtn');
-        if (sendBtn) sendBtn.disabled = !hasItems;
-        if (restaurantMode) {
-            var checkoutBtn = document.getElementById('checkoutBtn');
-            if (checkoutBtn) {
-                checkoutBtn.disabled = !hasItems;
-            }
+        if (sendBtn && !checkoutInProgress) {
+            sendBtn.disabled = !hasItems;
         }
 
         if (!cart.length) {
@@ -1154,13 +1218,17 @@
     if (restaurantMode) {
         document.getElementById('togglePayNowBtn').addEventListener('click', function () {
             var paymentSection = document.getElementById('posPaymentSection');
-            var checkoutBtn = document.getElementById('checkoutBtn');
+            var checkoutPayBtn = document.getElementById('checkoutPayBtn');
             var sendBtn = document.getElementById('sendKitchenBtn');
             var showingPay = !paymentSection.classList.contains('hidden');
             paymentSection.classList.toggle('hidden', showingPay);
-            checkoutBtn.classList.toggle('hidden', showingPay);
+            if (checkoutPayBtn) {
+                checkoutPayBtn.classList.toggle('hidden', showingPay);
+                if (!checkoutInProgress) {
+                    checkoutPayBtn.disabled = cart.length === 0;
+                }
+            }
             sendBtn.classList.toggle('hidden', !showingPay);
-            checkoutBtn.disabled = cart.length === 0;
             this.textContent = showingPay ? 'Pay now (Counter sales)' : 'Back to send-to-kitchen';
         });
 
@@ -1300,14 +1368,8 @@
     }
 
     async function processCheckout() {
-        if (checkoutInProgress) {
+        if (!activateCheckoutLock()) {
             return;
-        }
-
-        checkoutInProgress = true;
-        var checkoutBtn = document.getElementById('checkoutBtn');
-        if (checkoutBtn) {
-            checkoutBtn.disabled = true;
         }
 
         try {
@@ -1373,23 +1435,44 @@
                 mobileProvider,
                 tablePayload
             );
-            checkoutPayload.idempotency_key = generateCheckoutIdempotencyKey();
+            var idempotencyKey = ensureCheckoutIdempotencyKey();
+            checkoutPayload.idempotency_key = idempotencyKey;
             var totals = updateCartTotals();
 
             if (isPosOffline()) {
                 await processOfflineCheckout(checkoutPayload, totals);
+                clearCheckoutIdempotencyKey();
                 return;
             }
 
-            var res = await fetch(checkoutUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrf,
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify(checkoutPayload),
-            });
+            var abortController = typeof AbortController !== 'undefined' ? new AbortController() : null;
+            var timeoutId = abortController
+                ? window.setTimeout(function () { abortController.abort(); }, checkoutRequestTimeoutMs)
+                : null;
+
+            var res;
+            try {
+                res = await fetch(checkoutUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrf,
+                        'Accept': 'application/json',
+                        'Idempotency-Key': idempotencyKey,
+                    },
+                    body: JSON.stringify(checkoutPayload),
+                    signal: abortController ? abortController.signal : undefined,
+                });
+            } catch (fetchErr) {
+                if (fetchErr && fetchErr.name === 'AbortError') {
+                    throw new Error('Checkout timed out. Check your connection and try again — you will not be double-charged for the same attempt.');
+                }
+                throw fetchErr;
+            } finally {
+                if (timeoutId) {
+                    window.clearTimeout(timeoutId);
+                }
+            }
             var parsed = await readApiResponse(res);
             if (parsed.parseError) {
                 throw new Error(htmlResponseHint(res));
@@ -1405,17 +1488,23 @@
             if (efrisBox) {
                 efrisBox.checked = false;
             }
+            clearCheckoutIdempotencyKey();
             renderCart();
             showReceiptModal(data);
         } catch (err) {
-            alert(err.message);
+            alert(err.message || 'Checkout failed. Please try again.');
         } finally {
             releaseCheckoutLock();
         }
     }
 
-    document.getElementById('checkoutBtn').addEventListener('click', function () {
-        processCheckout();
+    getCheckoutSubmitButtons().forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            if (checkoutInProgress) {
+                return;
+            }
+            processCheckout();
+        });
     });
 
     updateCheckoutButtonLabel();

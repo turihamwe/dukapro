@@ -241,6 +241,11 @@ class PosController extends Controller
         $business = $request->user()->business;
         $quantityRules = DivisibleProductsMode::quantityValidationRules($business);
 
+        $headerIdempotencyKey = trim((string) $request->header('Idempotency-Key', ''));
+        if ($headerIdempotencyKey !== '' && ! $request->filled('idempotency_key')) {
+            $request->merge(['idempotency_key' => $headerIdempotencyKey]);
+        }
+
         $data = $request->validate([
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
@@ -303,6 +308,7 @@ class PosController extends Controller
         }
 
         $sale = $this->saleService->completeSale($request->user(), $data);
+        $idempotentReplay = ! $this->saleService->saleWasNewlyCreated();
 
         if ($this->saleService->saleWasNewlyCreated() && $business && $business->usesRestaurantMode()) {
             $this->kitchenOrderService->recordCounterSaleOrder($request->user(), $sale, $data);
@@ -316,6 +322,7 @@ class PosController extends Controller
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
+                'idempotent_replay' => $idempotentReplay,
                 'sale' => $sale,
                 'message' => $hasPairedDocuments
                     ? 'Invoice and receipt generated.'
