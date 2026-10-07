@@ -15,6 +15,8 @@ use Illuminate\Validation\ValidationException;
 
 class SupplierCreditService
 {
+    public const OPENING_BALANCE_REFERENCE = 'Opening Balance';
+
     /** @var ProductInventoryService */
     protected $inventoryService;
 
@@ -258,5 +260,51 @@ class SupplierCreditService
         $paid = (float) $purchase->payments()->sum('amount');
         $purchase->amount_paid = round($paid, 2);
         $purchase->refreshPaymentStatus();
+    }
+
+    /**
+     * Create a payable opening balance bill with no inventory movement.
+     */
+    public function ensureOpeningBalanceBill(User $user, Supplier $supplier, float $amount): ?SupplierCreditPurchase
+    {
+        if (! SupplierCreditMode::active($user->business)) {
+            return null;
+        }
+
+        if ((int) $supplier->business_id !== (int) $user->business_id) {
+            abort(404);
+        }
+
+        $amount = round($amount, 2);
+
+        if ($amount <= 0) {
+            return null;
+        }
+
+        if ($supplier->hasOpeningBalanceBill()) {
+            throw ValidationException::withMessages([
+                'opening_balance' => 'This vendor already has an opening balance bill. Pay it down or remove it before changing the opening amount.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($user, $supplier, $amount) {
+            $purchase = SupplierCreditPurchase::create([
+                'business_id' => $supplier->business_id,
+                'supplier_id' => $supplier->id,
+                'branch_id' => null,
+                'user_id' => $user->id,
+                'reference' => self::OPENING_BALANCE_REFERENCE,
+                'purchase_date' => now()->toDateString(),
+                'total_amount' => $amount,
+                'amount_paid' => 0,
+                'status' => SupplierCreditPurchase::STATUS_OPEN,
+                'is_opening_balance' => true,
+                'notes' => 'Initial amount owed before using supplier credit in ' . config('app.name', 'DukaPro') . '. No stock was added.',
+            ]);
+
+            AuditLogger::record('supplier_opening_balance_bill_created', $purchase, null, $purchase->toArray());
+
+            return $purchase;
+        });
     }
 }

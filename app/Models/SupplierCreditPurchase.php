@@ -28,6 +28,7 @@ class SupplierCreditPurchase extends Model
         'total_amount',
         'amount_paid',
         'status',
+        'is_opening_balance',
         'notes',
     ];
 
@@ -35,6 +36,7 @@ class SupplierCreditPurchase extends Model
         'purchase_date' => 'date',
         'total_amount' => 'decimal:2',
         'amount_paid' => 'decimal:2',
+        'is_opening_balance' => 'boolean',
     ];
 
     public function supplier(): BelongsTo

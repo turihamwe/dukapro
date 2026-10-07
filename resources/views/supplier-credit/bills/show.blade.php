@@ -44,14 +44,22 @@
 
 <x-card class="mb-6 !p-5">
     <h2 class="text-sm font-semibold text-gray-900">Line items</h2>
-    <ul class="mt-3 divide-y divide-gray-100">
-        @foreach($purchase->lines as $line)
-            <li class="flex justify-between gap-4 py-3 text-sm">
-                <span class="text-gray-800">{{ $line->product ? $line->product->displayName() : 'Product' }}</span>
-                <span class="shrink-0 text-gray-600">{{ $line->quantity }} × @money($line->unit_cost) = @money($line->line_total)</span>
-            </li>
-        @endforeach
-    </ul>
+    @if($purchase->is_opening_balance && $purchase->lines->isEmpty())
+        <p class="mt-3 text-sm text-gray-600">
+            This bill records historical supplier debt only. No products or stock were added to inventory.
+        </p>
+    @elseif($purchase->lines->isEmpty())
+        <p class="mt-3 text-sm text-gray-500">No line items.</p>
+    @else
+        <ul class="mt-3 divide-y divide-gray-100">
+            @foreach($purchase->lines as $line)
+                <li class="flex justify-between gap-4 py-3 text-sm">
+                    <span class="text-gray-800">{{ $line->product ? $line->product->displayName() : 'Product' }}</span>
+                    <span class="shrink-0 text-gray-600">{{ $line->quantity }} × @money($line->unit_cost) = @money($line->line_total)</span>
+                </li>
+            @endforeach
+        </ul>
+    @endif
 </x-card>
 
 <x-card class="!p-5">

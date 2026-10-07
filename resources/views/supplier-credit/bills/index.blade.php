@@ -43,7 +43,11 @@
         @php
             $balance = $purchase->balanceDue();
             $line = $purchase->lines->first();
-            $productLabel = $line && $line->product ? $line->product->displayName() : 'Stock item';
+            if ($purchase->is_opening_balance) {
+                $productLabel = 'Opening balance (no stock added)';
+            } else {
+                $productLabel = $line && $line->product ? $line->product->displayName() : 'Stock item';
+            }
         @endphp
         <x-card class="!p-4">
             <div class="flex flex-wrap items-start justify-between gap-3">

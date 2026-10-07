@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Supplier extends Model
@@ -18,15 +19,28 @@ class Supplier extends Model
         'email',
         'notes',
         'is_active',
+        'opening_balance',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'opening_balance' => 'float',
     ];
 
     public function creditPurchases(): HasMany
     {
         return $this->hasMany(SupplierCreditPurchase::class);
+    }
+
+    public function openingBalancePurchase(): HasOne
+    {
+        return $this->hasOne(SupplierCreditPurchase::class)
+            ->where('is_opening_balance', true);
+    }
+
+    public function hasOpeningBalanceBill(): bool
+    {
+        return $this->openingBalancePurchase()->exists();
     }
 
     public function openBalance(): float
