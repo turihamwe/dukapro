@@ -147,7 +147,16 @@
                             <p class="text-xs {{ $totalStock <= 5 ? 'text-red-600 font-medium' : 'text-gray-500' }}">Stock: {{ $totalStock }}</p>
                         @endif
                         @if($product->variants_count === 0)
-                            <p class="text-xs text-gray-500">Sell: <span class="font-semibold text-gray-900">@money($product->price)</span></p>
+                            @can('view-cost-prices')
+                                <p class="text-xs text-gray-500">
+                                    Cost: <span class="font-semibold text-gray-900">@money($product->cost_price ?? 0)</span>
+                                    <span class="text-gray-400">/ {{ $product->measurement_unit }}</span>
+                                </p>
+                            @endcan
+                            <p class="text-xs text-gray-500">
+                                Sell: <span class="font-semibold text-gray-900">@money($product->price)</span>
+                                <span class="text-gray-400">/ {{ $product->measurement_unit }}</span>
+                            </p>
                         @endif
                         <div class="mt-1 flex flex-wrap justify-end gap-x-3 gap-y-1">
                             <a href="{{ tenant_route('tenant.inventory.show', ['product' => $product]) }}" class="text-xs font-medium text-emerald-600 hover:text-emerald-700">View</a>
