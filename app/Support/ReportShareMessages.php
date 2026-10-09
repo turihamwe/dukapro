@@ -63,18 +63,36 @@ class ReportShareMessages
 
     public static function balanceSheet(Business $business, string $label, array $sheet): string
     {
-        $assets = $sheet['assets']['total'] ?? 0;
+        $assetBlock = $sheet['assets'] ?? [];
+        $assets = $assetBlock['total'] ?? 0;
         $liabilities = $sheet['liabilities']['total'] ?? 0;
         $net = $sheet['net_position'] ?? ($assets - $liabilities);
 
-        return implode("\n", [
+        $lines = [
             "Balance sheet — {$business->name}",
             "As of: {$label}",
             '',
-            'Total assets: ' . format_money($assets, $business),
-            'Total liabilities: ' . format_money($liabilities, $business),
-            'Net position: ' . format_money($net, $business),
-        ]);
+            'Inventory: ' . format_money($assetBlock['inventory'] ?? 0, $business),
+            'Accounts receivable: ' . format_money($assetBlock['accounts_receivable'] ?? 0, $business),
+        ];
+
+        if (($assetBlock['cash_source'] ?? '') === 'wallets' && ! empty($assetBlock['wallets'])) {
+            $lines[] = 'Cash & equivalents (wallets):';
+            foreach ($assetBlock['wallets'] as $wallet) {
+                $lines[] = '  · ' . ($wallet['name'] ?? 'Wallet') . ' (' . ($wallet['type_label'] ?? '') . '): '
+                    . format_money($wallet['balance'] ?? 0, $business);
+            }
+            $lines[] = '  Subtotal: ' . format_money($assetBlock['cash_and_equivalents'] ?? 0, $business);
+        } else {
+            $lines[] = 'Cash & equivalents: ' . format_money($assetBlock['cash_and_equivalents'] ?? 0, $business);
+        }
+
+        $lines[] = '';
+        $lines[] = 'Total assets: ' . format_money($assets, $business);
+        $lines[] = 'Total liabilities: ' . format_money($liabilities, $business);
+        $lines[] = 'Net position: ' . format_money($net, $business);
+
+        return implode("\n", $lines);
     }
 
     public static function supplierBill(Business $business, SupplierCreditPurchase $purchase, float $balance): string

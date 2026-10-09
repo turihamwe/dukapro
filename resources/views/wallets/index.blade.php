@@ -35,7 +35,7 @@
 
 @if($wallets->isNotEmpty())
     <h2 class="mb-3 text-sm font-semibold text-gray-900">All accounts</h2>
-    <div class="space-y-3">
+    <div class="mb-2 space-y-3">
         @foreach($wallets as $wallet)
             <x-card :padding="false" class="p-4">
                 <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:items-end">
@@ -67,7 +67,9 @@
     </div>
 @endif
 
-<x-card class="mb-8">
+<div class="mt-4">
+    <div class="mb-3 h-px w-14 bg-gray-200" aria-hidden="true"></div>
+    <x-card class="mb-8">
     <h2 class="mb-4 text-sm font-semibold text-gray-900">Add wallet</h2>
     <form method="POST" action="{{ tenant_route('tenant.wallets.store') }}" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:items-end">
         @csrf
@@ -80,38 +82,6 @@
         <x-input type="number" step="0.01" min="0" name="opening_balance" label="Opening balance" value="{{ old('opening_balance', '0') }}" />
         <x-button variant="primary" type="submit">Add wallet</x-button>
     </form>
-</x-card>
-
-@if($wallets->isNotEmpty())
-    <h2 class="mb-3 text-sm font-semibold text-gray-900">Manage wallets</h2>
-    <div class="space-y-3">
-        @foreach($wallets as $wallet)
-            <x-card :padding="false" class="p-4">
-                <form method="POST" action="{{ tenant_route('tenant.wallets.update', ['wallet' => $wallet]) }}" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5 lg:items-end">
-                    @csrf
-                    @method('PUT')
-                    <x-input type="text" name="name" label="Name" value="{{ old('name', $wallet->name) }}" required />
-                    <x-select name="type" label="Type" required>
-                        @foreach($types as $value => $typeLabel)
-                            <option value="{{ $value }}" @selected(old('type', $wallet->type) === $value)>{{ $typeLabel }}</option>
-                        @endforeach
-                    </x-select>
-                    <div>
-                        <p class="mb-1 text-xs font-medium text-gray-700">Current balance</p>
-                        <p class="text-sm font-semibold text-gray-900">@money($wallet->current_balance)</p>
-                    </div>
-                    <x-input type="number" name="sort_order" label="Sort order" value="{{ old('sort_order', $wallet->sort_order) }}" min="0" max="9999" />
-                    <div class="flex flex-col gap-2">
-                        <label class="flex items-center gap-2 text-sm text-gray-700">
-                            <input type="hidden" name="is_active" value="0">
-                            <input type="checkbox" name="is_active" value="1" class="rounded border-gray-300 text-indigo-600" @checked(old('is_active', $wallet->is_active))>
-                            Active
-                        </label>
-                        <x-button variant="secondary" size="sm" type="submit">Save</x-button>
-                    </div>
-                </form>
-            </x-card>
-        @endforeach
-    </div>
-@endif
+    </x-card>
+</div>
 @endsection

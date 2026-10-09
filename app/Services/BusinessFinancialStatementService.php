@@ -6,11 +6,14 @@ use App\Models\Customer;
 use App\Models\Damage;
 use App\Models\EndOfDayReconciliation;
 use App\Models\Expense;
+use App\Models\Business;
+use App\Models\PaymentWallet;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\SupplierCreditPayment;
 use App\Models\SupplierCreditPurchase;
+use App\Support\PaymentWalletMode;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -115,9 +118,19 @@ class BusinessFinancialStatementService
             ->selectRaw('COALESCE(SUM(total_amount - amount_paid), 0) as total')
             ->value('total'), 2);
 
-        $cashSnapshot = $this->cashFromLatestEndOfDay($businessId, $asOf);
+        $walletSnapshot = $this->cashFromPaymentWallets($businessId);
+        $usesWallets = $walletSnapshot['enabled'];
 
-        $totalAssets = round($inventoryValue + $accountsReceivable + $cashSnapshot['total'], 2);
+        $cashSnapshot = $usesWallets
+            ? null
+            : $this->cashFromLatestEndOfDay($businessId, $asOf);
+
+        $cashAndEquivalents = $usesWallets
+            ? $walletSnapshot['total']
+            : ($cashSnapshot['total'] ?? 0.0);
+
+        $currentAssets = round($inventoryValue + $accountsReceivable + $cashAndEquivalents, 2);
+        $totalAssets = $currentAssets;
         $totalLiabilities = $accountsPayable;
         $netPosition = round($totalAssets - $totalLiabilities, 2);
 
@@ -126,8 +139,12 @@ class BusinessFinancialStatementService
             'assets' => [
                 'inventory' => $inventoryValue,
                 'accounts_receivable' => $accountsReceivable,
-                'cash_and_equivalents' => $cashSnapshot['total'],
+                'cash_and_equivalents' => round($cashAndEquivalents, 2),
+                'cash_source' => $usesWallets ? 'wallets' : 'eod',
+                'wallets' => $walletSnapshot['wallets'],
+                'wallets_by_type' => $walletSnapshot['by_type'],
                 'cash_detail' => $cashSnapshot,
+                'current_assets' => $currentAssets,
                 'total' => $totalAssets,
             ],
             'liabilities' => [
@@ -135,6 +152,66 @@ class BusinessFinancialStatementService
                 'total' => $totalLiabilities,
             ],
             'net_position' => $netPosition,
+        ];
+    }
+
+    /**
+     * @return array{enabled: bool, total: float, wallets: list<array{id: int, name: string, type: string, type_label: string, balance: float}>, by_type: array<string, float>}
+     */
+    protected function cashFromPaymentWallets(int $businessId): array
+    {
+        $business = Business::query()->find($businessId);
+
+        if (! PaymentWalletMode::active($business)) {
+            return [
+                'enabled' => false,
+                'total' => 0.0,
+                'wallets' => [],
+                'by_type' => [
+                    PaymentWallet::TYPE_CASH => 0.0,
+                    PaymentWallet::TYPE_MOBILE_MONEY => 0.0,
+                    PaymentWallet::TYPE_BANK => 0.0,
+                ],
+            ];
+        }
+
+        $wallets = PaymentWallet::query()
+            ->where('business_id', $businessId)
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
+        $byType = [
+            PaymentWallet::TYPE_CASH => 0.0,
+            PaymentWallet::TYPE_MOBILE_MONEY => 0.0,
+            PaymentWallet::TYPE_BANK => 0.0,
+        ];
+
+        $lines = [];
+
+        foreach ($wallets as $wallet) {
+            $balance = round((float) $wallet->current_balance, 2);
+            $type = $wallet->type;
+
+            if (array_key_exists($type, $byType)) {
+                $byType[$type] = round($byType[$type] + $balance, 2);
+            }
+
+            $lines[] = [
+                'id' => (int) $wallet->id,
+                'name' => $wallet->name,
+                'type' => $type,
+                'type_label' => $wallet->typeLabel(),
+                'balance' => $balance,
+            ];
+        }
+
+        return [
+            'enabled' => true,
+            'total' => round((float) $wallets->sum('current_balance'), 2),
+            'wallets' => $lines,
+            'by_type' => $byType,
         ];
     }
 
