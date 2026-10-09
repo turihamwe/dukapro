@@ -39,6 +39,7 @@ class DashboardService
         $products = Product::query()
             ->where('business_id', $business->id)
             ->where('is_active', true)
+            ->with(['units' => fn ($query) => $query->orderBy('sort_order')])
             ->get(['id', 'name', 'sku', 'stock_quantity', 'critical_threshold', 'cost_price', 'price', 'measurement_unit']);
 
         $inventoryValue = round($products->sum(function (Product $product) {
@@ -181,10 +182,55 @@ class DashboardService
 
             return [
                 'title' => $product->name,
-                'meta' => number_format((float) $product->stock_quantity, 0) . ' ' . $product->measurement_unit,
+                'meta' => $this->productDrilldownMeta($product, $business, $valueKey),
                 'value' => format_money($lineValue, $business),
             ];
         })->values()->all();
+    }
+
+    protected function productDrilldownMeta(Product $product, Business $business, string $valueKey): string
+    {
+        $unitService = app(ProductUnitService::class);
+        $sellUnit = $unitService->resolveUnit($product, null);
+        $unitName = $sellUnit->unit_name ?: ($product->measurement_unit ?: 'unit');
+        $factor = max(0.0, (float) $sellUnit->conversion_factor);
+        if ($factor <= 0) {
+            $factor = 1.0;
+        }
+
+        $stockInSellUnit = $factor > 0
+            ? round((float) $product->stock_quantity / $factor, 3)
+            : (float) $product->stock_quantity;
+
+        $qtyLabel = $this->formatDrilldownQuantity($stockInSellUnit);
+
+        $meta = $qtyLabel . ' ' . $unitName;
+
+        if ($valueKey === 'cost') {
+            $baseCost = (float) ($product->cost_price ?? 0);
+            $unitCost = round($baseCost * $factor, 2);
+            $meta .= ' · ' . format_money($unitCost, $business) . ' / ' . $unitName;
+        } elseif ($valueKey === 'retail') {
+            $unitPrice = round($sellUnit->sellingPrice($product), 2);
+            $meta .= ' · ' . format_money($unitPrice, $business) . ' / ' . $unitName;
+        } elseif ($valueKey === 'profit') {
+            $baseCost = (float) ($product->cost_price ?? 0);
+            $unitCost = round($baseCost * $factor, 2);
+            $unitPrice = round($sellUnit->sellingPrice($product), 2);
+            $unitMargin = round(max(0, $unitPrice - $unitCost), 2);
+            $meta .= ' · ' . format_money($unitMargin, $business) . ' margin / ' . $unitName;
+        }
+
+        return $meta;
+    }
+
+    protected function formatDrilldownQuantity(float $quantity): string
+    {
+        if (abs($quantity - round($quantity)) < 0.001) {
+            return number_format($quantity, 0);
+        }
+
+        return rtrim(rtrim(number_format($quantity, 3), '0'), '.');
     }
 
     public function modernPayload(Business $business): array
