@@ -9,13 +9,17 @@
     $serviceGlobal = BusinessModeCompliance::globallyEnabled(BusinessModeCompliance::MODE_SERVICE);
     $rentalGlobal = BusinessModeCompliance::globallyEnabled(BusinessModeCompliance::MODE_RENTAL);
     $hospitalityGlobal = BusinessModeCompliance::globallyEnabled(BusinessModeCompliance::MODE_HOSPITALITY);
+    $showServiceCatalogSetting = $serviceGlobal && (
+        $serviceUnlocked || BusinessOperatingMode::isRetail($selectedOperatingMode)
+    );
 @endphp
 
 <div class="rounded-xl border border-gray-200 bg-white p-4 sm:p-5 space-y-4">
     <div>
         <p class="text-sm font-semibold text-gray-900">How your business operates</p>
         <p class="mt-1 text-xs text-gray-500">
-            Industry ({{ \App\Enums\BusinessType::label($business->business_type) }}) controls suggestions; operating mode controls specialized catalog tools. Standard retail keeps the classic POS focused on physical stock.
+            Industry ({{ \App\Enums\BusinessType::label($business->business_type) }}) controls suggestions; operating mode controls specialized catalog tools.
+            Retail shops can still sell occasional services (fees, labour) when service catalog is unlocked and enabled below.
         </p>
     </div>
 
@@ -32,14 +36,21 @@
         @enderror
     </div>
 
-    @if($serviceGlobal && $serviceUnlocked)
-        <label class="flex items-start gap-3 rounded-lg border border-violet-200 bg-violet-50/60 p-3 text-sm">
-            <input type="hidden" name="service_based_mode_enabled" value="0">
-            <input type="checkbox" name="service_based_mode_enabled" value="1" class="mt-0.5 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
-                   @checked(old('service_based_mode_enabled', ! empty(($business->settings ?? [])['service_based_mode_enabled'])))>
+    @if($showServiceCatalogSetting)
+        <label class="flex items-start gap-3 rounded-lg border border-violet-200 bg-violet-50/60 p-3 text-sm {{ $serviceUnlocked ? '' : 'opacity-80' }}">
+            @if($serviceUnlocked)
+                <input type="hidden" name="service_based_mode_enabled" value="0">
+                <input type="checkbox" name="service_based_mode_enabled" value="1" class="mt-0.5 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                       @checked(old('service_based_mode_enabled', ! empty(($business->settings ?? [])['service_based_mode_enabled'])))>
+            @else
+                <input type="checkbox" disabled class="mt-0.5 rounded border-gray-300 text-gray-400">
+            @endif
             <span>
                 <span class="font-semibold text-gray-900">Service-based catalog</span>
                 <span class="mt-0.5 block text-xs text-gray-600">Sell non-inventory services (labour, fees, repairs) alongside products. Stock is not tracked for service items.</span>
+                @if(! $serviceUnlocked)
+                    <span class="mt-1 block text-xs text-violet-800">Contact DukaPro support to enable service catalog for your business, then turn it on here.</span>
+                @endif
             </span>
         </label>
     @endif
@@ -68,7 +79,9 @@
         </label>
     @endif
 
-    @if(! $serviceUnlocked && ! $rentalUnlocked && ! $hospitalityUnlocked)
+    @if(! $serviceGlobal)
+        <p class="text-xs text-gray-500">Service catalog is disabled platform-wide. Contact DukaPro support if you need to sell non-inventory services.</p>
+    @elseif(! $serviceUnlocked && ! $rentalUnlocked && ! $hospitalityUnlocked && ! BusinessOperatingMode::isRetail($selectedOperatingMode))
         <p class="text-xs text-gray-500">Specialized modes are locked for this business. Contact DukaPro support if you need service, rental, or hospitality features.</p>
     @endif
 </div>

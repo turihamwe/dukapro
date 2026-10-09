@@ -27,7 +27,7 @@
                 @if(! $serviceGlobal)
                     <span class="block text-xs text-amber-700">Enable “Service-based businesses” in System Settings first.</span>
                 @else
-                    <span class="block text-xs text-gray-500">Owner can sell non-inventory services on POS when they turn it on.</span>
+                    <span class="block text-xs text-gray-500">Applies to retail and service operating modes. Owner turns it on under Business settings after you unlock.</span>
                 @endif
             </span>
         </label>
