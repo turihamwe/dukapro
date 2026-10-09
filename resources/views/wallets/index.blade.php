@@ -67,10 +67,6 @@
     </div>
 @endif
 
-{{--
-Wallet management (create / edit) — commented out until edit functionality is requested.
-Uncomment this block and restore the "Add wallet" + "Manage wallets" sections below.
-
 <x-card class="mb-8">
     <h2 class="mb-4 text-sm font-semibold text-gray-900">Add wallet</h2>
     <form method="POST" action="{{ tenant_route('tenant.wallets.store') }}" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:items-end">
@@ -118,5 +114,4 @@ Uncomment this block and restore the "Add wallet" + "Manage wallets" sections be
         @endforeach
     </div>
 @endif
---}}
 @endsection
