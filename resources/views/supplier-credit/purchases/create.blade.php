@@ -42,7 +42,8 @@
                                 <x-input type="number" step="0.001" min="0.001" name="quantity" label="Qty" required />
                             </div>
                             <div>
-                                <x-input type="number" step="0.01" min="0" name="unit_cost" label="Unit cost" value="{{ $variant->cost_price ?? $variant->price }}" required />
+                                <x-input type="number" step="0.01" min="0" name="unit_cost" label="Unit cost" value="{{ old('unit_cost', \App\Support\ProductInventoryValuation::purchaseDefaultUnitCost($variant)) }}" required />
+                                @include('supplier-credit.purchases._unit-cost-hint', ['product' => $variant])
                             </div>
                             <div class="flex items-end">
                                 <x-button variant="primary" size="sm" type="submit" class="w-full">Save on credit</x-button>
@@ -61,7 +62,8 @@
                         <x-input type="number" step="0.001" min="0.001" name="quantity" label="Quantity" required />
                     </div>
                     <div>
-                        <x-input type="number" step="0.01" min="0" name="unit_cost" label="Unit cost" value="{{ $product->cost_price ?? $product->price }}" required />
+                        <x-input type="number" step="0.01" min="0" name="unit_cost" label="Unit cost" value="{{ old('unit_cost', \App\Support\ProductInventoryValuation::purchaseDefaultUnitCost($product)) }}" required />
+                        @include('supplier-credit.purchases._unit-cost-hint', ['product' => $product])
                     </div>
                     <div>
                         <x-input type="date" name="purchase_date" label="Date" value="{{ now()->toDateString() }}" />

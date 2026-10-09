@@ -73,7 +73,7 @@
             @can('view-cost-prices')
                 <div>
                     <dt class="text-xs font-medium uppercase tracking-wide text-gray-500">Default cost price</dt>
-                    <dd class="mt-1 text-sm text-gray-900">@money($product->cost_price ?? 0)</dd>
+                    <dd class="mt-1 text-sm text-gray-900">@money($product->default_cost_price ?? $product->cost_price ?? 0)</dd>
                 </div>
             @endcan
             <div>
@@ -141,7 +141,7 @@
                                     <div>
                                         <label class="mb-1.5 block text-sm font-medium text-gray-700" for="batch_cost_price">Cost price</label>
                                         <input type="number" step="0.01" min="0" name="cost_price" id="batch_cost_price"
-                                               value="{{ old('cost_price', $product->cost_price) }}"
+                                               value="{{ old('cost_price', $product->default_cost_price ?? $product->cost_price) }}"
                                                class="block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                     </div>
                                 @endcan

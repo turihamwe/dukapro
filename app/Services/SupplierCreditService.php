@@ -10,6 +10,7 @@ use App\Models\SupplierCreditPayment;
 use App\Models\SupplierCreditPurchase;
 use App\Models\User;
 use App\Support\BatchMode;
+use App\Support\ProductInventoryValuation;
 use App\Support\SupplierCreditMode;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -116,6 +117,12 @@ class SupplierCreditService
                 'attribute_values' => $stockTarget->attribute_values,
             ]);
 
+            $costUpdates = [];
+
+            if ($user->can('view-cost-prices') && $unitCost > 0) {
+                $costUpdates['cost_price'] = $unitCost;
+            }
+
             if (BatchMode::active($business, (int) $stockTarget->branch_id)) {
                 $batchData = [
                     'quantity' => $quantity,
@@ -124,11 +131,19 @@ class SupplierCreditService
                 ];
                 $this->batchService->addBatch($stockTarget, $batchData, (int) $business->id, $user);
             } else {
+                if ($user->can('view-cost-prices') && $unitCost > 0) {
+                    $costUpdates['inventory_cost_price'] = ProductInventoryValuation::weightedAverageAfterReceive(
+                        $stockTarget,
+                        $quantity,
+                        $unitCost
+                    );
+                }
+
                 $this->inventoryService->topUpStock($stockTarget, $quantity);
             }
 
-            if ($user->can('view-cost-prices') && $unitCost > 0) {
-                $stockTarget->update(['cost_price' => $unitCost]);
+            if ($costUpdates !== []) {
+                $stockTarget->update($costUpdates);
             }
 
             AuditLogger::record('supplier_credit_purchase_created', $purchase, null, $purchase->fresh(['lines'])->toArray());

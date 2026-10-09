@@ -154,7 +154,7 @@
             @if($canViewCost)
                 <div x-show="showsCost()" x-cloak>
                     <label class="mb-1.5 block text-sm font-medium text-gray-700" for="simple_cost_price">Buying / cost price</label>
-                    <input type="number" step="0.01" min="0" name="cost_price" id="simple_cost_price" value="{{ old('cost_price', $product->cost_price ?? '') }}"
+                    <input type="number" step="0.01" min="0" name="cost_price" id="simple_cost_price" value="{{ old('cost_price', $product->default_cost_price ?? $product->cost_price ?? '') }}"
                            class="simple-field block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                 </div>
             @endif

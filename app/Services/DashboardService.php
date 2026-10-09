@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Support\AnalyticsDateRange;
+use App\Support\ProductInventoryValuation;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -40,10 +41,11 @@ class DashboardService
             ->where('business_id', $business->id)
             ->where('is_active', true)
             ->with(['units' => fn ($query) => $query->orderBy('sort_order')])
-            ->get(['id', 'name', 'sku', 'stock_quantity', 'critical_threshold', 'cost_price', 'price', 'measurement_unit']);
+            ->with('activeBatches:id,product_id,remaining_quantity,cost_price')
+            ->get(['id', 'name', 'sku', 'stock_quantity', 'critical_threshold', 'cost_price', 'default_cost_price', 'inventory_cost_price', 'price', 'measurement_unit']);
 
         $inventoryValue = round($products->sum(function (Product $product) {
-            return $product->stock_quantity * (float) ($product->cost_price ?? 0);
+            return ProductInventoryValuation::inventoryValue($product);
         }), 2);
 
         $retailStockValue = round($products->sum(function (Product $product) {
@@ -51,9 +53,9 @@ class DashboardService
         }), 2);
 
         $potentialProfit = round($products->sum(function (Product $product) {
-            $margin = (float) $product->price - (float) ($product->cost_price ?? 0);
+            $margin = (float) $product->price - ProductInventoryValuation::valuationUnitCost($product);
 
-            return $product->stock_quantity * max(0, $margin);
+            return $product->totalStockQuantity() * max(0, $margin);
         }), 2);
 
         $lowStockItems = $products->filter(function (Product $product) {
@@ -164,20 +166,20 @@ class DashboardService
                 return $product->stock_quantity * (float) $product->price;
             }
             if ($valueKey === 'profit') {
-                $margin = (float) $product->price - (float) ($product->cost_price ?? 0);
+                $margin = (float) $product->price - ProductInventoryValuation::valuationUnitCost($product);
 
-                return $product->stock_quantity * max(0, $margin);
+                return $product->totalStockQuantity() * max(0, $margin);
             }
 
-            return $product->stock_quantity * (float) ($product->cost_price ?? 0);
+            return ProductInventoryValuation::inventoryValue($product);
         })->take(20)->map(function (Product $product) use ($business, $valueKey) {
             if ($valueKey === 'retail') {
-                $lineValue = $product->stock_quantity * (float) $product->price;
+                $lineValue = $product->totalStockQuantity() * (float) $product->price;
             } elseif ($valueKey === 'profit') {
-                $margin = (float) $product->price - (float) ($product->cost_price ?? 0);
-                $lineValue = $product->stock_quantity * max(0, $margin);
+                $margin = (float) $product->price - ProductInventoryValuation::valuationUnitCost($product);
+                $lineValue = $product->totalStockQuantity() * max(0, $margin);
             } else {
-                $lineValue = $product->stock_quantity * (float) ($product->cost_price ?? 0);
+                $lineValue = ProductInventoryValuation::inventoryValue($product);
             }
 
             return [
@@ -207,14 +209,14 @@ class DashboardService
         $meta = $qtyLabel . ' ' . $unitName;
 
         if ($valueKey === 'cost') {
-            $baseCost = (float) ($product->cost_price ?? 0);
+            $baseCost = ProductInventoryValuation::valuationUnitCost($product);
             $unitCost = round($baseCost * $factor, 2);
             $meta .= ' · ' . format_money($unitCost, $business) . ' / ' . $unitName;
         } elseif ($valueKey === 'retail') {
             $unitPrice = round($sellUnit->sellingPrice($product), 2);
             $meta .= ' · ' . format_money($unitPrice, $business) . ' / ' . $unitName;
         } elseif ($valueKey === 'profit') {
-            $baseCost = (float) ($product->cost_price ?? 0);
+            $baseCost = ProductInventoryValuation::valuationUnitCost($product);
             $unitCost = round($baseCost * $factor, 2);
             $unitPrice = round($sellUnit->sellingPrice($product), 2);
             $unitMargin = round(max(0, $unitPrice - $unitCost), 2);

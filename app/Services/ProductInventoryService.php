@@ -163,7 +163,7 @@ class ProductInventoryService
             foreach ($variants as $index => $variant) {
                 if (! empty($variant['id'])) {
                     $child = $product->variants()->whereKey($variant['id'])->firstOrFail();
-                    $child->update($this->variantPayload($product, $variant, $index, (int) $variant['id']));
+                    $child->update($this->variantBaselinePayload($product, $variant, $index, (int) $variant['id']));
                     continue;
                 }
 
@@ -201,7 +201,7 @@ class ProductInventoryService
 
             if ($trashed) {
                 $trashed->restore();
-                $trashed->update($this->variantPayload($parent, $variant, $index, (int) $trashed->id));
+                $trashed->update($this->variantBaselinePayload($parent, $variant, $index, (int) $trashed->id));
 
                 return $trashed->fresh();
             }
@@ -226,6 +226,18 @@ class ProductInventoryService
         ]));
     }
 
+    protected function variantBaselinePayload(Product $parent, array $variant, int $index, ?int $ignoreProductId = null): array
+    {
+        $payload = $this->variantPayload($parent, $variant, $index, $ignoreProductId);
+
+        if (array_key_exists('cost_price', $payload)) {
+            $payload['default_cost_price'] = $payload['cost_price'];
+            unset($payload['cost_price'], $payload['inventory_cost_price']);
+        }
+
+        return $payload;
+    }
+
     protected function variantPayload(Product $parent, array $variant, int $index, ?int $ignoreProductId = null): array
     {
         $attributes = $variant['attribute_values'] ?? [];
@@ -240,6 +252,8 @@ class ProductInventoryService
             'variant_attributes' => $attributes,
             'price' => (float) ($variant['price'] ?? 0),
             'cost_price' => isset($variant['cost_price']) ? (float) $variant['cost_price'] : null,
+            'default_cost_price' => isset($variant['cost_price']) ? (float) $variant['cost_price'] : null,
+            'inventory_cost_price' => isset($variant['cost_price']) ? (float) $variant['cost_price'] : null,
             'stock_quantity' => (float) ($variant['stock_quantity'] ?? 0),
             'sku' => $this->normalizeSku($variant['sku'] ?? null, $parent, $attributes, $index, (int) $parent->business_id, $ignoreProductId),
         ];

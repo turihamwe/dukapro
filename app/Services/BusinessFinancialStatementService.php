@@ -101,9 +101,10 @@ class BusinessFinancialStatementService
         $inventoryValue = round((float) Product::query()
             ->where('business_id', $businessId)
             ->where('is_active', true)
-            ->get(['stock_quantity', 'cost_price'])
+            ->with('activeBatches:id,product_id,remaining_quantity,cost_price')
+            ->get(['id', 'stock_quantity', 'cost_price', 'default_cost_price', 'inventory_cost_price'])
             ->sum(function (Product $product) {
-                return $product->stock_quantity * (float) ($product->cost_price ?? 0);
+                return \App\Support\ProductInventoryValuation::inventoryValue($product);
             }), 2);
 
         $accountsReceivable = round((float) Customer::query()

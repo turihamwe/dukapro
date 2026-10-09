@@ -149,7 +149,7 @@
                         @if($product->variants_count === 0)
                             @can('view-cost-prices')
                                 <p class="text-xs text-gray-500">
-                                    Cost: <span class="font-semibold text-gray-900">@money($product->cost_price ?? 0)</span>
+                                    Cost: <span class="font-semibold text-gray-900">@money($product->default_cost_price ?? $product->cost_price ?? 0)</span>
                                     <span class="text-gray-400">/ {{ $product->measurement_unit }}</span>
                                 </p>
                             @endcan
@@ -219,7 +219,7 @@
                     @endphp
                     @php
                         $sortBrand = strtolower($product->brand->name ?? '');
-                        $sortCost = ($product->variants_count === 0 && auth()->user()->can('view-cost-prices')) ? (float) ($product->cost_price ?? 0) : -1;
+                        $sortCost = ($product->variants_count === 0 && auth()->user()->can('view-cost-prices')) ? (float) ($product->default_cost_price ?? $product->cost_price ?? 0) : -1;
                         $sortSell = $product->variants_count > 0 ? -1 : (float) $product->price;
                     @endphp
                     <tr class="inventory-item transition hover:bg-gray-50"
@@ -273,7 +273,7 @@
                             <td class="px-6 py-4 text-center text-sm text-gray-600">
                                 @can('view-cost-prices')
                                     @if($product->variants_count === 0)
-                                        @money($product->cost_price ?? 0)
+                                        @money($product->default_cost_price ?? $product->cost_price ?? 0)
                                     @else
                                         —
                                     @endif

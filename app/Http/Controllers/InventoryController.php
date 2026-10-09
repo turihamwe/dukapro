@@ -424,6 +424,7 @@ class InventoryController extends Controller
 
         $data = $request->validate($rules);
         $data = $this->normalizeCatalogItemPayload($data, $business, $request);
+        $data = $this->applyBaselineCostPriceFields($data, true);
         if (! EfrisCompliance::globallyEnabled()) {
             unset($data['efris_item_code']);
         }
@@ -433,7 +434,7 @@ class InventoryController extends Controller
         }
 
         if (! $request->user()->can('view-cost-prices')) {
-            unset($data['cost_price']);
+            unset($data['cost_price'], $data['default_cost_price'], $data['inventory_cost_price']);
         }
 
         $data['brand_id'] = $this->resolveBrandId($request, $businessId);
@@ -493,6 +494,7 @@ class InventoryController extends Controller
         $data = $request->validate($rules);
         $data['is_active'] = $request->boolean('is_active');
         $data = $this->normalizeCatalogItemPayload($data, $business, $request);
+        $data = $this->applyBaselineCostPriceFields($data, false);
         if (! EfrisCompliance::globallyEnabled()) {
             unset($data['efris_item_code']);
         }
@@ -500,7 +502,7 @@ class InventoryController extends Controller
         $data['measurement_unit'] = $this->resolveMeasurementUnit($request, $business->id, $data['measurement_unit'] ?? 'piece');
 
         if (! $request->user()->can('view-cost-prices')) {
-            unset($data['cost_price']);
+            unset($data['cost_price'], $data['default_cost_price'], $data['inventory_cost_price']);
         }
 
         if ($branchId = $this->resolveBranchIdForOwner($request, $business)) {
@@ -716,6 +718,31 @@ class InventoryController extends Controller
         }
 
         if (! $request->user()->can('view-cost-prices')) {
+            unset($data['cost_price']);
+        }
+
+        return $data;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function applyBaselineCostPriceFields(array $data, bool $isCreate): array
+    {
+        if (! array_key_exists('cost_price', $data)) {
+            return $data;
+        }
+
+        $baseline = $data['cost_price'];
+        $baseline = $baseline !== null && $baseline !== '' ? (float) $baseline : null;
+
+        if ($isCreate) {
+            $data['default_cost_price'] = $baseline;
+            $data['inventory_cost_price'] = $baseline;
+            $data['cost_price'] = $baseline;
+        } else {
+            $data['default_cost_price'] = $baseline;
             unset($data['cost_price']);
         }
 
