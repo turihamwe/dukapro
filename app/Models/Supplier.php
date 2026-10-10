@@ -50,4 +50,16 @@ class Supplier extends Model
             ->get()
             ->sum(fn (SupplierCreditPurchase $purchase) => $purchase->balanceDue());
     }
+
+    /**
+     * Open bills oldest first (FIFO): purchase date, then record order.
+     */
+    public function openPurchasesFifo()
+    {
+        return $this->creditPurchases()
+            ->whereIn('status', [SupplierCreditPurchase::STATUS_OPEN, SupplierCreditPurchase::STATUS_PARTIAL])
+            ->orderBy('purchase_date')
+            ->orderBy('created_at')
+            ->orderBy('id');
+    }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\AuditLogger;
 use App\Models\Business;
 use App\Models\Supplier;
+use App\Services\PaymentWalletService;
 use App\Services\SupplierCreditService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -19,24 +20,102 @@ class SupplierController extends Controller
         $this->middleware('management.access');
     }
 
-    public function index(Request $request)
+    public function index(Request $request, PaymentWalletService $walletService)
     {
+        $businessId = (int) $request->user()->business_id;
+
         $suppliers = Supplier::query()
             ->orderByDesc('is_active')
             ->orderBy('name')
             ->withCount(['creditPurchases as open_purchases_count' => function ($q) {
                 $q->whereIn('status', ['open', 'partial']);
             }])
+            ->with(['creditPurchases' => function ($q) {
+                $q->whereIn('status', ['open', 'partial'])
+                    ->orderBy('purchase_date')
+                    ->orderBy('created_at')
+                    ->orderBy('id')
+                    ->select('id', 'supplier_id', 'reference', 'purchase_date', 'total_amount', 'amount_paid', 'status', 'is_opening_balance');
+            }])
             ->get()
             ->map(function (Supplier $supplier) {
                 $supplier->setAttribute('open_balance', $supplier->openBalance());
+                $supplier->setAttribute('fifo_bills', $supplier->creditPurchases->map(function ($purchase) {
+                    return [
+                        'id' => $purchase->id,
+                        'reference' => $purchase->reference ?: ($purchase->is_opening_balance ? 'Opening balance' : 'Bill #' . $purchase->id),
+                        'purchase_date' => $purchase->purchase_date ? $purchase->purchase_date->toDateString() : '',
+                        'balance_due' => $purchase->balanceDue(),
+                    ];
+                })->values()->all());
 
                 return $supplier;
             });
 
+        $settleDebtPayloads = [];
+        foreach ($suppliers as $supplier) {
+            if ((float) $supplier->open_balance <= 0) {
+                continue;
+            }
+
+            $settleDebtPayloads[(int) $supplier->id] = [
+                'name' => $supplier->name,
+                'open_balance' => (float) $supplier->open_balance,
+                'open_balance_formatted' => format_money($supplier->open_balance),
+                'action_url' => tenant_route('tenant.supplier-credit.vendors.settle-debt', ['supplier' => $supplier]),
+                'bills' => $supplier->fifo_bills,
+            ];
+        }
+
         return view('supplier-credit.suppliers.index', [
             'suppliers' => $suppliers,
+            'wallets' => $walletService->activeForBusiness($businessId),
+            'settleDebtPayloads' => $settleDebtPayloads,
         ]);
+    }
+
+    public function settleDebt(
+        Request $request,
+        Business $business,
+        Supplier $supplier,
+        SupplierCreditService $supplierCreditService,
+        PaymentWalletService $walletService
+    ) {
+        if ((int) $supplier->business_id !== (int) $business->id) {
+            abort(404);
+        }
+
+        $data = $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+            'payment_method' => 'nullable|string|max:50',
+            'reference' => 'nullable|string|max:100',
+            'notes' => 'nullable|string|max:2000',
+            'paid_at' => 'nullable|date',
+            'payment_wallet_id' => 'nullable|integer',
+        ]);
+
+        $paidAt = ! empty($data['paid_at']) ? new \DateTimeImmutable($data['paid_at']) : null;
+
+        $walletService->assertWalletRequired((int) $business->id, $data['payment_wallet_id'] ?? null);
+        $wallet = $walletService->resolveForBusiness((int) $business->id, $data['payment_wallet_id'] ?? null);
+
+        $result = $supplierCreditService->settleVendorDebtFifo(
+            $request->user(),
+            $supplier,
+            (float) $data['amount'],
+            $data['payment_method'] ?? null,
+            $data['reference'] ?? null,
+            $data['notes'] ?? null,
+            $paidAt,
+            $wallet
+        );
+
+        $count = $result['payments']->count();
+        $total = $result['plan']['applied_total'];
+
+        return redirect()
+            ->to(tenant_route('tenant.supplier-credit.vendors.index'))
+            ->with('success', 'Recorded ' . format_money($total) . ' across ' . $count . ' bill' . ($count === 1 ? '' : 's') . ' (oldest first).');
     }
 
     public function store(Request $request, SupplierCreditService $supplierCreditService)

@@ -437,6 +437,7 @@ Route::middleware(['maintenance'])->group(function () {
                     Route::get('/vendors/{supplier}/edit', [SupplierController::class, 'edit'])->name('vendors.edit');
                     Route::put('/vendors/{supplier}', [SupplierController::class, 'update'])->name('vendors.update');
                     Route::delete('/vendors/{supplier}', [SupplierController::class, 'destroy'])->name('vendors.destroy');
+                    Route::post('/vendors/{supplier}/settle-debt', [SupplierController::class, 'settleDebt'])->name('vendors.settle-debt');
                     Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers.index');
                     Route::post('/suppliers', [SupplierController::class, 'store'])->name('suppliers.store');
                     Route::get('/suppliers/{supplier}/edit', [SupplierController::class, 'edit'])->name('suppliers.edit');

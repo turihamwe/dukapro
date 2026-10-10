@@ -43,6 +43,14 @@
                         <p class="text-sm font-semibold text-amber-800">@money($supplier->open_balance)</p>
                     </div>
                     <div class="flex flex-wrap items-center justify-end gap-2">
+                        @if($supplier->open_balance > 0)
+                            <x-button
+                                variant="primary"
+                                size="sm"
+                                type="button"
+                                onclick="openVendorSettleDebtModal({{ (int) $supplier->id }})"
+                            >Settle debt</x-button>
+                        @endif
                         <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.supplier-credit.vendors.edit', ['supplier' => $supplier]) }}">Edit</x-button>
                         @include('supplier-credit.partials.delete-button', [
                             'action' => tenant_route('tenant.supplier-credit.vendors.destroy', ['supplier' => $supplier]),
@@ -57,4 +65,10 @@
         <x-card class="text-center text-sm text-gray-500">No vendors yet.</x-card>
     @endforelse
 </div>
+
+@include('supplier-credit.suppliers._settle-debt-modal', ['wallets' => $wallets ?? collect()])
+
+@push('scripts')
+    @include('supplier-credit.suppliers._settle-debt-modal-script', ['settleDebtPayloads' => $settleDebtPayloads ?? []])
+@endpush
 @endsection

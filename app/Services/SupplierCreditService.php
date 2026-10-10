@@ -6,6 +6,7 @@ use App\Helpers\AuditLogger;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\PaymentWallet;
+use Illuminate\Support\Collection;
 use App\Models\SupplierCreditPayment;
 use App\Models\SupplierCreditPurchase;
 use App\Models\User;
@@ -211,6 +212,173 @@ class SupplierCreditService
             AuditLogger::record('supplier_credit_payment_recorded', $payment, null, $payment->toArray());
 
             return $payment->fresh(['purchase']);
+        });
+    }
+
+    /**
+     * @return array{
+     *     allocations: array<int, array{purchase_id: int, reference: ?string, purchase_date: string, balance_before: float, amount: float, balance_after: float}>,
+     *     applied_total: float,
+     *     unallocated: float
+     * }
+     */
+    public function planFifoVendorPayment(Collection $openPurchases, float $amount): array
+    {
+        $remaining = round(max(0, $amount), 2);
+        $allocations = [];
+
+        foreach ($openPurchases as $purchase) {
+            if ($remaining <= 0) {
+                break;
+            }
+
+            if (! $purchase instanceof SupplierCreditPurchase) {
+                continue;
+            }
+
+            $balanceBefore = $purchase->balanceDue();
+            if ($balanceBefore <= 0) {
+                continue;
+            }
+
+            $apply = round(min($remaining, $balanceBefore), 2);
+            if ($apply <= 0) {
+                continue;
+            }
+
+            $allocations[] = [
+                'purchase_id' => (int) $purchase->id,
+                'reference' => $purchase->reference,
+                'purchase_date' => $purchase->purchase_date ? $purchase->purchase_date->toDateString() : '',
+                'balance_before' => $balanceBefore,
+                'amount' => $apply,
+                'balance_after' => round($balanceBefore - $apply, 2),
+            ];
+
+            $remaining = round($remaining - $apply, 2);
+        }
+
+        $applied = round($amount - $remaining, 2);
+
+        return [
+            'allocations' => $allocations,
+            'applied_total' => $applied,
+            'unallocated' => $remaining,
+        ];
+    }
+
+    /**
+     * @return array{payments: Collection<int, SupplierCreditPayment>, plan: array<string, mixed>}
+     */
+    public function settleVendorDebtFifo(
+        User $user,
+        Supplier $supplier,
+        float $amount,
+        ?string $paymentMethod = null,
+        ?string $reference = null,
+        ?string $notes = null,
+        ?\DateTimeInterface $paidAt = null,
+        ?PaymentWallet $wallet = null
+    ): array {
+        if (! SupplierCreditMode::active($user->business)) {
+            throw ValidationException::withMessages([
+                'amount' => 'Supplier credit is not enabled for this business.',
+            ]);
+        }
+
+        if ((int) $supplier->business_id !== (int) $user->business_id) {
+            abort(404);
+        }
+
+        $amount = round($amount, 2);
+
+        if ($amount <= 0) {
+            throw ValidationException::withMessages([
+                'amount' => 'Enter an amount greater than zero.',
+            ]);
+        }
+
+        $openBalance = round($supplier->openBalance(), 2);
+
+        if ($amount > $openBalance + 0.009) {
+            throw ValidationException::withMessages([
+                'amount' => 'Payment exceeds this vendor\'s open balance of ' . number_format($openBalance, 2) . '.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($user, $supplier, $amount, $paymentMethod, $reference, $notes, $paidAt, $wallet) {
+            $purchases = $supplier->openPurchasesFifo()->lockForUpdate()->get();
+
+            $plan = $this->planFifoVendorPayment($purchases, $amount);
+
+            if ($plan['applied_total'] <= 0) {
+                throw ValidationException::withMessages([
+                    'amount' => 'This vendor has no open bills to pay.',
+                ]);
+            }
+
+            if ($plan['unallocated'] > 0.009) {
+                throw ValidationException::withMessages([
+                    'amount' => 'Could not allocate the full payment across open bills. Try again or pay a lower amount.',
+                ]);
+            }
+
+            if ($wallet) {
+                $this->walletService->withdraw($wallet, $plan['applied_total'], $user);
+            }
+
+            $payments = collect();
+            $paidAtValue = $paidAt ?? now();
+
+            foreach ($plan['allocations'] as $row) {
+                /** @var SupplierCreditPurchase|null $purchase */
+                $purchase = $purchases->firstWhere('id', $row['purchase_id']);
+
+                if (! $purchase) {
+                    continue;
+                }
+
+                $slice = (float) $row['amount'];
+
+                $payment = SupplierCreditPayment::create([
+                    'business_id' => $purchase->business_id,
+                    'supplier_id' => $supplier->id,
+                    'supplier_credit_purchase_id' => $purchase->id,
+                    'user_id' => $user->id,
+                    'amount' => $slice,
+                    'paid_at' => $paidAtValue,
+                    'payment_method' => $paymentMethod,
+                    'reference' => $reference,
+                    'notes' => $notes,
+                    'payment_wallet_id' => $wallet ? $wallet->id : null,
+                ]);
+
+                $purchase->amount_paid = round((float) $purchase->amount_paid + $slice, 2);
+                $purchase->refreshPaymentStatus();
+
+                AuditLogger::record('supplier_credit_payment_recorded', $payment, null, $payment->toArray());
+
+                $payments->push($payment);
+            }
+
+            AuditLogger::record(
+                'supplier_vendor_debt_settled',
+                $supplier,
+                null,
+                [
+                    'supplier_id' => $supplier->id,
+                    'total_amount' => $plan['applied_total'],
+                    'allocations' => $plan['allocations'],
+                    'payment_ids' => $payments->pluck('id')->all(),
+                ],
+                (int) $user->business_id,
+                (int) $user->id
+            );
+
+            return [
+                'payments' => $payments,
+                'plan' => $plan,
+            ];
         });
     }
 
