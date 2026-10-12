@@ -10,14 +10,24 @@
     </x-slot>
 </x-page-header>
 
-<x-card class="mb-6">
-    <h2 class="mb-3 text-sm font-semibold text-gray-900">Add customer</h2>
-    <form method="POST" action="{{ tenant_route('tenant.customer-credit.customers.store') }}" class="space-y-4">
-        @csrf
-        @include('customer-credit.customers._form')
-        <x-button variant="primary" type="submit">Save customer</x-button>
-    </form>
-</x-card>
+<form method="GET" action="{{ tenant_route('tenant.customer-credit.customers.index') }}" class="mb-4 flex flex-wrap items-center gap-2">
+    <input type="search" name="q" value="{{ $search ?? '' }}" placeholder="Search name, phone…"
+           class="min-w-[10rem] flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+    <select name="status" class="rounded-lg border border-gray-300 py-2 pl-2 pr-8 text-sm text-gray-700 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+        <option value="" @selected(empty($statusFilter))>All</option>
+        <option value="active" @selected(($statusFilter ?? null) === 'active')>Active</option>
+        <option value="inactive" @selected(($statusFilter ?? null) === 'inactive')>Inactive</option>
+    </select>
+    <select name="balance" class="rounded-lg border border-gray-300 py-2 pl-2 pr-8 text-sm text-gray-700 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+        <option value="" @selected(empty($balanceFilter))>Any balance</option>
+        <option value="with_balance" @selected(($balanceFilter ?? null) === 'with_balance')>Owes</option>
+        <option value="zero_balance" @selected(($balanceFilter ?? null) === 'zero_balance')>Zero</option>
+    </select>
+    <x-button variant="primary" size="sm" type="submit">Go</x-button>
+    @if(($search ?? '') !== '' || ($statusFilter ?? null) || ($balanceFilter ?? null))
+        <a href="{{ tenant_route('tenant.customer-credit.customers.index') }}" class="text-sm font-medium text-gray-500 hover:text-gray-800">Clear</a>
+    @endif
+</form>
 
 <div class="space-y-3">
     @forelse($customers as $customer)
@@ -29,7 +39,14 @@
                     @if($customer->company_name)
                         <p class="text-sm text-gray-500">{{ $customer->company_name }}</p>
                     @endif
-                    <p class="mt-1 text-xs text-gray-500">{{ $customer->phone ?? '—' }} · Outstanding @money($customer->outstanding_balance)</p>
+                    <p class="mt-1 text-xs text-gray-500">
+                        {{ $customer->phone ?? '—' }}
+                        · Outstanding @money($customer->outstanding_balance)
+                        · Added {{ $customer->created_at->format('M j, Y') }}
+                    </p>
+                    @unless($customer->is_active)
+                        <span class="mt-1 inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">Inactive</span>
+                    @endunless
                 </div>
                 <div class="flex shrink-0 items-center gap-2">
                     <x-button variant="success" size="sm" type="button" onclick="openAppModal('customer-payment-modal-{{ $customer->id }}')">Record payment</x-button>
@@ -42,11 +59,27 @@
             </div>
         </x-card>
     @empty
-        <x-card class="text-center text-sm text-gray-500">No credit customers yet. Add one above or create from POS checkout.</x-card>
+        <x-card class="text-center text-sm text-gray-500">
+            @if(($search ?? '') !== '' || ($statusFilter ?? null) || ($balanceFilter ?? null))
+                No customers match your search or filters.
+                <a href="{{ tenant_route('tenant.customer-credit.customers.index') }}" class="font-medium text-indigo-600 hover:text-indigo-800">Clear filters</a>
+            @else
+                No credit customers yet. Add one below or create from POS checkout.
+            @endif
+        </x-card>
     @endforelse
 </div>
 
 <div class="mt-6">{{ $customers->links() }}</div>
+
+<x-card class="mt-8">
+    <h2 class="mb-3 text-sm font-semibold text-gray-900">Add customer</h2>
+    <form method="POST" action="{{ tenant_route('tenant.customer-credit.customers.store') }}" class="space-y-4">
+        @csrf
+        @include('customer-credit.customers._form')
+        <x-button variant="primary" type="submit">Save customer</x-button>
+    </form>
+</x-card>
 
 @push('modals')
     @foreach($customers as $customer)

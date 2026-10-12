@@ -23,18 +23,51 @@ class CustomerCreditCustomerController extends Controller
 
     public function index(Request $request, PaymentWalletService $walletService)
     {
+        $search = trim((string) $request->input('q', ''));
+        $status = $request->input('status');
+        $balance = $request->input('balance');
+
+        $allowedStatus = ['active', 'inactive'];
+        $allowedBalance = ['with_balance', 'zero_balance'];
+
         $customers = Customer::query()
             ->where('is_credit_customer', true)
-            ->orderByDesc('is_active')
-            ->orderBy('name')
+            ->when($search !== '', function ($query) use ($search) {
+                $like = '%' . $search . '%';
+                $query->where(function ($outer) use ($like) {
+                    $outer->where('name', 'like', $like)
+                        ->orWhere('company_name', 'like', $like)
+                        ->orWhere('phone', 'like', $like)
+                        ->orWhere('email', 'like', $like);
+                });
+            })
+            ->when(in_array($status, $allowedStatus, true), function ($query) use ($status) {
+                $query->where('is_active', $status === 'active');
+            })
+            ->when($balance === 'with_balance', function ($query) {
+                $query->where('outstanding_balance', '>', 0);
+            })
+            ->when($balance === 'zero_balance', function ($query) {
+                $query->where('outstanding_balance', '<=', 0);
+            })
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
             ->withCount('debtEntries')
-            ->paginate(25);
+            ->paginate(25)
+            ->appends(array_filter([
+                'q' => $search !== '' ? $search : null,
+                'status' => in_array($status, $allowedStatus, true) ? $status : null,
+                'balance' => in_array($balance, $allowedBalance, true) ? $balance : null,
+            ]));
 
         $businessId = (int) $request->user()->business_id;
 
         return view('customer-credit.customers.index', [
             'customers' => $customers,
             'wallets' => $walletService->activeForBusiness($businessId),
+            'search' => $search,
+            'statusFilter' => in_array($status, $allowedStatus, true) ? $status : null,
+            'balanceFilter' => in_array($balance, $allowedBalance, true) ? $balance : null,
         ]);
     }
 
