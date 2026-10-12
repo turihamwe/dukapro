@@ -9,6 +9,7 @@
     <x-slot name="actions">
         @can('create', App\Models\Product::class)
             <x-button variant="primary" size="sm" href="{{ tenant_route('tenant.inventory.create') }}">+ Add New Product</x-button>
+            <x-button variant="secondary" size="sm" type="button" data-open-import-products>Import Products (CSV)</x-button>
         @endcan
         @can('top-up-inventory')
             <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.inventory.top-up') }}">Top-up Stock</x-button>
@@ -331,6 +332,9 @@
 
 <div class="mt-6">{{ $products->links() }}</div>
 @include('inventory.partials.branch-transfer-modal')
+@can('create', App\Models\Product::class)
+    @include('inventory.partials.import-products-modal')
+@endcan
 
 @endsection
 
@@ -393,5 +397,19 @@
         }
     });
 })();
+
+document.addEventListener('click', function (e) {
+    var opener = e.target.closest('[data-open-import-products]');
+    if (!opener) {
+        return;
+    }
+    openAppModal('import-products-modal');
+});
+
+@if(session('open_import_products_modal') || $errors->has('csv_file') || $errors->has('branch_id'))
+    if (typeof window.openAppModal === 'function') {
+        window.openAppModal('import-products-modal');
+    }
+@endif
 </script>
 @endpush

@@ -21,6 +21,7 @@ use App\Services\BranchStockTransferService;
 use App\Services\CatalogDiscoveryService;
 use App\Services\LowStockAlertService;
 use App\Services\ProductBatchService;
+use App\Services\ProductCsvImportService;
 use App\Services\ProductInventoryService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -128,6 +129,8 @@ class InventoryController extends Controller
 
         $canBranchTransfer = $request->user()->can('top-up-inventory') && $transferBranches->count() >= 2;
 
+        $importBranches = $branches;
+
         return view('inventory.index', compact(
             'products',
             'search',
@@ -137,8 +140,58 @@ class InventoryController extends Controller
             'stockFilter',
             'serviceCatalogEnabled',
             'transferBranches',
-            'canBranchTransfer'
+            'canBranchTransfer',
+            'importBranches'
         ));
+    }
+
+    public function downloadImportTemplate(Request $request, ProductCsvImportService $importService)
+    {
+        $this->authorize('create', Product::class);
+
+        return response($importService->templateCsvContents(), 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="product-import-template.csv"',
+        ]);
+    }
+
+    public function storeImport(Request $request, ProductCsvImportService $importService)
+    {
+        $this->authorize('create', Product::class);
+
+        $request->validate([
+            'csv_file' => 'required|file|mimes:csv,txt|max:10240',
+        ]);
+
+        $business = $request->user()->business;
+        $defaultBranchId = $this->resolveDefaultBranchForImport($request, $business);
+
+        try {
+            $result = $importService->import(
+                $business,
+                $request->user(),
+                $request->file('csv_file'),
+                $defaultBranchId
+            );
+        } catch (\RuntimeException $exception) {
+            return redirect()
+                ->to(tenant_route('tenant.inventory.index'))
+                ->with('error', $exception->getMessage())
+                ->with('open_import_products_modal', true);
+        }
+
+        $message = 'Import complete: ' . $result['inserted'] . ' product(s) added.';
+        if ($result['skipped_duplicates'] > 0) {
+            $message .= ' ' . $result['skipped_duplicates'] . ' duplicate SKU(s) skipped.';
+        }
+        if ($result['skipped_errors'] > 0) {
+            $message .= ' ' . $result['skipped_errors'] . ' row(s) had errors.';
+        }
+
+        return redirect()
+            ->to(tenant_route('tenant.inventory.index'))
+            ->with('success', $message)
+            ->with('import_errors', array_slice($result['errors'], 0, 50));
     }
 
     public function show(Business $business, Product $product)
@@ -775,6 +828,31 @@ class InventoryController extends Controller
         );
 
         return $brand->id;
+    }
+
+    protected function resolveDefaultBranchForImport(Request $request, Business $business): ?int
+    {
+        if (! $request->user()->isOwner()) {
+            return $this->resolveBranchIdForOwner($request, $business);
+        }
+
+        $hasBranches = Branch::query()
+            ->where('business_id', $business->id)
+            ->where('is_active', true)
+            ->exists();
+
+        if (! $hasBranches || ! $request->filled('branch_id')) {
+            return null;
+        }
+
+        $data = $request->validate([
+            'branch_id' => [
+                'integer',
+                Rule::exists('branches', 'id')->where(fn ($q) => $q->where('business_id', $business->id)->where('is_active', true)),
+            ],
+        ]);
+
+        return (int) $data['branch_id'];
     }
 
     protected function resolveBranchIdForOwner(Request $request, Business $business): ?int

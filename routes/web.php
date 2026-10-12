@@ -302,6 +302,8 @@ Route::middleware(['maintenance'])->group(function () {
                     Route::middleware(['can:create-inventory'])->group(function () {
                         Route::get('/create', [InventoryController::class, 'create'])->name('create');
                         Route::post('/', [InventoryController::class, 'store'])->name('store');
+                        Route::get('/import/template', [InventoryController::class, 'downloadImportTemplate'])->name('import.template');
+                        Route::post('/import', [InventoryController::class, 'storeImport'])->name('import.store');
                     });
                     Route::middleware(['can:top-up-inventory'])->group(function () {
                         Route::get('/top-up', [InventoryController::class, 'topUp'])->name('top-up');
