@@ -6,6 +6,9 @@
 @section('content')
 <x-page-header title="Bills" subtitle="Supplier credit invoices — open, partial, and paid">
     <x-slot name="actions">
+        @if(($suppliers ?? collect())->isNotEmpty())
+            <x-button variant="secondary" size="sm" type="button" onclick="openAppModal('add-vendor-bill-modal')">+ Add vendor bill</x-button>
+        @endif
         <x-button variant="primary" size="sm" href="{{ tenant_route('tenant.supplier-credit.receives.create') }}">+ Purchase receive</x-button>
     </x-slot>
 </x-page-header>
@@ -45,6 +48,10 @@
             $line = $purchase->lines->first();
             if ($purchase->is_opening_balance) {
                 $productLabel = 'Opening balance (no stock added)';
+            } elseif ($purchase->is_historical_adjustment) {
+                $productLabel = 'Historical / adjustment (no stock added)';
+            } elseif ($purchase->lines->isEmpty()) {
+                $productLabel = 'Vendor bill (no stock added)';
             } else {
                 $productLabel = $line && $line->product ? $line->product->displayName() : 'Stock item';
             }
@@ -58,6 +65,9 @@
                             @if($purchase->status === 'paid') bg-emerald-100 text-emerald-800
                             @elseif($purchase->status === 'partial') bg-amber-100 text-amber-900
                             @else bg-gray-100 text-gray-700 @endif">{{ $purchase->status }}</span>
+                        @if($purchase->is_historical_adjustment)
+                            <span class="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-800">Historical</span>
+                        @endif
                     </div>
                     <p class="mt-1 text-sm text-gray-600">{{ $productLabel }} · {{ $purchase->purchase_date->format('M j, Y') }}</p>
                 </div>
@@ -94,6 +104,9 @@
 <div class="mt-6">{{ $purchases->links() }}</div>
 
 @push('modals')
+    @if(($suppliers ?? collect())->isNotEmpty())
+        @include('supplier-credit.bills._add-vendor-bill-modal', ['suppliers' => $suppliers])
+    @endif
     @foreach($purchases as $purchase)
         @if($purchase->balanceDue() > 0)
             @include('supplier-credit.bills._payment-modal', [
@@ -109,6 +122,15 @@
 <script>
 (function () {
     var modal = document.getElementById('bill-payment-modal-{{ old('_payment_purchase_id') }}');
+    if (modal) window.openAppModal(modal);
+})();
+</script>
+@endpush
+@elseif($errors->any() && (old('supplier_id') || old('purchase_date')))
+@push('scripts')
+<script>
+(function () {
+    var modal = document.getElementById('add-vendor-bill-modal');
     if (modal) window.openAppModal(modal);
 })();
 </script>

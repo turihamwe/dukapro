@@ -426,6 +426,7 @@ Route::middleware(['maintenance'])->group(function () {
                     Route::get('/financials/income-statement', [SupplierFinancialStatementController::class, 'incomeStatement'])->name('financials.income-statement');
                     Route::get('/financials/balance-sheet', [SupplierFinancialStatementController::class, 'balanceSheet'])->name('financials.balance-sheet');
                     Route::get('/bills', [SupplierCreditController::class, 'bills'])->name('bills.index');
+                    Route::post('/bills/manual', [SupplierCreditController::class, 'storeManualBill'])->name('bills.manual.store');
                     Route::get('/bills/{purchase}', [SupplierCreditController::class, 'showBill'])->name('bills.show');
                     Route::delete('/bills/{purchase}', [SupplierCreditController::class, 'destroyBill'])->name('bills.destroy');
                     Route::get('/payments', [SupplierCreditController::class, 'payments'])->name('payments.index');
@@ -451,6 +452,7 @@ Route::middleware(['maintenance'])->group(function () {
                 Route::prefix('wallets')->name('wallets.')->middleware(['can:manage-wallets', 'payment.wallets'])->group(function () {
                     Route::get('/', [PaymentWalletController::class, 'index'])->name('index');
                     Route::post('/', [PaymentWalletController::class, 'store'])->name('store');
+                    Route::post('/deposit', [PaymentWalletController::class, 'deposit'])->name('deposit');
                     Route::put('/{wallet}', [PaymentWalletController::class, 'update'])->name('update');
                 });
 

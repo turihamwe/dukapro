@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierCreditPayment;
 use App\Models\SupplierCreditPurchase;
+use Illuminate\Support\Carbon;
 use App\Services\PaymentWalletService;
 use App\Services\SupplierCreditOverviewService;
 use App\Services\SupplierCreditService;
@@ -69,12 +70,61 @@ class SupplierCreditController extends Controller
 
         $businessId = (int) $request->user()->business_id;
 
+        $suppliers = Supplier::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
         return view('supplier-credit.bills.index', [
             'purchases' => $purchases,
             'totalPayable' => $totalPayable,
             'statusFilter' => in_array($status, $allowed, true) ? $status : null,
             'wallets' => $walletService->activeForBusiness($businessId),
+            'suppliers' => $suppliers,
         ]);
+    }
+
+    public function storeManualBill(Request $request, Business $business, SupplierCreditService $service)
+    {
+        $businessId = (int) $request->user()->business_id;
+
+        $data = $request->validate([
+            'supplier_id' => 'required|integer|exists:suppliers,id',
+            'amount' => 'required|numeric|min:0.01',
+            'purchase_date' => 'required|date|before_or_equal:today',
+            'reference' => 'nullable|string|max:100',
+            'source_note' => 'nullable|string|max:2000',
+            'is_historical_adjustment' => 'nullable|boolean',
+        ]);
+
+        $supplier = Supplier::query()
+            ->where('business_id', $businessId)
+            ->whereKey($data['supplier_id'])
+            ->firstOrFail();
+
+        $purchaseDate = Carbon::parse($data['purchase_date']);
+        $isHistorical = $request->boolean('is_historical_adjustment');
+
+        $notes = trim((string) ($data['source_note'] ?? ''));
+        if ($isHistorical && $notes === '') {
+            $notes = 'Historical / adjustment bill (no stock movement).';
+        } elseif ($isHistorical) {
+            $notes = 'Historical / adjustment: ' . $notes;
+        }
+
+        $purchase = $service->recordManualVendorBill(
+            $request->user(),
+            $supplier,
+            (float) $data['amount'],
+            $purchaseDate,
+            $isHistorical,
+            $data['reference'] ?? null,
+            $notes !== '' ? $notes : null
+        );
+
+        return redirect()
+            ->to(tenant_route('tenant.supplier-credit.bills.show', ['purchase' => $purchase]))
+            ->with('success', 'Vendor bill recorded. Payables updated with no inventory change.');
     }
 
     public function showBill(Request $request, Business $business, SupplierCreditPurchase $purchase)

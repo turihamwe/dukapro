@@ -29,6 +29,7 @@ class SupplierCreditPurchase extends Model
         'amount_paid',
         'status',
         'is_opening_balance',
+        'is_historical_adjustment',
         'notes',
     ];
 
@@ -37,6 +38,7 @@ class SupplierCreditPurchase extends Model
         'total_amount' => 'decimal:2',
         'amount_paid' => 'decimal:2',
         'is_opening_balance' => 'boolean',
+        'is_historical_adjustment' => 'boolean',
     ];
 
     public function supplier(): BelongsTo

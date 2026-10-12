@@ -46,6 +46,7 @@ class SupplierCreditOverviewService
     {
         $purchases = SupplierCreditPurchase::query()
             ->with('supplier')
+            ->withCount('lines')
             ->whereBetween('purchase_date', [$start->toDateString(), $end->toDateString()])
             ->orderByDesc('purchase_date')
             ->orderByDesc('id')
@@ -61,11 +62,21 @@ class SupplierCreditOverviewService
         $events = collect();
 
         foreach ($purchases as $purchase) {
+            if ($purchase->is_opening_balance) {
+                $billLabel = 'Opening balance bill';
+            } elseif ($purchase->is_historical_adjustment) {
+                $billLabel = 'Historical / adjustment bill';
+            } elseif ((int) $purchase->lines_count > 0) {
+                $billLabel = 'Bill / stock received on credit';
+            } else {
+                $billLabel = 'Vendor bill (no stock)';
+            }
+
             $events->push([
                 'sort_at' => $purchase->created_at,
                 'occurred_at' => $purchase->purchase_date->copy()->startOfDay(),
                 'type' => 'purchase',
-                'label' => 'Bill / stock received on credit',
+                'label' => $billLabel,
                 'supplier_name' => $purchase->supplier->name ?? 'Vendor',
                 'amount' => (float) $purchase->total_amount,
                 'purchase' => $purchase,

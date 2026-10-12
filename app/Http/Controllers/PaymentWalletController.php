@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use App\Helpers\AuditLogger;
 use App\Models\Business;
 use App\Models\PaymentWallet;
+use App\Models\PaymentWalletTransaction;
 use App\Services\PaymentWalletService;
+use App\Support\WalletInflowCategory;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 
 class PaymentWalletController extends Controller
@@ -31,11 +34,57 @@ class PaymentWalletController extends Controller
 
         $summary = $walletService->summaryForBusiness($businessId);
 
+        $recentInflows = PaymentWalletTransaction::query()
+            ->where('business_id', $businessId)
+            ->where('direction', PaymentWalletTransaction::DIRECTION_IN)
+            ->with(['wallet:id,name,type', 'user:id,name'])
+            ->orderByDesc('occurred_at')
+            ->orderByDesc('id')
+            ->limit(25)
+            ->get();
+
         return view('wallets.index', [
             'wallets' => $wallets,
             'totalLiquid' => $summary['total_liquid'],
             'types' => PaymentWallet::types(),
+            'inflowCategories' => WalletInflowCategory::all(),
+            'recentInflows' => $recentInflows,
         ]);
+    }
+
+    public function deposit(Request $request, Business $business, PaymentWalletService $walletService)
+    {
+        $data = $request->validate([
+            'payment_wallet_id' => 'required|integer|exists:payment_wallets,id',
+            'amount' => 'required|numeric|min:0.01',
+            'category' => ['required', Rule::in(array_keys(WalletInflowCategory::all()))],
+            'source_name' => 'nullable|string|max:500',
+            'occurred_at' => 'nullable|date',
+        ]);
+
+        $wallet = PaymentWallet::query()
+            ->where('business_id', (int) $business->id)
+            ->whereKey($data['payment_wallet_id'])
+            ->firstOrFail();
+
+        if (! $wallet->is_active) {
+            return back()->withErrors(['amount' => 'Cannot deposit into an inactive wallet.']);
+        }
+
+        $occurredAt = ! empty($data['occurred_at']) ? Carbon::parse($data['occurred_at']) : null;
+
+        $walletService->recordManualInflow(
+            $request->user(),
+            $wallet,
+            (float) $data['amount'],
+            $data['category'],
+            $data['source_name'] ?? null,
+            $occurredAt
+        );
+
+        return redirect()
+            ->to(tenant_route('tenant.wallets.index'))
+            ->with('success', 'Funds added to ' . $wallet->name . '.');
     }
 
     public function store(Request $request, PaymentWalletService $walletService)

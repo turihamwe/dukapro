@@ -463,6 +463,58 @@ class SupplierCreditService
     }
 
     /**
+     * Manual vendor bill (no stock). Increases payables immediately; purchase_date drives statement ordering.
+     */
+    public function recordManualVendorBill(
+        User $user,
+        Supplier $supplier,
+        float $amount,
+        \DateTimeInterface $purchaseDate,
+        bool $isHistoricalAdjustment = false,
+        ?string $reference = null,
+        ?string $notes = null
+    ): SupplierCreditPurchase {
+        if (! SupplierCreditMode::active($user->business)) {
+            throw ValidationException::withMessages([
+                'amount' => 'Supplier credit is not enabled for this business.',
+            ]);
+        }
+
+        if ((int) $supplier->business_id !== (int) $user->business_id) {
+            abort(404);
+        }
+
+        $amount = round($amount, 2);
+
+        if ($amount <= 0) {
+            throw ValidationException::withMessages([
+                'amount' => 'Enter a bill amount greater than zero.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($user, $supplier, $amount, $purchaseDate, $isHistoricalAdjustment, $reference, $notes) {
+            $purchase = SupplierCreditPurchase::create([
+                'business_id' => $supplier->business_id,
+                'supplier_id' => $supplier->id,
+                'branch_id' => null,
+                'user_id' => $user->id,
+                'reference' => $reference,
+                'purchase_date' => $purchaseDate,
+                'total_amount' => $amount,
+                'amount_paid' => 0,
+                'status' => SupplierCreditPurchase::STATUS_OPEN,
+                'is_opening_balance' => false,
+                'is_historical_adjustment' => $isHistoricalAdjustment,
+                'notes' => $notes,
+            ]);
+
+            AuditLogger::record('supplier_manual_bill_created', $purchase, null, $purchase->fresh()->toArray());
+
+            return $purchase->fresh(['supplier']);
+        });
+    }
+
+    /**
      * Create a payable opening balance bill with no inventory movement.
      */
     public function ensureOpeningBalanceBill(User $user, Supplier $supplier, float $amount): ?SupplierCreditPurchase

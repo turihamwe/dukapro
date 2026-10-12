@@ -5,8 +5,10 @@ namespace App\Services;
 use App\Helpers\AuditLogger;
 use App\Models\Business;
 use App\Models\PaymentWallet;
+use App\Models\PaymentWalletTransaction;
 use App\Models\User;
 use App\Support\PaymentWalletMode;
+use App\Support\WalletInflowCategory;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -176,6 +178,65 @@ class PaymentWalletService
             );
 
             return $fresh;
+        });
+    }
+
+    public function recordManualInflow(
+        User $user,
+        PaymentWallet $wallet,
+        float $amount,
+        string $category,
+        ?string $sourceName = null,
+        ?\DateTimeInterface $occurredAt = null
+    ): PaymentWalletTransaction {
+        $amount = round($amount, 2);
+
+        if ($amount <= 0) {
+            throw ValidationException::withMessages([
+                'amount' => 'Deposit amount must be greater than zero.',
+            ]);
+        }
+
+        if ((int) $wallet->business_id !== (int) $user->business_id) {
+            abort(404);
+        }
+
+        if (! array_key_exists($category, WalletInflowCategory::all())) {
+            throw ValidationException::withMessages([
+                'category' => 'Select a valid inflow category.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($user, $wallet, $amount, $category, $sourceName, $occurredAt) {
+            $locked = PaymentWallet::query()->whereKey($wallet->id)->lockForUpdate()->firstOrFail();
+            $oldBalance = (float) $locked->current_balance;
+            $locked->current_balance = round($oldBalance + $amount, 2);
+            $locked->save();
+
+            $transaction = PaymentWalletTransaction::create([
+                'business_id' => (int) $user->business_id,
+                'payment_wallet_id' => $wallet->id,
+                'user_id' => $user->id,
+                'direction' => PaymentWalletTransaction::DIRECTION_IN,
+                'amount' => $amount,
+                'category' => $category,
+                'source_name' => $sourceName,
+                'occurred_at' => $occurredAt ?? now(),
+            ]);
+
+            AuditLogger::record(
+                'payment_wallet_manual_inflow',
+                $transaction,
+                ['wallet_balance' => $oldBalance],
+                [
+                    'wallet_balance' => (float) $locked->current_balance,
+                    'transaction' => $transaction->toArray(),
+                ],
+                (int) $user->business_id,
+                (int) $user->id
+            );
+
+            return $transaction->fresh(['wallet', 'user']);
         });
     }
 

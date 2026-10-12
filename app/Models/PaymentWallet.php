@@ -56,4 +56,9 @@ class PaymentWallet extends Model
     {
         return $this->hasMany(SupplierCreditPayment::class, 'payment_wallet_id');
     }
+
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(PaymentWalletTransaction::class, 'payment_wallet_id');
+    }
 }

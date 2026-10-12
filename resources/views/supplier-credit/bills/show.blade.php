@@ -28,6 +28,9 @@
             @if($purchase->status === 'paid') bg-emerald-100 text-emerald-800
             @elseif($purchase->status === 'partial') bg-amber-100 text-amber-900
             @else bg-gray-100 text-gray-700 @endif">{{ $purchase->status }}</span>
+        @if($purchase->is_historical_adjustment)
+            <span class="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-800">Historical / adjustment</span>
+        @endif
         @if($purchase->reference)
             <span class="text-xs text-gray-500">Ref: {{ $purchase->reference }}</span>
         @endif
@@ -56,6 +59,10 @@
     @if($purchase->is_opening_balance && $purchase->lines->isEmpty())
         <p class="mt-3 text-sm text-gray-600">
             This bill records historical supplier debt only. No products or stock were added to inventory.
+        </p>
+    @elseif($purchase->is_historical_adjustment && $purchase->lines->isEmpty())
+        <p class="mt-3 text-sm text-gray-600">
+            Historical or adjustment bill — payables were updated for the invoice date shown above. No stock was received.
         </p>
     @elseif($purchase->lines->isEmpty())
         <p class="mt-3 text-sm text-gray-500">No line items.</p>
