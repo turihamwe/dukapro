@@ -88,6 +88,7 @@
             background: #fff;
             box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
             overflow: hidden;
+            flex-shrink: 1;
         }
         @media (min-width: 640px) {
             .app-modal-panel {
@@ -95,11 +96,13 @@
                 width: 100%;
             }
         }
-        .app-modal-panel > form {
+        .app-modal-panel > form,
+        .app-modal-panel > .app-modal-form {
             display: flex;
             flex-direction: column;
             flex: 1 1 auto;
             min-height: 0;
+            max-height: 100%;
             overflow: hidden;
         }
         .app-modal-header {
@@ -138,11 +141,46 @@
             flex: 1 1 100%;
         }
         @media (max-width: 639px) {
+            .app-modal-overlay.is-open {
+                padding-bottom: 0;
+            }
+            .app-modal-overlay.is-open .app-modal-panel {
+                max-height: calc(100dvh - env(safe-area-inset-top, 0px) - var(--app-modal-bottom-offset));
+                height: min(100%, calc(100dvh - env(safe-area-inset-top, 0px) - var(--app-modal-bottom-offset)));
+                margin-bottom: 0;
+                border-radius: 1rem 1rem 0 0;
+            }
+            .app-modal-overlay.is-open .app-modal-body {
+                flex: 1 1 auto;
+                min-height: 0;
+                padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
+            }
             .app-modal-footer {
                 flex-direction: column-reverse;
+                gap: 0.625rem;
             }
             .app-modal-footer > * {
                 width: 100%;
+            }
+            .app-modal-overlay.is-open .app-modal-footer {
+                position: fixed;
+                left: 0;
+                right: 0;
+                bottom: calc(var(--app-modal-bottom-offset) + env(safe-area-inset-bottom, 0px));
+                z-index: 210;
+                margin: 0;
+                max-width: none;
+                padding: 0.875rem 1.25rem calc(0.875rem + env(safe-area-inset-bottom, 0px));
+                border-top: 1px solid #e5e7eb;
+                background: #fff;
+                box-shadow: 0 -10px 28px rgb(0 0 0 / 0.12);
+            }
+            .app-modal-footer button,
+            .app-modal-footer a[role="button"],
+            .app-modal-footer .inline-flex {
+                min-height: 48px;
+                width: 100%;
+                justify-content: center;
             }
         }
         body.app-modal-open {

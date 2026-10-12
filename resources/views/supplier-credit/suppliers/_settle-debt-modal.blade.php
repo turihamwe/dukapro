@@ -36,7 +36,7 @@
 
                 <div>
                     <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">FIFO allocation preview</p>
-                    <div id="vendor-settle-debt-preview" class="mt-2 max-h-48 overflow-y-auto rounded-lg border border-gray-200 bg-gray-50 text-sm"></div>
+                    <div id="vendor-settle-debt-preview" class="mt-2 max-h-28 overflow-y-auto rounded-lg border border-gray-200 bg-gray-50 text-sm sm:max-h-48"></div>
                     <p id="vendor-settle-debt-preview-empty" class="mt-2 hidden text-xs text-gray-500">Enter an amount to see how it will be applied.</p>
                 </div>
             </div>
