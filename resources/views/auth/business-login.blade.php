@@ -21,6 +21,12 @@
     </div>
 
     <x-card>
+        @auth
+            <div class="mb-4 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-950">
+                Signed in as <span class="font-semibold">{{ auth()->user()->email }}</span>.
+                Sign in below to switch, or <a href="{{ route('logout.get') }}" class="font-semibold underline">sign out</a>.
+            </div>
+        @endauth
         @include('auth.partials.login-form', [
             'action' => route('business.login', ['portal' => $business->portal_slug]),
             'brandColor' => $brandColor,

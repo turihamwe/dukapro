@@ -29,6 +29,13 @@
         </a>
 
         <p class="mt-4 text-center text-xs text-gray-500">You can still view your dashboard. Choose a plan on the next screen to restore full access.</p>
+
+        <p class="mt-4 text-center text-xs text-gray-500">
+            Wrong account?
+            <a href="{{ route('logout.get') }}" class="font-semibold text-indigo-700 underline">Sign out</a>
+            or
+            <a href="{{ route('login') }}" class="font-semibold text-indigo-700 underline">switch account</a>.
+        </p>
     </div>
 </div>
 @endif

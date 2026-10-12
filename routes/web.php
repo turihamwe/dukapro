@@ -95,13 +95,14 @@ Route::middleware(['maintenance'])->group(function () {
         ->where('code', '[A-Za-z0-9]+')
         ->name('affiliate.referral');
 
+    Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::get('/business/{portal}/login', [AuthController::class, 'showBusinessLogin'])->name('business.login');
+    Route::post('/business/{portal}/login', [AuthController::class, 'businessLogin']);
+
     Route::middleware('guest')->group(function () {
         Route::get('/', [LandingController::class, 'index'])->name('home');
-        Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-        Route::post('/login', [AuthController::class, 'login']);
         Route::get('/portal', [AuthController::class, 'showPortal'])->name('portal');
-        Route::get('/business/{portal}/login', [AuthController::class, 'showBusinessLogin'])->name('business.login');
-        Route::post('/business/{portal}/login', [AuthController::class, 'businessLogin']);
         Route::get('/superadmin/login', [AuthController::class, 'showSuperAdminLogin'])->name('superadmin.login');
         Route::post('/superadmin/login', [AuthController::class, 'superAdminLogin']);
         Route::get('/register', [AuthController::class, 'showRegister'])->name('register');

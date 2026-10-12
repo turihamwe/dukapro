@@ -47,6 +47,8 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
+        $this->releaseAuthenticatedSessionForSwitch($request);
+
         $data = $request->validate([
             'login' => 'required|string|max:255',
             'password' => 'required',
@@ -157,6 +159,8 @@ class AuthController extends Controller
         }
 
         abort_unless($business->is_active, 404);
+
+        $this->releaseAuthenticatedSessionForSwitch($request);
 
         $data = $request->validate([
             'login' => 'required|string|max:255',
@@ -316,6 +320,20 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->to($portalUrl);
+    }
+
+    /**
+     * Allow signing in as another user without visiting logout first (e.g. expired trial).
+     * Does not invalidate the session so the login form CSRF token stays valid.
+     */
+    protected function releaseAuthenticatedSessionForSwitch(Request $request): void
+    {
+        if (! Auth::check()) {
+            return;
+        }
+
+        Auth::logout();
+        LoginPortal::clear($request);
     }
 
     protected function completeTenantLogin(Request $request, $user, Business $business)
