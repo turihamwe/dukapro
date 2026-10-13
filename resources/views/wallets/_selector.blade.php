@@ -4,7 +4,7 @@
     $label = $label ?? 'Account / wallet';
     $walletsEnabled = auth()->user() && auth()->user()->business && auth()->user()->business->usesPaymentWalletsMode();
     $required = $required ?? ($walletsEnabled && $wallets->isNotEmpty());
-    $selected = old($name);
+    $selected = old($name, $selected ?? null);
 @endphp
 
 @if($walletsEnabled && $wallets->isNotEmpty())

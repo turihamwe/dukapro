@@ -23,6 +23,7 @@ class Expense extends Model
         'amount',
         'expense_date',
         'payment_method',
+        'payment_wallet_id',
         'receipt_reference',
     ];
 
@@ -39,5 +40,10 @@ class Expense extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function paymentWallet(): BelongsTo
+    {
+        return $this->belongsTo(PaymentWallet::class, 'payment_wallet_id');
     }
 }
