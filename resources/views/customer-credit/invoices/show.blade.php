@@ -13,7 +13,7 @@
 </x-page-header>
 
 <div class="mb-6 grid gap-4 sm:grid-cols-3">
-    <x-stat-card label="Total" :value="format_money($sale->total_amount)" accent="indigo" />
+    <x-stat-card label="Total" :value="format_money($sale->total)" accent="indigo" />
     <x-stat-card label="Date" :value="$sale->created_at->format('M d, Y H:i')" accent="gray" />
     <x-stat-card label="Cashier" :value="optional($sale->user)->name ?? '—'" accent="gray" />
 </div>

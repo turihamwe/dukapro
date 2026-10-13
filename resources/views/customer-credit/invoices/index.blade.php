@@ -31,7 +31,7 @@
                     <p class="text-sm text-gray-600">{{ optional($sale->customer)->name ?? '—' }} · {{ $sale->created_at->format('M d, Y H:i') }}</p>
                 </div>
                 <div class="flex items-center gap-3">
-                    <span class="font-semibold text-gray-900">@money($sale->total_amount)</span>
+                    <span class="font-semibold text-gray-900">@money($sale->total)</span>
                     <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.customer-credit.invoices.show', ['sale' => $sale]) }}">View</x-button>
                     @include('customer-credit.partials.delete-button', [
                         'action' => tenant_route('tenant.customer-credit.invoices.destroy', ['sale' => $sale]),

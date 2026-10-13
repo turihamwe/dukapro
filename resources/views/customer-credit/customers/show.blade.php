@@ -56,7 +56,7 @@
     <div class="space-y-2">
         @foreach($creditSales as $sale)
             <a href="{{ tenant_route('tenant.customer-credit.invoices.show', ['sale' => $sale]) }}" class="block text-sm text-indigo-600 hover:text-indigo-800">
-                #{{ $sale->sale_number ?? $sale->id }} · @money($sale->total_amount) · {{ $sale->created_at->format('M d, Y') }}
+                #{{ $sale->sale_number ?? $sale->id }} · @money($sale->total) · {{ $sale->created_at->format('M d, Y') }}
             </a>
         @endforeach
     </div>
