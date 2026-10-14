@@ -152,6 +152,44 @@ class PaymentWalletController extends Controller
         ]);
     }
 
+    public function adjust(Request $request, Business $business, PaymentWalletService $walletService)
+    {
+        $this->authorize('manage-wallets');
+
+        $data = $request->validate([
+            'payment_wallet_id' => 'required|integer|exists:payment_wallets,id',
+            'adjustment_type' => 'required|in:add,reduce',
+            'amount' => 'required|numeric|min:0.01',
+            'reason' => 'required|string|min:3|max:2000',
+        ]);
+
+        $wallet = PaymentWallet::query()
+            ->where('business_id', (int) $business->id)
+            ->whereKey($data['payment_wallet_id'])
+            ->firstOrFail();
+
+        try {
+            $walletService->recordCashAdjustment(
+                $request->user(),
+                $wallet,
+                $data['adjustment_type'],
+                (float) $data['amount'],
+                $data['reason']
+            );
+        } catch (\Illuminate\Validation\ValidationException $exception) {
+            return redirect()
+                ->to(tenant_route('tenant.wallets.index'))
+                ->withErrors($exception->errors())
+                ->with('open_wallet_adjust_modal', (int) $wallet->id);
+        }
+
+        $verb = $data['adjustment_type'] === 'add' ? 'added to' : 'removed from';
+
+        return redirect()
+            ->to(tenant_route('tenant.wallets.index'))
+            ->with('success', 'Cash adjustment recorded: funds ' . $verb . ' ' . $wallet->name . '.');
+    }
+
     public function deposit(Request $request, Business $business, PaymentWalletService $walletService)
     {
         $data = $request->validate([

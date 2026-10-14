@@ -295,6 +295,106 @@ class PaymentWalletService
         return $wallet;
     }
 
+    public function recordCashAdjustment(
+        User $user,
+        PaymentWallet $wallet,
+        string $adjustmentType,
+        float $amount,
+        string $reason
+    ): PaymentWalletTransaction {
+        Gate::authorize('manage-wallets');
+
+        if ((int) $wallet->business_id !== (int) $user->business_id) {
+            abort(404);
+        }
+
+        if (! $wallet->is_active) {
+            throw ValidationException::withMessages([
+                'payment_wallet_id' => 'Cannot adjust an inactive wallet.',
+            ]);
+        }
+
+        $amount = round($amount, 2);
+        $reason = trim($reason);
+
+        if ($amount <= 0) {
+            throw ValidationException::withMessages([
+                'amount' => 'Adjustment amount must be greater than zero.',
+            ]);
+        }
+
+        if ($reason === '') {
+            throw ValidationException::withMessages([
+                'reason' => 'A reason or description is required for cash adjustments.',
+            ]);
+        }
+
+        if (! in_array($adjustmentType, ['add', 'reduce'], true)) {
+            throw ValidationException::withMessages([
+                'adjustment_type' => 'Select whether to add or reduce cash.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($user, $wallet, $adjustmentType, $amount, $reason) {
+            $locked = PaymentWallet::query()->whereKey($wallet->id)->lockForUpdate()->firstOrFail();
+            $oldBalance = (float) $locked->current_balance;
+
+            if ($adjustmentType === 'reduce' && $oldBalance + 0.009 < $amount) {
+                throw ValidationException::withMessages([
+                    'amount' => 'Insufficient balance in ' . $locked->name . ' (available ' . number_format($oldBalance, 2) . ').',
+                ]);
+            }
+
+            if ($adjustmentType === 'add') {
+                $locked->current_balance = round($oldBalance + $amount, 2);
+            } else {
+                $locked->current_balance = round($oldBalance - $amount, 2);
+            }
+
+            $locked->save();
+
+            $direction = $adjustmentType === 'add'
+                ? PaymentWalletTransaction::DIRECTION_IN
+                : PaymentWalletTransaction::DIRECTION_OUT;
+
+            $sourceType = $adjustmentType === 'add'
+                ? WalletTransactionSource::ADJUSTMENT_INFLOW
+                : WalletTransactionSource::ADJUSTMENT_OUTFLOW;
+
+            $transaction = $this->createLedgerEntry(
+                $locked,
+                $user,
+                $direction,
+                $amount,
+                (float) $locked->current_balance,
+                [
+                    'source_type' => $sourceType,
+                    'category' => WalletInflowCategory::MISCELLANEOUS,
+                    'notes' => $reason,
+                    'reference' => 'Manual cash adjustment',
+                    'occurred_at' => now(),
+                ]
+            );
+
+            AuditLogger::record(
+                'payment_wallet_cash_adjustment',
+                $transaction,
+                ['wallet_balance' => $oldBalance],
+                [
+                    'wallet_balance' => (float) $locked->current_balance,
+                    'adjustment_type' => $adjustmentType,
+                    'amount' => $amount,
+                    'reason' => $reason,
+                    'transaction' => $transaction->toArray(),
+                ],
+                (int) $user->business_id,
+                (int) $user->id
+            );
+
+            return $transaction->fresh(['wallet', 'user']);
+        });
+    }
+
     public function archive(User $user, PaymentWallet $wallet): void
     {
         Gate::authorize('delete-payment-wallets');
@@ -335,6 +435,7 @@ class PaymentWalletService
 
         return PaymentWalletTransaction::query()
             ->where('payment_wallet_id', $wallet->id)
+            ->with('user:id,name')
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->limit($limit)
@@ -357,6 +458,8 @@ class PaymentWalletService
                     'category' => $transaction->category,
                     'source_type' => $transaction->source_type,
                     'source_name' => $transaction->source_name,
+                    'is_cash_adjustment' => WalletTransactionSource::isCashAdjustment($transaction->source_type),
+                    'recorded_by' => optional($transaction->user)->name,
                 ];
             })
             ->all();

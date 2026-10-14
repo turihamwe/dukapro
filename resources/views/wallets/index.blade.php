@@ -47,8 +47,11 @@
             @if((float) $wallet->opening_balance !== (float) $wallet->current_balance)
                 <p class="mt-1 text-xs text-gray-500">Started at @money($wallet->opening_balance)</p>
             @endif
-            <div class="mt-3 flex gap-2">
-                <x-button variant="secondary" size="sm" type="button" class="flex-1" onclick="openWalletDepositModal({{ (int) $wallet->id }})">Deposit</x-button>
+            <div class="mt-3 flex flex-wrap gap-2">
+                <x-button variant="secondary" size="sm" type="button" class="flex-1 min-w-[5rem]" onclick="openWalletDepositModal({{ (int) $wallet->id }})">Deposit</x-button>
+                @can('manage-wallets')
+                    <x-button variant="secondary" size="sm" type="button" class="flex-1 min-w-[5rem]" onclick="openWalletAdjustModal({{ (int) $wallet->id }})">Adjust cash</x-button>
+                @endcan
                 <x-button variant="secondary" size="sm" type="button" title="View transaction history" aria-label="View transaction history" onclick="openWalletHistoryModal({{ (int) $wallet->id }})">History</x-button>
             </div>
         </x-card>
@@ -89,6 +92,11 @@
                     </div>
                 </div>
                 <div class="mt-3 flex flex-wrap justify-end gap-2 border-t border-gray-100 pt-3">
+                    @if($wallet->is_active)
+                        @can('manage-wallets')
+                            <x-button variant="secondary" size="sm" type="button" onclick="openWalletAdjustModal({{ (int) $wallet->id }})">Adjust cash</x-button>
+                        @endcan
+                    @endif
                     <x-button variant="secondary" size="sm" type="button" onclick="openWalletHistoryModal({{ (int) $wallet->id }})">View log</x-button>
                     @can('delete-payment-wallets')
                         <x-delete-confirm-button
@@ -169,6 +177,9 @@
     @if($wallets->isNotEmpty())
         @include('wallets._history-modal')
     @endif
+    @can('manage-wallets')
+        @include('wallets._adjust-modal', ['wallets' => $wallets])
+    @endcan
     @can('adjust-wallet-transactions')
         @include('wallets._transaction-edit-modal')
         @include('wallets._transaction-delete-modal')
@@ -240,11 +251,24 @@
             var badgeClass = inflow
                 ? 'bg-emerald-100 text-emerald-800'
                 : 'bg-red-100 text-red-800';
+            if (row.is_cash_adjustment) {
+                badgeClass = inflow
+                    ? 'bg-indigo-100 text-indigo-900'
+                    : 'bg-amber-100 text-amber-900';
+            }
+            var typeLabel = row.is_cash_adjustment
+                ? (row.source_label || (inflow ? 'Cash adjustment (add)' : 'Cash adjustment (reduce)'))
+                : (row.direction_label || (inflow ? 'Inflow' : 'Outflow'));
             var amountClass = inflow ? 'text-emerald-700' : 'text-red-700';
             var sign = inflow ? '+' : '−';
             var source = row.source_label || '—';
-            if (row.reference) {
+            if (row.reference && !row.is_cash_adjustment) {
                 source += ' · ' + row.reference;
+            } else if (row.reference && row.is_cash_adjustment) {
+                source = row.reference;
+            }
+            if (row.recorded_by) {
+                source += (source === '—' ? '' : ' · ') + 'By ' + row.recorded_by;
             }
             var balance = row.balance_after != null ? formatMoney(row.balance_after) : '—';
             var actionsCell = '';
@@ -258,7 +282,7 @@
 
             return '<tr data-transaction-id="' + esc(String(row.id)) + '">'
                 + '<td class="whitespace-nowrap px-4 py-2 text-gray-600">' + esc(row.occurred_at) + '</td>'
-                + '<td class="px-4 py-2"><span class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium ' + badgeClass + '">' + esc(row.direction_label) + '</span></td>'
+                + '<td class="px-4 py-2"><span class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium ' + badgeClass + '">' + esc(typeLabel) + '</span></td>'
                 + '<td class="px-4 py-2 text-gray-800">' + esc(source) + '</td>'
                 + '<td class="max-w-xs px-4 py-2 text-gray-600">' + esc(row.notes) + '</td>'
                 + '<td class="whitespace-nowrap px-4 py-2 text-right font-semibold ' + amountClass + '">' + sign + formatMoney(row.amount) + '</td>'
@@ -561,6 +585,35 @@ window.openWalletDepositModal = function (walletId) {
         window.openAppModal('wallet-deposit-modal');
     }
 };
+
+window.openWalletAdjustModal = function (walletId) {
+    var modalId = 'wallet-adjust-modal';
+    var input = document.getElementById(modalId + '-wallet-id');
+    var label = document.getElementById(modalId + '-wallet-label');
+    var jsonEl = document.getElementById(modalId + '-wallets-json');
+    var wallets = [];
+    if (jsonEl && jsonEl.textContent) {
+        try {
+            wallets = JSON.parse(jsonEl.textContent);
+        } catch (e) {
+            wallets = [];
+        }
+    }
+    var match = wallets.find(function (w) {
+        return String(w.id) === String(walletId);
+    });
+    if (input && walletId) {
+        input.value = String(walletId);
+    }
+    if (label) {
+        label.textContent = match
+            ? match.name + ' · ' + (match.type_label || '') + ' · Balance ' + formatMoney(match.balance)
+            : 'Wallet #' + walletId;
+    }
+    if (typeof window.openAppModal === 'function') {
+        window.openAppModal(modalId);
+    }
+};
 document.addEventListener('click', function (e) {
     if (e.target.closest('[data-open-import-wallets]')) {
         e.preventDefault();
@@ -569,6 +622,9 @@ document.addEventListener('click', function (e) {
 });
 @if(session('open_import_wallets_modal') || ($errors->has('csv_file') && !old('payment_wallet_id')))
 window.openAppModal('import-wallets-modal');
+@endif
+@if(session('open_wallet_adjust_modal') || ($errors->has('reason') || $errors->has('adjustment_type')) && old('payment_wallet_id'))
+window.openWalletAdjustModal({{ (int) old('payment_wallet_id', session('open_wallet_adjust_modal', 0)) }});
 @endif
 @if($errors->any() && (old('payment_wallet_id') || old('category')))
 (function () {

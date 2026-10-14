@@ -20,6 +20,10 @@ class WalletTransactionSource
 
     public const ADJUSTMENT_OUT = 'adjustment_out';
 
+    public const ADJUSTMENT_INFLOW = 'adjustment_inflow';
+
+    public const ADJUSTMENT_OUTFLOW = 'adjustment_outflow';
+
     public static function labels(): array
     {
         return [
@@ -31,7 +35,19 @@ class WalletTransactionSource
             self::EXPENSE => 'Operating expense',
             self::ADJUSTMENT_IN => 'Funds added',
             self::ADJUSTMENT_OUT => 'Funds removed',
+            self::ADJUSTMENT_INFLOW => 'Cash adjustment (add)',
+            self::ADJUSTMENT_OUTFLOW => 'Cash adjustment (reduce)',
         ];
+    }
+
+    public static function isCashAdjustment(?string $sourceType): bool
+    {
+        return in_array($sourceType, [
+            self::ADJUSTMENT_INFLOW,
+            self::ADJUSTMENT_OUTFLOW,
+            self::ADJUSTMENT_IN,
+            self::ADJUSTMENT_OUT,
+        ], true);
     }
 
     public static function label(?string $sourceType, ?string $categoryFallback = null): string

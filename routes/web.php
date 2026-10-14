@@ -477,6 +477,7 @@ Route::middleware(['maintenance'])->group(function () {
                     Route::post('/import', [PaymentWalletController::class, 'storeImport'])->name('import.store');
                     Route::post('/', [PaymentWalletController::class, 'store'])->name('store');
                     Route::post('/deposit', [PaymentWalletController::class, 'deposit'])->name('deposit');
+                    Route::post('/adjust', [PaymentWalletController::class, 'adjust'])->name('adjust');
                     Route::get('/{wallet}/transactions', [PaymentWalletController::class, 'transactions'])->name('transactions');
                     Route::put('/{wallet}/transactions/{transaction}', [PaymentWalletController::class, 'updateTransaction'])->name('transactions.update');
                     Route::delete('/{wallet}/transactions/{transaction}', [PaymentWalletController::class, 'destroyTransaction'])->name('transactions.destroy');
