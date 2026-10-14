@@ -28,7 +28,10 @@
             @if((float) $wallet->opening_balance !== (float) $wallet->current_balance)
                 <p class="mt-1 text-xs text-gray-500">Started at @money($wallet->opening_balance)</p>
             @endif
-            <x-button variant="secondary" size="sm" type="button" class="mt-3 w-full" onclick="openWalletDepositModal({{ (int) $wallet->id }})">Deposit</x-button>
+            <div class="mt-3 flex gap-2">
+                <x-button variant="secondary" size="sm" type="button" class="flex-1" onclick="openWalletDepositModal({{ (int) $wallet->id }})">Deposit</x-button>
+                <x-button variant="secondary" size="sm" type="button" title="View transaction history" aria-label="View transaction history" onclick="openWalletHistoryModal({{ (int) $wallet->id }})">History</x-button>
+            </div>
         </x-card>
     @empty
         <x-card class="sm:col-span-2 lg:col-span-3 text-sm text-gray-600">
@@ -65,6 +68,9 @@
                             @endif
                         </p>
                     </div>
+                </div>
+                <div class="mt-3 flex justify-end border-t border-gray-100 pt-3">
+                    <x-button variant="secondary" size="sm" type="button" onclick="openWalletHistoryModal({{ (int) $wallet->id }})">View log</x-button>
                 </div>
             </x-card>
         @endforeach
@@ -125,10 +131,123 @@
     @if($wallets->where('is_active', true)->isNotEmpty())
         @include('wallets._deposit-modal', ['wallets' => $wallets, 'inflowCategories' => $inflowCategories ?? []])
     @endif
+    @if($wallets->isNotEmpty())
+        @include('wallets._history-modal')
+    @endif
 @endpush
 
 @push('scripts')
 <script>
+(function () {
+    var historyModalId = 'wallet-history-modal';
+    var historyUrlTemplate = @json(tenant_route('tenant.wallets.transactions', ['wallet' => '__WALLET__']));
+    var currencySample = @json(format_money(0));
+
+    function formatMoney(amount) {
+        var n = Number(amount);
+        if (!Number.isFinite(n)) {
+            return '—';
+        }
+        var formatted = n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+        return currencySample.replace(/[\d,.]+/, formatted);
+    }
+
+    function esc(text) {
+        var el = document.createElement('span');
+        el.textContent = text == null ? '' : String(text);
+        return el.innerHTML;
+    }
+
+    function setHistoryState(state) {
+        ['loading', 'empty', 'error', 'table-wrap', 'footnote'].forEach(function (suffix) {
+            var el = document.getElementById(historyModalId + '-' + suffix);
+            if (el) {
+                el.classList.toggle('hidden', state !== suffix);
+            }
+        });
+    }
+
+    window.openWalletHistoryModal = function (walletId) {
+        var subtitle = document.getElementById(historyModalId + '-subtitle');
+        var tbody = document.getElementById(historyModalId + '-tbody');
+        if (subtitle) {
+            subtitle.textContent = 'Loading…';
+        }
+        if (tbody) {
+            tbody.innerHTML = '';
+        }
+        setHistoryState('loading');
+
+        if (typeof window.openAppModal === 'function') {
+            window.openAppModal(historyModalId);
+        }
+
+        var url = historyUrlTemplate.replace('__WALLET__', String(walletId));
+
+        fetch(url, {
+            headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            credentials: 'same-origin',
+        })
+            .then(function (response) {
+                if (!response.ok) {
+                    throw new Error('fetch failed');
+                }
+                return response.json();
+            })
+            .then(function (payload) {
+                var wallet = payload.wallet || {};
+                if (subtitle) {
+                    subtitle.textContent = (wallet.name || 'Wallet') + ' · ' + (wallet.type_label || '') + ' · Balance ' + formatMoney(wallet.current_balance);
+                }
+
+                var rows = payload.transactions || [];
+                if (!rows.length) {
+                    setHistoryState('empty');
+                    return;
+                }
+
+                if (!tbody) {
+                    return;
+                }
+
+                tbody.innerHTML = rows.map(function (row) {
+                    var inflow = row.direction === 'in';
+                    var badgeClass = inflow
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : 'bg-red-100 text-red-800';
+                    var amountClass = inflow ? 'text-emerald-700' : 'text-red-700';
+                    var sign = inflow ? '+' : '−';
+                    var source = row.source_label || '—';
+                    if (row.reference) {
+                        source += ' · ' + row.reference;
+                    }
+                    var balance = row.balance_after != null ? formatMoney(row.balance_after) : '—';
+
+                    return '<tr>'
+                        + '<td class="whitespace-nowrap px-4 py-2 text-gray-600">' + esc(row.occurred_at) + '</td>'
+                        + '<td class="px-4 py-2"><span class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium ' + badgeClass + '">' + esc(row.direction_label) + '</span></td>'
+                        + '<td class="px-4 py-2 text-gray-800">' + esc(source) + '</td>'
+                        + '<td class="max-w-xs px-4 py-2 text-gray-600">' + esc(row.notes) + '</td>'
+                        + '<td class="whitespace-nowrap px-4 py-2 text-right font-semibold ' + amountClass + '">' + sign + formatMoney(row.amount) + '</td>'
+                        + '<td class="whitespace-nowrap px-4 py-2 text-right text-gray-700">' + esc(balance) + '</td>'
+                        + '</tr>';
+                }).join('');
+
+                setHistoryState('table-wrap');
+                var footnote = document.getElementById(historyModalId + '-footnote');
+                if (footnote) {
+                    footnote.classList.remove('hidden');
+                }
+            })
+            .catch(function () {
+                setHistoryState('error');
+                if (subtitle) {
+                    subtitle.textContent = 'Could not load wallet history.';
+                }
+            });
+    };
+})();
+
 window.openWalletDepositModal = function (walletId) {
     var select = document.querySelector('#wallet-deposit-modal select[name="payment_wallet_id"]');
     if (select && walletId) {

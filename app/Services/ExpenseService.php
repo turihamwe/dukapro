@@ -8,6 +8,7 @@ use App\Models\ExpenseCategory;
 use App\Models\PaymentWallet;
 use App\Models\User;
 use App\Support\PaymentWalletMode;
+use App\Support\WalletTransactionSource;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -101,7 +102,11 @@ class ExpenseService
         return DB::transaction(function () use ($user, $data, $category, $amount, $walletId, $paymentMethod) {
             if ($walletId) {
                 $wallet = $this->walletService->resolveForBusiness((int) $user->business_id, $walletId);
-                $this->walletService->withdraw($wallet, $amount, $user);
+                $this->walletService->withdraw($wallet, $amount, $user, [
+                    'source_type' => WalletTransactionSource::EXPENSE,
+                    'notes' => $data['title'],
+                    'reference' => $data['receipt_reference'] ?? null,
+                ]);
             }
 
             return Expense::create([
@@ -130,7 +135,11 @@ class ExpenseService
 
             if ($walletId) {
                 $wallet = $this->walletService->resolveForBusiness((int) $user->business_id, $walletId);
-                $this->walletService->withdraw($wallet, $amount, $user);
+                $this->walletService->withdraw($wallet, $amount, $user, [
+                    'source_type' => WalletTransactionSource::EXPENSE,
+                    'notes' => $data['title'],
+                    'reference' => $data['receipt_reference'] ?? null,
+                ]);
             }
 
             $expense->update([
@@ -197,7 +206,11 @@ class ExpenseService
             return;
         }
 
-        $this->walletService->deposit($wallet, (float) $expense->amount, $user);
+        $this->walletService->deposit($wallet, (float) $expense->amount, $user, [
+            'source_type' => WalletTransactionSource::ADJUSTMENT_IN,
+            'notes' => 'Expense removed: ' . $expense->title,
+            'reference' => $expense->receipt_reference,
+        ]);
     }
 
     public function totalForDate(Business $business, Carbon $date): float

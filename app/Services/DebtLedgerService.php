@@ -10,6 +10,7 @@ use App\Models\PaymentWallet;
 use App\Models\Sale;
 use App\Models\User;
 use App\Support\CustomerCreditMode;
+use App\Support\WalletTransactionSource;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -71,7 +72,10 @@ class DebtLedgerService
             }
 
             if ($type === DebtEntryType::PAYMENT && $wallet) {
-                $this->walletService->deposit($wallet, $amount, $user);
+                $this->walletService->deposit($wallet, $amount, $user, [
+                    'source_type' => WalletTransactionSource::RECEIVABLE_PAYMENT,
+                    'notes' => $description ?? 'Customer payment',
+                ]);
             }
 
             $customer = Customer::where('id', $customer->id)->lockForUpdate()->firstOrFail();

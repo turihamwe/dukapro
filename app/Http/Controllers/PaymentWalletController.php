@@ -52,6 +52,25 @@ class PaymentWalletController extends Controller
         ]);
     }
 
+    public function transactions(Request $request, Business $business, PaymentWallet $wallet, PaymentWalletService $walletService)
+    {
+        if ((int) $wallet->business_id !== (int) $business->id) {
+            abort(404);
+        }
+
+        $limit = (int) $request->query('limit', 50);
+
+        return response()->json([
+            'wallet' => [
+                'id' => $wallet->id,
+                'name' => $wallet->name,
+                'type_label' => $wallet->typeLabel(),
+                'current_balance' => (float) $wallet->current_balance,
+            ],
+            'transactions' => $walletService->transactionHistory($wallet, $limit),
+        ]);
+    }
+
     public function deposit(Request $request, Business $business, PaymentWalletService $walletService)
     {
         $data = $request->validate([

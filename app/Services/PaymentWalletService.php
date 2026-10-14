@@ -9,6 +9,7 @@ use App\Models\PaymentWalletTransaction;
 use App\Models\User;
 use App\Support\PaymentWalletMode;
 use App\Support\WalletInflowCategory;
+use App\Support\WalletTransactionSource;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -106,7 +107,10 @@ class PaymentWalletService
         }
     }
 
-    public function deposit(PaymentWallet $wallet, float $amount, User $user): PaymentWallet
+    /**
+     * @param  array{source_type?: string, category?: string, source_name?: string, notes?: string, reference?: string, occurred_at?: \DateTimeInterface}  $context
+     */
+    public function deposit(PaymentWallet $wallet, float $amount, User $user, array $context = []): PaymentWallet
     {
         $amount = round($amount, 2);
 
@@ -120,12 +124,24 @@ class PaymentWalletService
             abort(404);
         }
 
-        return DB::transaction(function () use ($wallet, $amount, $user) {
+        return DB::transaction(function () use ($wallet, $amount, $user, $context) {
             $locked = PaymentWallet::query()->whereKey($wallet->id)->lockForUpdate()->firstOrFail();
             $oldBalance = (float) $locked->current_balance;
             $locked->current_balance = round($oldBalance + $amount, 2);
             $locked->save();
             $fresh = $locked->fresh();
+
+            $this->createLedgerEntry(
+                $fresh,
+                $user,
+                PaymentWalletTransaction::DIRECTION_IN,
+                $amount,
+                (float) $fresh->current_balance,
+                array_merge([
+                    'source_type' => WalletTransactionSource::ADJUSTMENT_IN,
+                    'category' => WalletInflowCategory::MISCELLANEOUS,
+                ], $context)
+            );
 
             AuditLogger::record(
                 'payment_wallet_deposit',
@@ -140,7 +156,10 @@ class PaymentWalletService
         });
     }
 
-    public function withdraw(PaymentWallet $wallet, float $amount, User $user): PaymentWallet
+    /**
+     * @param  array{source_type?: string, category?: string, source_name?: string, notes?: string, reference?: string, occurred_at?: \DateTimeInterface}  $context
+     */
+    public function withdraw(PaymentWallet $wallet, float $amount, User $user, array $context = []): PaymentWallet
     {
         $amount = round($amount, 2);
 
@@ -154,7 +173,7 @@ class PaymentWalletService
             abort(404);
         }
 
-        return DB::transaction(function () use ($wallet, $amount, $user) {
+        return DB::transaction(function () use ($wallet, $amount, $user, $context) {
             $locked = PaymentWallet::query()->whereKey($wallet->id)->lockForUpdate()->firstOrFail();
 
             if ((float) $locked->current_balance + 0.009 < $amount) {
@@ -167,6 +186,18 @@ class PaymentWalletService
             $locked->current_balance = round($oldBalance - $amount, 2);
             $locked->save();
             $fresh = $locked->fresh();
+
+            $this->createLedgerEntry(
+                $fresh,
+                $user,
+                PaymentWalletTransaction::DIRECTION_OUT,
+                $amount,
+                (float) $fresh->current_balance,
+                array_merge([
+                    'source_type' => WalletTransactionSource::ADJUSTMENT_OUT,
+                    'category' => WalletTransactionSource::ADJUSTMENT_OUT,
+                ], $context)
+            );
 
             AuditLogger::record(
                 'payment_wallet_withdraw',
@@ -213,16 +244,20 @@ class PaymentWalletService
             $locked->current_balance = round($oldBalance + $amount, 2);
             $locked->save();
 
-            $transaction = PaymentWalletTransaction::create([
-                'business_id' => (int) $user->business_id,
-                'payment_wallet_id' => $wallet->id,
-                'user_id' => $user->id,
-                'direction' => PaymentWalletTransaction::DIRECTION_IN,
-                'amount' => $amount,
-                'category' => $category,
-                'source_name' => $sourceName,
-                'occurred_at' => $occurredAt ?? now(),
-            ]);
+            $transaction = $this->createLedgerEntry(
+                $locked,
+                $user,
+                PaymentWalletTransaction::DIRECTION_IN,
+                $amount,
+                (float) $locked->current_balance,
+                [
+                    'source_type' => WalletTransactionSource::MANUAL_DEPOSIT,
+                    'category' => $category,
+                    'source_name' => $sourceName,
+                    'notes' => $sourceName,
+                    'occurred_at' => $occurredAt ?? now(),
+                ]
+            );
 
             AuditLogger::record(
                 'payment_wallet_manual_inflow',
@@ -257,5 +292,65 @@ class PaymentWalletService
         AuditLogger::record('payment_wallet_created', $wallet, null, $wallet->toArray(), (int) $user->business_id, (int) $user->id);
 
         return $wallet;
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function transactionHistory(PaymentWallet $wallet, int $limit = 50): array
+    {
+        $limit = max(1, min(50, $limit));
+
+        return PaymentWalletTransaction::query()
+            ->where('payment_wallet_id', $wallet->id)
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->limit($limit)
+            ->get()
+            ->map(function (PaymentWalletTransaction $transaction) {
+                return [
+                    'id' => $transaction->id,
+                    'occurred_at' => $transaction->occurred_at
+                        ? $transaction->occurred_at->format('M j, Y g:i A')
+                        : '—',
+                    'direction' => $transaction->direction,
+                    'direction_label' => $transaction->isInflow() ? 'Inflow' : 'Outflow',
+                    'source_label' => $transaction->sourceLabel(),
+                    'notes' => $transaction->displayNotes() ?: '—',
+                    'reference' => $transaction->reference,
+                    'amount' => (float) $transaction->amount,
+                    'balance_after' => $transaction->balance_after !== null ? (float) $transaction->balance_after : null,
+                ];
+            })
+            ->all();
+    }
+
+    /**
+     * @param  array{source_type?: string, category?: string, source_name?: string, notes?: string, reference?: string, occurred_at?: \DateTimeInterface}  $context
+     */
+    protected function createLedgerEntry(
+        PaymentWallet $wallet,
+        User $user,
+        string $direction,
+        float $amount,
+        float $balanceAfter,
+        array $context
+    ): PaymentWalletTransaction {
+        $category = $context['category'] ?? WalletInflowCategory::MISCELLANEOUS;
+
+        return PaymentWalletTransaction::create([
+            'business_id' => (int) $wallet->business_id,
+            'payment_wallet_id' => $wallet->id,
+            'user_id' => $user->id,
+            'direction' => $direction,
+            'source_type' => $context['source_type'] ?? null,
+            'amount' => round($amount, 2),
+            'balance_after' => round($balanceAfter, 2),
+            'category' => $category,
+            'source_name' => $context['source_name'] ?? null,
+            'reference' => $context['reference'] ?? null,
+            'notes' => $context['notes'] ?? null,
+            'occurred_at' => $context['occurred_at'] ?? now(),
+        ]);
     }
 }

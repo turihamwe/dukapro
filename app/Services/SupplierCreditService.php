@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Support\BatchMode;
 use App\Support\ProductInventoryValuation;
 use App\Support\SupplierCreditMode;
+use App\Support\WalletTransactionSource;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -190,7 +191,12 @@ class SupplierCreditService
 
         return DB::transaction(function () use ($user, $purchase, $amount, $paymentMethod, $reference, $notes, $paidAt, $wallet) {
             if ($wallet) {
-                $this->walletService->withdraw($wallet, $amount, $user);
+                $this->walletService->withdraw($wallet, $amount, $user, [
+                    'source_type' => WalletTransactionSource::VENDOR_PAYMENT,
+                    'reference' => $reference,
+                    'notes' => $notes ?: ('Bill payment · ' . ($purchase->reference ?: 'Bill #' . $purchase->id)),
+                    'occurred_at' => $paidAt,
+                ]);
             }
 
             $payment = SupplierCreditPayment::create([
@@ -324,7 +330,12 @@ class SupplierCreditService
             }
 
             if ($wallet) {
-                $this->walletService->withdraw($wallet, $plan['applied_total'], $user);
+                $this->walletService->withdraw($wallet, $plan['applied_total'], $user, [
+                    'source_type' => WalletTransactionSource::VENDOR_PAYMENT,
+                    'reference' => $reference,
+                    'notes' => $notes ?: ('Vendor settlement · ' . $supplier->name),
+                    'occurred_at' => $paidAt,
+                ]);
             }
 
             $payments = collect();
@@ -570,7 +581,12 @@ class SupplierCreditService
         $wallet = $payment->paymentWallet;
 
         if ($wallet) {
-            $this->walletService->deposit($wallet, (float) $payment->amount, $user);
+            $this->walletService->deposit($wallet, (float) $payment->amount, $user, [
+                'source_type' => WalletTransactionSource::VENDOR_PAYMENT_REVERSAL,
+                'reference' => $payment->reference,
+                'notes' => $payment->notes ?: 'Vendor payment reversed',
+                'occurred_at' => $payment->paid_at,
+            ]);
         }
     }
 }

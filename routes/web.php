@@ -455,6 +455,7 @@ Route::middleware(['maintenance'])->group(function () {
                     Route::get('/', [PaymentWalletController::class, 'index'])->name('index');
                     Route::post('/', [PaymentWalletController::class, 'store'])->name('store');
                     Route::post('/deposit', [PaymentWalletController::class, 'deposit'])->name('deposit');
+                    Route::get('/{wallet}/transactions', [PaymentWalletController::class, 'transactions'])->name('transactions');
                     Route::put('/{wallet}', [PaymentWalletController::class, 'update'])->name('update');
                 });
 

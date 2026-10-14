@@ -227,7 +227,10 @@ class CustomerCreditService
         $wallet = $entry->paymentWallet;
 
         if ($wallet) {
-            $this->walletService->withdraw($wallet, (float) $entry->amount, $user);
+            $this->walletService->withdraw($wallet, (float) $entry->amount, $user, [
+                'source_type' => WalletTransactionSource::RECEIVABLE_REVERSAL,
+                'notes' => $entry->description ?? 'Receivable payment reversed',
+            ]);
         }
     }
 }

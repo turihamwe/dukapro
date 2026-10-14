@@ -13,21 +13,33 @@ class PaymentWalletTransaction extends Model
 
     public const DIRECTION_IN = 'in';
 
+    public const DIRECTION_OUT = 'out';
+
     protected $fillable = [
         'business_id',
         'payment_wallet_id',
         'user_id',
         'direction',
+        'source_type',
         'amount',
+        'balance_after',
         'category',
         'source_name',
+        'reference',
+        'notes',
         'occurred_at',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'balance_after' => 'decimal:2',
         'occurred_at' => 'datetime',
     ];
+
+    public function isInflow(): bool
+    {
+        return $this->direction === self::DIRECTION_IN;
+    }
 
     public function wallet(): BelongsTo
     {
@@ -42,5 +54,15 @@ class PaymentWalletTransaction extends Model
     public function categoryLabel(): string
     {
         return WalletInflowCategory::label($this->category);
+    }
+
+    public function sourceLabel(): string
+    {
+        return \App\Support\WalletTransactionSource::label($this->source_type, $this->category);
+    }
+
+    public function displayNotes(): ?string
+    {
+        return $this->notes ?: $this->source_name;
     }
 }
