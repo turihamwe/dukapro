@@ -142,13 +142,17 @@
         </div>
         @if($stats['low_stock']->isNotEmpty())
             <ul class="divide-y divide-gray-100">
-                @foreach($stats['low_stock'] as $product)
+                @foreach($stats['low_stock'] as $item)
                     <li class="flex items-center justify-between py-3 text-sm">
                         <div>
-                            <p class="font-medium text-gray-900">{{ $product->name }}</p>
-                            <p class="text-xs text-gray-500">{{ $product->sku ?? 'No SKU' }}</p>
+                            <p class="font-medium text-gray-900">{{ $item['name'] }}</p>
+                            @if(!empty($item['branch_name']))
+                                <p class="text-xs text-gray-500">{{ $item['branch_name'] }}</p>
+                            @endif
                         </div>
-                        <span class="font-semibold text-red-600">{{ $product->stock_quantity }} {{ $product->measurement_unit }}</span>
+                        <span class="font-semibold text-red-600">
+                            {{ format_unit_quantity($item['available'], $item['unit'] ?? 'piece', $business->id) }}
+                        </span>
                     </li>
                 @endforeach
             </ul>

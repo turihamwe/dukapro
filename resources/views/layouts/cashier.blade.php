@@ -52,7 +52,7 @@ has-cashier-bottom-nav
 
     $lowStockCount = 0;
     if (auth()->user()->business && (auth()->user()->can('view-inventory') || auth()->user()->can('access-pos'))) {
-        $lowStockCount = app(\App\Services\LowStockAlertService::class)->count(auth()->user()->business);
+        $lowStockCount = app(\App\Services\LowStockAlertService::class)->count(auth()->user()->business, auth()->user());
     }
 @endphp
 

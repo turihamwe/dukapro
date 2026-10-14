@@ -12,6 +12,7 @@ use App\Enums\BusinessOperatingMode;
 use App\Support\BusinessModeCompliance;
 use App\Support\EfrisCompliance;
 use App\Support\DivisibleProductsMode;
+use App\Support\LowStockAlertMode;
 use App\Support\VariablePricingMode;
 use App\Support\WeafPlatformCredentials;
 use App\Services\TrialDataDeletionService;
@@ -84,6 +85,7 @@ class BusinessSettingsController extends Controller
             'supplier_credit_mode' => 'nullable|boolean',
             'customer_credit_mode' => 'nullable|boolean',
             'payment_wallets_mode' => 'nullable|boolean',
+            'low_stock_alert_mode' => 'nullable|in:' . implode(',', LowStockAlertMode::all()),
             'role_permissions' => 'nullable|array',
             'efris.enabled' => 'nullable|boolean',
             'efris.api_token' => 'nullable|string|max:500',
@@ -201,6 +203,16 @@ class BusinessSettingsController extends Controller
         $settings['supplier_credit_mode'] = $request->boolean('supplier_credit_mode');
         $settings['customer_credit_mode'] = $request->boolean('customer_credit_mode');
         $settings['payment_wallets_mode'] = $request->boolean('payment_wallets_mode');
+
+        if ($business->usesProductVariants()) {
+            $settings['low_stock_alert_mode'] = $request->input(
+                'low_stock_alert_mode',
+                LowStockAlertMode::COMBINED
+            );
+            if (! in_array($settings['low_stock_alert_mode'], LowStockAlertMode::all(), true)) {
+                $settings['low_stock_alert_mode'] = LowStockAlertMode::COMBINED;
+            }
+        }
 
         $business->settings = $settings;
         $business->save();

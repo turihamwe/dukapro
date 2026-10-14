@@ -5,7 +5,7 @@
     $lowStockDropdownItems = collect();
     if ($business && $user->can('view-inventory')) {
         $lowStockService = app(\App\Services\LowStockAlertService::class);
-        $lowStockCount = min(99, $lowStockService->count($business));
+        $lowStockCount = min(99, $lowStockService->count($business, $user));
         $lowStockDropdownItems = $lowStockService->lowStockProducts($business, $user, 8);
     }
     $navActive = 'bg-emerald-500/15 text-emerald-400 border-l-[3px] border-emerald-500';

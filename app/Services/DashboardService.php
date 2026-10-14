@@ -18,6 +18,13 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardService
 {
+    protected LowStockAlertService $lowStockAlertService;
+
+    public function __construct(LowStockAlertService $lowStockAlertService)
+    {
+        $this->lowStockAlertService = $lowStockAlertService;
+    }
+
     public function ownerOverview(Business $business, AnalyticsDateRange $range): array
     {
         $salesQuery = $this->completedSalesQuery($business, $range);
@@ -58,16 +65,8 @@ class DashboardService
             return $product->totalStockQuantity() * max(0, $margin);
         }), 2);
 
-        $lowStockItems = $products->filter(function (Product $product) {
-            $threshold = $product->critical_threshold ?? AnalyticsDateRange::LOW_STOCK_THRESHOLD;
-
-            return $product->stock_quantity <= $threshold;
-        });
-
-        $lowStock = $lowStockItems
-            ->sortBy('stock_quantity')
-            ->values()
-            ->take(10);
+        $lowStockAlerts = $this->lowStockAlertService->allAlerts($business, null, 10);
+        $lowStockCount = $this->lowStockAlertService->count($business);
 
         $eodReports = EndOfDayReconciliation::query()
             ->with('user:id,name')
@@ -84,9 +83,13 @@ class DashboardService
             'inventory_value' => $inventoryValue,
             'retail_stock_value' => $retailStockValue,
             'potential_profit' => $potentialProfit,
-            'product_count' => $products->count(),
-            'low_stock_count' => $lowStockItems->count(),
-            'low_stock' => $lowStock,
+            'product_count' => Product::query()
+                ->catalog()
+                ->where('business_id', $business->id)
+                ->where('is_active', true)
+                ->count(),
+            'low_stock_count' => $lowStockCount,
+            'low_stock' => $lowStockAlerts,
             'products' => $products,
             'todays_sales_list' => $this->todaysSalesList($business),
             'eod_reports' => $eodReports,
@@ -293,11 +296,7 @@ class DashboardService
         $stockDistribution = $this->stockLevelDistribution($business);
         $stockByCategory = $this->stockByCategory($business);
 
-        $lowStockItems = $products->filter(function (Product $product) {
-            $threshold = $product->critical_threshold ?? AnalyticsDateRange::LOW_STOCK_THRESHOLD;
-
-            return $product->stock_quantity <= $threshold;
-        });
+        $lowStockAlerts = $this->lowStockAlertService->allAlerts($business, null, 25);
 
         return [
             'summary' => $summary,
@@ -325,11 +324,11 @@ class DashboardService
                         'value' => format_money($product->price, $business),
                     ];
                 })->values()->all(),
-                'low_stock' => $lowStockItems->sortBy('stock_quantity')->take(25)->map(function (Product $product) use ($business) {
+                'low_stock' => $lowStockAlerts->map(function (array $item) use ($business) {
                     return [
-                        'title' => $product->name,
-                        'meta' => number_format((float) $product->stock_quantity, 0) . ' left',
-                        'value' => format_money($product->price, $business),
+                        'title' => $item['name'],
+                        'meta' => format_unit_quantity($item['available'], $item['unit'] ?? 'piece', $business->id) . ' left',
+                        'value' => $item['branch_name'] ?? '—',
                     ];
                 })->values()->all(),
                 'todays_sales' => $overview['todays_sales_list']->map(function (Sale $sale) use ($business) {
@@ -349,19 +348,27 @@ class DashboardService
     protected function stockLevelDistribution(Business $business): array
     {
         $products = Product::query()
+            ->catalog()
             ->where('business_id', $business->id)
             ->where('is_active', true)
-            ->get(['stock_quantity', 'critical_threshold']);
+            ->with('variants')
+            ->get(['id', 'parent_id', 'stock_quantity', 'critical_threshold', 'is_service', 'catalog_item_type']);
 
         $healthy = 0;
         $low = 0;
         $out = 0;
 
         foreach ($products as $product) {
-            $threshold = $product->critical_threshold ?? AnalyticsDateRange::LOW_STOCK_THRESHOLD;
-            if ($product->stock_quantity <= 0) {
+            if ($product->isService()) {
+                continue;
+            }
+
+            $qty = $this->lowStockAlertService->catalogAvailableStock($product);
+            $threshold = $this->lowStockAlertService->thresholdFor($product);
+
+            if ($qty <= 0) {
                 $out++;
-            } elseif ($product->stock_quantity <= $threshold) {
+            } elseif ($this->lowStockAlertService->isCatalogProductLowStock($product, $business)) {
                 $low++;
             } else {
                 $healthy++;
@@ -482,6 +489,24 @@ class DashboardService
         ];
     }
 
+    /**
+     * @return array{0: Product, 1: string}
+     */
+    protected function resolveCatalogProductForStockChart(Product $product): array
+    {
+        if ($product->parent_id) {
+            $parent = $product->relationLoaded('parent')
+                ? $product->parent
+                : Product::query()->catalog()->find($product->parent_id);
+
+            if ($parent) {
+                return [$parent, $product->displayName()];
+            }
+        }
+
+        return [$product, $product->name];
+    }
+
     protected function stockChartData(Business $business, AnalyticsDateRange $range): array
     {
         $defaultThreshold = AnalyticsDateRange::LOW_STOCK_THRESHOLD;
@@ -501,16 +526,19 @@ class DashboardService
 
         if ($productIds->isEmpty()) {
             $products = Product::query()
+                ->catalog()
                 ->where('business_id', $business->id)
                 ->where('is_active', true)
+                ->with(['variants', 'parent.variants'])
                 ->orderBy('stock_quantity')
                 ->limit(10)
-                ->get(['id', 'name', 'stock_quantity', 'critical_threshold']);
+                ->get(['id', 'name', 'parent_id', 'stock_quantity', 'critical_threshold']);
         } else {
             $products = Product::query()
                 ->where('business_id', $business->id)
                 ->whereIn('id', $productIds)
-                ->get(['id', 'name', 'stock_quantity', 'critical_threshold'])
+                ->with(['variants', 'parent.variants'])
+                ->get(['id', 'name', 'parent_id', 'stock_quantity', 'critical_threshold'])
                 ->sortBy(function (Product $product) use ($fastMovers) {
                     $row = $fastMovers->firstWhere('product_id', $product->id);
 
@@ -529,14 +557,15 @@ class DashboardService
         $thresholds = [];
 
         foreach ($products as $product) {
-            $threshold = (int) ($product->critical_threshold ?? $defaultThreshold);
-            $labels[] = $product->name;
-            $qty = (float) $product->stock_quantity;
+            [$catalogProduct, $label] = $this->resolveCatalogProductForStockChart($product);
+            $qty = $this->lowStockAlertService->catalogAvailableStock($catalogProduct);
+            $threshold = $this->lowStockAlertService->thresholdFor($catalogProduct);
+            $labels[] = $label;
             $stock[] = $qty;
             $sold[] = (float) ($soldMap[$product->id] ?? 0);
             $thresholds[] = $threshold;
 
-            if ($qty <= $threshold) {
+            if ($this->lowStockAlertService->isCatalogProductLowStock($catalogProduct, $business)) {
                 $colors[] = '#dc2626';
             } elseif ($qty <= $threshold * 2) {
                 $colors[] = '#f97316';

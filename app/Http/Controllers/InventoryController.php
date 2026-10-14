@@ -108,7 +108,11 @@ class InventoryController extends Controller
                 $lowStockItems = $lowStockItems->where('branch_id', $branchId);
             }
 
-            $lowStockIds = $lowStockItems->pluck('id')->all();
+            $lowStockIds = $lowStockItems
+                ->map(fn (array $item) => $item['parent_id'] ?? $item['id'])
+                ->unique()
+                ->values()
+                ->all();
             $query->whereIn('products.id', $lowStockIds ?: [0]);
         }
 

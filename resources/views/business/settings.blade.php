@@ -33,6 +33,7 @@
     $restaurantEnabled = (bool) old('modules.restaurant.enabled', ($capabilities[ModuleKeys::RESTAURANT]['enabled'] ?? false));
     $barEnabled = (bool) old('modules.bar_shift.enabled', ($capabilities[ModuleKeys::BAR_SHIFT]['enabled'] ?? false));
     $floorEnabled = $restaurantEnabled || $barEnabled;
+    $catalogVariantsEnabled = (bool) old('modules.catalog_variants.enabled', ($capabilities[ModuleKeys::CATALOG_VARIANTS]['enabled'] ?? false));
 @endphp
 
 <x-page-header title="Business Profile" subtitle="Update your store information and capabilities" />
@@ -121,6 +122,9 @@
                             ],
                             'footnote' => $moduleFootnotes[$moduleKey] ?? null,
                         ])
+                        @if($moduleKey === ModuleKeys::CATALOG_VARIANTS && $catalogVariantsEnabled)
+                            @include('business._low-stock-alert-settings', ['business' => $business])
+                        @endif
                     @endif
                 @endforeach
 
