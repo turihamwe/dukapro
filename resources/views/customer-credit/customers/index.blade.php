@@ -5,10 +5,25 @@
 @section('content')
 <x-page-header title="Customers" subtitle="Credit profiles, limits, and opening balances">
     <x-slot name="actions">
+        <x-button variant="secondary" size="sm" type="button" data-open-import-customers>Import (CSV)</x-button>
+        <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.customer-credit.customers.export') }}">Export (CSV)</x-button>
         <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.customer-credit.invoices.index') }}">Invoices</x-button>
         <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.customer-credit.payments.index') }}">Payments</x-button>
     </x-slot>
 </x-page-header>
+
+@if(session('import_errors') && count(session('import_errors')))
+    <x-alert type="warning" class="mb-4">
+        <p class="font-medium">Import notes:</p>
+        <ul class="mt-2 list-inside list-disc text-xs">
+            @foreach(session('import_errors') as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </x-alert>
+@endif
+
+<p class="mb-4 text-xs text-gray-500">CSV export includes <strong>all credit customers</strong> for this business, not just the current page or search results.</p>
 
 <form method="GET" action="{{ tenant_route('tenant.customer-credit.customers.index') }}" class="mb-4 flex flex-wrap items-center gap-2">
     <input type="search" name="q" value="{{ $search ?? '' }}" placeholder="Search name, phone…"
@@ -82,6 +97,13 @@
 </x-card>
 
 @push('modals')
+    <x-csv-import-modal
+        modal-id="import-customers-modal"
+        title="Import customers (CSV)"
+        :action="tenant_route('tenant.customer-credit.customers.import.store')"
+        :template-url="tenant_route('tenant.customer-credit.customers.import.template')"
+        columns-hint="Required columns: <span class=&quot;font-medium text-gray-800&quot;>name, phone, email, address, opening_balance</span>. Optional: company_name, credit_limit, payment_terms_days, notes. Duplicates match on phone."
+    />
     @foreach($customers as $customer)
         @include('customer-credit.customers._payment-modal', [
             'customer' => $customer,
@@ -90,14 +112,23 @@
     @endforeach
 @endpush
 
-@if($errors->any() && old('_payment_customer_id'))
 @push('scripts')
 <script>
+document.addEventListener('click', function (e) {
+    if (e.target.closest('[data-open-import-customers]')) {
+        e.preventDefault();
+        window.openAppModal('import-customers-modal');
+    }
+});
+@if(session('open_import_customers_modal') || $errors->has('csv_file'))
+window.openAppModal('import-customers-modal');
+@endif
+@if($errors->any() && old('_payment_customer_id'))
 (function () {
     var modal = document.getElementById('customer-payment-modal-{{ old('_payment_customer_id') }}');
     if (modal) window.openAppModal(modal);
 })();
+@endif
 </script>
 @endpush
-@endif
 @endsection

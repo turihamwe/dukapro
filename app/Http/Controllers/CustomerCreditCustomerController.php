@@ -6,6 +6,8 @@ use App\Helpers\AuditLogger;
 use App\Models\Business;
 use App\Models\Customer;
 use App\Services\CustomerCreditService;
+use App\Services\CustomerCsvExportService;
+use App\Services\CustomerCsvImportService;
 use App\Services\CustomerService;
 use App\Services\PaymentWalletService;
 use Illuminate\Http\Request;
@@ -237,6 +239,37 @@ class CustomerCreditCustomerController extends Controller
             ->with('success', 'Customer updated.');
     }
 
+    public function downloadImportTemplate(CustomerCsvExportService $exportService)
+    {
+        return response($exportService->templateCsvContents(), 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="customer-import-template.csv"',
+        ]);
+    }
+
+    public function exportCustomers(Request $request, CustomerCsvExportService $exportService)
+    {
+        return $exportService->download($request->user()->business, $request->user());
+    }
+
+    public function storeImport(Request $request, CustomerCsvImportService $importService)
+    {
+        $request->validate([
+            'csv_file' => 'required|file|mimes:csv,txt|max:10240',
+        ]);
+
+        try {
+            $result = $importService->import($request->user()->business, $request->user(), $request->file('csv_file'));
+        } catch (\RuntimeException $exception) {
+            return redirect()
+                ->to(tenant_route('tenant.customer-credit.customers.index'))
+                ->with('error', $exception->getMessage())
+                ->with('open_import_customers_modal', true);
+        }
+
+        return $this->redirectAfterCsvImport($result, 'customer');
+    }
+
     public function destroy(Business $business, Customer $customer, CustomerCreditService $service, Request $request)
     {
         if ((int) $customer->business_id !== (int) $business->id) {
@@ -248,5 +281,24 @@ class CustomerCreditCustomerController extends Controller
         return redirect()
             ->to(tenant_route('tenant.customer-credit.customers.index'))
             ->with('success', 'Customer and linked invoices/payments removed from active records. Stock levels were not changed.');
+    }
+
+    /**
+     * @param  array{inserted: int, skipped_duplicates: int, skipped_errors: int, errors: list<string>}  $result
+     */
+    protected function redirectAfterCsvImport(array $result, string $entity): \Illuminate\Http\RedirectResponse
+    {
+        $message = 'Import complete: ' . $result['inserted'] . ' ' . $entity . '(s) added.';
+        if ($result['skipped_duplicates'] > 0) {
+            $message .= ' ' . $result['skipped_duplicates'] . ' duplicate(s) skipped.';
+        }
+        if ($result['skipped_errors'] > 0) {
+            $message .= ' ' . $result['skipped_errors'] . ' row(s) had errors.';
+        }
+
+        return redirect()
+            ->to(tenant_route('tenant.customer-credit.customers.index'))
+            ->with('success', $message)
+            ->with('import_errors', array_slice($result['errors'], 0, 50));
     }
 }

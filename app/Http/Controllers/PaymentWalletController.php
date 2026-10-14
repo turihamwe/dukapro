@@ -6,6 +6,8 @@ use App\Helpers\AuditLogger;
 use App\Models\Business;
 use App\Models\PaymentWallet;
 use App\Models\PaymentWalletTransaction;
+use App\Services\PaymentWalletCsvExportService;
+use App\Services\PaymentWalletCsvImportService;
 use App\Services\PaymentWalletService;
 use App\Support\WalletInflowCategory;
 use Illuminate\Http\Request;
@@ -182,6 +184,48 @@ class PaymentWalletController extends Controller
         return redirect()
             ->to(tenant_route('tenant.wallets.index'))
             ->with('success', 'Funds added to ' . $wallet->name . '.');
+    }
+
+    public function downloadImportTemplate(PaymentWalletCsvExportService $exportService)
+    {
+        return response($exportService->templateCsvContents(), 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="wallet-import-template.csv"',
+        ]);
+    }
+
+    public function exportWallets(Request $request, PaymentWalletCsvExportService $exportService)
+    {
+        return $exportService->download($request->user()->business, $request->user());
+    }
+
+    public function storeImport(Request $request, PaymentWalletCsvImportService $importService)
+    {
+        $request->validate([
+            'csv_file' => 'required|file|mimes:csv,txt|max:10240',
+        ]);
+
+        try {
+            $result = $importService->import($request->user()->business, $request->user(), $request->file('csv_file'));
+        } catch (\RuntimeException $exception) {
+            return redirect()
+                ->to(tenant_route('tenant.wallets.index'))
+                ->with('error', $exception->getMessage())
+                ->with('open_import_wallets_modal', true);
+        }
+
+        $message = 'Import complete: ' . $result['inserted'] . ' wallet(s) added.';
+        if ($result['skipped_duplicates'] > 0) {
+            $message .= ' ' . $result['skipped_duplicates'] . ' duplicate(s) skipped.';
+        }
+        if ($result['skipped_errors'] > 0) {
+            $message .= ' ' . $result['skipped_errors'] . ' row(s) had errors.';
+        }
+
+        return redirect()
+            ->to(tenant_route('tenant.wallets.index'))
+            ->with('success', $message)
+            ->with('import_errors', array_slice($result['errors'], 0, 50));
     }
 
     public function store(Request $request, PaymentWalletService $walletService)

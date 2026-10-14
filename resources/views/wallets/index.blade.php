@@ -5,6 +5,8 @@
 @section('content')
 <x-page-header title="Wallets & payment accounts" subtitle="Track cash, mobile money, and bank balances in one place">
     <x-slot name="actions">
+        <x-button variant="secondary" size="sm" type="button" data-open-import-wallets>Import (CSV)</x-button>
+        <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.wallets.export') }}">Export (CSV)</x-button>
         @if($wallets->where('is_active', true)->isNotEmpty())
             <x-button variant="primary" size="sm" type="button" onclick="openAppModal('wallet-deposit-modal')">+ Add funds</x-button>
         @endif
@@ -16,6 +18,19 @@
         @endcan
     </x-slot>
 </x-page-header>
+
+@if(session('import_errors') && count(session('import_errors')))
+    <x-alert type="warning" class="mb-4">
+        <p class="font-medium">Import notes:</p>
+        <ul class="mt-2 list-inside list-disc text-xs">
+            @foreach(session('import_errors') as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </x-alert>
+@endif
+
+<p class="mb-4 text-xs text-gray-500">CSV export lists <strong>all payment accounts</strong> for this business. <code>opening_balance</code> is exported as <strong>0</strong> so files are safe to re-import elsewhere without copying live balances.</p>
 
 <x-stat-card class="mb-6" label="Total liquid funds (active wallets)" :value="format_money($totalLiquid)" accent="emerald" />
 
@@ -128,6 +143,13 @@
 @endif
 
 @push('modals')
+    <x-csv-import-modal
+        modal-id="import-wallets-modal"
+        title="Import wallets (CSV)"
+        :action="tenant_route('tenant.wallets.import.store')"
+        :template-url="tenant_route('tenant.wallets.import.template')"
+        columns-hint="Required: <span class=&quot;font-medium text-gray-800&quot;>name, type</span> (<code>cash</code>, <code>mobile_money</code>, <code>bank</code>). Optional: opening_balance, sort_order, identifier (ignored on import). Duplicates match on name + type."
+    />
     @if($wallets->where('is_active', true)->isNotEmpty())
         @include('wallets._deposit-modal', ['wallets' => $wallets, 'inflowCategories' => $inflowCategories ?? []])
     @endif
@@ -526,6 +548,15 @@ window.openWalletDepositModal = function (walletId) {
         window.openAppModal('wallet-deposit-modal');
     }
 };
+document.addEventListener('click', function (e) {
+    if (e.target.closest('[data-open-import-wallets]')) {
+        e.preventDefault();
+        window.openAppModal('import-wallets-modal');
+    }
+});
+@if(session('open_import_wallets_modal') || ($errors->has('csv_file') && !old('payment_wallet_id')))
+window.openAppModal('import-wallets-modal');
+@endif
 @if($errors->any() && (old('payment_wallet_id') || old('category')))
 (function () {
     var modal = document.getElementById('wallet-deposit-modal');

@@ -6,9 +6,24 @@
 @section('content')
 <x-page-header title="Vendors" subtitle="Supplier profiles, contact details, and open credit balances">
     <x-slot name="actions">
+        <x-button variant="secondary" size="sm" type="button" data-open-import-suppliers>Import (CSV)</x-button>
+        <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.supplier-credit.suppliers.export') }}">Export (CSV)</x-button>
         <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.supplier-credit.bills.index') }}">Bills</x-button>
     </x-slot>
 </x-page-header>
+
+@if(session('import_errors') && count(session('import_errors')))
+    <x-alert type="warning" class="mb-4">
+        <p class="font-medium">Import notes:</p>
+        <ul class="mt-2 list-inside list-disc text-xs">
+            @foreach(session('import_errors') as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </x-alert>
+@endif
+
+<p class="mb-4 text-xs text-gray-500">CSV export includes <strong>all vendors</strong> for this business (full list, not paginated).</p>
 
 <x-card class="mb-6">
     <h2 class="text-sm font-semibold text-gray-900">Add vendor</h2>
@@ -68,7 +83,28 @@
 
 @include('supplier-credit.suppliers._settle-debt-modal', ['wallets' => $wallets ?? collect()])
 
+@push('modals')
+    <x-csv-import-modal
+        modal-id="import-suppliers-modal"
+        title="Import vendors (CSV)"
+        :action="tenant_route('tenant.supplier-credit.suppliers.import.store')"
+        :template-url="tenant_route('tenant.supplier-credit.suppliers.import.template')"
+        columns-hint="Required columns: <span class=&quot;font-medium text-gray-800&quot;>name, phone, email, opening_balance</span>. Optional: contact_person, address, notes. Duplicates match on vendor name."
+    />
+@endpush
+
 @push('scripts')
     @include('supplier-credit.suppliers._settle-debt-modal-script', ['settleDebtPayloads' => $settleDebtPayloads ?? []])
+<script>
+document.addEventListener('click', function (e) {
+    if (e.target.closest('[data-open-import-suppliers]')) {
+        e.preventDefault();
+        window.openAppModal('import-suppliers-modal');
+    }
+});
+@if(session('open_import_suppliers_modal') || $errors->has('csv_file'))
+window.openAppModal('import-suppliers-modal');
+@endif
+</script>
 @endpush
 @endsection

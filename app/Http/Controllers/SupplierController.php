@@ -7,6 +7,8 @@ use App\Models\Business;
 use App\Models\Supplier;
 use App\Services\PaymentWalletService;
 use App\Services\SupplierCreditService;
+use App\Services\SupplierCsvExportService;
+use App\Services\SupplierCsvImportService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -234,6 +236,48 @@ class SupplierController extends Controller
         return redirect()
             ->to(tenant_route('tenant.supplier-credit.vendors.index'))
             ->with('success', 'Vendor updated.');
+    }
+
+    public function downloadImportTemplate(SupplierCsvExportService $exportService)
+    {
+        return response($exportService->templateCsvContents(), 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="supplier-import-template.csv"',
+        ]);
+    }
+
+    public function exportSuppliers(Request $request, SupplierCsvExportService $exportService)
+    {
+        return $exportService->download($request->user()->business, $request->user());
+    }
+
+    public function storeImport(Request $request, SupplierCsvImportService $importService)
+    {
+        $request->validate([
+            'csv_file' => 'required|file|mimes:csv,txt|max:10240',
+        ]);
+
+        try {
+            $result = $importService->import($request->user()->business, $request->user(), $request->file('csv_file'));
+        } catch (\RuntimeException $exception) {
+            return redirect()
+                ->to(tenant_route('tenant.supplier-credit.vendors.index'))
+                ->with('error', $exception->getMessage())
+                ->with('open_import_suppliers_modal', true);
+        }
+
+        $message = 'Import complete: ' . $result['inserted'] . ' vendor(s) added.';
+        if ($result['skipped_duplicates'] > 0) {
+            $message .= ' ' . $result['skipped_duplicates'] . ' duplicate(s) skipped.';
+        }
+        if ($result['skipped_errors'] > 0) {
+            $message .= ' ' . $result['skipped_errors'] . ' row(s) had errors.';
+        }
+
+        return redirect()
+            ->to(tenant_route('tenant.supplier-credit.vendors.index'))
+            ->with('success', $message)
+            ->with('import_errors', array_slice($result['errors'], 0, 50));
     }
 
     public function destroy(Business $business, Supplier $supplier, SupplierCreditService $service, Request $request)

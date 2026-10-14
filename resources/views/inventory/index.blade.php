@@ -10,6 +10,18 @@
         @can('create', App\Models\Product::class)
             <x-button variant="primary" size="sm" href="{{ tenant_route('tenant.inventory.create') }}">+ Add New Product</x-button>
             <x-button variant="secondary" size="sm" type="button" data-open-import-products>Import Products (CSV)</x-button>
+            @if(!empty($exportRequiresBranch))
+                <x-button variant="secondary" size="sm" type="button" disabled
+                          title="Choose a branch in the filter below to export that branch’s full catalog.">
+                    Export Products (CSV)
+                </x-button>
+            @else
+                <x-button variant="secondary" size="sm"
+                          href="{{ tenant_route('tenant.inventory.export', array_filter(['branch_id' => $branchId ?? null])) }}"
+                          title="{{ !empty($exportBranchName) ? 'Download every product for ' . $exportBranchName . ' (all pages; ignores search filters).' : 'Download the full product catalog (all pages; ignores search filters).' }}">
+                    Export Products (CSV)@if(!empty($exportBranchName)) · {{ $exportBranchName }}@endif
+                </x-button>
+            @endif
         @endcan
         @can('top-up-inventory')
             <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.inventory.top-up') }}">Top-up Stock</x-button>
@@ -36,7 +48,7 @@
                    class="w-full rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-4 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
         </div>
         @if(auth()->user()->isOwner() && $branches->isNotEmpty())
-            <form method="GET" action="{{ tenant_route('tenant.inventory.index') }}" class="shrink-0 sm:w-52">
+            <form method="GET" action="{{ tenant_route('tenant.inventory.index') }}" class="shrink-0 sm:w-52" id="inventory-branch-filter-form">
                 @if(!empty($search))
                     <input type="hidden" name="search" value="{{ $search }}">
                 @endif
@@ -54,6 +66,15 @@
             </form>
         @endif
     </div>
+    @if(!empty($exportBranchName) && empty($exportRequiresBranch))
+        <p class="mt-2 text-xs text-gray-500">
+            CSV export includes <strong>all products</strong> for <strong>{{ $exportBranchName }}</strong>, not just this page or current search results.
+        </p>
+    @elseif(!empty($exportRequiresBranch))
+        <p class="mt-2 text-xs text-amber-700">
+            Select a <strong>branch</strong> above to export that branch’s full product catalog.
+        </p>
+    @endif
     @if(!empty($search) || !empty($branchId) || ($stockFilter ?? null) === 'low')
         <p class="mt-2 text-xs text-gray-500">
             @if(($stockFilter ?? null) === 'low')

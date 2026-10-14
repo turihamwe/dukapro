@@ -311,6 +311,7 @@ Route::middleware(['maintenance'])->group(function () {
                         Route::get('/create', [InventoryController::class, 'create'])->name('create');
                         Route::post('/', [InventoryController::class, 'store'])->name('store');
                         Route::get('/import/template', [InventoryController::class, 'downloadImportTemplate'])->name('import.template');
+                        Route::get('/export', [InventoryController::class, 'exportProducts'])->name('export');
                         Route::post('/import', [InventoryController::class, 'storeImport'])->name('import.store');
                     });
                     Route::middleware(['can:top-up-inventory'])->group(function () {
@@ -417,6 +418,9 @@ Route::middleware(['maintenance'])->group(function () {
                 Route::prefix('customer-credit')->name('customer-credit.')->middleware(['customer.credit', 'can:access-customer-credit'])->group(function () {
                     Route::get('/', [CustomerCreditController::class, 'index'])->name('index');
                     Route::get('/customers', [CustomerCreditCustomerController::class, 'index'])->name('customers.index');
+                    Route::get('/customers/import/template', [CustomerCreditCustomerController::class, 'downloadImportTemplate'])->name('customers.import.template');
+                    Route::get('/customers/export', [CustomerCreditCustomerController::class, 'exportCustomers'])->name('customers.export');
+                    Route::post('/customers/import', [CustomerCreditCustomerController::class, 'storeImport'])->name('customers.import.store');
                     Route::post('/customers', [CustomerCreditCustomerController::class, 'store'])->name('customers.store');
                     Route::get('/customers/{customer}', [CustomerCreditCustomerController::class, 'show'])->name('customers.show');
                     Route::get('/customers/{customer}/edit', [CustomerCreditCustomerController::class, 'edit'])->name('customers.edit');
@@ -455,6 +459,9 @@ Route::middleware(['maintenance'])->group(function () {
                     Route::delete('/vendors/{supplier}', [SupplierController::class, 'destroy'])->name('vendors.destroy');
                     Route::post('/vendors/{supplier}/settle-debt', [SupplierController::class, 'settleDebt'])->name('vendors.settle-debt');
                     Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers.index');
+                    Route::get('/suppliers/import/template', [SupplierController::class, 'downloadImportTemplate'])->name('suppliers.import.template');
+                    Route::get('/suppliers/export', [SupplierController::class, 'exportSuppliers'])->name('suppliers.export');
+                    Route::post('/suppliers/import', [SupplierController::class, 'storeImport'])->name('suppliers.import.store');
                     Route::post('/suppliers', [SupplierController::class, 'store'])->name('suppliers.store');
                     Route::get('/suppliers/{supplier}/edit', [SupplierController::class, 'edit'])->name('suppliers.edit');
                     Route::put('/suppliers/{supplier}', [SupplierController::class, 'update'])->name('suppliers.update');
@@ -465,6 +472,9 @@ Route::middleware(['maintenance'])->group(function () {
 
                 Route::prefix('wallets')->name('wallets.')->middleware(['can:manage-wallets', 'payment.wallets'])->group(function () {
                     Route::get('/', [PaymentWalletController::class, 'index'])->name('index');
+                    Route::get('/import/template', [PaymentWalletController::class, 'downloadImportTemplate'])->name('import.template');
+                    Route::get('/export', [PaymentWalletController::class, 'exportWallets'])->name('export');
+                    Route::post('/import', [PaymentWalletController::class, 'storeImport'])->name('import.store');
                     Route::post('/', [PaymentWalletController::class, 'store'])->name('store');
                     Route::post('/deposit', [PaymentWalletController::class, 'deposit'])->name('deposit');
                     Route::get('/{wallet}/transactions', [PaymentWalletController::class, 'transactions'])->name('transactions');

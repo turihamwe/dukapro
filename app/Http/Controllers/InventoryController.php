@@ -22,6 +22,7 @@ use App\Services\BranchStockTransferService;
 use App\Services\CatalogDiscoveryService;
 use App\Services\LowStockAlertService;
 use App\Services\ProductBatchService;
+use App\Services\ProductCsvExportService;
 use App\Services\ProductCsvImportService;
 use App\Services\ProductInventoryService;
 use Illuminate\Http\Request;
@@ -60,8 +61,11 @@ class InventoryController extends Controller
         $search = trim((string) $request->input('search', ''));
         $stockFilter = $request->input('stock') === 'low' ? 'low' : null;
         $business = $request->user()->business;
-        $branches = collect();
-        $branchId = null;
+        $branchScope = $this->resolveInventoryBranchFilter($request, $business);
+        $branchId = $branchScope['branchId'];
+        $branches = $branchScope['branches'];
+        $exportRequiresBranch = $branchScope['exportRequiresBranch'];
+        $exportBranchName = $branchScope['branchName'];
 
         $query = Product::query()
             ->catalog()
@@ -69,31 +73,7 @@ class InventoryController extends Controller
             ->withCount(['variants', 'activeBatches as active_batches_count'])
             ->orderBy('name');
 
-        $contextBranchId = BranchContext::id();
-
-        if ($contextBranchId) {
-            $branchId = $contextBranchId;
-            $query->withoutGlobalScope(BranchScope::class)
-                ->where('products.branch_id', $branchId);
-        } elseif ($request->user()->isOwner()) {
-            $branches = Branch::query()
-                ->where('business_id', $business->id)
-                ->where('is_active', true)
-                ->orderByDesc('is_default')
-                ->orderBy('name')
-                ->pluck('name', 'id');
-
-            if ($request->filled('branch_id')) {
-                $branchId = (int) $request->input('branch_id');
-
-                if ($branches->has($branchId)) {
-                    $query->withoutGlobalScope(BranchScope::class)
-                        ->where('products.branch_id', $branchId);
-                } else {
-                    $branchId = null;
-                }
-            }
-        }
+        $this->applyInventoryBranchFilter($query, $branchId);
 
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
@@ -152,7 +132,9 @@ class InventoryController extends Controller
             'serviceCatalogEnabled',
             'transferBranches',
             'canBranchTransfer',
-            'importBranches'
+            'importBranches',
+            'exportRequiresBranch',
+            'exportBranchName'
         ));
     }
 
@@ -164,6 +146,27 @@ class InventoryController extends Controller
             'Content-Type' => 'text/csv; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="product-import-template.csv"',
         ]);
+    }
+
+    public function exportProducts(Request $request, ProductCsvExportService $exportService)
+    {
+        $this->authorize('create', Product::class);
+
+        $business = $request->user()->business;
+        $branchScope = $this->resolveInventoryBranchFilter($request, $business);
+
+        if ($branchScope['exportRequiresBranch']) {
+            return redirect()
+                ->to(tenant_route('tenant.inventory.index'))
+                ->with('error', 'Select a branch in the filter above, then export that branch’s full catalog.');
+        }
+
+        return $exportService->download(
+            $business,
+            $request->user(),
+            $branchScope['branchId'],
+            $branchScope['branchName']
+        );
     }
 
     public function storeImport(Request $request, ProductCsvImportService $importService)
@@ -839,6 +842,66 @@ class InventoryController extends Controller
         );
 
         return $brand->id;
+    }
+
+    /**
+     * Shared branch scope for inventory list and CSV export.
+     *
+     * @return array{
+     *     branchId: int|null,
+     *     branches: Collection<int, string>,
+     *     branchName: string|null,
+     *     exportRequiresBranch: bool
+     * }
+     */
+    protected function resolveInventoryBranchFilter(Request $request, Business $business): array
+    {
+        $branches = Branch::query()
+            ->where('business_id', $business->id)
+            ->where('is_active', true)
+            ->orderByDesc('is_default')
+            ->orderBy('name')
+            ->pluck('name', 'id');
+
+        $branchId = null;
+        $exportRequiresBranch = false;
+
+        $contextBranchId = BranchContext::id();
+
+        if ($contextBranchId) {
+            $branchId = $contextBranchId;
+        } elseif ($request->user()->isOwner()) {
+            if ($request->filled('branch_id')) {
+                $candidate = (int) $request->input('branch_id');
+                if ($branches->has($candidate)) {
+                    $branchId = $candidate;
+                }
+            } elseif ($branches->count() === 1) {
+                $branchId = (int) $branches->keys()->first();
+            } elseif ($branches->isNotEmpty()) {
+                $exportRequiresBranch = true;
+            }
+        } elseif ($branches->isNotEmpty()) {
+            $resolver = app(BranchResolver::class);
+            $branchId = $resolver->forUser($request->user()) ?: $resolver->requiredForUser($request->user());
+        }
+
+        $branchName = $branchId ? ($branches[$branchId] ?? null) : null;
+
+        return [
+            'branchId' => $branchId,
+            'branches' => $branches,
+            'branchName' => $branchName,
+            'exportRequiresBranch' => $exportRequiresBranch,
+        ];
+    }
+
+    protected function applyInventoryBranchFilter($query, ?int $branchId): void
+    {
+        if ($branchId) {
+            $query->withoutGlobalScope(BranchScope::class)
+                ->where('products.branch_id', $branchId);
+        }
     }
 
     protected function resolveDefaultBranchForImport(Request $request, Business $business): ?int
