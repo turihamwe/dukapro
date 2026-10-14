@@ -67,7 +67,85 @@ class PaymentWalletController extends Controller
                 'type_label' => $wallet->typeLabel(),
                 'current_balance' => (float) $wallet->current_balance,
             ],
+            'permissions' => [
+                'can_manage' => $request->user()->can('adjust-wallet-transactions'),
+            ],
             'transactions' => $walletService->transactionHistory($wallet, $limit),
+        ]);
+    }
+
+    public function updateTransaction(
+        Request $request,
+        Business $business,
+        PaymentWallet $wallet,
+        PaymentWalletTransaction $transaction,
+        PaymentWalletService $walletService
+    ) {
+        $this->authorize('adjust-wallet-transactions');
+
+        if ((int) $wallet->business_id !== (int) $business->id
+            || (int) $transaction->business_id !== (int) $business->id
+            || (int) $transaction->payment_wallet_id !== (int) $wallet->id) {
+            abort(404);
+        }
+
+        $data = $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+            'category' => ['nullable', Rule::in(array_keys(WalletInflowCategory::all()))],
+            'reference' => 'nullable|string|max:255',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        try {
+            $updated = $walletService->updateTransaction($request->user(), $transaction, $data);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['message' => $e->getMessage(), 'errors' => $e->errors()], 422);
+        }
+
+        $wallet->refresh();
+
+        return response()->json([
+            'message' => 'Transaction updated.',
+            'wallet' => [
+                'id' => $wallet->id,
+                'current_balance' => (float) $wallet->current_balance,
+            ],
+            'transaction' => [
+                'id' => $updated->id,
+                'amount' => (float) $updated->amount,
+            ],
+        ]);
+    }
+
+    public function destroyTransaction(
+        Request $request,
+        Business $business,
+        PaymentWallet $wallet,
+        PaymentWalletTransaction $transaction,
+        PaymentWalletService $walletService
+    ) {
+        $this->authorize('adjust-wallet-transactions');
+
+        if ((int) $wallet->business_id !== (int) $business->id
+            || (int) $transaction->business_id !== (int) $business->id
+            || (int) $transaction->payment_wallet_id !== (int) $wallet->id) {
+            abort(404);
+        }
+
+        try {
+            $walletService->deleteTransaction($request->user(), $transaction);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['message' => $e->getMessage(), 'errors' => $e->errors()], 422);
+        }
+
+        $wallet->refresh();
+
+        return response()->json([
+            'message' => 'Transaction removed and balance adjusted.',
+            'wallet' => [
+                'id' => $wallet->id,
+                'current_balance' => (float) $wallet->current_balance,
+            ],
         ]);
     }
 

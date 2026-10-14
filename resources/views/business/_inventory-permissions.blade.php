@@ -59,6 +59,9 @@
                     <p class="mb-2 text-sm font-semibold capitalize text-violet-950">{{ UserRole::label($role) }}</p>
                     <div class="grid gap-2 sm:grid-cols-2">
                         @foreach(PermissionRegistry::definable() as $permission => $meta)
+                            @if(! PermissionRegistry::visibleForBusiness($permission, $business))
+                                @continue
+                            @endif
                             @if(in_array($role, $meta['roles'], true))
                                 @php
                                     $checked = old("role_permissions.$role.$permission", $permissionMatrix[$role][$permission] ?? PermissionRegistry::defaultGranted($permission, new \App\Models\User(['role' => $role, 'business_id' => $business->id])));

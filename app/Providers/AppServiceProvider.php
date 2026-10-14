@@ -63,5 +63,9 @@ class AppServiceProvider extends ServiceProvider
         Blade::if('efrisPlatform', function () {
             return \App\Support\EfrisCompliance::globallyEnabled();
         });
+
+        Blade::if('walletLedgerAdjustmentsPlatform', function () {
+            return \App\Support\WalletLedgerAdjustmentCompliance::globallyEnabled();
+        });
     }
 }

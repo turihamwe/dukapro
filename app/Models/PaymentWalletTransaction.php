@@ -6,10 +6,12 @@ use App\Models\Concerns\BelongsToTenant;
 use App\Support\WalletInflowCategory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class PaymentWalletTransaction extends Model
 {
     use BelongsToTenant;
+    use SoftDeletes;
 
     public const DIRECTION_IN = 'in';
 

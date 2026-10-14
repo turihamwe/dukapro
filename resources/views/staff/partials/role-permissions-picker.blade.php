@@ -16,7 +16,10 @@
     <div class="mt-4 space-y-4" id="staff-role-permissions-panels">
         @foreach($roles as $role)
             @php
-                $applicable = collect(PermissionRegistry::definable())->filter(fn ($meta) => in_array($role, $meta['roles'], true));
+                $applicable = collect(PermissionRegistry::definable())->filter(
+                    fn ($meta, $permission) => PermissionRegistry::visibleForBusiness($permission, $business)
+                        && in_array($role, $meta['roles'], true)
+                );
             @endphp
             <div class="staff-role-permissions-panel rounded-lg border border-violet-200/70 bg-white/60 p-3 {{ $selectedRole === $role ? '' : 'hidden' }}"
                  data-staff-role="{{ $role }}">

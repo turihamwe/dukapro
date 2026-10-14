@@ -134,14 +134,33 @@
     @if($wallets->isNotEmpty())
         @include('wallets._history-modal')
     @endif
+    @can('adjust-wallet-transactions')
+        @include('wallets._transaction-edit-modal')
+        @include('wallets._transaction-delete-modal')
+    @endcan
 @endpush
 
 @push('scripts')
 <script>
 (function () {
     var historyModalId = 'wallet-history-modal';
+    var editModalId = 'wallet-transaction-edit-modal';
+    var deleteModalId = 'wallet-transaction-delete-modal';
     var historyUrlTemplate = @json(tenant_route('tenant.wallets.transactions', ['wallet' => '__WALLET__']));
+    var canManageLedger = @json(auth()->user()->can('adjust-wallet-transactions'));
+    var updateUrlTemplate = canManageLedger
+        ? @json(tenant_route('tenant.wallets.transactions.update', ['wallet' => '__WALLET__', 'transaction' => '__TX__']))
+        : null;
+    var deleteUrlTemplate = canManageLedger
+        ? @json(tenant_route('tenant.wallets.transactions.destroy', ['wallet' => '__WALLET__', 'transaction' => '__TX__']))
+        : null;
     var currencySample = @json(format_money(0));
+    var csrfToken = document.querySelector('meta[name="csrf-token"]');
+    csrfToken = csrfToken ? csrfToken.content : '';
+
+    var currentWalletId = null;
+    var pendingDeleteRow = null;
+    var pendingEditRow = null;
 
     function formatMoney(amount) {
         var n = Number(amount);
@@ -167,24 +186,73 @@
         });
     }
 
-    window.openWalletHistoryModal = function (walletId) {
+    function walletSubtitle(wallet) {
+        return (wallet.name || 'Wallet') + ' · ' + (wallet.type_label || '') + ' · Balance ' + formatMoney(wallet.current_balance);
+    }
+
+    function renderHistoryRows(rows, canManage) {
+        var tbody = document.getElementById(historyModalId + '-tbody');
+        var actionsHead = document.getElementById(historyModalId + '-actions-head');
+        if (actionsHead) {
+            actionsHead.classList.toggle('hidden', !canManage);
+        }
+        if (!tbody) {
+            return;
+        }
+
+        tbody.innerHTML = rows.map(function (row) {
+            var inflow = row.direction === 'in';
+            var badgeClass = inflow
+                ? 'bg-emerald-100 text-emerald-800'
+                : 'bg-red-100 text-red-800';
+            var amountClass = inflow ? 'text-emerald-700' : 'text-red-700';
+            var sign = inflow ? '+' : '−';
+            var source = row.source_label || '—';
+            if (row.reference) {
+                source += ' · ' + row.reference;
+            }
+            var balance = row.balance_after != null ? formatMoney(row.balance_after) : '—';
+            var actionsCell = '';
+
+            if (canManage) {
+                actionsCell = '<td class="whitespace-nowrap px-4 py-2 text-right">'
+                    + '<button type="button" class="mr-1 rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-indigo-600" title="Edit" data-wallet-tx-edit="' + String(row.id) + '">Edit</button>'
+                    + '<button type="button" class="rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-red-600" title="Remove" data-wallet-tx-delete="' + String(row.id) + '">Delete</button>'
+                    + '</td>';
+            }
+
+            return '<tr data-transaction-id="' + esc(String(row.id)) + '">'
+                + '<td class="whitespace-nowrap px-4 py-2 text-gray-600">' + esc(row.occurred_at) + '</td>'
+                + '<td class="px-4 py-2"><span class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium ' + badgeClass + '">' + esc(row.direction_label) + '</span></td>'
+                + '<td class="px-4 py-2 text-gray-800">' + esc(source) + '</td>'
+                + '<td class="max-w-xs px-4 py-2 text-gray-600">' + esc(row.notes) + '</td>'
+                + '<td class="whitespace-nowrap px-4 py-2 text-right font-semibold ' + amountClass + '">' + sign + formatMoney(row.amount) + '</td>'
+                + '<td class="whitespace-nowrap px-4 py-2 text-right text-gray-700">' + esc(balance) + '</td>'
+                + actionsCell
+                + '</tr>';
+        }).join('');
+    }
+
+    function loadWalletHistory(walletId, options) {
+        options = options || {};
         var subtitle = document.getElementById(historyModalId + '-subtitle');
         var tbody = document.getElementById(historyModalId + '-tbody');
-        if (subtitle) {
-            subtitle.textContent = 'Loading…';
-        }
-        if (tbody) {
-            tbody.innerHTML = '';
-        }
-        setHistoryState('loading');
 
-        if (typeof window.openAppModal === 'function') {
-            window.openAppModal(historyModalId);
+        currentWalletId = walletId;
+
+        if (!options.silent) {
+            if (subtitle) {
+                subtitle.textContent = 'Loading…';
+            }
+            if (tbody) {
+                tbody.innerHTML = '';
+            }
+            setHistoryState('loading');
         }
 
         var url = historyUrlTemplate.replace('__WALLET__', String(walletId));
 
-        fetch(url, {
+        return fetch(url, {
             headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
             credentials: 'same-origin',
         })
@@ -196,56 +264,257 @@
             })
             .then(function (payload) {
                 var wallet = payload.wallet || {};
+                var canManage = !!(payload.permissions && payload.permissions.can_manage);
+
                 if (subtitle) {
-                    subtitle.textContent = (wallet.name || 'Wallet') + ' · ' + (wallet.type_label || '') + ' · Balance ' + formatMoney(wallet.current_balance);
+                    subtitle.textContent = walletSubtitle(wallet);
                 }
 
                 var rows = payload.transactions || [];
                 if (!rows.length) {
                     setHistoryState('empty');
-                    return;
+                    return payload;
                 }
 
-                if (!tbody) {
-                    return;
-                }
-
-                tbody.innerHTML = rows.map(function (row) {
-                    var inflow = row.direction === 'in';
-                    var badgeClass = inflow
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : 'bg-red-100 text-red-800';
-                    var amountClass = inflow ? 'text-emerald-700' : 'text-red-700';
-                    var sign = inflow ? '+' : '−';
-                    var source = row.source_label || '—';
-                    if (row.reference) {
-                        source += ' · ' + row.reference;
-                    }
-                    var balance = row.balance_after != null ? formatMoney(row.balance_after) : '—';
-
-                    return '<tr>'
-                        + '<td class="whitespace-nowrap px-4 py-2 text-gray-600">' + esc(row.occurred_at) + '</td>'
-                        + '<td class="px-4 py-2"><span class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium ' + badgeClass + '">' + esc(row.direction_label) + '</span></td>'
-                        + '<td class="px-4 py-2 text-gray-800">' + esc(source) + '</td>'
-                        + '<td class="max-w-xs px-4 py-2 text-gray-600">' + esc(row.notes) + '</td>'
-                        + '<td class="whitespace-nowrap px-4 py-2 text-right font-semibold ' + amountClass + '">' + sign + formatMoney(row.amount) + '</td>'
-                        + '<td class="whitespace-nowrap px-4 py-2 text-right text-gray-700">' + esc(balance) + '</td>'
-                        + '</tr>';
-                }).join('');
-
+                renderHistoryRows(rows, canManage);
                 setHistoryState('table-wrap');
                 var footnote = document.getElementById(historyModalId + '-footnote');
                 if (footnote) {
                     footnote.classList.remove('hidden');
                 }
+
+                return payload;
             })
             .catch(function () {
-                setHistoryState('error');
-                if (subtitle) {
-                    subtitle.textContent = 'Could not load wallet history.';
+                if (!options.silent) {
+                    setHistoryState('error');
+                    if (subtitle) {
+                        subtitle.textContent = 'Could not load wallet history.';
+                    }
                 }
+                throw new Error('history load failed');
             });
+    }
+
+    window.openWalletHistoryModal = function (walletId) {
+        if (typeof window.openAppModal === 'function') {
+            window.openAppModal(historyModalId);
+        }
+        loadWalletHistory(walletId);
     };
+
+    function findRowInPayload(payload, transactionId) {
+        var rows = (payload && payload.transactions) || [];
+        for (var i = 0; i < rows.length; i++) {
+            if (String(rows[i].id) === String(transactionId)) {
+                return rows[i];
+            }
+        }
+        return null;
+    }
+
+    function openEditModal(row) {
+        if (!row || !canManageLedger) {
+            return;
+        }
+
+        pendingEditRow = row;
+
+        var summary = document.getElementById(editModalId + '-summary');
+        var err = document.getElementById(editModalId + '-error');
+        var amountInput = document.getElementById(editModalId + '-amount');
+        var categoryWrap = document.getElementById(editModalId + '-category-wrap');
+        var categorySelect = document.getElementById(editModalId + '-category');
+        var referenceInput = document.getElementById(editModalId + '-reference');
+        var notesInput = document.getElementById(editModalId + '-notes');
+
+        if (err) {
+            err.classList.add('hidden');
+            err.textContent = '';
+        }
+        if (summary) {
+            summary.textContent = row.direction_label + ' · ' + (row.source_label || 'Wallet movement') + ' · ' + row.occurred_at;
+        }
+        if (amountInput) {
+            amountInput.value = row.amount;
+        }
+        if (categoryWrap) {
+            categoryWrap.classList.toggle('hidden', row.direction !== 'in');
+        }
+        if (categorySelect && row.category) {
+            categorySelect.value = row.category;
+        }
+        if (referenceInput) {
+            referenceInput.value = row.reference_raw || '';
+        }
+        if (notesInput) {
+            notesInput.value = row.notes_raw || '';
+        }
+
+        if (typeof window.openAppModal === 'function') {
+            window.openAppModal(editModalId);
+        }
+    }
+
+    function openDeleteModal(row) {
+        if (!row || !canManageLedger) {
+            return;
+        }
+
+        pendingDeleteRow = row;
+
+        var summary = document.getElementById(deleteModalId + '-summary');
+        var err = document.getElementById(deleteModalId + '-error');
+        if (err) {
+            err.classList.add('hidden');
+            err.textContent = '';
+        }
+        if (summary) {
+            var sign = row.direction === 'in' ? '+' : '−';
+            summary.textContent = row.occurred_at + ' · ' + sign + formatMoney(row.amount) + ' · ' + (row.source_label || 'Movement');
+        }
+
+        if (typeof window.openAppModal === 'function') {
+            window.openAppModal(deleteModalId);
+        }
+    }
+
+    document.addEventListener('click', function (event) {
+        var editBtn = event.target.closest('[data-wallet-tx-edit]');
+        if (editBtn && currentWalletId) {
+            var txId = editBtn.getAttribute('data-wallet-tx-edit');
+            loadWalletHistory(currentWalletId, { silent: true }).then(function (payload) {
+                openEditModal(findRowInPayload(payload, txId));
+            });
+            return;
+        }
+
+        var deleteBtn = event.target.closest('[data-wallet-tx-delete]');
+        if (deleteBtn && currentWalletId) {
+            var delId = deleteBtn.getAttribute('data-wallet-tx-delete');
+            loadWalletHistory(currentWalletId, { silent: true }).then(function (payload) {
+                openDeleteModal(findRowInPayload(payload, delId));
+            });
+        }
+    });
+
+    var saveBtn = document.getElementById(editModalId + '-save');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', function () {
+            if (!pendingEditRow || !currentWalletId || !updateUrlTemplate) {
+                return;
+            }
+
+            var err = document.getElementById(editModalId + '-error');
+            var amountInput = document.getElementById(editModalId + '-amount');
+            var categorySelect = document.getElementById(editModalId + '-category');
+            var referenceInput = document.getElementById(editModalId + '-reference');
+            var notesInput = document.getElementById(editModalId + '-notes');
+
+            var body = {
+                amount: amountInput ? amountInput.value : '',
+                reference: referenceInput ? referenceInput.value : '',
+                notes: notesInput ? notesInput.value : '',
+            };
+
+            if (pendingEditRow.direction === 'in' && categorySelect) {
+                body.category = categorySelect.value;
+            }
+
+            var url = updateUrlTemplate
+                .replace('__WALLET__', String(currentWalletId))
+                .replace('__TX__', String(pendingEditRow.id));
+
+            saveBtn.disabled = true;
+
+            fetch(url, {
+                method: 'PUT',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify(body),
+            })
+                .then(function (response) {
+                    return response.json().then(function (data) {
+                        if (!response.ok) {
+                            throw data;
+                        }
+                        return data;
+                    });
+                })
+                .then(function () {
+                    closeAppModal(editModalId);
+                    return loadWalletHistory(currentWalletId, { silent: true });
+                })
+                .catch(function (data) {
+                    if (err) {
+                        var message = (data && data.errors && data.errors.amount && data.errors.amount[0])
+                            || (data && data.message)
+                            || 'Could not save changes.';
+                        err.textContent = message;
+                        err.classList.remove('hidden');
+                    }
+                })
+                .finally(function () {
+                    saveBtn.disabled = false;
+                });
+        });
+    }
+
+    var confirmDeleteBtn = document.getElementById(deleteModalId + '-confirm');
+    if (confirmDeleteBtn) {
+        confirmDeleteBtn.addEventListener('click', function () {
+            if (!pendingDeleteRow || !currentWalletId || !deleteUrlTemplate) {
+                return;
+            }
+
+            var err = document.getElementById(deleteModalId + '-error');
+            var url = deleteUrlTemplate
+                .replace('__WALLET__', String(currentWalletId))
+                .replace('__TX__', String(pendingDeleteRow.id));
+
+            confirmDeleteBtn.disabled = true;
+
+            fetch(url, {
+                method: 'DELETE',
+                headers: {
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+            })
+                .then(function (response) {
+                    return response.json().then(function (data) {
+                        if (!response.ok) {
+                            throw data;
+                        }
+                        return data;
+                    });
+                })
+                .then(function () {
+                    closeAppModal(deleteModalId);
+                    pendingDeleteRow = null;
+                    return loadWalletHistory(currentWalletId, { silent: true });
+                })
+                .catch(function (data) {
+                    if (err) {
+                        var message = (data && data.errors && data.errors.transaction && data.errors.transaction[0])
+                            || (data && data.message)
+                            || 'Could not remove this transaction.';
+                        err.textContent = message;
+                        err.classList.remove('hidden');
+                    }
+                })
+                .finally(function () {
+                    confirmDeleteBtn.disabled = false;
+                });
+        });
+    }
 })();
 
 window.openWalletDepositModal = function (walletId) {

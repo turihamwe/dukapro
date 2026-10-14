@@ -113,6 +113,9 @@
         @efrisPlatform
             @include('superadmin.businesses._efris-panel', ['business' => $item, 'efrisGoLive' => $efrisGoLive ?? null])
         @endefrisPlatform
+        @walletLedgerAdjustmentsPlatform
+            @include('superadmin.businesses._wallet-ledger-adjustments-panel', ['business' => $item])
+        @endwalletLedgerAdjustmentsPlatform
     @endif
 
     @if($entity === 'affiliates')

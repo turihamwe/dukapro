@@ -37,6 +37,7 @@ use App\Http\Controllers\SuperAdmin\UserActionController;
 use App\Http\Controllers\SuperAdmin\AffiliateActionController;
 use App\Http\Controllers\SuperAdmin\AffiliateFieldFeedbackController;
 use App\Http\Controllers\SuperAdmin\BusinessEfrisController as SuperAdminBusinessEfrisController;
+use App\Http\Controllers\SuperAdmin\BusinessWalletLedgerController as SuperAdminBusinessWalletLedgerController;
 use App\Http\Controllers\SuperAdmin\BusinessOperatingModesController as SuperAdminBusinessOperatingModesController;
 use App\Http\Controllers\SuperAdmin\BusinessModuleController;
 use App\Http\Controllers\SuperAdmin\BusinessSubscriptionController;
@@ -456,6 +457,8 @@ Route::middleware(['maintenance'])->group(function () {
                     Route::post('/', [PaymentWalletController::class, 'store'])->name('store');
                     Route::post('/deposit', [PaymentWalletController::class, 'deposit'])->name('deposit');
                     Route::get('/{wallet}/transactions', [PaymentWalletController::class, 'transactions'])->name('transactions');
+                    Route::put('/{wallet}/transactions/{transaction}', [PaymentWalletController::class, 'updateTransaction'])->name('transactions.update');
+                    Route::delete('/{wallet}/transactions/{transaction}', [PaymentWalletController::class, 'destroyTransaction'])->name('transactions.destroy');
                     Route::put('/{wallet}', [PaymentWalletController::class, 'update'])->name('update');
                 });
 
@@ -568,6 +571,7 @@ Route::prefix('superadmin')
             Route::post('/users/{user}/promote-shareholder', [UserActionController::class, 'promoteShareholder'])->whereNumber('user')->name('users.promote-shareholder');
             Route::post('/businesses/{businessId}/modules', [BusinessModuleController::class, 'update'])->whereNumber('businessId')->name('businesses.modules.update');
             Route::post('/businesses/{businessId}/efris/unlock', [SuperAdminBusinessEfrisController::class, 'updateUnlock'])->whereNumber('businessId')->name('businesses.efris.unlock');
+            Route::post('/businesses/{businessId}/wallet-ledger/unlock', [SuperAdminBusinessWalletLedgerController::class, 'updateUnlock'])->whereNumber('businessId')->name('businesses.wallet-ledger.unlock');
             Route::post('/businesses/{businessId}/modes/unlock', [SuperAdminBusinessOperatingModesController::class, 'updateUnlocks'])->whereNumber('businessId')->name('businesses.modes.unlock');
             Route::post('/businesses/{businessId}/variable-pricing', [BusinessVariablePricingController::class, 'update'])->whereNumber('businessId')->name('businesses.variable-pricing.update');
             Route::post('/businesses/{businessId}/divisible-products', [BusinessDivisibleProductsController::class, 'update'])->whereNumber('businessId')->name('businesses.divisible-products.update');

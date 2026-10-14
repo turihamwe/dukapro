@@ -24,6 +24,7 @@
                             <th class="px-4 py-2.5">Notes</th>
                             <th class="px-4 py-2.5 text-right">Amount</th>
                             <th class="px-4 py-2.5 text-right">Balance after</th>
+                            <th id="{{ $modalId }}-actions-head" class="hidden px-4 py-2.5 text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="{{ $modalId }}-tbody" class="divide-y divide-gray-50 bg-white"></tbody>

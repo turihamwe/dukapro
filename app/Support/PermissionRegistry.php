@@ -61,7 +61,21 @@ class PermissionRegistry
                 'description' => 'Add and edit team members',
                 'roles' => [UserRole::MANAGER, UserRole::SUPERVISOR],
             ],
+            'adjust-wallet-transactions' => [
+                'label' => 'Edit wallet history',
+                'description' => 'Correct or remove lines in wallet transaction history',
+                'roles' => [UserRole::MANAGER],
+            ],
         ];
+    }
+
+    public static function visibleForBusiness(string $permission, ?\App\Models\Business $business): bool
+    {
+        if ($permission === 'adjust-wallet-transactions') {
+            return WalletLedgerAdjustmentCompliance::isAdminUnlocked($business);
+        }
+
+        return true;
     }
 
     public static function defaultGranted(string $permission, User $user): bool
@@ -119,6 +133,9 @@ class PermissionRegistry
 
             case 'manage-employees':
                 return in_array($user->role, [UserRole::MANAGER, UserRole::SUPERVISOR], true);
+
+            case 'adjust-wallet-transactions':
+                return false;
 
             default:
                 return false;

@@ -61,6 +61,7 @@ class SettingsController extends Controller
             'use_rental_mode' => 'nullable|boolean',
             'use_hospitality_mode' => 'nullable|boolean',
             'use_efris' => 'nullable|boolean',
+            'use_wallet_ledger_adjustments' => 'nullable|boolean',
             'efris_auto_provision_enabled' => 'nullable|boolean',
             'efris_platform_email' => 'nullable|email|max:255',
             'efris_platform_password' => 'nullable|string|max:255',
@@ -107,6 +108,7 @@ class SettingsController extends Controller
         SystemSetting::set('use_rental_mode', $request->boolean('use_rental_mode') ? '1' : '0');
         SystemSetting::set('use_hospitality_mode', $request->boolean('use_hospitality_mode') ? '1' : '0');
         SystemSetting::set('use_efris', $request->boolean('use_efris') ? '1' : '0');
+        SystemSetting::set('use_wallet_ledger_adjustments', $request->boolean('use_wallet_ledger_adjustments') ? '1' : '0');
         SystemSetting::set('efris_auto_provision_enabled', $request->boolean('efris_auto_provision_enabled') ? '1' : '0');
         SystemSetting::set('efris_platform_email', $data['efris_platform_email'] ?? '');
         if ($request->filled('efris_platform_password')) {

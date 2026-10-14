@@ -11,6 +11,7 @@ use App\Support\PaymentWalletMode;
 use App\Support\WalletInflowCategory;
 use App\Support\WalletTransactionSource;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
 class PaymentWalletService
@@ -317,12 +318,173 @@ class PaymentWalletService
                     'direction_label' => $transaction->isInflow() ? 'Inflow' : 'Outflow',
                     'source_label' => $transaction->sourceLabel(),
                     'notes' => $transaction->displayNotes() ?: '—',
+                    'notes_raw' => $transaction->notes ?? $transaction->source_name ?? '',
                     'reference' => $transaction->reference,
+                    'reference_raw' => $transaction->reference ?? '',
                     'amount' => (float) $transaction->amount,
                     'balance_after' => $transaction->balance_after !== null ? (float) $transaction->balance_after : null,
+                    'category' => $transaction->category,
+                    'source_type' => $transaction->source_type,
+                    'source_name' => $transaction->source_name,
                 ];
             })
             ->all();
+    }
+
+    public function updateTransaction(User $user, PaymentWalletTransaction $transaction, array $data): PaymentWalletTransaction
+    {
+        if (! Gate::forUser($user)->allows('adjust-wallet-transactions')) {
+            abort(403);
+        }
+
+        if ((int) $transaction->business_id !== (int) $user->business_id) {
+            abort(404);
+        }
+
+        $newAmount = round((float) ($data['amount'] ?? 0), 2);
+
+        if ($newAmount <= 0) {
+            throw ValidationException::withMessages([
+                'amount' => 'Enter an amount greater than zero.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($user, $transaction, $data, $newAmount) {
+            $transaction = PaymentWalletTransaction::query()->whereKey($transaction->id)->lockForUpdate()->firstOrFail();
+
+            $wallet = PaymentWallet::query()->whereKey($transaction->payment_wallet_id)->lockForUpdate()->firstOrFail();
+
+            $oldAmount = (float) $transaction->amount;
+            $delta = round($newAmount - $oldAmount, 2);
+
+            if (abs($delta) > 0.009) {
+                $balance = (float) $wallet->current_balance;
+
+                if ($transaction->isInflow()) {
+                    $balance = round($balance + $delta, 2);
+                } else {
+                    $balance = round($balance - $delta, 2);
+                }
+
+                if ($balance < -0.009) {
+                    throw ValidationException::withMessages([
+                        'amount' => 'This change would leave the wallet with a negative balance.',
+                    ]);
+                }
+
+                $wallet->current_balance = $balance;
+                $wallet->save();
+            }
+
+            $updates = [
+                'amount' => $newAmount,
+                'reference' => isset($data['reference']) ? ($data['reference'] !== '' ? $data['reference'] : null) : $transaction->reference,
+                'notes' => isset($data['notes']) ? ($data['notes'] !== '' ? $data['notes'] : null) : $transaction->notes,
+            ];
+
+            if ($transaction->isInflow() && ! empty($data['category'])) {
+                if (! array_key_exists($data['category'], WalletInflowCategory::all())) {
+                    throw ValidationException::withMessages([
+                        'category' => 'Select a valid inflow category.',
+                    ]);
+                }
+
+                $updates['category'] = $data['category'];
+            }
+
+            if ($transaction->source_type === WalletTransactionSource::MANUAL_DEPOSIT && array_key_exists('notes', $data)) {
+                $updates['source_name'] = $updates['notes'];
+            }
+
+            $before = $transaction->toArray();
+            $transaction->update($updates);
+
+            $this->refreshLedgerRunningBalances($wallet->fresh());
+
+            AuditLogger::record(
+                'payment_wallet_transaction_updated',
+                $transaction,
+                $before,
+                $transaction->fresh()->toArray(),
+                (int) $user->business_id,
+                (int) $user->id
+            );
+
+            return $transaction->fresh();
+        });
+    }
+
+    public function deleteTransaction(User $user, PaymentWalletTransaction $transaction): void
+    {
+        if (! Gate::forUser($user)->allows('adjust-wallet-transactions')) {
+            abort(403);
+        }
+
+        if ((int) $transaction->business_id !== (int) $user->business_id) {
+            abort(404);
+        }
+
+        DB::transaction(function () use ($user, $transaction) {
+            $transaction = PaymentWalletTransaction::query()->whereKey($transaction->id)->lockForUpdate()->firstOrFail();
+
+            $wallet = PaymentWallet::query()->whereKey($transaction->payment_wallet_id)->lockForUpdate()->firstOrFail();
+
+            $amount = (float) $transaction->amount;
+            $balance = (float) $wallet->current_balance;
+
+            if ($transaction->isInflow()) {
+                $balance = round($balance - $amount, 2);
+            } else {
+                $balance = round($balance + $amount, 2);
+            }
+
+            if ($balance < -0.009) {
+                throw ValidationException::withMessages([
+                    'transaction' => 'Removing this entry would leave the wallet with a negative balance.',
+                ]);
+            }
+
+            $before = $transaction->toArray();
+
+            $wallet->current_balance = $balance;
+            $wallet->save();
+
+            $transaction->delete();
+
+            $this->refreshLedgerRunningBalances($wallet->fresh());
+
+            AuditLogger::record(
+                'payment_wallet_transaction_deleted',
+                $transaction,
+                $before,
+                ['deleted_at' => now()->toIso8601String()],
+                (int) $user->business_id,
+                (int) $user->id
+            );
+        });
+    }
+
+    protected function refreshLedgerRunningBalances(PaymentWallet $wallet): void
+    {
+        $running = round((float) $wallet->opening_balance, 2);
+
+        PaymentWalletTransaction::query()
+            ->where('payment_wallet_id', $wallet->id)
+            ->orderBy('occurred_at')
+            ->orderBy('id')
+            ->each(function (PaymentWalletTransaction $entry) use (&$running) {
+                if ($entry->isInflow()) {
+                    $running = round($running + (float) $entry->amount, 2);
+                } else {
+                    $running = round($running - (float) $entry->amount, 2);
+                }
+
+                $stored = $entry->balance_after !== null ? round((float) $entry->balance_after, 2) : null;
+
+                if ($stored !== $running) {
+                    $entry->forceFill(['balance_after' => $running])->saveQuietly();
+                }
+            });
     }
 
     /**
