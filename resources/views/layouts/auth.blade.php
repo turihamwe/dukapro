@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" class="h-full scroll-smooth">
 <head>
+    @include('layouts.partials.theme-init')
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -21,9 +22,14 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    @include('layouts.partials.dark-mode-readable')
     @stack('styles')
 </head>
-<body class="min-h-[100dvh] bg-gray-50 text-gray-900 antialiased">
+<body class="min-h-[100dvh] bg-gray-50 text-gray-900 antialiased dark:bg-slate-950 dark:text-slate-100">
+
+    <div class="fixed right-4 top-[max(1rem,env(safe-area-inset-top))] z-50 sm:right-6">
+        @include('layouts.partials.theme-toggle')
+    </div>
 
     <main class="mx-auto flex w-full max-w-lg flex-col items-stretch px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] sm:px-6 sm:py-8 md:min-h-[100dvh] md:justify-center md:py-10">
         <div class="@yield('container_class', 'w-full')">
@@ -32,6 +38,7 @@
     </main>
 
     @include('layouts.partials.tawk-chat')
+    @include('layouts.partials.theme-toggle-script')
     @stack('scripts')
     @include('layouts.partials.form-validation')
     <script>

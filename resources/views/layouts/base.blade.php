@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" class="h-full theme-{{ user_ui_theme() }}">
 <head>
+    @include('layouts.partials.theme-init')
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -20,6 +21,7 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    @include('layouts.partials.dark-mode-readable')
     <style>
         body { font-family: Inter, system-ui, sans-serif; }
         [x-cloak] { display: none !important; }
@@ -196,7 +198,7 @@
     @include('layouts.partials.pwa-head')
     @stack('styles')
 </head>
-<body class="h-full bg-gray-50 text-gray-900 antialiased @stack('body-class')" x-data>
+<body class="h-full bg-gray-50 text-gray-900 antialiased dark:bg-slate-950 dark:text-slate-100 @stack('body-class')" x-data>
     @yield('body')
     <x-delete-confirm-modal />
     @stack('modals')
@@ -251,6 +253,7 @@
     @include('layouts.partials.pwa-install-alpine')
     @include('layouts.partials.delete-confirm-alpine')
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    @include('layouts.partials.theme-toggle-script')
     @stack('scripts')
     @include('layouts.partials.client-error-tracker')
     @include('layouts.partials.form-validation')

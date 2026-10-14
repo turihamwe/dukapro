@@ -1,10 +1,10 @@
 @extends('layouts.base')
 
 @section('body')
-<div class="flex min-h-full">
+<div class="flex min-h-full dark:bg-gray-900">
     {{-- Desktop sidebar --}}
-    <aside class="hidden w-64 shrink-0 border-r border-gray-200 bg-white lg:flex lg:sticky lg:top-0 lg:max-h-screen lg:flex-col">
-        <div class="flex h-16 shrink-0 items-center gap-3 border-b border-gray-200 px-6">
+    <aside class="hidden w-64 shrink-0 border-r border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 lg:sticky lg:top-0 lg:flex lg:max-h-screen lg:flex-col">
+        <div class="flex h-16 shrink-0 items-center gap-3 border-b border-gray-200 px-6 dark:border-gray-700">
             @include('layouts.partials.dukapro-sidebar-brand', [
                 'subtitle' => 'Platform',
             ])
@@ -12,9 +12,12 @@
         <nav class="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain p-4">
             @include('layouts.partials.superadmin-nav-links')
         </nav>
-        <div class="shrink-0 border-t border-gray-200 p-4">
-            <p class="truncate text-xs text-gray-500">{{ auth()->user()->email }}</p>
-            <a href="{{ route('logout.get') }}" class="mt-2 inline-block text-xs text-gray-500 hover:text-gray-700">Sign out</a>
+        <div class="shrink-0 border-t border-gray-200 p-4 dark:border-gray-700">
+            <p class="truncate text-xs text-gray-500 dark:text-gray-400">{{ auth()->user()->email }}</p>
+            <div class="mt-3 flex justify-center">
+                @include('layouts.partials.theme-toggle')
+            </div>
+            <a href="{{ route('logout.get') }}" class="mt-2 inline-block text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Sign out</a>
         </div>
     </aside>
 
@@ -40,17 +43,20 @@
     </aside>
 
     <div class="flex min-w-0 flex-1 flex-col">
-        <header class="sticky top-0 z-30 flex min-h-16 items-center justify-between border-b border-gray-200 bg-white px-4 lg:hidden">
+        <header class="sticky top-0 z-30 flex min-h-16 items-center justify-between border-b border-gray-200 bg-white px-4 dark:border-gray-700 dark:bg-gray-900 lg:hidden">
             <div class="flex min-w-0 items-center gap-3">
-                <button type="button" id="superadmin-nav-open" class="rounded-lg p-2 text-gray-600 hover:bg-gray-100" aria-label="Open menu">
+                <button type="button" id="superadmin-nav-open" class="rounded-lg p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800" aria-label="Open menu">
                     <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
                 </button>
                 <x-dukapro-logo size="header" />
             </div>
-            <a href="{{ route('logout.get') }}" class="text-sm text-gray-500">Sign out</a>
+            <div class="flex items-center gap-2">
+                @include('layouts.partials.theme-toggle')
+                <a href="{{ route('logout.get') }}" class="text-sm text-gray-500 dark:text-gray-400">Sign out</a>
+            </div>
         </header>
 
-        <main class="flex-1 overflow-auto p-4 sm:p-8">
+        <main class="flex-1 overflow-auto p-4 dark:bg-gray-900 sm:p-8">
             @include('layouts.partials.flash')
             @yield('content')
         </main>

@@ -3,10 +3,10 @@
     $navActive = 'bg-indigo-50 text-indigo-700';
     $navIdle = 'text-gray-700 hover:bg-gray-100';
 @endphp
-<div class="flex min-h-full theme-plain">
+<div class="flex min-h-full theme-plain dark:bg-slate-950">
     {{-- Desktop sidebar --}}
-    <aside class="theme-sidebar hidden w-64 shrink-0 border-r border-gray-200 bg-white lg:flex lg:flex-col">
-        <div class="flex h-16 items-center gap-3 border-b border-gray-200 px-6">
+    <aside class="theme-sidebar hidden w-64 shrink-0 border-r border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 lg:flex lg:flex-col">
+        <div class="flex h-16 items-center gap-3 border-b border-gray-200 px-6 dark:border-gray-700">
             @include('layouts.partials.dukapro-sidebar-brand', [
                 'subtitle' => (auth()->user()->business->name ?? 'Store') . ' · ' . ucfirst(auth()->user()->role ?? 'staff'),
             ])
@@ -14,8 +14,11 @@
         <nav class="flex-1 space-y-1 overflow-y-auto p-4">
             @include('layouts.partials.admin-nav-links', ['navLink' => $navLink, 'navActive' => $navActive, 'navIdle' => $navIdle])
         </nav>
-        <div class="mt-auto border-t border-gray-200 p-4">
-            <p class="truncate text-xs text-gray-500">{{ auth()->user()->email }}</p>
+        <div class="mt-auto border-t border-gray-200 p-4 dark:border-gray-700">
+            <p class="truncate text-xs text-gray-500 dark:text-gray-400">{{ auth()->user()->email }}</p>
+            <div class="mt-3 flex justify-center">
+                @include('layouts.partials.theme-toggle')
+            </div>
             @include('layouts.partials.pwa-install', [
                 'buttonClass' => 'mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 transition hover:bg-emerald-100',
             ])
@@ -27,7 +30,7 @@
 
     {{-- Mobile drawer --}}
     <div id="mobile-nav-backdrop" class="fixed inset-0 z-40 hidden bg-gray-900/50 lg:hidden" aria-hidden="true"></div>
-    <aside id="mobile-nav-drawer" class="fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] -translate-x-full transform border-r border-gray-200 bg-white transition-transform duration-200 ease-out lg:hidden">
+    <aside id="mobile-nav-drawer" class="fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] -translate-x-full transform border-r border-gray-200 bg-white transition-transform duration-200 ease-out dark:border-gray-700 dark:bg-gray-900 lg:hidden">
         <div class="flex h-14 items-center justify-between gap-3 border-b border-gray-200 px-4">
             <div class="min-w-0 flex-1">
                 <x-dukapro-logo size="header" />
@@ -54,7 +57,7 @@
         @include('layouts.partials.impersonation-banner')
         @include('layouts.partials.branch-impersonation-banner')
 
-        <header class="sticky top-0 z-30 border-b border-gray-200 bg-white">
+        <header class="sticky top-0 z-30 border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
             <div class="flex h-14 items-center justify-between gap-4 px-4 lg:px-8">
                 <div class="flex min-w-0 items-center gap-3">
                     <button type="button" id="mobile-nav-open" class="rounded-lg p-2 text-gray-600 hover:bg-gray-100 lg:hidden" aria-label="Open menu">
@@ -70,20 +73,21 @@
                     <span class="capitalize">{{ auth()->user()->role }}</span>
                 </div>
                 <div class="flex items-center gap-2">
+                    @include('layouts.partials.theme-toggle')
                     @include('layouts.partials.cashier-mode-switch', ['variant' => 'header'])
                     <a href="{{ route('logout.get') }}" class="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 lg:hidden">Logout</a>
                 </div>
             </div>
         </header>
 
-        <main class="theme-main relative flex-1 overflow-auto p-4 sm:p-8">
+        <main class="theme-main relative flex-1 overflow-auto p-4 dark:bg-slate-950 sm:p-8">
             @include('layouts.partials.flash')
             @yield('content')
             @include('layouts.partials.subscription-expired-overlay')
         </main>
 
-        <footer class="border-t border-gray-200 bg-white px-4 py-4 sm:px-8">
-            <p class="text-xs text-gray-500">{{ platform_footer_tagline() }}</p>
+        <footer class="border-t border-gray-200 bg-white px-4 py-4 dark:border-gray-700 dark:bg-gray-900 sm:px-8">
+            <p class="text-xs text-gray-500 dark:text-gray-400">{{ platform_footer_tagline() }}</p>
         </footer>
     </div>
 </div>

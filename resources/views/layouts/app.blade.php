@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" class="h-full">
 <head>
+    @include('layouts.partials.theme-init')
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -21,16 +22,17 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    @include('layouts.partials.dark-mode-readable')
     <style>
         [x-cloak] { display: none !important; }
     </style>
     @include('layouts.partials.pwa-head')
     @stack('styles')
 </head>
-<body class="h-full bg-gray-50 text-gray-900 antialiased">
+<body class="h-full bg-gray-50 text-gray-900 antialiased dark:bg-slate-950 dark:text-slate-100">
 
     @auth
-    <header class="sticky top-0 z-40 border-b border-gray-200/80 bg-white/80 backdrop-blur-lg">
+    <header class="sticky top-0 z-40 border-b border-gray-200/80 bg-white/80 backdrop-blur-lg dark:border-gray-700 dark:bg-gray-900/80">
         <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
             <div class="flex min-w-0 items-center gap-3">
                 <x-dukapro-logo size="header" />
@@ -41,12 +43,21 @@
                 </div>
                 @endauth
             </div>
-            <a href="{{ route('logout.get') }}" class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm transition hover:bg-gray-50">
-                Sign out
-            </a>
+            <div class="flex items-center gap-2">
+                @include('layouts.partials.theme-toggle')
+                <a href="{{ route('logout.get') }}" class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">
+                    Sign out
+                </a>
+            </div>
         </div>
     </header>
     @endauth
+
+    @guest
+    <div class="fixed right-4 top-4 z-50 sm:right-6">
+        @include('layouts.partials.theme-toggle')
+    </div>
+    @endguest
 
     <main class="@auth @unless(request()->routeIs('tenant.*')) pb-24 @endunless @endauth min-h-full">
         <div class="@yield('container_class', 'max-w-7xl') mx-auto px-4 py-8 sm:px-6 lg:px-8">
@@ -138,6 +149,7 @@
     @endif
     @endauth
 
+    @include('layouts.partials.theme-toggle-script')
     @stack('scripts')
     @include('layouts.partials.client-error-tracker')
     @include('layouts.partials.form-validation')

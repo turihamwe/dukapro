@@ -12,7 +12,7 @@
     $navIdle = 'text-slate-300 hover:bg-white/5 hover:text-white border-l-[3px] border-transparent';
 @endphp
 
-<div class="modern-app flex min-h-screen bg-[#F3F4F6]">
+<div class="modern-app flex min-h-screen bg-[#F3F4F6] dark:bg-slate-950">
     {{-- Desktop sidebar --}}
     <aside class="modern-sidebar hidden w-64 shrink-0 flex-col p-4 lg:flex">
         <div class="flex flex-1 flex-col rounded-2xl bg-[#0A192F] px-3 py-5 shadow-xl">
@@ -80,7 +80,7 @@
         @include('layouts.partials.branch-impersonation-banner')
 
         {{-- Top header --}}
-        <header class="sticky top-0 z-30 border-b border-gray-200/80 bg-white/95 px-4 py-3 backdrop-blur-sm sm:px-6 lg:px-8">
+        <header class="sticky top-0 z-30 border-b border-gray-200/80 bg-white/95 px-4 py-3 backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/95 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between gap-4">
                 <div class="flex items-center gap-3">
                     <button type="button" id="modern-nav-open" class="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 lg:hidden" aria-label="Open menu">
@@ -105,17 +105,19 @@
                         @include('layouts.partials.low-stock-notifications-dropdown')
                     @endcan
 
+                    @include('layouts.partials.theme-toggle')
+
                     <a href="{{ tenant_route('tenant.profile.edit') }}" class="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100" aria-label="Settings">
                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                     </a>
 
-                    <div class="flex items-center gap-2 border-l border-gray-200 pl-2 sm:pl-4">
+                    <div class="flex items-center gap-2 border-l border-gray-200 pl-2 dark:border-gray-700 sm:pl-4">
                         <div class="flex h-9 w-9 items-center justify-center rounded-full bg-[#0A192F] text-xs font-bold text-white">
                             {{ strtoupper(substr($user->name, 0, 1)) }}{{ strtoupper(substr(strstr($user->name, ' ') ?: '', 1, 1)) }}
                         </div>
                         <div class="hidden min-w-0 sm:block">
-                            <p class="truncate text-sm font-semibold text-gray-900">{{ $user->name }}</p>
-                            <p class="text-xs capitalize text-gray-500">{{ $user->role }}</p>
+                            <p class="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{{ $user->name }}</p>
+                            <p class="text-xs capitalize text-gray-500 dark:text-gray-400">{{ $user->role }}</p>
                         </div>
                     </div>
                 </div>
@@ -129,8 +131,8 @@
         </main>
 
         {{-- Footer --}}
-        <footer class="border-t border-gray-200 bg-white px-4 py-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col gap-2 text-xs text-gray-500 sm:flex-row sm:items-center sm:justify-between">
+        <footer class="border-t border-gray-200 bg-white px-4 py-4 dark:border-gray-700 dark:bg-gray-900 sm:px-6 lg:px-8">
+            <div class="flex flex-col gap-2 text-xs text-gray-500 dark:text-gray-400 sm:flex-row sm:items-center sm:justify-between">
                 <p>{{ platform_footer_tagline() }}</p>
                 <p>
                     For any inquiries, contact us on
