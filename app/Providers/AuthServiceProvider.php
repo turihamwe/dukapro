@@ -73,6 +73,22 @@ class AuthServiceProvider extends ServiceProvider
             return $user->isOwner();
         });
 
+        Gate::define('impersonate-branches', function (User $user) use ($permissions) {
+            if (! $user->business_id || ! \App\Support\BranchImpersonationCompliance::isActive($user->business)) {
+                return false;
+            }
+
+            if ($user->isOwner()) {
+                return true;
+            }
+
+            if ($user->isManager()) {
+                return $permissions->allows($user, 'impersonate-branches', false);
+            }
+
+            return false;
+        });
+
         Gate::define('manage-billing', function (User $user) {
             return $user->isOwner();
         });

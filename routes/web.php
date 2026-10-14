@@ -16,6 +16,7 @@ use App\Http\Controllers\Shareholder\DepositController as ShareholderDepositCont
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\BranchController;
+use App\Http\Controllers\BranchContextController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\BusinessEfrisController;
 use App\Http\Controllers\BusinessSettingsController;
@@ -38,6 +39,7 @@ use App\Http\Controllers\SuperAdmin\AffiliateActionController;
 use App\Http\Controllers\SuperAdmin\AffiliateFieldFeedbackController;
 use App\Http\Controllers\SuperAdmin\BusinessEfrisController as SuperAdminBusinessEfrisController;
 use App\Http\Controllers\SuperAdmin\BusinessWalletLedgerController as SuperAdminBusinessWalletLedgerController;
+use App\Http\Controllers\SuperAdmin\BusinessBranchImpersonationController as SuperAdminBusinessBranchImpersonationController;
 use App\Http\Controllers\SuperAdmin\BusinessOperatingModesController as SuperAdminBusinessOperatingModesController;
 use App\Http\Controllers\SuperAdmin\BusinessModuleController;
 use App\Http\Controllers\SuperAdmin\BusinessSubscriptionController;
@@ -181,10 +183,15 @@ Route::middleware(['maintenance'])->group(function () {
         });
 
     Route::prefix('app/{business}')
-        ->middleware(['auth', 'tenant.access', 'cashier.isolation'])
+        ->middleware(['auth', 'tenant.access', 'branch.context', 'cashier.isolation'])
         ->name('tenant.')
         ->group(function () {
             Route::get('/manifest.webmanifest', [PwaManifestController::class, 'show'])->name('pwa.manifest');
+
+            Route::middleware(['can:impersonate-branches'])->group(function () {
+                Route::post('/branch-context/switch', [BranchContextController::class, 'switch'])->name('branch-context.switch');
+                Route::post('/branch-context/clear', [BranchContextController::class, 'clear'])->name('branch-context.clear');
+            });
 
             Route::middleware(['subscription.active'])->group(function () {
                     Route::middleware(['can:view-dashboard', 'management.access'])->group(function () {
@@ -572,6 +579,7 @@ Route::prefix('superadmin')
             Route::post('/businesses/{businessId}/modules', [BusinessModuleController::class, 'update'])->whereNumber('businessId')->name('businesses.modules.update');
             Route::post('/businesses/{businessId}/efris/unlock', [SuperAdminBusinessEfrisController::class, 'updateUnlock'])->whereNumber('businessId')->name('businesses.efris.unlock');
             Route::post('/businesses/{businessId}/wallet-ledger/unlock', [SuperAdminBusinessWalletLedgerController::class, 'updateUnlock'])->whereNumber('businessId')->name('businesses.wallet-ledger.unlock');
+            Route::post('/businesses/{businessId}/branch-impersonation/unlock', [SuperAdminBusinessBranchImpersonationController::class, 'updateUnlock'])->whereNumber('businessId')->name('businesses.branch-impersonation.unlock');
             Route::post('/businesses/{businessId}/modes/unlock', [SuperAdminBusinessOperatingModesController::class, 'updateUnlocks'])->whereNumber('businessId')->name('businesses.modes.unlock');
             Route::post('/businesses/{businessId}/variable-pricing', [BusinessVariablePricingController::class, 'update'])->whereNumber('businessId')->name('businesses.variable-pricing.update');
             Route::post('/businesses/{businessId}/divisible-products', [BusinessDivisibleProductsController::class, 'update'])->whereNumber('businessId')->name('businesses.divisible-products.update');

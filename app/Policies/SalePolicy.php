@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\Sale;
 use App\Models\User;
+use App\Support\BranchContext;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class SalePolicy
@@ -35,8 +36,10 @@ class SalePolicy
             return false;
         }
 
-        if ($user->isBranchScoped() && $user->branch_id) {
-            return (int) $sale->branch_id === (int) $user->branch_id;
+        $branchId = BranchContext::id() ?? ($user->branch_id ? (int) $user->branch_id : null);
+
+        if ($branchId) {
+            return (int) $sale->branch_id === $branchId;
         }
 
         return true;

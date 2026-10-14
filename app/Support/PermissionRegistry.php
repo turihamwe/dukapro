@@ -66,6 +66,11 @@ class PermissionRegistry
                 'description' => 'Correct or remove lines in wallet transaction history',
                 'roles' => [UserRole::MANAGER],
             ],
+            'impersonate-branches' => [
+                'label' => 'Switch branch context',
+                'description' => 'View and operate as a specific branch from the top bar',
+                'roles' => [UserRole::MANAGER],
+            ],
         ];
     }
 
@@ -73,6 +78,10 @@ class PermissionRegistry
     {
         if ($permission === 'adjust-wallet-transactions') {
             return WalletLedgerAdjustmentCompliance::isAdminUnlocked($business);
+        }
+
+        if ($permission === 'impersonate-branches') {
+            return BranchImpersonationCompliance::isAdminUnlocked($business);
         }
 
         return true;
@@ -135,6 +144,9 @@ class PermissionRegistry
                 return in_array($user->role, [UserRole::MANAGER, UserRole::SUPERVISOR], true);
 
             case 'adjust-wallet-transactions':
+                return false;
+
+            case 'impersonate-branches':
                 return false;
 
             default:

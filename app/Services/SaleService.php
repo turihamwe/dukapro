@@ -457,8 +457,10 @@ class SaleService
 
     protected function resolveSaleBranchId(User $user, Collection $products): int
     {
-        if ($user->branch_id) {
-            return (int) $user->branch_id;
+        $contextBranch = $this->branchResolver->forUser($user);
+
+        if ($contextBranch) {
+            return $contextBranch;
         }
 
         $branchIds = $products->pluck('branch_id')

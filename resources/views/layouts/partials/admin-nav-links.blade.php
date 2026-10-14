@@ -71,6 +71,11 @@
        class="{{ $navLink }} {{ request()->routeIs('tenant.branches.*') ? $navActive : $navIdle }}">
         <span>🏪</span> Branches
     </a>
+@elsecan('impersonate-branches')
+    <a href="{{ tenant_route('tenant.branches.index') }}"
+       class="{{ $navLink }} {{ request()->routeIs('tenant.branches.*') ? $navActive : $navIdle }}">
+        <span>🏪</span> Branch context
+    </a>
 @endcan
 @can('access-supplier-credit')
     @include('layouts.partials.purchases-nav-dropdown', ['theme' => 'plain', 'navLink' => $navLink, 'navActive' => $navActive, 'navIdle' => $navIdle])

@@ -16,6 +16,7 @@ use App\Models\SoldByUnit;
 use App\Support\BatchMode;
 use App\Support\InventoryVariantSubmission;
 use App\Scopes\BranchScope;
+use App\Support\BranchContext;
 use App\Services\BranchResolver;
 use App\Services\BranchStockTransferService;
 use App\Services\CatalogDiscoveryService;
@@ -68,7 +69,13 @@ class InventoryController extends Controller
             ->withCount(['variants', 'activeBatches as active_batches_count'])
             ->orderBy('name');
 
-        if ($request->user()->isOwner()) {
+        $contextBranchId = BranchContext::id();
+
+        if ($contextBranchId) {
+            $branchId = $contextBranchId;
+            $query->withoutGlobalScope(BranchScope::class)
+                ->where('products.branch_id', $branchId);
+        } elseif ($request->user()->isOwner()) {
             $branches = Branch::query()
                 ->where('business_id', $business->id)
                 ->where('is_active', true)
@@ -861,6 +868,12 @@ class InventoryController extends Controller
 
     protected function resolveBranchIdForOwner(Request $request, Business $business): ?int
     {
+        $contextBranch = BranchContext::id();
+
+        if ($contextBranch) {
+            return $contextBranch;
+        }
+
         if (! $request->user()->isOwner()) {
             $resolver = app(BranchResolver::class);
             $staffBranchId = $resolver->forUser($request->user());

@@ -235,16 +235,19 @@ class SalesReportController extends Controller
         $branches = $this->activeBranches($business->id);
         $activeBranchIds = $branches->pluck('id')->map(fn ($id) => (int) $id)->all();
 
-        if ($user->branch_id) {
-            $branch = $branches->firstWhere('id', (int) $user->branch_id)
-                ?? Branch::query()->find($user->branch_id);
+        $lockedBranchId = \App\Support\BranchContext::id()
+            ?? ($user->branch_id ? (int) $user->branch_id : null);
+
+        if ($lockedBranchId) {
+            $branch = $branches->firstWhere('id', $lockedBranchId)
+                ?? Branch::query()->find($lockedBranchId);
 
             return [
-                'branchId' => (int) $user->branch_id,
+                'branchId' => $lockedBranchId,
                 'branchName' => $branch ? $branch->name : null,
                 'branches' => collect(),
                 'showBranchPicker' => false,
-                'branchQuery' => ['branch_id' => (int) $user->branch_id],
+                'branchQuery' => ['branch_id' => $lockedBranchId],
                 'reportAllBranches' => false,
                 'activeBranchIds' => null,
             ];

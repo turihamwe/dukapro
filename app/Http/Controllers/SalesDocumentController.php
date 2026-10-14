@@ -30,7 +30,11 @@ class SalesDocumentController extends Controller
             ->with(['customer', 'user'])
             ->orderByDesc('completed_at');
 
-        if ($request->user()->isBranchScoped() && $request->user()->branch_id) {
+        $branchId = \App\Support\BranchContext::id();
+
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        } elseif ($request->user()->isBranchScoped() && $request->user()->branch_id) {
             $query->where('branch_id', $request->user()->branch_id);
         }
 

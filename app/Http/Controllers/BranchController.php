@@ -16,7 +16,16 @@ class BranchController extends Controller
     public function __construct(BranchService $branchService)
     {
         $this->branchService = $branchService;
-        $this->middleware('can:manage-branches');
+        $this->middleware('can:manage-branches')->except('index');
+        $this->middleware(function ($request, $next) {
+            $user = $request->user();
+
+            if ($user && ($user->can('manage-branches') || $user->can('impersonate-branches'))) {
+                return $next($request);
+            }
+
+            abort(403);
+        })->only('index');
     }
 
     public function index(Request $request)
@@ -28,7 +37,18 @@ class BranchController extends Controller
             ->withCount('users')
             ->get();
 
-        return view('branches.index', compact('branches'));
+        $canManageBranches = $request->user()->can('manage-branches');
+        $canImpersonateBranches = $request->user()->can('impersonate-branches');
+        $activeBranchId = \App\Support\BranchImpersonation::branchId();
+        $activeBranch = \App\Support\BranchImpersonation::branch($request->user());
+
+        return view('branches.index', compact(
+            'branches',
+            'canManageBranches',
+            'canImpersonateBranches',
+            'activeBranchId',
+            'activeBranch'
+        ));
     }
 
     public function create()

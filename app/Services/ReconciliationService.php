@@ -11,6 +11,7 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\ShiftWaiterBalance;
 use App\Models\User;
+use App\Support\BranchContext;
 use App\Support\ReconciliationVariance;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -169,6 +170,7 @@ class ReconciliationService
                 'net_income' => $dailySummary['net_income'],
                 'notes' => $data['notes'] ?? null,
                 'executive_summary' => $data['executive_summary'] ?? null,
+                'branch_id' => BranchContext::id(),
                 'status' => 'submitted',
             ]
         );

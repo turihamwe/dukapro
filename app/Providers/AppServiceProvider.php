@@ -67,5 +67,9 @@ class AppServiceProvider extends ServiceProvider
         Blade::if('walletLedgerAdjustmentsPlatform', function () {
             return \App\Support\WalletLedgerAdjustmentCompliance::globallyEnabled();
         });
+
+        Blade::if('branchImpersonationPlatform', function () {
+            return \App\Support\BranchImpersonationCompliance::globallyEnabled();
+        });
     }
 }

@@ -6,6 +6,7 @@ use App\Models\Business;
 use App\Models\Product;
 use App\Models\User;
 use App\Support\AnalyticsDateRange;
+use App\Support\BranchContext;
 use App\Support\LowStockAlertMode;
 use Illuminate\Support\Collection;
 
@@ -144,12 +145,20 @@ class LowStockAlertService
 
     protected function catalogProductsQuery(Business $business)
     {
-        return Product::query()
+        $query = Product::query()
             ->catalog()
             ->where('business_id', $business->id)
             ->where('is_active', true)
             ->with(['variants', 'branch:id,name'])
             ->orderBy('name');
+
+        $branchId = BranchContext::id();
+
+        if ($branchId !== null) {
+            $query->where('branch_id', $branchId);
+        }
+
+        return $query;
     }
 
     /**

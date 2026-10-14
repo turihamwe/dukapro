@@ -300,6 +300,7 @@
         $useHospitalityMode = old('use_hospitality_mode', $settings['use_hospitality_mode'] ?? '0') === '1';
         $useEfris = old('use_efris', $settings['use_efris'] ?? '0') === '1';
         $useWalletLedgerAdjustments = old('use_wallet_ledger_adjustments', $settings['use_wallet_ledger_adjustments'] ?? '0') === '1';
+        $useBranchImpersonation = old('use_branch_impersonation', $settings['use_branch_impersonation'] ?? '0') === '1';
     @endphp
 
     <div class="rounded-xl border border-violet-200 bg-violet-50/50 p-6 space-y-5">
@@ -405,6 +406,23 @@
             <span>
                 <span class="font-semibold text-gray-900">Allow wallet ledger corrections</span>
                 <span class="block text-xs text-gray-500">Platform-only. Tenants never see this switch — only superadmin per-business unlock controls visibility.</span>
+            </span>
+        </label>
+    </div>
+
+    <div class="rounded-xl border border-violet-200 bg-violet-50/50 p-6 space-y-5">
+        <div>
+            <h2 class="text-sm font-semibold text-gray-900">Branch context switching</h2>
+            <p class="mt-1 text-xs text-gray-600">Master control (level 1). When off, “operate as branch” is hidden for every tenant. Unlock individual businesses on their superadmin detail page.</p>
+        </div>
+
+        <label class="flex items-start gap-3 rounded-lg border border-violet-300 bg-white p-4 text-sm">
+            <input type="hidden" name="use_branch_impersonation" value="0">
+            <input type="checkbox" name="use_branch_impersonation" id="use_branch_impersonation" value="1" class="mt-0.5 rounded border-gray-300 text-violet-600"
+                   {{ $useBranchImpersonation ? 'checked' : '' }}>
+            <span>
+                <span class="font-semibold text-gray-900">Allow branch context switching</span>
+                <span class="block text-xs text-gray-500">Platform-only. Tenants never see this — per-business unlock on the business detail page.</span>
             </span>
         </label>
     </div>

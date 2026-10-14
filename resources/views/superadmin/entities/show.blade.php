@@ -116,6 +116,9 @@
         @walletLedgerAdjustmentsPlatform
             @include('superadmin.businesses._wallet-ledger-adjustments-panel', ['business' => $item])
         @endwalletLedgerAdjustmentsPlatform
+        @branchImpersonationPlatform
+            @include('superadmin.businesses._branch-impersonation-panel', ['business' => $item])
+        @endbranchImpersonationPlatform
     @endif
 
     @if($entity === 'affiliates')

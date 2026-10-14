@@ -3,11 +3,38 @@
 @section('title', 'Branches')
 
 @section('content')
-<x-page-header title="Branches" subtitle="{{ $branches->count() }} locations">
+@php
+    $pageTitle = $canManageBranches ? 'Branches' : 'Branch context';
+    $pageSubtitle = $canManageBranches
+        ? $branches->count() . ' locations'
+        : 'Choose which branch to operate as';
+@endphp
+
+<x-page-header :title="$pageTitle" :subtitle="$pageSubtitle">
     <x-slot name="actions">
-        <x-button variant="primary" size="sm" href="{{ tenant_route('tenant.branches.create') }}">+ Add Branch</x-button>
+        @if($canManageBranches)
+            <x-button variant="primary" size="sm" href="{{ tenant_route('tenant.branches.create') }}">+ Add Branch</x-button>
+        @endif
     </x-slot>
 </x-page-header>
+
+@if($canImpersonateBranches)
+    <x-card class="mb-6 border-indigo-200 bg-indigo-50/80">
+        @if($activeBranch)
+            <p class="text-sm text-indigo-950">
+                You are operating as <strong>{{ $activeBranch->name }}</strong>. POS, inventory, expenses, and reports are scoped to this branch.
+            </p>
+            <form method="POST" action="{{ tenant_route('tenant.branch-context.clear') }}" class="mt-3">
+                @csrf
+                <x-button variant="secondary" size="sm" type="submit">Exit branch view (all branches)</x-button>
+            </form>
+        @else
+            <p class="text-sm text-indigo-950">
+                You are in the <strong>all-branch</strong> overview. Pick a branch below when you need to work as that location — there is no separate “main branch” mode unless you select your default branch explicitly.
+            </p>
+        @endif
+    </x-card>
+@endif
 
 <x-card :padding="false" class="overflow-hidden">
     <x-sortable-table class="overflow-x-auto">
@@ -18,7 +45,7 @@
                     <x-sortable-th column="contact" class="px-6 py-3">Contact</x-sortable-th>
                     <x-sortable-th column="staff" class="px-6 py-3">Staff</x-sortable-th>
                     <x-sortable-th column="status" class="px-6 py-3">Status</x-sortable-th>
-                    <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500"></th>
+                    <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
                 </tr>
             </thead>
             <tbody x-ref="tbody" class="divide-y divide-gray-100 bg-white">
@@ -33,6 +60,9 @@
                             @if($branch->is_default)
                                 <p class="text-xs text-indigo-600">Default branch</p>
                             @endif
+                            @if($activeBranchId && (int) $activeBranchId === (int) $branch->id)
+                                <p class="text-xs font-medium text-indigo-700">Current operating context</p>
+                            @endif
                             @if($branch->address)
                                 <p class="text-xs text-gray-500">{{ $branch->address }}</p>
                             @endif
@@ -45,15 +75,28 @@
                             </span>
                         </td>
                         <td class="px-6 py-4 text-right text-sm">
-                            <a href="{{ tenant_route('tenant.branches.edit', ['branch' => $branch]) }}" class="font-medium text-indigo-600 hover:text-indigo-700">Edit</a>
-                            @if(! $branch->is_default && $branch->users_count === 0)
-                                <x-delete-confirm-button
-                                    :action="tenant_route('tenant.branches.destroy', ['branch' => $branch])"
-                                    message="Are you sure you want to delete this item?"
-                                    detail="Remove this branch?"
-                                    label="Remove"
-                                    class="ml-3"
-                                />
+                            @if($canImpersonateBranches && $branch->is_active)
+                                @if((int) $activeBranchId === (int) $branch->id)
+                                    <span class="text-xs font-medium text-indigo-700">Operating here</span>
+                                @else
+                                    <form method="POST" action="{{ tenant_route('tenant.branch-context.switch') }}" class="inline">
+                                        @csrf
+                                        <input type="hidden" name="branch_id" value="{{ $branch->id }}">
+                                        <button type="submit" class="font-medium text-indigo-600 hover:text-indigo-800">Operate as this branch</button>
+                                    </form>
+                                @endif
+                            @endif
+                            @if($canManageBranches)
+                                <a href="{{ tenant_route('tenant.branches.edit', ['branch' => $branch]) }}" class="ml-3 font-medium text-indigo-600 hover:text-indigo-700">Edit</a>
+                                @if(! $branch->is_default && $branch->users_count === 0)
+                                    <x-delete-confirm-button
+                                        :action="tenant_route('tenant.branches.destroy', ['branch' => $branch])"
+                                        message="Are you sure you want to delete this item?"
+                                        detail="Remove this branch?"
+                                        label="Remove"
+                                        class="ml-3"
+                                    />
+                                @endif
                             @endif
                         </td>
                     </tr>

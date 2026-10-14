@@ -79,5 +79,6 @@ class Kernel extends HttpKernel
         'supplier.credit' => \App\Http\Middleware\EnsureSupplierCreditModeActive::class,
         'customer.credit' => \App\Http\Middleware\EnsureCustomerCreditModeActive::class,
         'payment.wallets' => \App\Http\Middleware\EnsurePaymentWalletModeActive::class,
+        'branch.context' => \App\Http\Middleware\ApplyBranchContext::class,
     ];
 }

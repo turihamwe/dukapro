@@ -4,12 +4,19 @@ namespace App\Services;
 
 use App\Models\Branch;
 use App\Models\User;
+use App\Support\BranchContext;
 use Illuminate\Validation\ValidationException;
 
 class BranchResolver
 {
     public function forUser(User $user): ?int
     {
+        $contextBranch = BranchContext::id();
+
+        if ($contextBranch !== null) {
+            return $contextBranch;
+        }
+
         if ($user->branch_id) {
             return (int) $user->branch_id;
         }
@@ -19,6 +26,12 @@ class BranchResolver
 
     public function requiredForUser(User $user): int
     {
+        $contextBranch = BranchContext::id();
+
+        if ($contextBranch !== null) {
+            return $contextBranch;
+        }
+
         if ($user->branch_id) {
             return (int) $user->branch_id;
         }
