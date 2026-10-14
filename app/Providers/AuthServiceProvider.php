@@ -153,6 +153,18 @@ class AuthServiceProvider extends ServiceProvider
             return $user->isOwner() || $user->isManager();
         });
 
+        Gate::define('delete-payment-wallets', function (User $user) {
+            if (! $user->business || ! \App\Support\PaymentWalletMode::active($user->business)) {
+                return false;
+            }
+
+            if (! ($user->isOwner() || $user->isManager())) {
+                return false;
+            }
+
+            return $user->can('adjust-wallet-transactions');
+        });
+
         Gate::define('adjust-wallet-transactions', function (User $user) use ($permissions) {
             if (! $user->business || ! \App\Support\WalletLedgerAdjustmentCompliance::isActive($user->business)) {
                 return false;

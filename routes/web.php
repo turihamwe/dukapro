@@ -481,6 +481,9 @@ Route::middleware(['maintenance'])->group(function () {
                     Route::put('/{wallet}/transactions/{transaction}', [PaymentWalletController::class, 'updateTransaction'])->name('transactions.update');
                     Route::delete('/{wallet}/transactions/{transaction}', [PaymentWalletController::class, 'destroyTransaction'])->name('transactions.destroy');
                     Route::put('/{wallet}', [PaymentWalletController::class, 'update'])->name('update');
+                    Route::delete('/{wallet}', [PaymentWalletController::class, 'destroy'])
+                        ->middleware('can:delete-payment-wallets')
+                        ->name('destroy');
                 });
 
                 Route::get('/downloads', [DownloadsController::class, 'index'])->name('downloads.index');

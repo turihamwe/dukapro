@@ -19,6 +19,10 @@
     </x-slot>
 </x-page-header>
 
+@if($errors->has('wallet'))
+    <x-alert type="error" class="mb-4">{{ $errors->first('wallet') }}</x-alert>
+@endif
+
 @if(session('import_errors') && count(session('import_errors')))
     <x-alert type="warning" class="mb-4">
         <p class="font-medium">Import notes:</p>
@@ -84,8 +88,17 @@
                         </p>
                     </div>
                 </div>
-                <div class="mt-3 flex justify-end border-t border-gray-100 pt-3">
+                <div class="mt-3 flex flex-wrap justify-end gap-2 border-t border-gray-100 pt-3">
                     <x-button variant="secondary" size="sm" type="button" onclick="openWalletHistoryModal({{ (int) $wallet->id }})">View log</x-button>
+                    @can('delete-payment-wallets')
+                        <x-delete-confirm-button
+                            :action="tenant_route('tenant.wallets.destroy', ['wallet' => $wallet])"
+                            label="Archive"
+                            message="Archive this wallet?"
+                            detail="This hides the wallet from dropdowns and balance sheet totals. Transaction history is kept for audit. Requires Wallet ledger corrections to be enabled. Balance must be exactly zero."
+                            button-class="text-sm font-medium text-rose-600 hover:text-rose-800"
+                        />
+                    @endcan
                 </div>
             </x-card>
         @endforeach

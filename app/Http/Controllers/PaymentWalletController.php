@@ -19,6 +19,7 @@ class PaymentWalletController extends Controller
     public function __construct()
     {
         $this->middleware('can:manage-wallets');
+        $this->middleware('can:delete-payment-wallets')->only('destroy');
         $this->middleware('payment.wallets');
         $this->middleware('management.access');
     }
@@ -241,6 +242,25 @@ class PaymentWalletController extends Controller
         return redirect()
             ->to(tenant_route('tenant.wallets.index'))
             ->with('success', 'Wallet added.');
+    }
+
+    public function destroy(Request $request, Business $business, PaymentWallet $wallet, PaymentWalletService $walletService)
+    {
+        if ((int) $wallet->business_id !== (int) $business->id) {
+            abort(404);
+        }
+
+        try {
+            $walletService->archive($request->user(), $wallet);
+        } catch (\Illuminate\Validation\ValidationException $exception) {
+            return redirect()
+                ->to(tenant_route('tenant.wallets.index'))
+                ->withErrors($exception->errors());
+        }
+
+        return redirect()
+            ->to(tenant_route('tenant.wallets.index'))
+            ->with('success', 'Wallet archived. Past transactions remain in your audit history.');
     }
 
     public function update(Request $request, Business $business, PaymentWallet $wallet)

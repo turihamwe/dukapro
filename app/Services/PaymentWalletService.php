@@ -295,6 +295,37 @@ class PaymentWalletService
         return $wallet;
     }
 
+    public function archive(User $user, PaymentWallet $wallet): void
+    {
+        Gate::authorize('delete-payment-wallets');
+
+        if ((int) $wallet->business_id !== (int) $user->business_id) {
+            abort(404);
+        }
+
+        $balance = round((float) $wallet->current_balance, 2);
+
+        if ($balance > 0 || $balance < 0) {
+            throw ValidationException::withMessages([
+                'wallet' => 'Cannot delete a wallet with an active balance. Please clear or transfer the remaining funds first.',
+            ]);
+        }
+
+        $old = $wallet->toArray();
+
+        $wallet->forceFill(['is_active' => false])->save();
+        $wallet->delete();
+
+        AuditLogger::record(
+            'payment_wallet_archived',
+            $wallet,
+            $old,
+            array_merge($old, ['deleted_at' => $wallet->deleted_at]),
+            (int) $user->business_id,
+            (int) $user->id
+        );
+    }
+
     /**
      * @return list<array<string, mixed>>
      */
