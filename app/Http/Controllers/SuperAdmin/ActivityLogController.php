@@ -22,11 +22,11 @@ class ActivityLogController extends Controller
         }
 
         if ($request->filled('q')) {
-            $q = $request->q;
-            $query->where(function ($builder) use ($q) {
-                $builder->where('summary', 'like', "%{$q}%")
-                    ->orWhere('action', 'like', "%{$q}%");
-            });
+            \App\Support\SearchQuery::applyTokenizedSearch(
+                $query,
+                ['summary', 'action'],
+                (string) $request->input('q')
+            );
         }
 
         $logs = $query->paginate(AdminListPagination::PER_PAGE)->withQueryString();

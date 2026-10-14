@@ -34,6 +34,9 @@ class EntityRegistry
                 'label' => 'Branches',
                 'model' => Branch::class,
                 'search' => ['name', 'slug', 'address', 'phone'],
+                'search_relations' => [
+                    'business' => ['name', 'slug', 'email'],
+                ],
                 'list' => ['name', 'slug', 'business_id', 'is_active', 'is_default'],
                 'creatable' => true,
                 'deletable' => true,
@@ -42,6 +45,9 @@ class EntityRegistry
                 'label' => 'Brands',
                 'model' => Brand::class,
                 'search' => ['name', 'slug', 'description'],
+                'search_relations' => [
+                    'business' => ['name', 'slug'],
+                ],
                 'list' => ['name', 'slug', 'business_id', 'is_active'],
                 'creatable' => true,
                 'deletable' => true,
@@ -49,7 +55,10 @@ class EntityRegistry
             'users' => [
                 'label' => 'Users',
                 'model' => User::class,
-                'search' => ['name', 'email', 'username', 'role'],
+                'search' => ['name', 'email', 'username', 'phone', 'role'],
+                'search_relations' => [
+                    'business' => ['name', 'slug', 'email'],
+                ],
                 'list' => ['name', 'username', 'email', 'role', 'business_id', 'is_super_admin', 'is_sub_admin'],
                 'creatable' => false,
                 'deletable' => true,
@@ -63,7 +72,10 @@ class EntityRegistry
                         ->where('is_sub_admin', false)
                         ->whereIn('role', UserRole::staffRoles());
                 },
-                'search' => ['name', 'email', 'username', 'role'],
+                'search' => ['name', 'email', 'username', 'phone', 'role'],
+                'search_relations' => [
+                    'business' => ['name', 'slug', 'email'],
+                ],
                 'list' => ['name', 'username', 'email', 'role', 'business_id', 'branch_id'],
                 'creatable' => true,
                 'deletable' => true,
@@ -71,7 +83,10 @@ class EntityRegistry
             'products' => [
                 'label' => 'Products',
                 'model' => Product::class,
-                'search' => ['name', 'sku', 'measurement_unit'],
+                'search' => ['name', 'sku', 'measurement_unit', 'description'],
+                'search_relations' => [
+                    'business' => ['name', 'slug'],
+                ],
                 'list' => ['name', 'sku', 'price', 'stock_quantity', 'business_id'],
                 'creatable' => true,
                 'deletable' => true,
@@ -79,7 +94,10 @@ class EntityRegistry
             'customers' => [
                 'label' => 'Customers',
                 'model' => Customer::class,
-                'search' => ['name', 'phone', 'email', 'company_name'],
+                'search' => ['name', 'phone', 'email', 'company_name', 'address', 'notes'],
+                'search_relations' => [
+                    'business' => ['name', 'slug'],
+                ],
                 'list' => ['name', 'phone', 'email', 'business_id'],
                 'creatable' => true,
                 'deletable' => true,
@@ -87,7 +105,11 @@ class EntityRegistry
             'sales' => [
                 'label' => 'Sales',
                 'model' => Sale::class,
-                'search' => ['sale_number', 'payment_method', 'status'],
+                'search' => ['sale_number', 'payment_method', 'status', 'notes'],
+                'search_relations' => [
+                    'business' => ['name', 'slug'],
+                    'customer' => ['name', 'phone', 'email', 'company_name'],
+                ],
                 'list' => ['sale_number', 'total', 'payment_method', 'status', 'business_id', 'completed_at'],
                 'creatable' => false,
                 'deletable' => true,
@@ -95,7 +117,10 @@ class EntityRegistry
             'expenses' => [
                 'label' => 'Expenses',
                 'model' => Expense::class,
-                'search' => ['title', 'category', 'description'],
+                'search' => ['title', 'category', 'description', 'receipt_reference'],
+                'search_relations' => [
+                    'business' => ['name', 'slug'],
+                ],
                 'list' => ['title', 'category', 'amount', 'expense_date', 'business_id'],
                 'creatable' => true,
                 'deletable' => true,

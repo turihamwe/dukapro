@@ -87,13 +87,13 @@ class EntityController extends Controller
         }
 
         if ($request->filled('q')) {
-            $term = $request->input('q');
-            $query->where(function ($q) use ($config, $term) {
-                foreach ($config['search'] as $index => $column) {
-                    $method = $index === 0 ? 'where' : 'orWhere';
-                    $q->{$method}($column, 'like', '%' . $term . '%');
-                }
-            });
+            $term = (string) $request->input('q');
+            \App\Support\SearchQuery::applyTokenizedSearch(
+                $query,
+                $config['search'],
+                $term,
+                $config['search_relations'] ?? []
+            );
         }
 
         $affiliateStatusFilter = 'all';

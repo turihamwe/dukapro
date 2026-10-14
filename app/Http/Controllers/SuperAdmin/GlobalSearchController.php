@@ -8,10 +8,9 @@ use App\Models\Customer;
 use App\Models\Expense;
 use App\Models\Product;
 use App\Models\Sale;
-use App\Models\SystemAuditLog;
 use App\Models\User;
+use App\Support\SearchQuery;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 
 class GlobalSearchController extends Controller
 {
@@ -22,12 +21,9 @@ class GlobalSearchController extends Controller
 
         if ($query !== '') {
             $results['businesses'] = Business::query()
-                ->where(function ($q) use ($query) {
-                    $q->where('name', 'like', '%' . $query . '%')
-                        ->orWhere('email', 'like', '%' . $query . '%')
-                        ->orWhere('slug', 'like', '%' . $query . '%')
-                        ->orWhere('portal_slug', 'like', '%' . $query . '%');
-                })
+                ->tap(fn ($q) => SearchQuery::applyTokenizedSearch($q, [
+                    'name', 'email', 'slug', 'portal_slug', 'phone', 'business_type',
+                ], $query))
                 ->limit(8)
                 ->get();
 
@@ -36,44 +32,48 @@ class GlobalSearchController extends Controller
                 ->whereNotNull('business_id')
                 ->where('is_super_admin', false)
                 ->where('is_sub_admin', false)
-                ->where(function ($q) use ($query) {
-                    $q->where('name', 'like', '%' . $query . '%')
-                        ->orWhere('email', 'like', '%' . $query . '%')
-                        ->orWhere('username', 'like', '%' . $query . '%');
-                })
+                ->tap(fn ($q) => SearchQuery::applyTokenizedSearch($q, [
+                    'name', 'email', 'username', 'phone', 'role',
+                ], $query, [
+                    'business' => ['name', 'slug', 'email'],
+                ]))
                 ->limit(8)
                 ->get();
 
             $results['products'] = Product::with('business')
-                ->where(function ($q) use ($query) {
-                    $q->where('name', 'like', '%' . $query . '%')
-                        ->orWhere('sku', 'like', '%' . $query . '%');
-                })
+                ->tap(fn ($q) => SearchQuery::applyTokenizedSearch($q, [
+                    'name', 'sku', 'description', 'measurement_unit',
+                ], $query, [
+                    'business' => ['name', 'slug'],
+                ]))
                 ->limit(8)
                 ->get();
 
             $results['customers'] = Customer::with('business')
-                ->where(function ($q) use ($query) {
-                    $q->where('name', 'like', '%' . $query . '%')
-                        ->orWhere('phone', 'like', '%' . $query . '%')
-                        ->orWhere('email', 'like', '%' . $query . '%');
-                })
+                ->tap(fn ($q) => SearchQuery::applyTokenizedSearch($q, [
+                    'name', 'phone', 'email', 'company_name', 'address', 'notes',
+                ], $query, [
+                    'business' => ['name', 'slug'],
+                ]))
                 ->limit(8)
                 ->get();
 
-            $results['sales'] = Sale::with('business')
-                ->where(function ($q) use ($query) {
-                    $q->where('sale_number', 'like', '%' . $query . '%')
-                        ->orWhere('payment_method', 'like', '%' . $query . '%');
-                })
+            $results['sales'] = Sale::with(['business', 'customer'])
+                ->tap(fn ($q) => SearchQuery::applyTokenizedSearch($q, [
+                    'sale_number', 'payment_method', 'status', 'notes',
+                ], $query, [
+                    'business' => ['name', 'slug'],
+                    'customer' => ['name', 'phone', 'email', 'company_name'],
+                ]))
                 ->limit(8)
                 ->get();
 
             $results['expenses'] = Expense::with('business')
-                ->where(function ($q) use ($query) {
-                    $q->where('title', 'like', '%' . $query . '%')
-                        ->orWhere('category', 'like', '%' . $query . '%');
-                })
+                ->tap(fn ($q) => SearchQuery::applyTokenizedSearch($q, [
+                    'title', 'category', 'description', 'receipt_reference',
+                ], $query, [
+                    'business' => ['name', 'slug'],
+                ]))
                 ->limit(8)
                 ->get();
         }

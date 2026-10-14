@@ -53,13 +53,9 @@ class SalesDocumentController extends Controller
         }
 
         if ($search !== '') {
-            $query->where(function ($q) use ($search) {
-                $q->where('sale_number', 'like', '%' . $search . '%')
-                    ->orWhereHas('customer', function ($customerQuery) use ($search) {
-                        $customerQuery->where('name', 'like', '%' . $search . '%')
-                            ->orWhere('phone', 'like', '%' . $search . '%');
-                    });
-            });
+            \App\Support\SearchQuery::applyTokenizedSearch($query, ['sale_number', 'notes'], $search, [
+                'customer' => ['name', 'phone', 'email', 'company_name'],
+            ]);
         }
 
         $documents = $query->paginate(25)->appends(array_filter([

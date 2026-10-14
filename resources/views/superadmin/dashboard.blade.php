@@ -11,7 +11,7 @@
     @can('platform-full-access')
     <form method="GET" action="{{ route('superadmin.search') }}" class="w-full max-w-xl">
         <div class="flex gap-2">
-            <input type="search" name="q" value="{{ request('q') }}" placeholder="Global search businesses, users, products…"
+            <input type="search" name="q" value="{{ request('q') }}" placeholder="Search with a few words (name, phone, SKU, business…)…"
                    class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-violet-500 focus:outline-none">
             <button type="submit" class="shrink-0 rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-500">Search</button>
         </div>

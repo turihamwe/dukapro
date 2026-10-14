@@ -11,7 +11,7 @@
 <form method="GET" class="mb-8 flex gap-2">
     <input type="search" name="q" value="{{ $query }}" autofocus
            class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-violet-500 focus:outline-none"
-           placeholder="Search businesses, users, products, customers, sales, expenses…">
+           placeholder="Search with a few words — e.g. business name, customer phone, product SKU…">
     <button type="submit" class="rounded-lg bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-violet-500">Search</button>
 </form>
 
