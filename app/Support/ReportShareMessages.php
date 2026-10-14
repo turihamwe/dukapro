@@ -111,4 +111,33 @@ class ReportShareMessages
             'Status: ' . ucfirst($purchase->status),
         ]));
     }
+
+    /**
+     * @param  array{count: int, total_amount: float, total_paid: float, total_outstanding: float}  $totals
+     */
+    public static function vendorBillsList(Business $business, string $filterLabel, array $totals): string
+    {
+        return implode("\n", [
+            "Vendor bills summary — {$business->name}",
+            "Filter: {$filterLabel}",
+            'Bills listed: ' . number_format($totals['count'] ?? 0),
+            '',
+            'Total bill amount: ' . format_money($totals['total_amount'] ?? 0, $business),
+            'Total paid: ' . format_money($totals['total_paid'] ?? 0, $business),
+            'Total outstanding: ' . format_money($totals['total_outstanding'] ?? 0, $business),
+        ]);
+    }
+
+    /**
+     * @param  array{count: int, total_paid: float}  $totals
+     */
+    public static function vendorPaymentsList(Business $business, array $totals): string
+    {
+        return implode("\n", [
+            "Vendor payments summary — {$business->name}",
+            'Payments listed: ' . number_format($totals['count'] ?? 0),
+            '',
+            'Total paid out: ' . format_money($totals['total_paid'] ?? 0, $business),
+        ]);
+    }
 }

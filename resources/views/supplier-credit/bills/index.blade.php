@@ -4,8 +4,20 @@
 @section('container_class', 'max-w-5xl')
 
 @section('content')
+@php
+    $reportQuery = $reportQuery ?? [];
+@endphp
 <x-page-header title="Bills" subtitle="Supplier credit invoices — open, partial, and paid">
     <x-slot name="actions">
+        <x-document-share-toolbar
+            layout="inline"
+            print-label="Print PDF"
+            :print-href="tenant_route('tenant.supplier-credit.bills.print', $reportQuery)"
+            :export-href="tenant_route('tenant.supplier-credit.bills.export', $reportQuery)"
+            :whats-app-href="$shareWhatsAppUrl ?? null"
+            :whats-app-message="$shareMessage ?? null"
+            :email-href="$shareEmailUrl ?? null"
+        />
         @if(($suppliers ?? collect())->isNotEmpty())
             <x-button variant="secondary" size="sm" type="button" onclick="openAppModal('add-vendor-bill-modal')">+ Add vendor bill</x-button>
         @endif

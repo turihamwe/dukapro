@@ -4,8 +4,20 @@
 @section('container_class', 'max-w-4xl')
 
 @section('content')
+@php
+    $reportQuery = $reportQuery ?? [];
+@endphp
 <x-page-header title="Payments made" subtitle="Chronological history of supplier payments">
     <x-slot name="actions">
+        <x-document-share-toolbar
+            layout="inline"
+            print-label="Print PDF"
+            :print-href="tenant_route('tenant.supplier-credit.payments.print', $reportQuery)"
+            :export-href="tenant_route('tenant.supplier-credit.payments.export', $reportQuery)"
+            :whats-app-href="$shareWhatsAppUrl ?? null"
+            :whats-app-message="$shareMessage ?? null"
+            :email-href="$shareEmailUrl ?? null"
+        />
         <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.supplier-credit.bills.index') }}">Bills</x-button>
     </x-slot>
 </x-page-header>

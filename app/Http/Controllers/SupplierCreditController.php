@@ -9,9 +9,12 @@ use App\Models\SupplierCreditPayment;
 use App\Models\SupplierCreditPurchase;
 use Illuminate\Support\Carbon;
 use App\Services\PaymentWalletService;
+use App\Services\SupplierCreditListReportService;
 use App\Services\SupplierCreditOverviewService;
 use App\Services\SupplierCreditService;
+use App\Support\CsvExport;
 use App\Support\ReportPeriodResolver;
+use App\Support\ReportShareMessages;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -75,13 +78,77 @@ class SupplierCreditController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
+        $reportService = app(SupplierCreditListReportService::class);
+        $statusFilter = in_array($status, $allowed, true) ? $status : null;
+        $reportQuery = $statusFilter ? ['status' => $statusFilter] : [];
+        $business = $request->user()->business;
+        $reportPurchases = $reportService->billsForReport($request);
+        $reportTotals = $reportService->billsTotals($reportPurchases);
+        $filterLabel = $reportService->billsFilterLabel($statusFilter);
+        $shareMessage = ReportShareMessages::vendorBillsList($business, $filterLabel, $reportTotals);
+        $shareSubject = 'Vendor bills — ' . $business->name;
+
         return view('supplier-credit.bills.index', [
             'purchases' => $purchases,
             'totalPayable' => $totalPayable,
-            'statusFilter' => in_array($status, $allowed, true) ? $status : null,
+            'statusFilter' => $statusFilter,
             'wallets' => $walletService->activeForBusiness($businessId),
             'suppliers' => $suppliers,
+            'reportQuery' => $reportQuery,
+            'shareWhatsAppUrl' => whatsapp_share_url(null, $shareMessage),
+            'shareEmailUrl' => mailto_share_url($business->email, $shareSubject, $shareMessage),
+            'shareMessage' => $shareMessage,
         ]);
+    }
+
+    public function billsPrint(Request $request, Business $business, SupplierCreditListReportService $reportService)
+    {
+        $statusFilter = $reportService->billsStatusFilter($request);
+        $purchases = $reportService->billsForReport($request);
+        $totals = $reportService->billsTotals($purchases);
+        $filterLabel = $reportService->billsFilterLabel($statusFilter);
+        $shareMessage = ReportShareMessages::vendorBillsList($business, $filterLabel, $totals);
+
+        return view('supplier-credit.reports.bills-print', [
+            'business' => $business,
+            'purchases' => $purchases,
+            'totals' => $totals,
+            'filterLabel' => $filterLabel,
+            'generatedAt' => now(),
+            'shareWhatsAppUrl' => whatsapp_share_url(null, $shareMessage),
+            'shareEmailUrl' => mailto_share_url($business->email, 'Vendor bills — ' . $business->name, $shareMessage),
+            'shareMessage' => $shareMessage,
+        ]);
+    }
+
+    public function billsExport(Request $request, SupplierCreditListReportService $reportService)
+    {
+        $purchases = $reportService->billsForReport($request);
+        $rows = $purchases->map(function (SupplierCreditPurchase $purchase) {
+            return [
+                $purchase->purchase_date->format('Y-m-d'),
+                optional($purchase->supplier)->name ?? '',
+                $purchase->reference ?? '',
+                number_format((float) $purchase->total_amount, 2, '.', ''),
+                number_format((float) $purchase->amount_paid, 2, '.', ''),
+                number_format($purchase->balanceDue(), 2, '.', ''),
+                ucfirst($purchase->status),
+                $purchase->is_historical_adjustment ? 'Yes' : 'No',
+                $purchase->notes ?? '',
+            ];
+        });
+
+        return CsvExport::download('vendor-bills-' . now()->format('Y-m-d') . '.csv', [
+            'Bill date',
+            'Vendor',
+            'Reference',
+            'Total amount',
+            'Amount paid',
+            'Balance due',
+            'Status',
+            'Historical adjustment',
+            'Notes',
+        ], $rows);
     }
 
     public function storeManualBill(Request $request, Business $business, SupplierCreditService $service)
@@ -165,9 +232,68 @@ class SupplierCreditController extends Controller
             ->orderByDesc('id')
             ->paginate(30);
 
+        $reportService = app(SupplierCreditListReportService::class);
+        $business = $request->user()->business;
+        $reportPayments = $reportService->paymentsForReport($request);
+        $reportTotals = $reportService->paymentsTotals($reportPayments);
+        $shareMessage = ReportShareMessages::vendorPaymentsList($business, $reportTotals);
+        $shareSubject = 'Vendor payments — ' . $business->name;
+
         return view('supplier-credit.payments.index', [
             'payments' => $payments,
+            'reportQuery' => [],
+            'shareWhatsAppUrl' => whatsapp_share_url(null, $shareMessage),
+            'shareEmailUrl' => mailto_share_url($business->email, $shareSubject, $shareMessage),
+            'shareMessage' => $shareMessage,
         ]);
+    }
+
+    public function paymentsPrint(Request $request, Business $business, SupplierCreditListReportService $reportService)
+    {
+        $payments = $reportService->paymentsForReport($request);
+        $totals = $reportService->paymentsTotals($payments);
+        $shareMessage = ReportShareMessages::vendorPaymentsList($business, $totals);
+
+        return view('supplier-credit.reports.payments-print', [
+            'business' => $business,
+            'payments' => $payments,
+            'totals' => $totals,
+            'generatedAt' => now(),
+            'shareWhatsAppUrl' => whatsapp_share_url(null, $shareMessage),
+            'shareEmailUrl' => mailto_share_url($business->email, 'Vendor payments — ' . $business->name, $shareMessage),
+            'shareMessage' => $shareMessage,
+        ]);
+    }
+
+    public function paymentsExport(Request $request, SupplierCreditListReportService $reportService)
+    {
+        $payments = $reportService->paymentsForReport($request);
+
+        $rows = $payments->map(function (SupplierCreditPayment $payment) {
+            return [
+                $payment->paid_at->format('Y-m-d H:i'),
+                optional($payment->supplier)->name ?? '',
+                optional($payment->purchase)->reference ?? ($payment->purchase ? '#' . $payment->purchase->id : ''),
+                number_format((float) $payment->amount, 2, '.', ''),
+                $payment->payment_method ?? '',
+                $payment->reference ?? '',
+                optional($payment->paymentWallet)->name ?? '',
+                optional($payment->user)->name ?? '',
+                $payment->notes ?? '',
+            ];
+        });
+
+        return CsvExport::download('vendor-payments-' . now()->format('Y-m-d') . '.csv', [
+            'Paid at',
+            'Vendor',
+            'Bill reference',
+            'Amount',
+            'Payment method',
+            'Reference',
+            'Wallet',
+            'Recorded by',
+            'Notes',
+        ], $rows);
     }
 
     public function create(Request $request)

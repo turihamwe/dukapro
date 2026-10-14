@@ -1,6 +1,8 @@
 @props([
     'printHref' => null,
-    'printLabel' => 'Print',
+    'printLabel' => 'Print PDF',
+    'exportHref' => null,
+    'exportLabel' => 'Export CSV',
     'whatsAppHref' => null,
     'whatsAppMessage' => null,
     'defaultPhone' => null,
@@ -54,6 +56,12 @@
                     {{ $printLabel }}
                 </button>
             @endif
+        @endif
+
+        @if($exportHref)
+            <a href="{{ $exportHref }}" class="{{ $btnSecondary }}">
+                {{ $exportLabel }}
+            </a>
         @endif
 
         @if($hasShare)

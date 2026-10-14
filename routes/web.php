@@ -436,10 +436,14 @@ Route::middleware(['maintenance'])->group(function () {
                     Route::get('/financials/income-statement', [SupplierFinancialStatementController::class, 'incomeStatement'])->name('financials.income-statement');
                     Route::get('/financials/balance-sheet', [SupplierFinancialStatementController::class, 'balanceSheet'])->name('financials.balance-sheet');
                     Route::get('/bills', [SupplierCreditController::class, 'bills'])->name('bills.index');
+                    Route::get('/bills/print', [SupplierCreditController::class, 'billsPrint'])->name('bills.print');
+                    Route::get('/bills/export', [SupplierCreditController::class, 'billsExport'])->name('bills.export');
                     Route::post('/bills/manual', [SupplierCreditController::class, 'storeManualBill'])->name('bills.manual.store');
                     Route::get('/bills/{purchase}', [SupplierCreditController::class, 'showBill'])->name('bills.show');
                     Route::delete('/bills/{purchase}', [SupplierCreditController::class, 'destroyBill'])->name('bills.destroy');
                     Route::get('/payments', [SupplierCreditController::class, 'payments'])->name('payments.index');
+                    Route::get('/payments/print', [SupplierCreditController::class, 'paymentsPrint'])->name('payments.print');
+                    Route::get('/payments/export', [SupplierCreditController::class, 'paymentsExport'])->name('payments.export');
                     Route::delete('/payments/{payment}', [SupplierCreditController::class, 'destroyPayment'])->name('payments.destroy');
                     Route::get('/receives/create', [SupplierCreditController::class, 'create'])->name('receives.create');
                     Route::get('/purchases/create', [SupplierCreditController::class, 'create'])->name('purchases.create');
