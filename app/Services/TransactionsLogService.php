@@ -4,6 +4,9 @@ namespace App\Services;
 
 use App\Models\Branch;
 use App\Models\Business;
+use App\Models\Customer;
+use App\Models\Product;
+use App\Models\Supplier;
 use App\Models\User;
 use App\Support\BranchContext;
 use App\Support\CustomerCreditMode;
@@ -31,7 +34,8 @@ class TransactionsLogService
 
         $period = $this->resolvePeriod($request);
         $branch = $this->resolveBranch($business, $user, $request);
-        $rows = $this->paginate($business, $type, $period['start'], $period['end'], $branch['branch_id'], (int) $request->input('page', 1));
+        $entity = $this->resolveEntity($business, $type, $request);
+        $rows = $this->paginate($business, $type, $period['start'], $period['end'], $branch['branch_id'], $entity, (int) $request->input('page', 1));
 
         return [
             'rows' => $rows,
@@ -42,6 +46,7 @@ class TransactionsLogService
             'startDate' => $period['start']->toDateString(),
             'endDate' => $period['end']->toDateString(),
             'branch' => $branch,
+            'entity' => $entity,
             'notice' => $this->noticeFor($business, (string) $request->input('type', 'all')),
         ];
     }
@@ -74,9 +79,9 @@ class TransactionsLogService
         return $types;
     }
 
-    protected function paginate(Business $business, string $type, Carbon $start, Carbon $end, ?int $branchId, int $page): LengthAwarePaginator
+    protected function paginate(Business $business, string $type, Carbon $start, Carbon $end, ?int $branchId, array $entity, int $page): LengthAwarePaginator
     {
-        $parts = $this->sources($business, $type, $start, $end, $branchId);
+        $parts = $this->sources($business, $type, $start, $end, $branchId, $entity);
         $page = max(1, $page);
         $perPage = 40;
 
@@ -117,9 +122,10 @@ class TransactionsLogService
     }
 
     /**
+     * @param  array{supplier_id: ?int, customer_id: ?int, product_id: ?int, product_ids: array<int, int>, name: ?string}  $entity
      * @return array<int, Builder>
      */
-    protected function sources(Business $business, string $type, Carbon $start, Carbon $end, ?int $branchId): array
+    protected function sources(Business $business, string $type, Carbon $start, Carbon $end, ?int $branchId, array $entity): array
     {
         $parts = [];
         $include = function (string $source) use ($type): bool {
@@ -127,20 +133,20 @@ class TransactionsLogService
         };
 
         if ($include('supplier') && SupplierCreditMode::active($business)) {
-            $parts[] = $this->supplierBills($business->id, $start, $end, $branchId);
-            $parts[] = $this->supplierPayments($business->id, $start, $end, $branchId);
+            $parts[] = $this->supplierBills($business->id, $start, $end, $branchId, $entity['supplier_id']);
+            $parts[] = $this->supplierPayments($business->id, $start, $end, $branchId, $entity['supplier_id']);
         }
 
         if ($include('customer') && CustomerCreditMode::active($business)) {
-            $parts[] = $this->customerSales($business->id, $start, $end, $branchId);
-            $parts[] = $this->customerLedger($business->id, $start, $end, $branchId);
+            $parts[] = $this->customerSales($business->id, $start, $end, $branchId, $entity['customer_id']);
+            $parts[] = $this->customerLedger($business->id, $start, $end, $branchId, $entity['customer_id']);
         }
 
         if ($include('product')) {
-            $parts[] = $this->productSales($business->id, $start, $end, $branchId);
-            $parts[] = $this->productReceipts($business->id, $start, $end, $branchId);
-            $parts[] = $this->productDamages($business->id, $start, $end, $branchId);
-            $parts[] = $this->productTransfers($business->id, $start, $end, $branchId);
+            $parts[] = $this->productSales($business->id, $start, $end, $branchId, $entity['product_ids']);
+            $parts[] = $this->productReceipts($business->id, $start, $end, $branchId, $entity['product_ids']);
+            $parts[] = $this->productDamages($business->id, $start, $end, $branchId, $entity['product_ids']);
+            $parts[] = $this->productTransfers($business->id, $start, $end, $branchId, $entity['product_ids']);
         }
 
         if ($include('wallet') && PaymentWalletMode::active($business)) {
@@ -150,7 +156,7 @@ class TransactionsLogService
         return $parts;
     }
 
-    protected function supplierBills(int $businessId, Carbon $start, Carbon $end, ?int $branchId): Builder
+    protected function supplierBills(int $businessId, Carbon $start, Carbon $end, ?int $branchId, ?int $supplierId = null): Builder
     {
         $activity = "CASE
             WHEN p.is_opening_balance = 1 THEN 'Opening balance'
@@ -166,6 +172,9 @@ class TransactionsLogService
             ->whereBetween('p.purchase_date', [$start->toDateString(), $end->toDateString()])
             ->when($branchId, function (Builder $query) use ($branchId) {
                 $query->where('p.branch_id', $branchId);
+            })
+            ->when($supplierId, function (Builder $query) use ($supplierId) {
+                $query->where('p.supplier_id', $supplierId);
             }), [
             'occurred_at' => 'TIMESTAMP(p.purchase_date, TIME(p.created_at))',
             'category' => "'Supplier'",
@@ -179,7 +188,7 @@ class TransactionsLogService
         ]);
     }
 
-    protected function supplierPayments(int $businessId, Carbon $start, Carbon $end, ?int $branchId): Builder
+    protected function supplierPayments(int $businessId, Carbon $start, Carbon $end, ?int $branchId, ?int $supplierId = null): Builder
     {
         return $this->project(DB::table('supplier_credit_payments as pay')
             ->leftJoin('suppliers as s', 's.id', '=', 'pay.supplier_id')
@@ -190,6 +199,9 @@ class TransactionsLogService
             ->whereBetween('pay.paid_at', [$start->copy()->startOfDay(), $end->copy()->endOfDay()])
             ->when($branchId, function (Builder $query) use ($branchId) {
                 $query->where('bill.branch_id', $branchId);
+            })
+            ->when($supplierId, function (Builder $query) use ($supplierId) {
+                $query->where('pay.supplier_id', $supplierId);
             }), [
             'occurred_at' => 'pay.paid_at',
             'category' => "'Supplier'",
@@ -203,7 +215,7 @@ class TransactionsLogService
         ]);
     }
 
-    protected function customerSales(int $businessId, Carbon $start, Carbon $end, ?int $branchId): Builder
+    protected function customerSales(int $businessId, Carbon $start, Carbon $end, ?int $branchId, ?int $customerId = null): Builder
     {
         $activity = "CASE
             WHEN sales.is_credit_sale = 1 THEN 'Invoice'
@@ -225,6 +237,9 @@ class TransactionsLogService
             ->whereBetween('sales.completed_at', [$start->copy()->startOfDay(), $end->copy()->endOfDay()])
             ->when($branchId, function (Builder $query) use ($branchId) {
                 $query->where('sales.branch_id', $branchId);
+            })
+            ->when($customerId, function (Builder $query) use ($customerId) {
+                $query->where('sales.customer_id', $customerId);
             }), [
             'occurred_at' => 'sales.completed_at',
             'category' => "'Customer'",
@@ -238,7 +253,7 @@ class TransactionsLogService
         ]);
     }
 
-    protected function customerLedger(int $businessId, Carbon $start, Carbon $end, ?int $branchId): Builder
+    protected function customerLedger(int $businessId, Carbon $start, Carbon $end, ?int $branchId, ?int $customerId = null): Builder
     {
         $activity = "CASE
             WHEN e.type = 'payment' THEN 'Payment received'
@@ -261,6 +276,9 @@ class TransactionsLogService
                     });
             })
             ->whereBetween('e.created_at', [$start->copy()->startOfDay(), $end->copy()->endOfDay()])
+            ->when($customerId, function (Builder $query) use ($customerId) {
+                $query->where('e.customer_id', $customerId);
+            })
             ->when($branchId, function (Builder $query) use ($branchId) {
                 $query->where(function (Builder $query) use ($branchId) {
                     $query->where('sales.branch_id', $branchId)->orWhereNull('e.sale_id');
@@ -278,7 +296,7 @@ class TransactionsLogService
         ]);
     }
 
-    protected function productSales(int $businessId, Carbon $start, Carbon $end, ?int $branchId): Builder
+    protected function productSales(int $businessId, Carbon $start, Carbon $end, ?int $branchId, array $productIds = []): Builder
     {
         return $this->project(DB::table('sale_items as si')
             ->join('sales', 'sales.id', '=', 'si.sale_id')
@@ -293,6 +311,9 @@ class TransactionsLogService
             ->whereBetween('sales.completed_at', [$start->copy()->startOfDay(), $end->copy()->endOfDay()])
             ->when($branchId, function (Builder $query) use ($branchId) {
                 $query->where('sales.branch_id', $branchId);
+            })
+            ->when($productIds !== [], function (Builder $query) use ($productIds) {
+                $query->whereIn('si.product_id', $productIds);
             }), [
             'occurred_at' => 'sales.completed_at',
             'category' => "'Product'",
@@ -306,7 +327,7 @@ class TransactionsLogService
         ]);
     }
 
-    protected function productReceipts(int $businessId, Carbon $start, Carbon $end, ?int $branchId): Builder
+    protected function productReceipts(int $businessId, Carbon $start, Carbon $end, ?int $branchId, array $productIds = []): Builder
     {
         return $this->project(DB::table('supplier_credit_purchase_lines as line')
             ->join('supplier_credit_purchases as p', 'p.id', '=', 'line.supplier_credit_purchase_id')
@@ -322,6 +343,9 @@ class TransactionsLogService
             ->whereBetween('p.purchase_date', [$start->toDateString(), $end->toDateString()])
             ->when($branchId, function (Builder $query) use ($branchId) {
                 $query->where('p.branch_id', $branchId);
+            })
+            ->when($productIds !== [], function (Builder $query) use ($productIds) {
+                $query->whereIn('line.product_id', $productIds);
             }), [
             'occurred_at' => 'TIMESTAMP(p.purchase_date, TIME(p.created_at))',
             'category' => "'Product'",
@@ -335,7 +359,7 @@ class TransactionsLogService
         ]);
     }
 
-    protected function productDamages(int $businessId, Carbon $start, Carbon $end, ?int $branchId): Builder
+    protected function productDamages(int $businessId, Carbon $start, Carbon $end, ?int $branchId, array $productIds = []): Builder
     {
         return $this->project(DB::table('damages as d')
             ->leftJoin('products as pr', 'pr.id', '=', 'd.product_id')
@@ -345,6 +369,9 @@ class TransactionsLogService
             ->whereBetween('d.damage_date', [$start->toDateString(), $end->toDateString()])
             ->when($branchId, function (Builder $query) use ($branchId) {
                 $query->where('d.branch_id', $branchId);
+            })
+            ->when($productIds !== [], function (Builder $query) use ($productIds) {
+                $query->whereIn('d.product_id', $productIds);
             }), [
             'occurred_at' => 'TIMESTAMP(d.damage_date, TIME(d.created_at))',
             'category' => "'Product'",
@@ -358,7 +385,7 @@ class TransactionsLogService
         ]);
     }
 
-    protected function productTransfers(int $businessId, Carbon $start, Carbon $end, ?int $branchId): Builder
+    protected function productTransfers(int $businessId, Carbon $start, Carbon $end, ?int $branchId, array $productIds = []): Builder
     {
         $impact = $branchId
             ? 'CASE WHEN t.from_branch_id = '.(int) $branchId.' THEN -t.quantity ELSE t.quantity END'
@@ -373,6 +400,11 @@ class TransactionsLogService
             ->when($branchId, function (Builder $query) use ($branchId) {
                 $query->where(function (Builder $query) use ($branchId) {
                     $query->where('t.from_branch_id', $branchId)->orWhere('t.to_branch_id', $branchId);
+                });
+            })
+            ->when($productIds !== [], function (Builder $query) use ($productIds) {
+                $query->where(function (Builder $query) use ($productIds) {
+                    $query->whereIn('t.from_product_id', $productIds)->orWhereIn('t.to_product_id', $productIds);
                 });
             }), [
             'occurred_at' => 't.created_at',
@@ -446,6 +478,69 @@ class TransactionsLogService
         $unit = trim((string) $row->impact_unit);
 
         return trim($sign.$quantity.($unit !== '' ? ' '.$unit : ''));
+    }
+
+    /**
+     * @return array{supplier_id: ?int, customer_id: ?int, product_id: ?int, product_ids: array<int, int>, name: ?string}
+     */
+    protected function resolveEntity(Business $business, string $type, Request $request): array
+    {
+        $entity = [
+            'supplier_id' => null,
+            'customer_id' => null,
+            'product_id' => null,
+            'product_ids' => [],
+            'name' => null,
+        ];
+
+        if ($type === 'supplier') {
+            $supplier = Supplier::query()
+                ->where('business_id', $business->id)
+                ->whereKey((int) $request->input('supplier_id'))
+                ->first();
+
+            if ($supplier) {
+                $entity['supplier_id'] = (int) $supplier->id;
+                $entity['name'] = $supplier->name;
+            }
+        }
+
+        if ($type === 'customer') {
+            $customer = Customer::query()
+                ->where('business_id', $business->id)
+                ->whereKey((int) $request->input('customer_id'))
+                ->first();
+
+            if ($customer) {
+                $entity['customer_id'] = (int) $customer->id;
+                $entity['name'] = $customer->name;
+            }
+        }
+
+        if ($type === 'product') {
+            $product = Product::query()
+                ->withoutGlobalScopes()
+                ->where('business_id', $business->id)
+                ->whereNull('deleted_at')
+                ->whereKey((int) $request->input('product_id'))
+                ->first();
+
+            if ($product) {
+                $variantIds = Product::query()
+                    ->withoutGlobalScopes()
+                    ->where('business_id', $business->id)
+                    ->whereNull('deleted_at')
+                    ->where('parent_id', $product->id)
+                    ->pluck('id')
+                    ->all();
+
+                $entity['product_id'] = (int) $product->id;
+                $entity['product_ids'] = array_map('intval', array_merge([$product->id], $variantIds));
+                $entity['name'] = $product->name;
+            }
+        }
+
+        return $entity;
     }
 
     /**

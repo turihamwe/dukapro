@@ -32,6 +32,9 @@
         @can('use-catalog-variants')
             <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.inventory.attributes.index') }}">Attributes</x-button>
         @endcan
+        @if(auth()->user()->can('view-dashboard') && ! auth()->user()->usesCashierExperience())
+            <x-button variant="secondary" size="sm" type="button" title="View transaction history" data-tx-history data-tx-type="product" data-tx-title="Products">History</x-button>
+        @endif
     </x-slot>
 </x-page-header>
 
@@ -106,6 +109,7 @@
         }
         return $product->hasActiveBatches();
     };
+    $canViewProductHistory = auth()->user()->can('view-dashboard') && ! auth()->user()->usesCashierExperience();
 @endphp
 
 {{-- Mobile --}}
@@ -159,6 +163,9 @@
                                 </a>
                             @endcan
                             <a href="{{ tenant_route('tenant.inventory.show', ['product' => $product]) }}" class="text-xs font-medium text-gray-600 hover:text-gray-900">View</a>
+                            @if($canViewProductHistory)
+                                <button type="button" data-tx-history data-tx-type="product" data-tx-product="{{ $product->id }}" data-tx-title="{{ $product->name }}" title="View transaction history" class="text-xs font-medium text-gray-600 hover:text-gray-900">History</button>
+                            @endif
                         </div>
                     @else
                         @if($product->isService() && ($serviceCatalogEnabled ?? false))
@@ -182,6 +189,9 @@
                         @endif
                         <div class="mt-1 flex flex-wrap justify-end gap-x-3 gap-y-1">
                             <a href="{{ tenant_route('tenant.inventory.show', ['product' => $product]) }}" class="text-xs font-medium text-emerald-600 hover:text-emerald-700">View</a>
+                            @if($canViewProductHistory)
+                                <button type="button" data-tx-history data-tx-type="product" data-tx-product="{{ $product->id }}" data-tx-title="{{ $product->name }}" title="View transaction history" class="text-xs font-medium text-gray-600 hover:text-gray-900">History</button>
+                            @endif
                             @can('update', $product)
                                 <a href="{{ tenant_route('tenant.inventory.edit', ['product' => $product]) }}" class="text-xs font-medium text-indigo-600 hover:text-indigo-700">Edit</a>
                             @endcan
@@ -284,6 +294,9 @@
                                     </a>
                                 @endcan
                                 <a href="{{ tenant_route('tenant.inventory.show', ['product' => $product]) }}" class="ml-3 text-sm font-medium text-gray-600 hover:text-gray-900">View</a>
+                                @if($canViewProductHistory)
+                                    <button type="button" data-tx-history data-tx-type="product" data-tx-product="{{ $product->id }}" data-tx-title="{{ $product->name }}" title="View transaction history" class="ml-3 text-sm font-medium text-gray-600 hover:text-gray-900">History</button>
+                                @endif
                             </td>
                         @else
                             <td class="px-6 py-4 text-sm text-gray-500">
@@ -319,6 +332,9 @@
                             </td>
                             <td class="px-6 py-4 text-right whitespace-nowrap">
                                 <a href="{{ tenant_route('tenant.inventory.show', ['product' => $product]) }}" class="text-sm font-medium text-emerald-600 hover:text-emerald-700">View</a>
+                                @if($canViewProductHistory)
+                                    <button type="button" data-tx-history data-tx-type="product" data-tx-product="{{ $product->id }}" data-tx-title="{{ $product->name }}" title="View transaction history" class="ml-3 text-sm font-medium text-gray-600 hover:text-gray-900">History</button>
+                                @endif
                                 @can('update', $product)
                                     <a href="{{ tenant_route('tenant.inventory.edit', ['product' => $product]) }}" class="ml-3 text-sm font-medium text-indigo-600 hover:text-indigo-700">Edit</a>
                                 @endcan
@@ -434,3 +450,7 @@ document.addEventListener('click', function (e) {
 @endif
 </script>
 @endpush
+
+@if($canViewProductHistory ?? false)
+    @include('reports.partials.transactions-history-modal')
+@endif

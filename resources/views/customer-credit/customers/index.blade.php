@@ -9,6 +9,9 @@
         <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.customer-credit.customers.export') }}">Export (CSV)</x-button>
         <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.customer-credit.invoices.index') }}">Invoices</x-button>
         <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.customer-credit.payments.index') }}">Payments</x-button>
+        @can('view-dashboard')
+            <x-button variant="secondary" size="sm" type="button" title="View transaction history" data-tx-history data-tx-type="customer" data-tx-title="Customers">History</x-button>
+        @endcan
     </x-slot>
 </x-page-header>
 
@@ -79,6 +82,9 @@
                                   data-value="{{ number_format((float) $customer->opening_balance, 2, '.', '') }}">Correct opening balance</x-button>
                     @endcan
                     <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.customer-credit.customers.edit', ['customer' => $customer]) }}">Edit</x-button>
+                    @can('view-dashboard')
+                        <x-button variant="secondary" size="sm" type="button" title="View transaction history" data-tx-history data-tx-type="customer" data-tx-customer="{{ $customer->id }}" data-tx-title="{{ $customer->name }}">History</x-button>
+                    @endcan
                     @include('customer-credit.partials.delete-button', [
                         'action' => tenant_route('tenant.customer-credit.customers.destroy', ['customer' => $customer]),
                         'confirm' => 'Delete this customer?',
@@ -155,4 +161,8 @@ window.openAppModal('import-customers-modal');
 @endif
 </script>
 @endpush
+
+@can('view-dashboard')
+    @include('reports.partials.transactions-history-modal')
+@endcan
 @endsection

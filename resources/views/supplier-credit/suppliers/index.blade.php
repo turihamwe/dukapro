@@ -9,6 +9,9 @@
         <x-button variant="secondary" size="sm" type="button" data-open-import-suppliers>Import (CSV)</x-button>
         <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.supplier-credit.suppliers.export') }}">Export (CSV)</x-button>
         <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.supplier-credit.bills.index') }}">Bills</x-button>
+        @can('view-dashboard')
+            <x-button variant="secondary" size="sm" type="button" title="View transaction history" data-tx-history data-tx-type="supplier" data-tx-title="Suppliers">History</x-button>
+        @endcan
     </x-slot>
 </x-page-header>
 
@@ -80,6 +83,9 @@
                                       data-value="{{ number_format((float) $supplier->opening_balance, 2, '.', '') }}">Correct opening balance</x-button>
                         @endcan
                         <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.supplier-credit.vendors.edit', ['supplier' => $supplier]) }}">Edit</x-button>
+                        @can('view-dashboard')
+                            <x-button variant="secondary" size="sm" type="button" title="View transaction history" data-tx-history data-tx-type="supplier" data-tx-supplier="{{ $supplier->id }}" data-tx-title="{{ $supplier->name }}">History</x-button>
+                        @endcan
                         @include('supplier-credit.partials.delete-button', [
                             'action' => tenant_route('tenant.supplier-credit.vendors.destroy', ['supplier' => $supplier]),
                             'confirm' => 'Delete this vendor?',
@@ -134,4 +140,8 @@ window.openAppModal('import-suppliers-modal');
 @endif
 </script>
 @endpush
+
+@can('view-dashboard')
+    @include('reports.partials.transactions-history-modal')
+@endcan
 @endsection

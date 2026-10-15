@@ -4,6 +4,13 @@
 
 @section('content')
 @php
+    $entityQuery = array_filter([
+        'supplier_id' => $entity['supplier_id'] ?? null,
+        'customer_id' => $entity['customer_id'] ?? null,
+        'product_id' => $entity['product_id'] ?? null,
+    ], function ($value) {
+        return $value !== null && $value !== '';
+    });
     $filterQuery = array_filter([
         'range' => $range,
         'start_date' => $range === 'custom' ? $startDate : null,
@@ -14,12 +21,12 @@
     });
 @endphp
 
-<x-page-header title="Transactions Log" subtitle="Sales, bills, stock movements, and wallet activity from the records you already keep">
+<x-page-header title="Transactions Log" subtitle="{{ !empty($entity['name']) ? 'History for '.$entity['name'] : 'Sales, bills, stock movements, and wallet activity from the records you already keep' }}">
 </x-page-header>
 
 <div class="mb-4 flex flex-wrap gap-2">
     @foreach($types as $key => $label)
-        <a href="{{ tenant_route('tenant.transactions-log.index', array_merge($filterQuery, ['type' => $key])) }}"
+        <a href="{{ tenant_route('tenant.transactions-log.index', array_merge($filterQuery, ['type' => $key], $type === $key ? $entityQuery : [])) }}"
            class="rounded-full border px-3 py-1 text-xs font-medium {{ $type === $key ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50' }}">
             {{ $label }}
         </a>
@@ -29,6 +36,9 @@
 <x-card class="mb-4">
     <form id="tx-filters" method="get" action="{{ tenant_route('tenant.transactions-log.index') }}" class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
         <input type="hidden" name="type" value="{{ $type }}">
+        @foreach($entityQuery as $entityKey => $entityValue)
+            <input type="hidden" name="{{ $entityKey }}" value="{{ $entityValue }}">
+        @endforeach
         <div>
             <label for="tx-range" class="mb-1 block text-xs font-medium text-gray-700">Period</label>
             <select id="tx-range" name="range" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm sm:w-40">

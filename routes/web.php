@@ -200,6 +200,7 @@ Route::middleware(['maintenance'])->group(function () {
                     Route::get('/dashboard/analytics', [DashboardController::class, 'analytics'])->name('dashboard.analytics');
                     Route::get('/dashboard/financial-statistics', [DashboardController::class, 'financialStatistics'])->name('dashboard.financial-statistics');
                     Route::get('/transactions-log', [TransactionsLogController::class, 'index'])->name('transactions-log.index');
+                    Route::get('/transactions-log/feed', [TransactionsLogController::class, 'feed'])->name('transactions-log.feed');
 
                     Route::middleware(['can:view-sales-reports'])->prefix('reports/sales')->name('reports.sales.')->group(function () {
                         Route::get('/', [SalesReportController::class, 'index'])->name('index');
