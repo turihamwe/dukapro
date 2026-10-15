@@ -88,6 +88,9 @@
         <span>👥</span> Contacts
     </a>
 @endcan
+@can('view-dashboard')
+    @include('layouts.partials.transactions-log-nav-dropdown', ['theme' => 'plain', 'navLink' => $navLink, 'navActive' => $navActive, 'navIdle' => $navIdle])
+@endcan
 @can('manage-wallets')
     <a href="{{ tenant_route('tenant.wallets.index') }}"
        class="{{ $navLink }} {{ request()->routeIs('tenant.wallets.*') ? $navActive : $navIdle }}">

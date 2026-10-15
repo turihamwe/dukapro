@@ -111,6 +111,9 @@
         Contacts
     </a>
 @endcan
+@can('view-dashboard')
+    @include('layouts.partials.transactions-log-nav-dropdown', ['theme' => 'modern', 'navActive' => $navActive, 'navIdle' => $navIdle])
+@endcan
 @can('manage-wallets')
     <a href="{{ tenant_route('tenant.wallets.index') }}"
        class="modern-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] {{ request()->routeIs('tenant.wallets.*') ? $navActive : $navIdle }}">

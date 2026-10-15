@@ -29,6 +29,7 @@ use App\Http\Controllers\ProductAttributeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SalesReportController;
 use App\Http\Controllers\SalesDocumentController;
+use App\Http\Controllers\TransactionsLogController;
 use App\Http\Controllers\TrialDataController;
 use App\Http\Controllers\SoldByUnitController;
 use App\Http\Controllers\SuperAdmin\AffiliateController as SuperAdminAffiliateController;
@@ -198,6 +199,7 @@ Route::middleware(['maintenance'])->group(function () {
                     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
                     Route::get('/dashboard/analytics', [DashboardController::class, 'analytics'])->name('dashboard.analytics');
                     Route::get('/dashboard/financial-statistics', [DashboardController::class, 'financialStatistics'])->name('dashboard.financial-statistics');
+                    Route::get('/transactions-log', [TransactionsLogController::class, 'index'])->name('transactions-log.index');
 
                     Route::middleware(['can:view-sales-reports'])->prefix('reports/sales')->name('reports.sales.')->group(function () {
                         Route::get('/', [SalesReportController::class, 'index'])->name('index');
