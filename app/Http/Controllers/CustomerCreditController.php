@@ -81,7 +81,7 @@ class CustomerCreditController extends Controller
 
         return redirect()
             ->to(tenant_route('tenant.customer-credit.invoices.index'))
-            ->with('success', 'Invoice deleted.');
+            ->with('success', 'Invoice deleted. Product quantities were restored.');
     }
 
     public function payments(Request $request)

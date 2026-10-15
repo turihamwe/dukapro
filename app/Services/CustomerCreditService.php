@@ -22,10 +22,17 @@ class CustomerCreditService
     /** @var PaymentWalletService */
     protected $walletService;
 
-    public function __construct(DebtLedgerService $debtLedgerService, PaymentWalletService $walletService)
-    {
+    /** @var ProductBatchService */
+    protected $batchService;
+
+    public function __construct(
+        DebtLedgerService $debtLedgerService,
+        PaymentWalletService $walletService,
+        ProductBatchService $batchService
+    ) {
         $this->debtLedgerService = $debtLedgerService;
         $this->walletService = $walletService;
+        $this->batchService = $batchService;
     }
 
     /**
@@ -72,7 +79,7 @@ class CustomerCreditService
     }
 
     /**
-     * Soft-delete a credit sale invoice. Does not restore inventory.
+     * Soft-delete a credit sale invoice and return its quantities to stock.
      */
     public function softDeleteInvoice(Sale $sale, User $user): void
     {
@@ -103,6 +110,8 @@ class CustomerCreditService
                     $entry->delete();
                     AuditLogger::record('debt_ledger_entry_deleted', $entry, $old, null, (int) $user->business_id, (int) $user->id);
                 });
+
+            $this->batchService->restoreSaleInventory($sale, $user);
 
             $sale->delete();
 

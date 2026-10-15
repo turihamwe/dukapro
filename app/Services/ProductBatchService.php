@@ -5,6 +5,9 @@ namespace App\Services;
 use App\Helpers\AuditLogger;
 use App\Models\Product;
 use App\Models\ProductBatch;
+use App\Models\Sale;
+use App\Models\SaleItem;
+use App\Models\SaleItemBatchAllocation;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -178,6 +181,107 @@ class ProductBatchService
             'cost_price' => $costPrice,
             'subtotal' => $subtotal,
         ];
+    }
+
+    /**
+     * Put stock back for a sale that is being deleted.
+     * Batch lines return to the same batch. Legacy lines return to stock_quantity.
+     */
+    public function restoreSaleInventory(Sale $sale, User $user): void
+    {
+        $sale->loadMissing(['items.batchAllocations']);
+
+        foreach ($sale->items as $item) {
+            $this->restoreSaleItemInventory($sale, $item, $user);
+        }
+    }
+
+    protected function restoreSaleItemInventory(Sale $sale, SaleItem $item, User $user): void
+    {
+        if (! $item->product_id) {
+            return;
+        }
+
+        $product = Product::withoutGlobalScopes()
+            ->where('business_id', $sale->business_id)
+            ->whereKey($item->product_id)
+            ->lockForUpdate()
+            ->first();
+
+        if (! $product || $product->isService()) {
+            return;
+        }
+
+        $before = (float) $product->stock_quantity;
+        $restored = 0.0;
+        $allocations = $item->batchAllocations;
+
+        if ($allocations->isEmpty()) {
+            $quantity = (float) ($item->base_quantity > 0 ? $item->base_quantity : $item->quantity);
+            if ($quantity > 0) {
+                $product->increment('stock_quantity', $quantity);
+                $restored += $quantity;
+            }
+        } else {
+            foreach ($allocations as $allocation) {
+                $restored += $this->restoreAllocation($product, $allocation);
+            }
+        }
+
+        if ($restored <= 0) {
+            return;
+        }
+
+        $product->refresh();
+
+        AuditLogger::record(
+            'stock_restored',
+            $product,
+            ['stock_quantity' => $before],
+            [
+                'stock_quantity' => (float) $product->stock_quantity,
+                'quantity_restored' => round($restored, 3),
+                'sale_id' => $sale->id,
+                'sale_item_id' => $item->id,
+            ],
+            (int) $sale->business_id,
+            (int) $user->id
+        );
+    }
+
+    protected function restoreAllocation(Product $product, SaleItemBatchAllocation $allocation): float
+    {
+        $quantity = (float) $allocation->quantity;
+
+        if ($quantity <= 0) {
+            return 0.0;
+        }
+
+        if ($allocation->is_legacy_stock || ! $allocation->product_batch_id) {
+            $product->increment('stock_quantity', $quantity);
+
+            return $quantity;
+        }
+
+        $batch = ProductBatch::withoutGlobalScopes()
+            ->where('business_id', $product->business_id)
+            ->whereKey($allocation->product_batch_id)
+            ->lockForUpdate()
+            ->first();
+
+        if (! $batch) {
+            $product->increment('stock_quantity', $quantity);
+
+            return $quantity;
+        }
+
+        $batch->remaining_quantity = round((float) $batch->remaining_quantity + $quantity, 3);
+        if ($batch->remaining_quantity > 0) {
+            $batch->status = ProductBatch::STATUS_ACTIVE;
+        }
+        $batch->save();
+
+        return $quantity;
     }
 
     public function availableStock(Product $product): float
