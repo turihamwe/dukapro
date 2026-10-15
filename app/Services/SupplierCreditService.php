@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Helpers\AuditLogger;
+use App\Models\Business;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\PaymentWallet;
@@ -50,21 +51,29 @@ class SupplierCreditService
         ?string $notes = null,
         ?\DateTimeInterface $purchaseDate = null
     ): SupplierCreditPurchase {
+        return $this->recordCreditPurchaseLines($user, $supplier, [[
+            'product_id' => $stockTarget->id,
+            'quantity' => $quantity,
+            'unit_cost' => $unitCost,
+        ]], $reference, $notes, $purchaseDate);
+    }
+
+    /**
+     * Save one supplier delivery as a single bill with many line items.
+     *
+     * @param  array<int, array{product_id: int|string, quantity: float|string, unit_cost: float|string}>  $lines
+     */
+    public function recordCreditPurchaseLines(
+        User $user,
+        Supplier $supplier,
+        array $lines,
+        ?string $reference = null,
+        ?string $notes = null,
+        ?\DateTimeInterface $purchaseDate = null
+    ): SupplierCreditPurchase {
         if (! SupplierCreditMode::active($user->business)) {
             throw ValidationException::withMessages([
                 'supplier_id' => 'Supplier credit is not enabled for this business.',
-            ]);
-        }
-
-        if ($quantity <= 0) {
-            throw ValidationException::withMessages([
-                'quantity' => 'Enter a quantity greater than zero.',
-            ]);
-        }
-
-        if ($unitCost < 0) {
-            throw ValidationException::withMessages([
-                'unit_cost' => 'Unit cost cannot be negative.',
             ]);
         }
 
@@ -72,86 +81,220 @@ class SupplierCreditService
             abort(404);
         }
 
-        if ((int) $stockTarget->business_id !== (int) $user->business_id) {
-            abort(404);
-        }
-
-        if ($stockTarget->isVariableParent()) {
+        if ($lines === []) {
             throw ValidationException::withMessages([
-                'product_id' => 'Select a specific variant to restock.',
+                'lines' => 'Add at least one product to this bill.',
             ]);
         }
 
-        $lineTotal = round($quantity * $unitCost, 2);
         $business = $user->business;
         $purchaseDate = $purchaseDate ?? now();
 
-        return DB::transaction(function () use (
-            $user,
-            $supplier,
-            $stockTarget,
-            $quantity,
-            $unitCost,
-            $lineTotal,
-            $business,
-            $reference,
-            $notes,
-            $purchaseDate
-        ) {
+        return DB::transaction(function () use ($user, $supplier, $lines, $reference, $notes, $purchaseDate, $business) {
+            $lockedSupplier = Supplier::query()->whereKey($supplier->id)->lockForUpdate()->firstOrFail();
+            $prepared = $this->preparePurchaseLines($user, $lines);
+            $debtBefore = round($lockedSupplier->openBalance(), 2);
+            $billNumber = trim((string) $reference) !== ''
+                ? trim((string) $reference)
+                : $this->generateBillNumber((int) $business->id);
+
             $purchase = SupplierCreditPurchase::create([
                 'business_id' => $business->id,
-                'supplier_id' => $supplier->id,
-                'branch_id' => $stockTarget->branch_id,
+                'supplier_id' => $lockedSupplier->id,
+                'branch_id' => $prepared['branch_id'],
                 'user_id' => $user->id,
-                'reference' => $reference,
+                'reference' => $billNumber,
                 'purchase_date' => $purchaseDate,
-                'total_amount' => $lineTotal,
+                'total_amount' => $prepared['total'],
                 'amount_paid' => 0,
                 'status' => SupplierCreditPurchase::STATUS_OPEN,
                 'notes' => $notes,
             ]);
 
-            $purchase->lines()->create([
-                'product_id' => $stockTarget->id,
-                'quantity' => $quantity,
-                'unit_cost' => $unitCost,
-                'line_total' => $lineTotal,
-                'attribute_values' => $stockTarget->attribute_values,
-            ]);
-
-            $costUpdates = [];
-
-            if ($user->can('view-cost-prices') && $unitCost > 0) {
-                $costUpdates['cost_price'] = $unitCost;
-            }
-
-            if (BatchMode::active($business, (int) $stockTarget->branch_id)) {
-                $batchData = [
-                    'quantity' => $quantity,
-                    'selling_price' => (float) $stockTarget->price,
-                    'cost_price' => $unitCost,
+            $now = now();
+            $rows = [];
+            foreach ($prepared['lines'] as $line) {
+                $rows[] = [
+                    'supplier_credit_purchase_id' => $purchase->id,
+                    'product_id' => $line['product']->id,
+                    'quantity' => $line['quantity'],
+                    'unit_cost' => $line['unit_cost'],
+                    'line_total' => $line['subtotal'],
+                    'attribute_values' => $line['product']->attribute_values
+                        ? json_encode($line['product']->attribute_values)
+                        : null,
+                    'created_at' => $now,
+                    'updated_at' => $now,
                 ];
-                $this->batchService->addBatch($stockTarget, $batchData, (int) $business->id, $user);
-            } else {
-                if ($user->can('view-cost-prices') && $unitCost > 0) {
-                    $costUpdates['inventory_cost_price'] = ProductInventoryValuation::weightedAverageAfterReceive(
-                        $stockTarget,
-                        $quantity,
-                        $unitCost
-                    );
-                }
+            }
+            DB::table('supplier_credit_purchase_lines')->insert($rows);
 
-                $this->inventoryService->topUpStock($stockTarget, $quantity);
+            foreach ($prepared['lines'] as $line) {
+                $product = $line['product']->fresh();
+                $this->receiveLineIntoStock($user, $purchase, $product, $line['quantity'], $line['unit_cost'], $line['subtotal']);
             }
 
-            if ($costUpdates !== []) {
-                $stockTarget->update($costUpdates);
-            }
+            $debtAfter = round($lockedSupplier->fresh()->openBalance(), 2);
 
-            AuditLogger::record('supplier_credit_purchase_created', $purchase, null, $purchase->fresh(['lines'])->toArray());
+            AuditLogger::record('supplier_credit_purchase_created', $purchase, null, [
+                'bill_number' => $billNumber,
+                'total_amount' => $prepared['total'],
+                'line_count' => count($prepared['lines']),
+                'supplier_debt_before' => $debtBefore,
+                'supplier_debt_after' => $debtAfter,
+            ]);
 
             return $purchase->fresh(['supplier', 'lines.product', 'payments']);
         });
+    }
+
+    /**
+     * @param  array<int, array{product_id: int|string, quantity: float|string, unit_cost: float|string}>  $lines
+     * @return array{branch_id: ?int, total: float, lines: array<int, array{product: Product, quantity: float, unit_cost: float, subtotal: float}>}
+     */
+    protected function preparePurchaseLines(User $user, array $lines): array
+    {
+        $ids = collect($lines)->pluck('product_id')->map(function ($id) {
+            return (int) $id;
+        })->filter()->unique()->values()->all();
+
+        $products = Product::query()
+            ->where('business_id', $user->business_id)
+            ->whereIn('id', $ids)
+            ->lockForUpdate()
+            ->get()
+            ->keyBy('id');
+
+        $prepared = [];
+        $errors = [];
+
+        foreach ($lines as $index => $line) {
+            $productId = (int) ($line['product_id'] ?? 0);
+            $product = $products->get($productId);
+            $quantity = round((float) ($line['quantity'] ?? 0), 3);
+            $unitCost = round((float) ($line['unit_cost'] ?? 0), 2);
+
+            if (! $product || (int) $product->business_id !== (int) $user->business_id) {
+                $errors["lines.{$index}.product_id"] = 'Choose a product for this line.';
+                continue;
+            }
+
+            if ($product->isVariableParent()) {
+                $errors["lines.{$index}.product_id"] = 'Select a specific variant to restock.';
+                continue;
+            }
+
+            if (! $product->tracksInventory()) {
+                $errors["lines.{$index}.product_id"] = 'Services cannot be received into stock.';
+                continue;
+            }
+
+            if ($quantity <= 0) {
+                $errors["lines.{$index}.quantity"] = 'Enter a quantity greater than zero.';
+                continue;
+            }
+
+            if ($unitCost < 0) {
+                $errors["lines.{$index}.unit_cost"] = 'Unit cost cannot be negative.';
+                continue;
+            }
+
+            $prepared[] = [
+                'product' => $product,
+                'quantity' => $quantity,
+                'unit_cost' => $unitCost,
+                'subtotal' => round($quantity * $unitCost, 2),
+            ];
+        }
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
+
+        $branchIds = collect($prepared)
+            ->map(function (array $line) {
+                return $line['product']->branch_id ? (int) $line['product']->branch_id : null;
+            })
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($branchIds->count() > 1) {
+            throw ValidationException::withMessages([
+                'lines' => 'Receive products from one branch on a single bill.',
+            ]);
+        }
+
+        return [
+            'branch_id' => $branchIds->first() ?: \App\Support\BranchContext::id(),
+            'total' => round(collect($prepared)->sum('subtotal'), 2),
+            'lines' => $prepared,
+        ];
+    }
+
+    protected function receiveLineIntoStock(
+        User $user,
+        SupplierCreditPurchase $purchase,
+        Product $product,
+        float $quantity,
+        float $unitCost,
+        float $subtotal
+    ): void {
+        $before = (float) $product->stock_quantity;
+        $costUpdates = [];
+
+        if ($user->can('view-cost-prices') && $unitCost > 0) {
+            $costUpdates['cost_price'] = $unitCost;
+        }
+
+        if (BatchMode::active($user->business, $product->branch_id ? (int) $product->branch_id : null)) {
+            $this->batchService->addBatch($product, [
+                'quantity' => $quantity,
+                'selling_price' => (float) $product->price,
+                'cost_price' => $unitCost,
+            ], (int) $user->business_id, $user);
+        } else {
+            if ($user->can('view-cost-prices') && $unitCost > 0) {
+                $costUpdates['inventory_cost_price'] = ProductInventoryValuation::weightedAverageAfterReceive(
+                    $product,
+                    $quantity,
+                    $unitCost
+                );
+            }
+
+            $this->inventoryService->topUpStock($product, $quantity);
+        }
+
+        if ($costUpdates !== []) {
+            $product->update($costUpdates);
+        }
+
+        $product->refresh();
+
+        AuditLogger::record('purchase_received', $product, [
+            'stock_quantity' => $before,
+        ], [
+            'type' => 'purchase_received',
+            'bill_id' => $purchase->id,
+            'bill_number' => $purchase->reference,
+            'supplier_id' => $purchase->supplier_id,
+            'product_id' => $product->id,
+            'quantity' => $quantity,
+            'unit_cost' => $unitCost,
+            'subtotal' => $subtotal,
+            'stock_quantity' => (float) $product->stock_quantity,
+        ]);
+    }
+
+    protected function generateBillNumber(int $businessId): string
+    {
+        Business::query()->whereKey($businessId)->lockForUpdate()->first();
+
+        $count = SupplierCreditPurchase::withTrashed()
+            ->where('business_id', $businessId)
+            ->count() + 1;
+
+        return 'BILL-' . str_pad((string) $count, 6, '0', STR_PAD_LEFT);
     }
 
     public function recordPayment(

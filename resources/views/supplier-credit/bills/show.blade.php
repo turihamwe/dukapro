@@ -4,7 +4,7 @@
 @section('container_class', 'max-w-3xl')
 
 @section('content')
-<x-page-header title="Supplier bill" subtitle="{{ $purchase->supplier->name ?? 'Vendor' }} · {{ $purchase->purchase_date->format('M j, Y') }}">
+<x-page-header title="Supplier bill" subtitle="{{ $purchase->reference ? $purchase->reference . ' · ' : '' }}{{ $purchase->supplier->name ?? 'Vendor' }} · {{ $purchase->purchase_date->format('M j, Y') }}">
     <x-slot name="actions">
         <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.supplier-credit.bills.index') }}">All bills</x-button>
         @if($balance > 0)

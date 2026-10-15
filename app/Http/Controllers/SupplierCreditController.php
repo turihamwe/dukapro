@@ -302,32 +302,42 @@ class SupplierCreditController extends Controller
 
         $suppliers = Supplier::query()->where('is_active', true)->orderBy('name')->get();
 
-        $search = trim((string) $request->input('search', ''));
+        $catalog = $this->receiveProductCatalog();
+        $catalogById = collect($catalog)->keyBy('id');
+        $oldLines = old('lines');
+        $initialLines = collect(is_array($oldLines) && $oldLines !== [] ? $oldLines : [[]])
+            ->map(function ($line) use ($catalogById) {
+                $product = $catalogById->get((int) ($line['product_id'] ?? 0));
 
-        $products = Product::query()
-            ->where('business_id', $business->id)
-            ->whereNull('parent_id')
-            ->where('is_active', true)
-            ->when($search !== '', function ($q) use ($search) {
-                $q->where(function ($inner) use ($search) {
-                    $inner->where('name', 'like', '%' . $search . '%')
-                        ->orWhere('sku', 'like', '%' . $search . '%');
-                });
+                return [
+                    'product_id' => $product['id'] ?? '',
+                    'query' => $product['name'] ?? '',
+                    'name' => $product['name'] ?? '',
+                    'sku' => $product['sku'] ?? '',
+                    'quantity' => $line['quantity'] ?? '',
+                    'unit_cost' => $line['unit_cost'] ?? ($product['unit_cost'] ?? ''),
+                    'previous_cost' => $product['previous_cost'] ?? null,
+                    'previous_change' => $product['previous_change'] ?? null,
+                    'unit_label' => $product['unit_label'] ?? 'unit',
+                ];
             })
-            ->with(['variants' => fn ($q) => $q->where('is_active', true)])
-            ->orderBy('name')
-            ->paginate(20)
-            ->appends(['search' => $search !== '' ? $search : null]);
+            ->values()
+            ->all();
 
         return view('supplier-credit.purchases.create', [
             'suppliers' => $suppliers,
-            'products' => $products,
-            'search' => $request->input('search'),
+            'catalog' => $catalog,
+            'initialLines' => $initialLines,
+            'currencySample' => format_money(0, $business),
         ]);
     }
 
     public function store(Request $request, Business $business, SupplierCreditService $service)
     {
+        if (is_array($request->input('lines'))) {
+            return $this->storeMultiLineBill($request, $service);
+        }
+
         $businessId = (int) $request->user()->business_id;
 
         $data = $request->validate([
@@ -440,6 +450,103 @@ class SupplierCreditController extends Controller
     /**
      * @param  int|string|null  $supplierId
      */
+    protected function storeMultiLineBill(Request $request, SupplierCreditService $service)
+    {
+        $businessId = (int) $request->user()->business_id;
+
+        $data = $request->validate([
+            'supplier_id' => 'nullable',
+            'supplier_name' => 'nullable|string|max:255',
+            'reference' => 'nullable|string|max:100',
+            'notes' => 'nullable|string|max:2000',
+            'purchase_date' => 'nullable|date',
+            'lines' => 'required|array|min:1',
+            'lines.*.product_id' => 'required|integer',
+            'lines.*.quantity' => 'required|numeric|min:0.001',
+            'lines.*.unit_cost' => 'required|numeric|min:0',
+        ]);
+
+        $supplier = $this->resolveSupplierForPurchase($businessId, $data['supplier_id'] ?? null, $data['supplier_name'] ?? null);
+        $purchaseDate = ! empty($data['purchase_date']) ? new \DateTimeImmutable($data['purchase_date']) : null;
+
+        $purchase = $service->recordCreditPurchaseLines(
+            $request->user(),
+            $supplier,
+            $data['lines'],
+            $data['reference'] ?? null,
+            $data['notes'] ?? null,
+            $purchaseDate
+        );
+
+        return redirect()
+            ->to(tenant_route('tenant.supplier-credit.bills.show', ['purchase' => $purchase]))
+            ->with('success', 'Bill ' . $purchase->reference . ' saved. Stock updated and the supplier balance increased.');
+    }
+
+    /**
+     * @return array<int, array{id: int, name: string, sku: string, unit_cost: float}>
+     */
+    protected function receiveProductCatalog(): array
+    {
+        $products = Product::query()
+            ->where('is_active', true)
+            ->whereNull('parent_id')
+            ->with(['variants' => function ($query) {
+                $query->where('is_active', true)->orderBy('name');
+            }])
+            ->orderBy('name')
+            ->get();
+
+        $catalog = [];
+
+        foreach ($products as $product) {
+            if ($product->isService()) {
+                continue;
+            }
+
+            if ($product->isVariableParent()) {
+                foreach ($product->variants as $variant) {
+                    if ($variant->isService()) {
+                        continue;
+                    }
+                    $catalog[] = $this->receiveCatalogRow($variant);
+                }
+                continue;
+            }
+
+            $catalog[] = $this->receiveCatalogRow($product);
+        }
+
+        return $catalog;
+    }
+
+    /**
+     * @return array{id: int, name: string, sku: string, unit_cost: float, previous_cost: ?float, previous_change: ?float, unit_label: string}
+     */
+    protected function receiveCatalogRow(Product $product): array
+    {
+        $defaultCost = \App\Support\ProductInventoryValuation::purchaseDefaultUnitCost($product);
+        $canViewCosts = auth()->user() && auth()->user()->can('view-cost-prices');
+        $previousCost = $canViewCosts
+            ? \App\Support\ProductInventoryValuation::lastPurchaseUnitCost($product)
+            : null;
+
+        return [
+            'id' => (int) $product->id,
+            'name' => $product->displayName(),
+            'sku' => (string) ($product->sku ?? ''),
+            'unit_cost' => round($defaultCost, 2),
+            'previous_cost' => $previousCost !== null ? round($previousCost, 2) : null,
+            'previous_change' => $canViewCosts
+                ? \App\Support\ProductInventoryValuation::percentChangeFromDefault(
+                    $previousCost,
+                    $defaultCost > 0 ? $defaultCost : null
+                )
+                : null,
+            'unit_label' => $product->measurement_unit ?: 'unit',
+        ];
+    }
+
     protected function resolveSupplierForPurchase(int $businessId, $supplierId, ?string $supplierName): Supplier
     {
         $supplierId = is_string($supplierId) ? trim($supplierId) : $supplierId;
