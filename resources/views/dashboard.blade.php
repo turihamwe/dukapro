@@ -52,6 +52,8 @@
     subtitle="{{ $business->name }} · {{ $range->label }}"
 />
 
+@include('dashboard.partials.financial-statistics')
+
 {{-- Legacy period summary removed — see owner summary cards above --}}
 
 {{-- Time-range filter bar --}}

@@ -89,6 +89,8 @@
 
 @include('dashboard.partials.drilldown-modals', ['drilldown' => $m['drilldown']])
 
+@include('dashboard.partials.financial-statistics')
+
 {{-- Stock levels chart --}}
 @php
     $dist = $m['stock_distribution'];

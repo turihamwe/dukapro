@@ -197,6 +197,7 @@ Route::middleware(['maintenance'])->group(function () {
                     Route::middleware(['can:view-dashboard', 'management.access'])->group(function () {
                     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
                     Route::get('/dashboard/analytics', [DashboardController::class, 'analytics'])->name('dashboard.analytics');
+                    Route::get('/dashboard/financial-statistics', [DashboardController::class, 'financialStatistics'])->name('dashboard.financial-statistics');
 
                     Route::middleware(['can:view-sales-reports'])->prefix('reports/sales')->name('reports.sales.')->group(function () {
                         Route::get('/', [SalesReportController::class, 'index'])->name('index');

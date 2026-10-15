@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\DashboardService;
+use App\Services\FinancialStatisticsService;
 use App\Services\LowStockAlertService;
 use App\Services\OnboardingService;
 use App\Services\PaymentWalletService;
@@ -51,6 +52,10 @@ class DashboardController extends Controller
             ? app(PaymentWalletService::class)->summaryForBusiness((int) $business->id)
             : null;
 
+        $financialStatistics = $showFullDashboard
+            ? app(FinancialStatisticsService::class)->forRequest($business, $user, $request)
+            : null;
+
         return view('dashboard', [
             'business' => $business,
             'onboarding' => $onboarding,
@@ -64,7 +69,20 @@ class DashboardController extends Controller
             'stockChart' => $payload['stock_chart'] ?? null,
             'lowStockItems' => $lowStockItems,
             'walletSummary' => $walletSummary,
+            'financialStatistics' => $financialStatistics,
         ]);
+    }
+
+    public function financialStatistics(Request $request)
+    {
+        $user = $request->user();
+        $payload = app(FinancialStatisticsService::class)->forRequest(
+            $user->business,
+            $user,
+            $request
+        );
+
+        return response()->json($payload);
     }
 
     public function analytics(Request $request)
