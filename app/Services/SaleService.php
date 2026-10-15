@@ -450,14 +450,13 @@ class SaleService
     }
 
     /**
-     * Invoice checkouts may name a previous day. The clock time stays as now so reports land on that date.
+     * Credit and invoice checkouts may name a previous day. The clock time stays as now so reports land on that date.
      */
     protected function resolveSaleCompletedAt(array $payload, bool $isCreditSale): Carbon
     {
         $raw = isset($payload['sale_date']) ? trim((string) $payload['sale_date']) : '';
-        $isInvoice = $isCreditSale && (bool) ($payload['companion_receipt_issued'] ?? false);
 
-        if (! $isInvoice || $raw === '') {
+        if (! $isCreditSale || $raw === '') {
             return Carbon::now();
         }
 

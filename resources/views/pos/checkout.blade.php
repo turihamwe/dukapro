@@ -172,6 +172,12 @@
                             class="w-full rounded-lg border border-dashed border-indigo-300 px-3 py-2 text-xs font-semibold text-indigo-700 hover:border-indigo-400 hover:bg-indigo-50">
                         + New credit customer
                     </button>
+                    <div>
+                        <label for="creditSaleDate" class="mb-1 block text-xs font-medium text-gray-700">Sale date <span class="text-red-600">*</span></label>
+                        <input type="date" id="creditSaleDate" required
+                               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                        <p class="mt-1 text-xs text-gray-500">Use an earlier date if this customer was sold to on a previous day.</p>
+                    </div>
                 </div>
 
                 </div>
@@ -696,6 +702,28 @@
 
     function invoiceSaleDateError() {
         var value = invoiceSaleDateValue();
+        if (!value) return 'Choose the sale date.';
+        if (value > todayDateInputValue()) return 'Sale date cannot be in the future.';
+        return '';
+    }
+
+    function syncCreditSaleDateBounds(reset) {
+        var el = document.getElementById('creditSaleDate');
+        if (!el) return;
+        var today = todayDateInputValue();
+        el.max = today;
+        if (reset || !el.value || el.value > today) {
+            el.value = today;
+        }
+    }
+
+    function creditSaleDateValue() {
+        var el = document.getElementById('creditSaleDate');
+        return el && el.value ? el.value : null;
+    }
+
+    function creditSaleDateError() {
+        var value = creditSaleDateValue();
         if (!value) return 'Choose the sale date.';
         if (value > todayDateInputValue()) return 'Sale date cannot be in the future.';
         return '';
@@ -1384,7 +1412,9 @@
             customer_id: resolvedCustomerId,
             waiter_id: waiterId || null,
             is_credit_sale: paymentMethod === 'credit' || paymentMethod === 'invoice',
-            sale_date: paymentMethod === 'invoice' ? invoiceSaleDateValue() : null,
+            sale_date: paymentMethod === 'invoice'
+                ? invoiceSaleDateValue()
+                : (paymentMethod === 'credit' ? creditSaleDateValue() : null),
             notes: restaurantMode ? (document.getElementById('orderNotes').value.trim() || null) : null,
             table_label: tablePayload.table_label || null,
             restaurant_table_id: tablePayload.restaurant_table_id || null,
@@ -1469,6 +1499,10 @@
                 var saleDateErrorEl = document.getElementById('invoiceCustomerError');
                 saleDateErrorEl.textContent = invoiceSaleDateError();
                 saleDateErrorEl.classList.remove('hidden');
+                return;
+            }
+            if (paymentMethod === 'credit' && creditSaleDateError()) {
+                alert(creditSaleDateError());
                 return;
             }
             if (paymentMethod === 'credit' && !waiterMode && !customerId) {
@@ -1565,6 +1599,7 @@
             expandedIdx = null;
             invoiceCustomerId = null;
             syncInvoiceSaleDateBounds(true);
+            syncCreditSaleDateBounds(true);
             var efrisBox = document.getElementById('efrisRequested');
             if (efrisBox) {
                 efrisBox.checked = false;
@@ -1590,6 +1625,7 @@
 
     updateCheckoutButtonLabel();
     syncInvoiceSaleDateBounds(true);
+    syncCreditSaleDateBounds(true);
 })();
 </script>
 @endpush

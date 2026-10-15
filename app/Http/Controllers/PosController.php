@@ -306,14 +306,15 @@ class PosController extends Controller
         if ($isPosInvoiceCheckout) {
             $data['companion_receipt_issued'] = true;
             $data['payment_method'] = 'credit';
-            if (! empty($data['sale_date']) && $data['sale_date'] > \Carbon\Carbon::now('Africa/Kampala')->toDateString()) {
-                return response()->json([
-                    'message' => 'Sale date cannot be in the future.',
-                    'errors' => ['sale_date' => ['Sale date cannot be in the future.']],
-                ], 422);
-            }
-        } else {
+        }
+
+        if (empty($data['is_credit_sale'])) {
             unset($data['sale_date']);
+        } elseif (! empty($data['sale_date']) && $data['sale_date'] > \Carbon\Carbon::now('Africa/Kampala')->toDateString()) {
+            return response()->json([
+                'message' => 'Sale date cannot be in the future.',
+                'errors' => ['sale_date' => ['Sale date cannot be in the future.']],
+            ], 422);
         }
 
         $sale = $this->saleService->completeSale($request->user(), $data);
