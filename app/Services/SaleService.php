@@ -251,6 +251,8 @@ class SaleService
 
             $creditCustomer = null;
             $invoiceDueAt = null;
+            $completedAt = $this->resolveSaleCompletedAt($payload, $isCreditSale);
+            $backdatedSale = $completedAt->toDateString() !== Carbon::now()->toDateString();
 
             if ($isCreditSale && $customerId) {
                 $creditCustomer = Customer::where('business_id', $businessId)
@@ -266,7 +268,7 @@ class SaleService
                 }
 
                 $termsDays = max(1, (int) ($creditCustomer->payment_terms_days ?? 30));
-                $invoiceDueAt = Carbon::now()->addDays($termsDays);
+                $invoiceDueAt = $completedAt->copy()->addDays($termsDays);
             }
 
             $saleBranchId = $this->resolveSaleBranchId($user, $resolvedProducts);
@@ -294,9 +296,14 @@ class SaleService
                 'status' => 'completed',
                 'notes' => $payload['notes'] ?? null,
                 'efris_requested' => $efrisRequested,
-                'completed_at' => Carbon::now(),
+                'completed_at' => $completedAt,
                 'invoice_due_at' => $invoiceDueAt,
             ]);
+
+            if ($backdatedSale) {
+                $sale->created_at = $completedAt;
+                $sale->save();
+            }
 
             foreach ($lineItems as $line) {
                 /** @var Product $product */
@@ -358,7 +365,7 @@ class SaleService
             }
 
             if ($isCreditSale && $creditCustomer) {
-                $this->debtLedgerService->recordDebit(
+                $entry = $this->debtLedgerService->recordDebit(
                     $creditCustomer->fresh(),
                     $total,
                     $user,
@@ -366,6 +373,11 @@ class SaleService
                     ($waiterMode ? 'Waiter tab' : 'Hardware credit sale') . ' #' . $saleNumber,
                     $invoiceDueAt
                 );
+
+                if ($backdatedSale) {
+                    $entry->created_at = $completedAt;
+                    $entry->save();
+                }
             }
 
             AuditLogger::record(
@@ -435,6 +447,53 @@ class SaleService
             'cost_price' => $costPrice,
             'subtotal' => round($soldQuantity * $unitPrice, 2),
         ];
+    }
+
+    /**
+     * Invoice checkouts may name a previous day. The clock time stays as now so reports land on that date.
+     */
+    protected function resolveSaleCompletedAt(array $payload, bool $isCreditSale): Carbon
+    {
+        $raw = isset($payload['sale_date']) ? trim((string) $payload['sale_date']) : '';
+        $isInvoice = $isCreditSale && (bool) ($payload['companion_receipt_issued'] ?? false);
+
+        if (! $isInvoice || $raw === '') {
+            return Carbon::now();
+        }
+
+        try {
+            $picked = Carbon::createFromFormat('Y-m-d', $raw);
+        } catch (\Throwable $e) {
+            $picked = false;
+        }
+
+        if (! $picked || $picked->format('Y-m-d') !== $raw) {
+            throw ValidationException::withMessages([
+                'sale_date' => 'Enter a valid sale date.',
+            ]);
+        }
+
+        $latestDay = Carbon::now('Africa/Kampala')->toDateString();
+        if ($raw > $latestDay) {
+            throw ValidationException::withMessages([
+                'sale_date' => 'Sale date cannot be in the future.',
+            ]);
+        }
+
+        if ($raw === $latestDay) {
+            return Carbon::now();
+        }
+
+        $now = Carbon::now();
+
+        return Carbon::create(
+            (int) $picked->year,
+            (int) $picked->month,
+            (int) $picked->day,
+            (int) $now->hour,
+            (int) $now->minute,
+            (int) $now->second
+        );
     }
 
     /**

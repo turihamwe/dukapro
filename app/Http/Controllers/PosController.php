@@ -265,6 +265,7 @@ class PosController extends Controller
             'restaurant_table_id' => 'nullable|integer|exists:restaurant_tables,id',
             'idempotency_key' => 'nullable|string|max:64',
             'efris_requested' => 'nullable|boolean',
+            'sale_date' => 'nullable|date_format:Y-m-d',
         ]);
 
         if (VariablePricingMode::active($business)) {
@@ -305,6 +306,14 @@ class PosController extends Controller
         if ($isPosInvoiceCheckout) {
             $data['companion_receipt_issued'] = true;
             $data['payment_method'] = 'credit';
+            if (! empty($data['sale_date']) && $data['sale_date'] > \Carbon\Carbon::now('Africa/Kampala')->toDateString()) {
+                return response()->json([
+                    'message' => 'Sale date cannot be in the future.',
+                    'errors' => ['sale_date' => ['Sale date cannot be in the future.']],
+                ], 422);
+            }
+        } else {
+            unset($data['sale_date']);
         }
 
         $sale = $this->saleService->completeSale($request->user(), $data);

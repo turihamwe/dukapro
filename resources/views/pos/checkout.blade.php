@@ -234,6 +234,12 @@
                 <input type="tel" id="invoiceCustomerPhone" maxlength="30" placeholder="e.g. 0700123456"
                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             </div>
+            <div>
+                <label for="invoiceSaleDate" class="mb-1 block text-xs font-medium text-gray-700">Sale date <span class="text-red-600">*</span></label>
+                <input type="date" id="invoiceSaleDate" required
+                       class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                <p class="mt-1 text-xs text-gray-500">Use an earlier date to record a sale from a previous day.</p>
+            </div>
             <p id="invoiceCustomerError" class="hidden text-xs text-red-600"></p>
             <div class="grid grid-cols-2 gap-2 pt-2">
                 <button type="button" onclick="closeAppModal('invoiceCustomerModal')"
@@ -666,6 +672,35 @@
         }
     }
 
+    function todayDateInputValue() {
+        var today = new Date();
+        var month = String(today.getMonth() + 1).padStart(2, '0');
+        var day = String(today.getDate()).padStart(2, '0');
+        return today.getFullYear() + '-' + month + '-' + day;
+    }
+
+    function syncInvoiceSaleDateBounds(reset) {
+        var el = document.getElementById('invoiceSaleDate');
+        if (!el) return;
+        var today = todayDateInputValue();
+        el.max = today;
+        if (reset || !el.value || el.value > today) {
+            el.value = today;
+        }
+    }
+
+    function invoiceSaleDateValue() {
+        var el = document.getElementById('invoiceSaleDate');
+        return el && el.value ? el.value : null;
+    }
+
+    function invoiceSaleDateError() {
+        var value = invoiceSaleDateValue();
+        if (!value) return 'Choose the sale date.';
+        if (value > todayDateInputValue()) return 'Sale date cannot be in the future.';
+        return '';
+    }
+
     function openInvoiceCustomerModal() {
         document.getElementById('invoiceCustomerError').classList.add('hidden');
         document.getElementById('invoiceCustomerError').textContent = '';
@@ -676,6 +711,7 @@
             existingSelect.value = '';
         }
         syncInvoiceCustomerFieldsFromSelect();
+        syncInvoiceSaleDateBounds();
         openAppModal('invoiceCustomerModal');
         document.getElementById('invoiceCustomerName').focus();
     }
@@ -1183,6 +1219,13 @@
         var existingSelect = document.getElementById('invoiceExistingCustomerId');
         errorEl.classList.add('hidden');
 
+        var saleDateError = invoiceSaleDateError();
+        if (saleDateError) {
+            errorEl.textContent = saleDateError;
+            errorEl.classList.remove('hidden');
+            return;
+        }
+
         if (existingSelect && existingSelect.value) {
             invoiceCustomerId = parseInt(existingSelect.value, 10);
             closeAppModal('invoiceCustomerModal');
@@ -1341,6 +1384,7 @@
             customer_id: resolvedCustomerId,
             waiter_id: waiterId || null,
             is_credit_sale: paymentMethod === 'credit' || paymentMethod === 'invoice',
+            sale_date: paymentMethod === 'invoice' ? invoiceSaleDateValue() : null,
             notes: restaurantMode ? (document.getElementById('orderNotes').value.trim() || null) : null,
             table_label: tablePayload.table_label || null,
             restaurant_table_id: tablePayload.restaurant_table_id || null,
@@ -1418,6 +1462,13 @@
             }
             if (paymentMethod === 'invoice' && !invoiceCustomerId) {
                 openInvoiceCustomerModal();
+                return;
+            }
+            if (paymentMethod === 'invoice' && invoiceSaleDateError()) {
+                openInvoiceCustomerModal();
+                var saleDateErrorEl = document.getElementById('invoiceCustomerError');
+                saleDateErrorEl.textContent = invoiceSaleDateError();
+                saleDateErrorEl.classList.remove('hidden');
                 return;
             }
             if (paymentMethod === 'credit' && !waiterMode && !customerId) {
@@ -1513,6 +1564,7 @@
             cart = [];
             expandedIdx = null;
             invoiceCustomerId = null;
+            syncInvoiceSaleDateBounds(true);
             var efrisBox = document.getElementById('efrisRequested');
             if (efrisBox) {
                 efrisBox.checked = false;
@@ -1537,6 +1589,7 @@
     });
 
     updateCheckoutButtonLabel();
+    syncInvoiceSaleDateBounds(true);
 })();
 </script>
 @endpush

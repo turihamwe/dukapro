@@ -28,7 +28,7 @@
                             Sale #{{ $sale->sale_number ?? $sale->id }}
                         </a>
                     </p>
-                    <p class="text-sm text-gray-600">{{ optional($sale->customer)->name ?? '—' }} · {{ $sale->created_at->format('M d, Y H:i') }}</p>
+                    <p class="text-sm text-gray-600">{{ optional($sale->customer)->name ?? '—' }} · {{ ($sale->completed_at ?? $sale->created_at)->format('M d, Y H:i') }}</p>
                 </div>
                 <div class="flex items-center gap-3">
                     <span class="font-semibold text-gray-900">@money($sale->total)</span>
