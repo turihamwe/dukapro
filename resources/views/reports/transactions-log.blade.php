@@ -5,8 +5,9 @@
 @section('content')
 @php
     $filterQuery = array_filter([
-        'start_date' => $startDate,
-        'end_date' => $endDate,
+        'range' => $range,
+        'start_date' => $range === 'custom' ? $startDate : null,
+        'end_date' => $range === 'custom' ? $endDate : null,
         'branch_id' => ($branch['show_picker'] ?? false) ? $branch['selected'] : null,
     ], function ($value) {
         return $value !== null && $value !== '';
@@ -26,17 +27,29 @@
 </div>
 
 <x-card class="mb-4">
-    <form method="get" action="{{ tenant_route('tenant.transactions-log.index') }}" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5 lg:items-end">
+    <form id="tx-filters" method="get" action="{{ tenant_route('tenant.transactions-log.index') }}" class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
         <input type="hidden" name="type" value="{{ $type }}">
         <div>
-            <label for="start_date" class="mb-1 block text-xs font-medium text-gray-700">Start date</label>
-            <input type="date" id="start_date" name="start_date" value="{{ $startDate }}"
-                   class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <label for="tx-range" class="mb-1 block text-xs font-medium text-gray-700">Period</label>
+            <select id="tx-range" name="range" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm sm:w-40">
+                <option value="day" @selected($range === 'day')>Today</option>
+                <option value="week" @selected($range === 'week')>This Week</option>
+                <option value="month" @selected($range === 'month')>This Month</option>
+                <option value="year" @selected($range === 'year')>This Year</option>
+                <option value="custom" @selected($range === 'custom')>Custom Range</option>
+            </select>
         </div>
-        <div>
-            <label for="end_date" class="mb-1 block text-xs font-medium text-gray-700">End date</label>
-            <input type="date" id="end_date" name="end_date" value="{{ $endDate }}"
-                   class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+        <div id="tx-custom-dates" class="flex flex-col gap-3 sm:flex-row {{ $range === 'custom' ? '' : 'hidden' }}">
+            <div>
+                <label for="start_date" class="mb-1 block text-xs font-medium text-gray-700">Start date</label>
+                <input type="date" id="start_date" name="start_date" value="{{ $startDate }}"
+                       class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            </div>
+            <div>
+                <label for="end_date" class="mb-1 block text-xs font-medium text-gray-700">End date</label>
+                <input type="date" id="end_date" name="end_date" value="{{ $endDate }}"
+                       class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            </div>
         </div>
         @if($branch['show_picker'] ?? false)
             <div>
@@ -100,4 +113,18 @@
         <div class="border-t border-gray-100 px-4 py-3">{{ $rows->links() }}</div>
     @endif
 </x-card>
+<script>
+(function () {
+    var range = document.getElementById('tx-range');
+    var custom = document.getElementById('tx-custom-dates');
+    var form = document.getElementById('tx-filters');
+    if (!range || !custom || !form) return;
+
+    range.addEventListener('change', function () {
+        var isCustom = range.value === 'custom';
+        custom.classList.toggle('hidden', !isCustom);
+        if (!isCustom) form.submit();
+    });
+})();
+</script>
 @endsection

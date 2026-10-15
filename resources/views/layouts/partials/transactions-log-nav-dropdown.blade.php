@@ -18,6 +18,7 @@
 
         return 'block rounded-lg px-3 py-2 text-sm '.($on ? $subActive : $subIdle);
     };
+    $logBusiness = auth()->user()->business ?? null;
 @endphp
 <div class="{{ $containerClass }}">
     <button type="button"
@@ -35,14 +36,16 @@
         <svg data-transactions-chevron class="h-4 w-4 shrink-0 transition {{ $transactionsOpen ? 'rotate-180' : '' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
     </button>
     <div data-transactions-menu class="ml-4 mt-1 space-y-1 {{ $transactionsOpen ? '' : 'hidden' }}">
-        @can('access-supplier-credit')
+        @if(\App\Support\SupplierCreditMode::active($logBusiness))
             <a href="{{ $logLink('supplier') }}" class="{{ $logActive('supplier') }}">Suppliers</a>
-        @endcan
-        <a href="{{ $logLink('customer') }}" class="{{ $logActive('customer') }}">Customers</a>
+        @endif
+        @if(\App\Support\CustomerCreditMode::active($logBusiness))
+            <a href="{{ $logLink('customer') }}" class="{{ $logActive('customer') }}">Customers</a>
+        @endif
         <a href="{{ $logLink('product') }}" class="{{ $logActive('product') }}">Products</a>
-        @can('manage-wallets')
+        @if(\App\Support\PaymentWalletMode::active($logBusiness))
             <a href="{{ $logLink('wallet') }}" class="{{ $logActive('wallet') }}">Wallets</a>
-        @endcan
+        @endif
         <a href="{{ $logLink('all') }}" class="{{ $logActive('all') }}">All</a>
     </div>
 </div>

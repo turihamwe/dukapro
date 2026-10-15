@@ -6,6 +6,9 @@ use App\Models\Branch;
 use App\Models\Business;
 use App\Models\User;
 use App\Support\BranchContext;
+use App\Support\CustomerCreditMode;
+use App\Support\PaymentWalletMode;
+use App\Support\SupplierCreditMode;
 use App\Support\WalletTransactionSource;
 use Carbon\Carbon;
 use Illuminate\Database\Query\Builder;
@@ -26,18 +29,20 @@ class TransactionsLogService
             $type = 'all';
         }
 
-        [$start, $end] = $this->resolveDates($request);
+        $period = $this->resolvePeriod($request);
         $branch = $this->resolveBranch($business, $user, $request);
-        $rows = $this->paginate($business, $user, $type, $start, $end, $branch['branch_id'], (int) $request->input('page', 1));
+        $rows = $this->paginate($business, $type, $period['start'], $period['end'], $branch['branch_id'], (int) $request->input('page', 1));
 
         return [
             'rows' => $rows,
             'type' => $type,
             'types' => $types,
-            'startDate' => $start->toDateString(),
-            'endDate' => $end->toDateString(),
+            'range' => $period['key'],
+            'rangeLabel' => $period['label'],
+            'startDate' => $period['start']->toDateString(),
+            'endDate' => $period['end']->toDateString(),
             'branch' => $branch,
-            'notice' => $this->noticeFor($user, (string) $request->input('type', 'all')),
+            'notice' => $this->noticeFor($business, (string) $request->input('type', 'all')),
         ];
     }
 
@@ -50,23 +55,28 @@ class TransactionsLogService
             'all' => 'All',
         ];
 
-        if ($user->can('access-supplier-credit')) {
+        $business = $user->business;
+
+        if (SupplierCreditMode::active($business)) {
             $types['supplier'] = 'Suppliers';
         }
 
-        $types['customer'] = 'Customers';
+        if (CustomerCreditMode::active($business)) {
+            $types['customer'] = 'Customers';
+        }
+
         $types['product'] = 'Products';
 
-        if ($user->can('manage-wallets')) {
+        if (PaymentWalletMode::active($business)) {
             $types['wallet'] = 'Wallets';
         }
 
         return $types;
     }
 
-    protected function paginate(Business $business, User $user, string $type, Carbon $start, Carbon $end, ?int $branchId, int $page): LengthAwarePaginator
+    protected function paginate(Business $business, string $type, Carbon $start, Carbon $end, ?int $branchId, int $page): LengthAwarePaginator
     {
-        $parts = $this->sources($business, $user, $type, $start, $end, $branchId);
+        $parts = $this->sources($business, $type, $start, $end, $branchId);
         $page = max(1, $page);
         $perPage = 40;
 
@@ -109,19 +119,19 @@ class TransactionsLogService
     /**
      * @return array<int, Builder>
      */
-    protected function sources(Business $business, User $user, string $type, Carbon $start, Carbon $end, ?int $branchId): array
+    protected function sources(Business $business, string $type, Carbon $start, Carbon $end, ?int $branchId): array
     {
         $parts = [];
         $include = function (string $source) use ($type): bool {
             return $type === 'all' || $type === $source;
         };
 
-        if ($include('supplier') && $user->can('access-supplier-credit')) {
+        if ($include('supplier') && SupplierCreditMode::active($business)) {
             $parts[] = $this->supplierBills($business->id, $start, $end, $branchId);
             $parts[] = $this->supplierPayments($business->id, $start, $end, $branchId);
         }
 
-        if ($include('customer')) {
+        if ($include('customer') && CustomerCreditMode::active($business)) {
             $parts[] = $this->customerSales($business->id, $start, $end, $branchId);
             $parts[] = $this->customerLedger($business->id, $start, $end, $branchId);
         }
@@ -133,7 +143,7 @@ class TransactionsLogService
             $parts[] = $this->productTransfers($business->id, $start, $end, $branchId);
         }
 
-        if ($include('wallet') && $user->can('manage-wallets')) {
+        if ($include('wallet') && PaymentWalletMode::active($business)) {
             $parts[] = $this->walletTransactions($business->id, $start, $end);
         }
 
@@ -439,38 +449,31 @@ class TransactionsLogService
     }
 
     /**
-     * @return array{0: Carbon, 1: Carbon}
+     * @return array{key: string, label: string, start: Carbon, end: Carbon}
      */
-    protected function resolveDates(Request $request): array
+    protected function resolvePeriod(Request $request): array
     {
-        $today = Carbon::today();
-        $start = $this->parseDate($request->input('start_date')) ?: $today->copy()->startOfMonth();
-        $end = $this->parseDate($request->input('end_date')) ?: $today->copy();
-
-        if ($end->lt($start)) {
-            [$start, $end] = [$end, $start];
+        $key = (string) $request->input('range', 'month');
+        if (! in_array($key, ['day', 'week', 'month', 'year', 'custom'], true)) {
+            $key = 'month';
         }
 
-        return [$start->startOfDay(), $end->startOfDay()];
-    }
+        $from = $request->input('start_date');
+        $to = $request->input('end_date');
 
-    protected function parseDate($value): ?Carbon
-    {
-        if (! is_string($value) || ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
-            return null;
+        if ($key === 'custom' && (! $from || ! $to)) {
+            $from = Carbon::today()->startOfMonth()->toDateString();
+            $to = Carbon::today()->toDateString();
         }
 
-        try {
-            $date = Carbon::createFromFormat('Y-m-d', $value);
-        } catch (\Throwable $e) {
-            return null;
-        }
+        $resolved = app(FinancialStatisticsService::class)->resolveRange($key, $from, $to);
 
-        if (! $date || $date->format('Y-m-d') !== $value) {
-            return null;
-        }
-
-        return $date;
+        return [
+            'key' => $resolved['key'],
+            'label' => $resolved['label'],
+            'start' => $resolved['start'],
+            'end' => $resolved['end'],
+        ];
     }
 
     /**
@@ -547,14 +550,18 @@ class TransactionsLogService
         ];
     }
 
-    protected function noticeFor(User $user, string $requested): ?string
+    protected function noticeFor(Business $business, string $requested): ?string
     {
-        if ($requested === 'supplier' && ! $user->can('access-supplier-credit')) {
-            return 'Supplier bills appear here when supplier credit is enabled.';
+        if ($requested === 'supplier' && ! SupplierCreditMode::active($business)) {
+            return 'Supplier bills appear here when Supplier credit & accounts payable is on.';
         }
 
-        if ($requested === 'wallet' && ! $user->can('manage-wallets')) {
-            return 'Wallet movements appear here when payment wallets are enabled.';
+        if ($requested === 'customer' && ! CustomerCreditMode::active($business)) {
+            return 'Customer sales and payments appear here when Customer credit & accounts receivable is on.';
+        }
+
+        if ($requested === 'wallet' && ! PaymentWalletMode::active($business)) {
+            return 'Wallet movements appear here when Wallets / payment accounts is on.';
         }
 
         return null;

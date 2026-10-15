@@ -1,0 +1,2263 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full theme-modern">
+<head>
+    <script>
+(function () {
+    try {
+        var root = document.documentElement;
+        var stored = localStorage.getItem('theme');
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+        if (stored === 'dark' || (stored !== 'light' && prefersDark)) {
+            root.classList.add('dark');
+        } else {
+            root.classList.remove('dark');
+        }
+    } catch (e) {}
+})();
+</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="">
+    <title>Transactions Log</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                    },
+                },
+            },
+        };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+    .dark {
+        color-scheme: dark;
+    }
+
+    /* Primary copy (was dark-on-light → light-on-dark) */
+    .dark .text-gray-900,
+    .dark .text-gray-800 { color: rgb(241 245 249); }
+    .dark .text-gray-700 { color: rgb(226 232 240); }
+    .dark .text-gray-600 { color: rgb(203 213 225); }
+    .dark .text-gray-500 { color: rgb(148 163 184); }
+    .dark .text-gray-400 { color: rgb(148 163 184); }
+    .dark .text-black { color: rgb(248 250 252); }
+
+    .dark .hover\:text-gray-900:hover,
+    .dark .hover\:text-gray-800:hover,
+    .dark .hover\:text-gray-700:hover { color: rgb(248 250 252); }
+    .dark .hover\:text-gray-600:hover,
+    .dark .hover\:text-gray-500:hover { color: rgb(226 232 240); }
+
+    /* Surfaces */
+    .dark .bg-white { background-color: rgb(30 41 59); }
+    .dark .bg-gray-50 { background-color: rgb(15 23 42); }
+    .dark .bg-gray-100 { background-color: rgb(51 65 85); }
+    .dark .bg-gray-200 { background-color: rgb(71 85 105); }
+
+    .dark .hover\:bg-white:hover { background-color: rgb(51 65 85); }
+    .dark .hover\:bg-gray-50:hover { background-color: rgb(51 65 85); }
+    .dark .hover\:bg-gray-100:hover { background-color: rgb(71 85 105); }
+
+    /* Borders & dividers */
+    .dark .border-gray-100,
+    .dark .border-gray-200,
+    .dark .border-gray-300 { border-color: rgb(71 85 105); }
+    .dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+    .dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+        border-color: rgb(71 85 105);
+    }
+    .dark .ring-gray-200,
+    .dark .ring-gray-300 { --tw-ring-color: rgb(71 85 105); }
+
+    /* Nav / accents still readable */
+    .dark .bg-indigo-50 { background-color: rgb(30 27 75); }
+    .dark .text-indigo-700,
+    .dark .text-indigo-600 { color: rgb(165 180 252); }
+    .dark .hover\:text-indigo-600:hover { color: rgb(199 210 254); }
+    .dark .border-indigo-100,
+    .dark .border-indigo-200 { border-color: rgb(67 56 202); }
+
+    .dark .text-emerald-600,
+    .dark .text-emerald-700 { color: rgb(110 231 183); }
+    .dark .text-red-600,
+    .dark .text-red-700,
+    .dark .text-red-800 { color: rgb(252 165 165); }
+    .dark .text-amber-700,
+    .dark .text-amber-800 { color: rgb(252 211 77); }
+    .dark .text-sky-700 { color: rgb(125 211 252); }
+
+    /* Flash / alert banners */
+    .dark .bg-emerald-50 { background-color: rgb(6 78 59 / 0.45); }
+    .dark .text-emerald-800 { color: rgb(167 243 208); }
+    .dark .border-emerald-200 { border-color: rgb(16 185 129 / 0.45); }
+
+    .dark .bg-amber-50 { background-color: rgb(120 53 15 / 0.45); }
+    .dark .text-amber-800 { color: rgb(253 230 138); }
+    .dark .border-amber-200 { border-color: rgb(245 158 11 / 0.45); }
+
+    .dark .bg-red-50 { background-color: rgb(127 29 29 / 0.45); }
+    .dark .text-red-800 { color: rgb(254 202 202); }
+    .dark .border-red-200 { border-color: rgb(248 113 113 / 0.45); }
+
+    .dark .bg-indigo-50.text-indigo-800,
+    .dark .alert-banner.bg-indigo-50 { background-color: rgb(30 27 75 / 0.55); }
+    .dark .text-indigo-800 { color: rgb(199 210 254); }
+
+    /* Form fields */
+    .dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+    .dark select,
+    .dark textarea {
+        background-color: rgb(30 41 59);
+        border-color: rgb(100 116 139);
+        color: rgb(241 245 249);
+    }
+    .dark input::placeholder,
+    .dark textarea::placeholder {
+        color: rgb(148 163 184);
+    }
+
+    /* App modals (base layout) */
+    .dark .app-modal-panel,
+    .dark .app-modal-header,
+    .dark .app-modal-footer {
+        background: rgb(30 41 59);
+        border-color: rgb(71 85 105);
+    }
+    .dark .app-modal-header {
+        border-bottom-color: rgb(71 85 105);
+    }
+    .dark .app-modal-footer {
+        border-top-color: rgb(71 85 105);
+        box-shadow: 0 -4px 16px rgb(0 0 0 / 0.35);
+    }
+
+    /* Stat / metric cards with forced bg-white */
+    .dark .bg-gradient-to-br.bg-white {
+        background-image: linear-gradient(to bottom right, rgb(30 41 59 / 0.9), rgb(15 23 42 / 0.95));
+    }
+</style>
+    <style>
+        body { font-family: Inter, system-ui, sans-serif; }
+        [x-cloak] { display: none !important; }
+        .theme-modern .modern-app { min-height: 100vh; min-height: 100dvh; }
+        .theme-modern .modern-sidebar { background: transparent; }
+        .theme-modern .modern-nav-link { min-height: 44px; }
+        .theme-modern main { -webkit-overflow-scrolling: touch; }
+        .theme-modern .overflow-x-auto { -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+        @media (max-width: 639px) {
+            .theme-modern .modern-metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+            .theme-modern .modern-metric-grid > div { padding: 1rem; }
+            .theme-modern .modern-metric-grid p.text-2xl { font-size: 1.25rem; }
+            .theme-modern header button,
+            .theme-modern header a.rounded-lg { min-height: 44px; min-width: 44px; display: inline-flex; align-items: center; justify-content: center; }
+            .theme-modern main { padding-left: 1rem; padding-right: 1rem; }
+        }
+
+        /* Mobile-friendly modals & slide-overs */
+        :root {
+            --app-modal-max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+            --app-modal-bottom-offset: 0px;
+        }
+        body.has-cashier-bottom-nav {
+            --app-modal-bottom-offset: 4.5rem;
+            --app-modal-max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - var(--app-modal-bottom-offset));
+        }
+        .app-modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            display: none;
+            overflow: hidden;
+            background: rgb(17 24 39 / 0.55);
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+        }
+        .app-modal-overlay.is-open {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: stretch;
+            padding-top: max(0.5rem, env(safe-area-inset-top, 0px));
+            padding-bottom: calc(var(--app-modal-bottom-offset) + max(0.5rem, env(safe-area-inset-bottom, 0px)));
+        }
+        @media (min-width: 640px) {
+            .app-modal-overlay.is-open {
+                justify-content: center;
+                align-items: center;
+                padding: max(1rem, env(safe-area-inset-top, 0px)) 1rem max(1rem, env(safe-area-inset-bottom, 0px));
+            }
+            body.has-cashier-bottom-nav {
+                --app-modal-bottom-offset: 0px;
+                --app-modal-max-height: min(90dvh, calc(100dvh - 2rem));
+            }
+        }
+        .app-modal-panel {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 32rem;
+            min-height: 0;
+            max-height: var(--app-modal-max-height);
+            margin-left: auto;
+            margin-right: auto;
+            border-radius: 1rem 1rem 0 0;
+            background: #fff;
+            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+            overflow: hidden;
+            flex-shrink: 1;
+        }
+        @media (min-width: 640px) {
+            .app-modal-panel {
+                border-radius: 1rem;
+                width: 100%;
+            }
+        }
+        .app-modal-panel > form,
+        .app-modal-panel > .app-modal-form {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            min-height: 0;
+            max-height: 100%;
+            overflow: hidden;
+        }
+        .app-modal-header {
+            flex: 0 0 auto;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.75rem;
+            padding: 1rem 1.25rem 0.875rem;
+            border-bottom: 1px solid #f3f4f6;
+            background: #fff;
+        }
+        .app-modal-body {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-x: hidden;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            padding: 1rem 1.25rem;
+        }
+        .app-modal-footer {
+            flex: 0 0 auto;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            justify-content: flex-end;
+            align-items: center;
+            padding: 0.875rem 1.25rem;
+            padding-bottom: max(0.875rem, env(safe-area-inset-bottom, 0px));
+            border-top: 1px solid #f3f4f6;
+            background: #fff;
+            box-shadow: 0 -4px 16px rgb(0 0 0 / 0.04);
+        }
+        .app-modal-footer .w-full {
+            flex: 1 1 100%;
+        }
+        @media (max-width: 639px) {
+            .app-modal-overlay.is-open {
+                padding-bottom: 0;
+            }
+            .app-modal-overlay.is-open .app-modal-panel {
+                max-height: calc(100dvh - env(safe-area-inset-top, 0px) - var(--app-modal-bottom-offset));
+                height: min(100%, calc(100dvh - env(safe-area-inset-top, 0px) - var(--app-modal-bottom-offset)));
+                margin-bottom: 0;
+                border-radius: 1rem 1rem 0 0;
+            }
+            .app-modal-overlay.is-open .app-modal-body {
+                flex: 1 1 auto;
+                min-height: 0;
+                padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
+            }
+            .app-modal-footer {
+                flex-direction: column-reverse;
+                gap: 0.625rem;
+            }
+            .app-modal-footer > * {
+                width: 100%;
+            }
+            .app-modal-overlay.is-open .app-modal-footer {
+                position: fixed;
+                left: 0;
+                right: 0;
+                bottom: calc(var(--app-modal-bottom-offset) + env(safe-area-inset-bottom, 0px));
+                z-index: 210;
+                margin: 0;
+                max-width: none;
+                padding: 0.875rem 1.25rem calc(0.875rem + env(safe-area-inset-bottom, 0px));
+                border-top: 1px solid #e5e7eb;
+                background: #fff;
+                box-shadow: 0 -10px 28px rgb(0 0 0 / 0.12);
+            }
+            .app-modal-footer button,
+            .app-modal-footer a[role="button"],
+            .app-modal-footer .inline-flex {
+                min-height: 48px;
+                width: 100%;
+                justify-content: center;
+            }
+        }
+        body.app-modal-open {
+            overflow: hidden;
+            touch-action: none;
+        }
+        body.app-modal-open .cashier-bottom-nav,
+        body.app-modal-open .whatsapp-float-btn {
+            visibility: hidden;
+            pointer-events: none;
+        }
+    </style>
+    <link rel="manifest" href="http://localhost/app/dukapro-hardware/manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="http://localhost/assets/pwa/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="http://localhost/assets/pwa/icon-512.png">
+<meta name="theme-color" content="#0A192F">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DukaPro POS">
+<link rel="apple-touch-icon" href="http://localhost/assets/pwa/icon-192.png">
+<meta name="dukapro-pwa-id" content="/app/dukapro-hardware/">
+<style>[x-cloak] { display: none !important; }</style>
+<script>
+(function () {
+    window.__dukaproPwa = window.__dukaproPwa || {
+        deferredPrompt: null,
+        storageKey: "dukapro-pwa-installed:\/app\/dukapro-hardware\/",
+    };
+
+    function notifyInstallAvailable() {
+        window.dispatchEvent(new CustomEvent('dukapro-pwa-install-available'));
+    }
+
+    window.addEventListener('beforeinstallprompt', function (event) {
+        event.preventDefault();
+        window.__dukaproPwa.deferredPrompt = event;
+        notifyInstallAvailable();
+    });
+
+    window.addEventListener('appinstalled', function () {
+        try {
+            localStorage.setItem(window.__dukaproPwa.storageKey, '1');
+        } catch (e) {}
+        window.__dukaproPwa.deferredPrompt = null;
+        window.dispatchEvent(new CustomEvent('dukapro-pwa-installed'));
+    });
+
+    if (window.__dukaproPwa.deferredPrompt) {
+        notifyInstallAvailable();
+    }
+
+    if (!('serviceWorker' in navigator)) {
+        return;
+    }
+
+    window.addEventListener('load', function () {
+        navigator.serviceWorker.register("http:\/\/localhost\/sw.js", { scope: '/' }).then(function (registration) {
+            window.__dukaproPwa.serviceWorkerRegistration = registration;
+        }).catch(function (err) {
+            console.warn('DukaPro service worker registration failed', err);
+        });
+    });
+})();
+</script>
+    </head>
+<body class="h-full bg-gray-50 text-gray-900 antialiased dark:bg-slate-950 dark:text-slate-100 " x-data>
+        <div class="modern-app flex min-h-screen bg-[#F3F4F6] dark:bg-slate-950">
+    
+    <aside class="modern-sidebar hidden w-64 shrink-0 flex-col p-4 lg:flex">
+        <div class="flex flex-1 flex-col rounded-2xl bg-[#0A192F] px-3 py-5 shadow-xl">
+            <div class="mb-8 px-3">
+                <div class="flex min-w-0 items-center gap-3">
+    <a href="http://localhost/app/dukapro-hardware/dashboard" aria-label="Go to your dashboard" class="inline-flex items-center min-w-0 max-w-full rounded-md transition-opacity hover:opacity-85 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 shrink-0">
+            <img src="http://localhost/assets/dukapro-logo.png?v=1788129464" alt="Duka Pro" class="max-h-12 w-auto max-w-[180px] sm:max-w-[196px] shrink-0 object-contain object-left" width="320" height="80" decoding="async">
+        </a>
+            <p class="min-w-0 truncate text-xs text-slate-400">DukaPro Hardware</p>
+    </div>
+            </div>
+
+            <nav class="flex-1 space-y-1">
+                <a href="http://localhost/app/dukapro-hardware/dashboard"
+       class="modern-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] text-slate-300 hover:bg-white/5 hover:text-white border-l-[3px] border-transparent">
+        <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+        Dashboard
+    </a>
+    <a href="http://localhost/app/dukapro-hardware/inventory"
+       class="modern-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] text-slate-300 hover:bg-white/5 hover:text-white border-l-[3px] border-transparent">
+        <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+        Inventory
+    </a>
+    
+        <div class="modern-reports-nav">
+        <button type="button"
+                data-reports-toggle
+                aria-expanded="false"
+                class="modern-nav-link flex w-full items-center justify-between gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] text-slate-300 hover:bg-white/5 hover:text-white border-l-[3px] border-transparent">
+            <span class="flex items-center gap-3">
+                <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                Reports
+            </span>
+            <svg data-reports-chevron class="h-4 w-4 shrink-0 transition " fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div data-reports-menu class="ml-4 mt-1 space-y-1 hidden">
+                            <a href="http://localhost/app/dukapro-hardware/reports/sales"
+                   class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Sales reports</a>
+                                        <a href="http://localhost/app/dukapro-hardware/sales/documents"
+                   class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Invoices & receipts</a>
+                                        <a href="http://localhost/app/dukapro-hardware/reconciliation"
+                   class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">EOD reports</a>
+                                        <a href="http://localhost/app/dukapro-hardware/reconciliation-shortages"
+                   class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Shift shortages</a>
+                                        <a href="http://localhost/app/dukapro-hardware/expenses"
+                   class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Expenses reports</a>
+                    </div>
+    </div>
+    <a href="http://localhost/app/dukapro-hardware/staff"
+       class="modern-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] text-slate-300 hover:bg-white/5 hover:text-white border-l-[3px] border-transparent">
+        <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+        Staff
+    </a>
+    <a href="http://localhost/app/dukapro-hardware/inventory?stock=low"
+       class="modern-nav-link flex items-center justify-between gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] text-slate-300 hover:bg-white/5 hover:text-white border-l-[3px] border-transparent">
+        <span class="flex items-center gap-3">
+            <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            Stock Alerts
+        </span>
+            </a>
+    <a href="http://localhost/app/dukapro-hardware/branches"
+       class="modern-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] text-slate-300 hover:bg-white/5 hover:text-white border-l-[3px] border-transparent">
+        <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+        Branches
+    </a>
+    <div class="modern-purchases-nav">
+    <button type="button"
+            data-purchases-toggle
+            aria-expanded="false"
+            class="modern-nav-link flex w-full items-center justify-between gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] text-slate-300 hover:bg-white/5 hover:text-white border-l-[3px] border-transparent">
+        <span class="flex items-center gap-3">
+                            <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                        Purchases
+        </span>
+        <svg data-purchases-chevron class="h-4 w-4 shrink-0 transition " fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div data-purchases-menu class="ml-4 mt-1 space-y-1 hidden">
+        <a href="http://localhost/app/dukapro-hardware/supplier-credit/receives/create"
+           title="Restock"
+           class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Purchase Receives</a>
+        <a href="http://localhost/app/dukapro-hardware/supplier-credit/bills"
+           class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Bills</a>
+        <a href="http://localhost/app/dukapro-hardware/supplier-credit/payments"
+           class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Payments Made</a>
+        <a href="http://localhost/app/dukapro-hardware/supplier-credit/vendors"
+           class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Vendors</a>
+        <a href="http://localhost/app/dukapro-hardware/supplier-credit/overview"
+           class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Overview</a>
+        <a href="http://localhost/app/dukapro-hardware/supplier-credit/financials/income-statement"
+           class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Income statement</a>
+        <a href="http://localhost/app/dukapro-hardware/supplier-credit/financials/balance-sheet"
+           class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Balance sheet</a>
+    </div>
+</div>
+    <div class="modern-receivables-nav">
+    <button type="button"
+            data-receivables-toggle
+            aria-expanded="false"
+            class="modern-nav-link flex w-full items-center justify-between gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] text-slate-300 hover:bg-white/5 hover:text-white border-l-[3px] border-transparent">
+        <span class="flex items-center gap-3">
+                            <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        Receivables
+        </span>
+        <svg data-receivables-chevron class="h-4 w-4 shrink-0 transition " fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div data-receivables-menu class="ml-4 mt-1 space-y-1 hidden">
+        <a href="http://localhost/app/dukapro-hardware/customer-credit/customers"
+           class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Customers</a>
+        <a href="http://localhost/app/dukapro-hardware/customer-credit/invoices"
+           class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Invoices / Credit Sales</a>
+        <a href="http://localhost/app/dukapro-hardware/customer-credit/payments"
+           class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Payments Received</a>
+    </div>
+</div>
+    <div class="modern-transactions-nav">
+    <button type="button"
+            data-transactions-toggle
+            aria-expanded="false"
+            class="modern-nav-link flex w-full items-center justify-between gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] text-slate-300 hover:bg-white/5 hover:text-white border-l-[3px] border-transparent">
+        <span class="flex items-center gap-3">
+                            <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Transactions
+        </span>
+        <svg data-transactions-chevron class="h-4 w-4 shrink-0 transition " fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div data-transactions-menu class="ml-4 mt-1 space-y-1 hidden">
+                    <a href="http://localhost/app/dukapro-hardware/transactions-log?type=supplier" class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Suppliers</a>
+                            <a href="http://localhost/app/dukapro-hardware/transactions-log?type=customer" class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Customers</a>
+                <a href="http://localhost/app/dukapro-hardware/transactions-log?type=product" class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Products</a>
+                    <a href="http://localhost/app/dukapro-hardware/transactions-log?type=wallet" class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Wallets</a>
+                <a href="http://localhost/app/dukapro-hardware/transactions-log?type=all" class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">All</a>
+    </div>
+</div>
+    <a href="http://localhost/app/dukapro-hardware/wallets"
+       class="modern-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] text-slate-300 hover:bg-white/5 hover:text-white border-l-[3px] border-transparent">
+        <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+        Wallets
+    </a>
+<a href="http://localhost/app/dukapro-hardware/downloads"
+   class="modern-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] text-slate-300 hover:bg-white/5 hover:text-white border-l-[3px] border-transparent">
+    <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"/></svg>
+    Downloads
+</a>
+    <a href="http://localhost/app/dukapro-hardware/profile"
+       class="modern-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] text-slate-300 hover:bg-white/5 hover:text-white border-l-[3px] border-transparent">
+        <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+        Profile
+    </a>
+    <a href="http://localhost/app/dukapro-hardware/business"
+       class="modern-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] text-slate-300 hover:bg-white/5 hover:text-white border-l-[3px] border-transparent">
+        <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Settings
+    </a>
+            </nav>
+
+            <div class="mt-6 space-y-3 border-t border-white/10 px-3 pt-5">
+                <div class="flex items-center gap-2 text-xs text-emerald-400">
+                    <span class="inline-block h-2 w-2 rounded-full bg-emerald-400"></span>
+                    Cloud-Based · Online
+                </div>
+                <div x-data="pwaInstall()" x-cloak class="">
+    <template x-if="isStandalone || isInstalledOnDevice">
+        <p class="text-xs text-emerald-600">App installed on this device</p>
+    </template>
+    <template x-if="!isStandalone && !isInstalledOnDevice">
+        <button type="button"
+                @click="installApp()"
+                class="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-emerald-300 transition hover:bg-white/5 hover:text-white">
+            <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"/>
+            </svg>
+            <span>Install App</span>
+        </button>
+    </template>
+    </div>
+                <a href="http://localhost/logout" class="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/5 hover:text-white">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                    Log out
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    
+    <div id="modern-nav-backdrop" class="fixed inset-0 z-40 hidden bg-black/60 lg:hidden"></div>
+    <aside id="modern-nav-drawer" class="fixed inset-y-0 left-0 z-50 w-72 -translate-x-full transform bg-[#0A192F] p-4 transition-transform duration-200 lg:hidden">
+        <div class="mb-6 flex items-center justify-between gap-3">
+            <div class="min-w-0 flex-1">
+                <div class="flex min-w-0 items-center gap-3">
+    <a href="http://localhost/app/dukapro-hardware/dashboard" aria-label="Go to your dashboard" class="inline-flex items-center min-w-0 max-w-full rounded-md transition-opacity hover:opacity-85 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 shrink-0">
+            <img src="http://localhost/assets/dukapro-logo.png?v=1788129464" alt="Duka Pro" class="max-h-12 w-auto max-w-[180px] sm:max-w-[196px] shrink-0 object-contain object-left" width="320" height="80" decoding="async">
+        </a>
+            <p class="min-w-0 truncate text-xs text-slate-400">DukaPro Hardware</p>
+    </div>
+            </div>
+            <button type="button" id="modern-nav-close" class="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-slate-400 hover:bg-white/10" aria-label="Close menu">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <nav class="space-y-1 overflow-y-auto pb-28" style="max-height: calc(100dvh - 5rem);">
+            <a href="http://localhost/app/dukapro-hardware/dashboard"
+       class="modern-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] text-slate-300 hover:bg-white/5 hover:text-white border-l-[3px] border-transparent">
+        <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+        Dashboard
+    </a>
+    <a href="http://localhost/app/dukapro-hardware/inventory"
+       class="modern-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] text-slate-300 hover:bg-white/5 hover:text-white border-l-[3px] border-transparent">
+        <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+        Inventory
+    </a>
+    
+        <div class="modern-reports-nav">
+        <button type="button"
+                data-reports-toggle
+                aria-expanded="false"
+                class="modern-nav-link flex w-full items-center justify-between gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] text-slate-300 hover:bg-white/5 hover:text-white border-l-[3px] border-transparent">
+            <span class="flex items-center gap-3">
+                <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                Reports
+            </span>
+            <svg data-reports-chevron class="h-4 w-4 shrink-0 transition " fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div data-reports-menu class="ml-4 mt-1 space-y-1 hidden">
+                            <a href="http://localhost/app/dukapro-hardware/reports/sales"
+                   class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Sales reports</a>
+                                        <a href="http://localhost/app/dukapro-hardware/sales/documents"
+                   class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Invoices & receipts</a>
+                                        <a href="http://localhost/app/dukapro-hardware/reconciliation"
+                   class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">EOD reports</a>
+                                        <a href="http://localhost/app/dukapro-hardware/reconciliation-shortages"
+                   class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Shift shortages</a>
+                                        <a href="http://localhost/app/dukapro-hardware/expenses"
+                   class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Expenses reports</a>
+                    </div>
+    </div>
+    <a href="http://localhost/app/dukapro-hardware/staff"
+       class="modern-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] text-slate-300 hover:bg-white/5 hover:text-white border-l-[3px] border-transparent">
+        <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+        Staff
+    </a>
+    <a href="http://localhost/app/dukapro-hardware/inventory?stock=low"
+       class="modern-nav-link flex items-center justify-between gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] text-slate-300 hover:bg-white/5 hover:text-white border-l-[3px] border-transparent">
+        <span class="flex items-center gap-3">
+            <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            Stock Alerts
+        </span>
+            </a>
+    <a href="http://localhost/app/dukapro-hardware/branches"
+       class="modern-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] text-slate-300 hover:bg-white/5 hover:text-white border-l-[3px] border-transparent">
+        <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+        Branches
+    </a>
+    <div class="modern-purchases-nav">
+    <button type="button"
+            data-purchases-toggle
+            aria-expanded="false"
+            class="modern-nav-link flex w-full items-center justify-between gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] text-slate-300 hover:bg-white/5 hover:text-white border-l-[3px] border-transparent">
+        <span class="flex items-center gap-3">
+                            <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                        Purchases
+        </span>
+        <svg data-purchases-chevron class="h-4 w-4 shrink-0 transition " fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div data-purchases-menu class="ml-4 mt-1 space-y-1 hidden">
+        <a href="http://localhost/app/dukapro-hardware/supplier-credit/receives/create"
+           title="Restock"
+           class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Purchase Receives</a>
+        <a href="http://localhost/app/dukapro-hardware/supplier-credit/bills"
+           class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Bills</a>
+        <a href="http://localhost/app/dukapro-hardware/supplier-credit/payments"
+           class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Payments Made</a>
+        <a href="http://localhost/app/dukapro-hardware/supplier-credit/vendors"
+           class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Vendors</a>
+        <a href="http://localhost/app/dukapro-hardware/supplier-credit/overview"
+           class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Overview</a>
+        <a href="http://localhost/app/dukapro-hardware/supplier-credit/financials/income-statement"
+           class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Income statement</a>
+        <a href="http://localhost/app/dukapro-hardware/supplier-credit/financials/balance-sheet"
+           class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Balance sheet</a>
+    </div>
+</div>
+    <div class="modern-receivables-nav">
+    <button type="button"
+            data-receivables-toggle
+            aria-expanded="false"
+            class="modern-nav-link flex w-full items-center justify-between gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] text-slate-300 hover:bg-white/5 hover:text-white border-l-[3px] border-transparent">
+        <span class="flex items-center gap-3">
+                            <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        Receivables
+        </span>
+        <svg data-receivables-chevron class="h-4 w-4 shrink-0 transition " fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div data-receivables-menu class="ml-4 mt-1 space-y-1 hidden">
+        <a href="http://localhost/app/dukapro-hardware/customer-credit/customers"
+           class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Customers</a>
+        <a href="http://localhost/app/dukapro-hardware/customer-credit/invoices"
+           class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Invoices / Credit Sales</a>
+        <a href="http://localhost/app/dukapro-hardware/customer-credit/payments"
+           class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Payments Received</a>
+    </div>
+</div>
+    <div class="modern-transactions-nav">
+    <button type="button"
+            data-transactions-toggle
+            aria-expanded="false"
+            class="modern-nav-link flex w-full items-center justify-between gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] text-slate-300 hover:bg-white/5 hover:text-white border-l-[3px] border-transparent">
+        <span class="flex items-center gap-3">
+                            <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Transactions
+        </span>
+        <svg data-transactions-chevron class="h-4 w-4 shrink-0 transition " fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div data-transactions-menu class="ml-4 mt-1 space-y-1 hidden">
+                    <a href="http://localhost/app/dukapro-hardware/transactions-log?type=supplier" class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Suppliers</a>
+                            <a href="http://localhost/app/dukapro-hardware/transactions-log?type=customer" class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Customers</a>
+                <a href="http://localhost/app/dukapro-hardware/transactions-log?type=product" class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Products</a>
+                    <a href="http://localhost/app/dukapro-hardware/transactions-log?type=wallet" class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">Wallets</a>
+                <a href="http://localhost/app/dukapro-hardware/transactions-log?type=all" class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-white">All</a>
+    </div>
+</div>
+    <a href="http://localhost/app/dukapro-hardware/wallets"
+       class="modern-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] text-slate-300 hover:bg-white/5 hover:text-white border-l-[3px] border-transparent">
+        <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+        Wallets
+    </a>
+<a href="http://localhost/app/dukapro-hardware/downloads"
+   class="modern-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] text-slate-300 hover:bg-white/5 hover:text-white border-l-[3px] border-transparent">
+    <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"/></svg>
+    Downloads
+</a>
+    <a href="http://localhost/app/dukapro-hardware/profile"
+       class="modern-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] text-slate-300 hover:bg-white/5 hover:text-white border-l-[3px] border-transparent">
+        <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+        Profile
+    </a>
+    <a href="http://localhost/app/dukapro-hardware/business"
+       class="modern-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition border-l-[3px] text-slate-300 hover:bg-white/5 hover:text-white border-l-[3px] border-transparent">
+        <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Settings
+    </a>
+        </nav>
+        <div class="absolute bottom-0 left-0 right-0 border-t border-white/10 p-4">
+            <p class="mb-3 text-xs text-emerald-400">Cloud-Based · Online</p>
+            <div x-data="pwaInstall()" x-cloak class="">
+    <template x-if="isStandalone || isInstalledOnDevice">
+        <p class="text-xs text-emerald-600">App installed on this device</p>
+    </template>
+    <template x-if="!isStandalone && !isInstalledOnDevice">
+        <button type="button"
+                @click="installApp()"
+                class="mb-2 flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-emerald-300 transition hover:bg-white/5 hover:text-white">
+            <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"/>
+            </svg>
+            <span>Install App</span>
+        </button>
+    </template>
+    </div>
+            <a href="http://localhost/logout" class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5">Log out</a>
+        </div>
+    </aside>
+
+    <div class="flex min-w-0 flex-1 flex-col">
+                        
+        
+        <header class="sticky top-0 z-30 border-b border-gray-200/80 bg-white/95 px-4 py-3 backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/95 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <button type="button" id="modern-nav-open" class="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 lg:hidden" aria-label="Open menu">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                    </button>
+                    <div class="flex min-w-0 items-center gap-2 lg:hidden">
+                        <a href="http://localhost/app/dukapro-hardware/dashboard" aria-label="Go to your dashboard" class="inline-flex items-center min-w-0 max-w-full rounded-md transition-opacity hover:opacity-85 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40">
+            <img src="http://localhost/assets/dukapro-logo.png?v=1788129464" alt="Duka Pro" class="max-h-9 w-auto max-w-[132px] sm:max-w-[148px] shrink-0 object-contain object-left" width="320" height="80" decoding="async">
+        </a>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2 sm:gap-4">
+                                                                        <form method="POST" action="http://localhost/app/dukapro-hardware/cashier-mode/enable">
+                                <input type="hidden" name="_token" value="">                                <button type="submit" class="inline-flex min-h-[44px] items-center rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-600">Cashier Mode</button>
+                            </form>
+                                            
+                                            <div class="relative" id="low-stock-notifications">
+    <button type="button"
+            id="low-stock-notifications-toggle"
+            class="relative inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100"
+            aria-label="Low stock notifications"
+            aria-expanded="false"
+            aria-controls="low-stock-notifications-panel">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+        </svg>
+            </button>
+
+    <div id="low-stock-notifications-panel"
+         class="absolute right-0 z-50 mt-2 hidden w-[min(100vw-2rem,20rem)] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg"
+         role="menu">
+        <div class="border-b border-gray-100 px-4 py-3">
+            <p class="text-sm font-semibold text-gray-900">Low stock</p>
+            <p class="text-xs text-gray-500">Products at or below critical level</p>
+        </div>
+
+                    <p class="px-4 py-6 text-center text-sm text-gray-500">All products are above your stock thresholds.</p>
+        
+        <div class="border-t border-gray-100 bg-gray-50 px-4 py-2.5">
+            <a href="http://localhost/app/dukapro-hardware/inventory?stock=low"
+               class="text-xs font-semibold text-emerald-600 hover:text-emerald-700">
+                                    Open stock alerts →
+                            </a>
+        </div>
+    </div>
+</div>
+                    
+                    <button type="button"
+        data-theme-toggle
+        class="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-gray-800 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100"
+        aria-label="Toggle dark mode"
+        aria-pressed="false"
+        title="Toggle dark mode">
+    <svg data-theme-icon="moon" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+    </svg>
+    <svg data-theme-icon="sun" class="hidden h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+    </svg>
+</button>
+
+                    <a href="http://localhost/app/dukapro-hardware/profile" class="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100" aria-label="Settings">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    </a>
+
+                    <div class="flex items-center gap-2 border-l border-gray-200 pl-2 dark:border-gray-700 sm:pl-4">
+                        <div class="flex h-9 w-9 items-center justify-center rounded-full bg-[#0A192F] text-xs font-bold text-white">
+                            TT
+                        </div>
+                        <div class="hidden min-w-0 sm:block">
+                            <p class="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">Thomas Turihamwe</p>
+                            <p class="text-xs capitalize text-gray-500 dark:text-gray-400">owner</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="relative flex-1 overflow-auto px-4 py-6 sm:px-6 lg:px-8">
+                        
+<div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+        <h1 class="text-xl font-semibold tracking-tight text-gray-900">Transactions Log</h1>
+                    <p class="mt-1 text-sm text-gray-500">Sales, bills, stock movements, and wallet activity from the records you already keep</p>
+            </div>
+    </div>
+
+<div class="mb-4 flex flex-wrap gap-2">
+            <a href="http://localhost/app/dukapro-hardware/transactions-log?range=month&amp;branch_id=all&amp;type=all"
+           class="rounded-full border px-3 py-1 text-xs font-medium border-indigo-600 bg-indigo-600 text-white">
+            All
+        </a>
+            <a href="http://localhost/app/dukapro-hardware/transactions-log?range=month&amp;branch_id=all&amp;type=supplier"
+           class="rounded-full border px-3 py-1 text-xs font-medium border-gray-200 bg-white text-gray-700 hover:bg-gray-50">
+            Suppliers
+        </a>
+            <a href="http://localhost/app/dukapro-hardware/transactions-log?range=month&amp;branch_id=all&amp;type=customer"
+           class="rounded-full border px-3 py-1 text-xs font-medium border-gray-200 bg-white text-gray-700 hover:bg-gray-50">
+            Customers
+        </a>
+            <a href="http://localhost/app/dukapro-hardware/transactions-log?range=month&amp;branch_id=all&amp;type=product"
+           class="rounded-full border px-3 py-1 text-xs font-medium border-gray-200 bg-white text-gray-700 hover:bg-gray-50">
+            Products
+        </a>
+            <a href="http://localhost/app/dukapro-hardware/transactions-log?range=month&amp;branch_id=all&amp;type=wallet"
+           class="rounded-full border px-3 py-1 text-xs font-medium border-gray-200 bg-white text-gray-700 hover:bg-gray-50">
+            Wallets
+        </a>
+    </div>
+
+<div class="bg-white shadow-sm rounded-xl border border-gray-100 dark:border-slate-600 dark:bg-slate-800 p-6 sm:p-8 mb-4">
+    <form id="tx-filters" method="get" action="http://localhost/app/dukapro-hardware/transactions-log" class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+        <input type="hidden" name="type" value="all">
+        <div>
+            <label for="tx-range" class="mb-1 block text-xs font-medium text-gray-700">Period</label>
+            <select id="tx-range" name="range" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm sm:w-40">
+                <option value="day" >Today</option>
+                <option value="week" >This Week</option>
+                <option value="month" selected>This Month</option>
+                <option value="year" >This Year</option>
+                <option value="custom" >Custom Range</option>
+            </select>
+        </div>
+        <div id="tx-custom-dates" class="flex flex-col gap-3 sm:flex-row hidden">
+            <div>
+                <label for="start_date" class="mb-1 block text-xs font-medium text-gray-700">Start date</label>
+                <input type="date" id="start_date" name="start_date" value="2026-10-01"
+                       class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            </div>
+            <div>
+                <label for="end_date" class="mb-1 block text-xs font-medium text-gray-700">End date</label>
+                <input type="date" id="end_date" name="end_date" value="2026-10-15"
+                       class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            </div>
+        </div>
+                    <div>
+                <label for="branch_id" class="mb-1 block text-xs font-medium text-gray-700">Branch</label>
+                <select id="branch_id" name="branch_id" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                    <option value="all" selected>All branches</option>
+                                            <option value="1" >Main Branch</option>
+                                            <option value="10" >Ntinda</option>
+                                    </select>
+            </div>
+                <div>
+            <button type="submit" class="inline-flex min-h-[40px] items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
+                Apply
+            </button>
+        </div>
+    </form>
+</div>
+
+
+<div class="bg-white shadow-sm rounded-xl border border-gray-100 dark:border-slate-600 dark:bg-slate-800">
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date/Time</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Category</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Entity Name</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Activity / Description</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Reference #</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Amount / Quantity Impact</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Branch</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 bg-white">
+                                    <tr class="hover:bg-gray-50">
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-700">Oct 14, 2026 10:31 PM</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">Wallet</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">ABSA Bank</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">Direct deposit — From director</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">—</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-emerald-700">
+                            UGX 1,000,000
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">—</td>
+                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-700">Oct 13, 2026 3:00 PM</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">Product</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">Teddy Bear</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">Sold</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">SALE-001-000021</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-red-600">
+                            −1 piece
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">Main Branch</td>
+                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-700">Oct 13, 2026 3:00 PM</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">Customer</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">Jack</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">Invoice</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">SALE-001-000021</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-emerald-700">
+                            UGX 25,000
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">Main Branch</td>
+                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-700">Oct 12, 2026 3:53 PM</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">Product</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">Pulling Ribbon</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">Sold</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">SALE-001-000020</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-red-600">
+                            −3 piece
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">Main Branch</td>
+                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-700">Oct 12, 2026 3:53 PM</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">Customer</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">Tim Clover</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">Invoice</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">SALE-001-000020</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-emerald-700">
+                            UGX 12,000
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">Main Branch</td>
+                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-700">Oct 10, 2026 12:00 AM</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">Supplier</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">Equatorial traders</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">Payment made</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">—</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-red-600">
+                            UGX -80,000
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">Main Branch</td>
+                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-700">Oct 10, 2026 12:00 AM</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">Supplier</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">Equatorial traders</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">Payment made</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">—</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-red-600">
+                            UGX -400,000
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">Main Branch</td>
+                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-700">Oct 9, 2026 10:39 AM</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">Supplier</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">Tom wholesale</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">Bill</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">—</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-emerald-700">
+                            UGX 36,000
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">Main Branch</td>
+                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-700">Oct 9, 2026 10:39 AM</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">Product</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">Teddy Bear</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">Purchase received</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">—</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-emerald-700">
+                            +4 piece
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">Main Branch</td>
+                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-700">Oct 9, 2026 10:38 AM</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">Supplier</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">Grace Traders</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">Bill</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">—</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-emerald-700">
+                            UGX 36,000
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">Main Branch</td>
+                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-700">Oct 9, 2026 10:38 AM</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">Product</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">Teddy Bear</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">Purchase received</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">—</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-emerald-700">
+                            +3 piece
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">Main Branch</td>
+                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-700">Oct 9, 2026 10:23 AM</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">Supplier</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">Equatorial traders</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">Bill</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">—</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-emerald-700">
+                            UGX 18,000
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">Main Branch</td>
+                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-700">Oct 9, 2026 10:23 AM</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">Product</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">Teddy Bear</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">Purchase received</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">—</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-emerald-700">
+                            +2 piece
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">Main Branch</td>
+                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-700">Oct 9, 2026 6:15 AM</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">Customer</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">Invoice Test 1789656361</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">Payment received — Debt payment received</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">—</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-emerald-700">
+                            UGX 500,000
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">—</td>
+                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-700">Oct 3, 2026 11:29 AM</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">Supplier</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">Equatorial traders</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">Bill</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">—</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-emerald-700">
+                            UGX 130,000
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">Main Branch</td>
+                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-700">Oct 3, 2026 11:29 AM</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">Product</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">Teddy Bear</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">Purchase received</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">—</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-emerald-700">
+                            +10 piece
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">Main Branch</td>
+                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-700">Oct 3, 2026 11:23 AM</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">Supplier</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">Equatorial traders</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">Bill</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">—</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-emerald-700">
+                            UGX 450,000
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">Main Branch</td>
+                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-700">Oct 3, 2026 11:23 AM</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">Product</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">Teddy Bear</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">Purchase received</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">—</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-emerald-700">
+                            +30 piece
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">Main Branch</td>
+                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-700">Oct 3, 2026 7:19 AM</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">Supplier</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">Tom wholesale</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">Payment made</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">—</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-red-600">
+                            UGX -80,000
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">Main Branch</td>
+                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-700">Oct 3, 2026 6:59 AM</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">Supplier</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">Tom wholesale</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">Bill</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">—</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-emerald-700">
+                            UGX 450,000
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">Main Branch</td>
+                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-700">Oct 3, 2026 6:59 AM</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">Product</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">Teddy Bear</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">Purchase received</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">—</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-emerald-700">
+                            +30 piece
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">Main Branch</td>
+                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-700">Oct 2, 2026 5:27 PM</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">Supplier</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">Equatorial traders</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">Payment made</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">108765447667</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-red-600">
+                            UGX -50,000
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-600">Main Branch</td>
+                    </tr>
+                            </tbody>
+        </table>
+    </div>
+</div>
+<script>
+(function () {
+    var range = document.getElementById('tx-range');
+    var custom = document.getElementById('tx-custom-dates');
+    var form = document.getElementById('tx-filters');
+    if (!range || !custom || !form) return;
+
+    range.addEventListener('change', function () {
+        var isCustom = range.value === 'custom';
+        custom.classList.toggle('hidden', !isCustom);
+        if (!isCustom) form.submit();
+    });
+})();
+</script>
+                    </main>
+
+        
+        <footer class="border-t border-gray-200 bg-white px-4 py-4 dark:border-gray-700 dark:bg-gray-900 sm:px-6 lg:px-8">
+            <div class="flex flex-col gap-2 text-xs text-gray-500 dark:text-gray-400 sm:flex-row sm:items-center sm:justify-between">
+                <p>Trusted by 5000+ businesses.</p>
+                <p>
+                    For any inquiries, contact us on
+                    <a href="https://wa.me/256755825974" target="_blank" rel="noopener noreferrer" class="font-medium text-emerald-600 hover:text-emerald-700">WhatsApp</a>
+                </p>
+            </div>
+        </footer>
+    </div>
+</div>
+
+<div id="payment-modal" class="app-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="payment-modal-title">
+    <div class="app-modal-panel">
+        <form id="payment-form" method="POST" action="http://localhost/subscription/initiate" class="flex min-h-0 flex-1 flex-col">
+            <input type="hidden" name="_token" value="">            <div class="app-modal-header">
+                <div>
+                    <h2 id="payment-modal-title" class="text-lg font-semibold text-gray-900">Activate Subscription</h2>
+                    <p class="mt-1 text-sm text-gray-500">Choose a plan and pay via mobile money.</p>
+                </div>
+                <button type="button" id="close-payment-modal" class="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600" aria-label="Close">&times;</button>
+            </div>
+
+            <div class="app-modal-body space-y-4">
+                <fieldset class="space-y-3">
+    <legend class="mb-2 block text-sm font-medium text-gray-700">Choose a plan</legend>
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                <label class="group relative flex cursor-pointer flex-col rounded-xl border-2 bg-white p-4 transition has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50/60 border-indigo-600 bg-indigo-50/60">
+                <input type="radio"
+                       name="plan"
+                       value="monthly"
+                       class="peer sr-only plan-option"
+                       data-plan-amount="100000"
+                       data-plan-label="1 Month"
+                       checked                       required>
+                <div class="flex items-start justify-between gap-2">
+                    <div>
+                        <p class="text-sm font-semibold text-gray-900">1 Month</p>
+                        <p class="mt-0.5 text-xs text-gray-500">Monthly access to DukaPro</p>
+                    </div>
+                                    </div>
+                <p class="mt-3 text-2xl font-bold text-gray-900">UGX 100,000</p>
+                                <p class="mt-1 text-xs text-gray-500">30 days of access</p>
+            </label>
+                                <label class="group relative flex cursor-pointer flex-col rounded-xl border-2 bg-white p-4 transition has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50/60 border-gray-200 hover:border-indigo-200">
+                <input type="radio"
+                       name="plan"
+                       value="yearly"
+                       class="peer sr-only plan-option"
+                       data-plan-amount="1000000"
+                       data-plan-label="1 Year"
+                                              required>
+                <div class="flex items-start justify-between gap-2">
+                    <div>
+                        <p class="text-sm font-semibold text-gray-900">1 Year</p>
+                        <p class="mt-0.5 text-xs text-gray-500">Annual access - best value</p>
+                    </div>
+                                            <span class="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">Save</span>
+                                    </div>
+                <p class="mt-3 text-2xl font-bold text-gray-900">UGX 1,000,000</p>
+                                <p class="mt-1 text-xs text-gray-500">365 days of access</p>
+            </label>
+            </div>
+    </fieldset>
+
+                <div>
+                    <label class="mb-2 block text-sm font-medium text-gray-700">Mobile money provider</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 border-gray-200 px-4 py-3 text-sm font-medium has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50">
+                            <input type="radio" name="provider" value="mtn" class="sr-only" checked> MTN
+                        </label>
+                        <label class="flex cursor-pointer items-center justify-center rounded-lg border-2 border-gray-200 px-4 py-3 text-sm font-medium has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50">
+                            <input type="radio" name="provider" value="airtel" class="sr-only"> Airtel
+                        </label>
+                    </div>
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Phone number</label>
+                    <input type="tel" name="phone_number" required placeholder="e.g. 256772123456"
+                           value="256712345678"
+                           class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+                <p id="payment-plan-summary" class="text-xs text-gray-500">
+                    Amount: UGX 100,000 (1 Month) · You will receive a PIN prompt on your phone.
+                </p>
+                <div id="payment-status" class="hidden rounded-lg border px-3 py-2 text-sm"></div>
+            </div>
+            <div class="app-modal-footer">
+                <button type="submit" id="payment-submit" class="w-full rounded-lg bg-indigo-600 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 sm:w-auto sm:min-w-[12rem]">
+                    Send payment request
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+    <div
+    x-data
+    x-cloak
+    x-show="$store.deleteConfirm.open"
+    x-transition.opacity
+    x-on:keydown.escape.window="$store.deleteConfirm.cancel()"
+    class="fixed inset-0 z-[200] flex items-end justify-center p-4 sm:items-center"
+    style="display: none;"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="delete-confirm-title"
+>
+    <div
+        class="absolute inset-0 bg-gray-900/50"
+        x-on:click="$store.deleteConfirm.cancel()"
+        aria-hidden="true"
+    ></div>
+
+    <div
+        class="relative w-full max-w-md rounded-xl border border-gray-200 bg-white p-5 shadow-xl sm:p-6"
+        x-on:click.stop
+    >
+        <h2 id="delete-confirm-title" class="text-base font-semibold text-gray-900" x-text="$store.deleteConfirm.message"></h2>
+        <p
+            x-show="$store.deleteConfirm.detail"
+            x-text="$store.deleteConfirm.detail"
+            class="mt-2 text-sm text-gray-600"
+        ></p>
+
+        <div class="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <button type="button" class="inline-flex items-center justify-center font-medium rounded-lg shadow-sm transition focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:ring-indigo-500 px-4 py-2 text-sm w-full sm:w-auto" x-on:click="$store.deleteConfirm.cancel()">Cancel</button>
+            <button type="button" class="inline-flex items-center justify-center font-medium rounded-lg shadow-sm transition focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed border border-red-300 bg-white text-red-700 hover:bg-red-50 focus:ring-red-500 px-4 py-2 text-sm w-full sm:w-auto !border-red-600 !bg-red-600 !text-white hover:!bg-red-700" x-on:click="$store.deleteConfirm.confirm()">Confirm Delete</button>
+        </div>
+    </div>
+</div>
+            <script>
+    (function () {
+        window.mountAppModal = function (modalEl) {
+            if (!modalEl || modalEl.dataset.appModalMounted === '1') return;
+            if (modalEl.parentElement !== document.body) {
+                document.body.appendChild(modalEl);
+            }
+            modalEl.dataset.appModalMounted = '1';
+            modalEl.addEventListener('click', function (e) {
+                if (e.target === modalEl) {
+                    window.closeAppModal(modalEl);
+                }
+            });
+            var panel = modalEl.querySelector('.app-modal-panel');
+            if (panel) {
+                panel.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                });
+            }
+        };
+
+        window.openAppModal = function (id) {
+            var el = typeof id === 'string' ? document.getElementById(id) : id;
+            if (!el) return;
+            window.mountAppModal(el);
+            el.classList.add('is-open');
+            document.body.classList.add('app-modal-open');
+        };
+
+        window.closeAppModal = function (target) {
+            var el = typeof target === 'string' ? document.getElementById(target) : target;
+            if (!el) return;
+            if (el.classList.contains('app-modal-overlay')) {
+                el.classList.remove('is-open');
+            } else {
+                var overlay = el.closest('.app-modal-overlay');
+                if (overlay) overlay.classList.remove('is-open');
+            }
+            if (!document.querySelector('.app-modal-overlay.is-open')) {
+                document.body.classList.remove('app-modal-open');
+            }
+        };
+
+        document.querySelectorAll('.app-modal-overlay').forEach(window.mountAppModal);
+    })();
+    </script>
+    <script>
+document.addEventListener('alpine:init', function () {
+    Alpine.data('sortableTable', function () {
+        return {
+            sortKey: null,
+            sortDir: 'asc',
+            sort: function (key) {
+                if (this.sortKey === key) {
+                    this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
+                } else {
+                    this.sortKey = key;
+                    this.sortDir = 'asc';
+                }
+                var tbody = this.$refs.tbody;
+                if (!tbody) {
+                    return;
+                }
+                var groups = this.collectGroups(tbody);
+                var emptyGroups = groups.filter(function (g) {
+                    return g[0].getAttribute('data-sort-empty') === '1';
+                });
+                var dataGroups = groups.filter(function (g) {
+                    return g[0].getAttribute('data-sort-empty') !== '1';
+                });
+                var self = this;
+                dataGroups.sort(function (a, b) {
+                    return self.compareRows(a[0], b[0], key);
+                });
+                dataGroups.forEach(function (group) {
+                    group.forEach(function (row) {
+                        tbody.appendChild(row);
+                    });
+                });
+                emptyGroups.forEach(function (group) {
+                    group.forEach(function (row) {
+                        tbody.appendChild(row);
+                    });
+                });
+            },
+            collectGroups: function (container) {
+                var rows = Array.from(container.children);
+                var groups = [];
+                var i = 0;
+                while (i < rows.length) {
+                    var row = rows[i];
+                    if (row.getAttribute('data-sort-follows') === '1') {
+                        i++;
+                        continue;
+                    }
+                    var group = [row];
+                    i++;
+                    while (i < rows.length && rows[i].getAttribute('data-sort-follows') === '1') {
+                        group.push(rows[i]);
+                        i++;
+                    }
+                    groups.push(group);
+                }
+                return groups;
+            },
+            getSortValue: function (row, key) {
+                var val = row.getAttribute('data-sort-' + key);
+                return val === null ? '' : val;
+            },
+            compareRows: function (rowA, rowB, key) {
+                var av = this.getSortValue(rowA, key);
+                var bv = this.getSortValue(rowB, key);
+                var an = parseFloat(av);
+                var bn = parseFloat(bv);
+                var numeric = av !== '' && bv !== '' && !isNaN(an) && !isNaN(bn);
+                var cmp;
+                if (numeric) {
+                    cmp = an - bn;
+                } else {
+                    cmp = av.localeCompare(bv, undefined, { sensitivity: 'base', numeric: true });
+                }
+                return this.sortDir === 'asc' ? cmp : -cmp;
+            },
+            indicator: function (key) {
+                if (this.sortKey !== key) {
+                    return '↕';
+                }
+                return this.sortDir === 'asc' ? '↑' : '↓';
+            },
+        };
+    });
+});
+</script>
+    <script>
+document.addEventListener('alpine:init', function () {
+    Alpine.data('pwaInstall', function () {
+        return {
+            isStandalone: false,
+            isInstalledOnDevice: false,
+            canInstall: false,
+            deferredPrompt: null,
+            installMessage: '',
+            fallbackUrl: '',
+            pwaStorageKey: '',
+            init: function () {
+                var self = this;
+                var bridge = window.__dukaproPwa || {};
+                self.fallbackUrl = (this.$el && this.$el.dataset.installFallback) || '';
+                self.pwaStorageKey = bridge.storageKey || 'dukapro-pwa-installed';
+                self.isStandalone = self.detectStandalone();
+                self.syncDeferredPrompt();
+
+                if (self.isStandalone) {
+                    self.isInstalledOnDevice = true;
+                    return;
+                }
+
+                self.refreshInstalledState();
+
+                window.addEventListener('dukapro-pwa-install-available', function () {
+                    self.syncDeferredPrompt();
+                });
+
+                window.addEventListener('dukapro-pwa-installed', function () {
+                    self.deferredPrompt = null;
+                    self.canInstall = false;
+                    self.isInstalledOnDevice = true;
+                    self.isStandalone = self.detectStandalone();
+                    self.installMessage = '';
+                });
+
+                window.addEventListener('appinstalled', function () {
+                    self.deferredPrompt = null;
+                    self.canInstall = false;
+                    self.isInstalledOnDevice = true;
+                    self.installMessage = '';
+                });
+            },
+            detectStandalone: function () {
+                return window.matchMedia('(display-mode: standalone)').matches
+                    || window.matchMedia('(display-mode: window-controls-overlay)').matches
+                    || window.navigator.standalone === true;
+            },
+            syncDeferredPrompt: function () {
+                var bridge = window.__dukaproPwa || {};
+                if (bridge.deferredPrompt) {
+                    this.deferredPrompt = bridge.deferredPrompt;
+                    this.canInstall = true;
+                }
+            },
+            refreshInstalledState: function () {
+                var self = this;
+                if (self.isStandalone) {
+                    self.isInstalledOnDevice = true;
+                    return;
+                }
+                try {
+                    if (localStorage.getItem(self.pwaStorageKey) === '1'
+                        || localStorage.getItem('dukapro-pwa-installed') === '1') {
+                        self.isInstalledOnDevice = true;
+                    }
+                } catch (e) {}
+
+                if (! ('getInstalledRelatedApps' in navigator)) {
+                    return;
+                }
+
+                navigator.getInstalledRelatedApps().then(function (apps) {
+                    self.syncDeferredPrompt();
+                    if (apps && apps.length > 0 && ! self.canInstall) {
+                        self.isInstalledOnDevice = true;
+                    }
+                }).catch(function () {});
+            },
+            showInstalledInBrowser: function () {
+                return this.isInstalledOnDevice && ! this.isStandalone && ! this.canInstall;
+            },
+            waitForInstallPrompt: function (maxMs) {
+                var self = this;
+                var waited = 0;
+                var step = 150;
+
+                return new Promise(function (resolve) {
+                    function tick() {
+                        self.syncDeferredPrompt();
+                        if (self.deferredPrompt) {
+                            resolve(true);
+                            return;
+                        }
+                        waited += step;
+                        if (waited >= maxMs) {
+                            resolve(false);
+                            return;
+                        }
+                        window.setTimeout(tick, step);
+                    }
+                    tick();
+                });
+            },
+            install: function () {
+                var self = this;
+                self.syncDeferredPrompt();
+                if (! this.deferredPrompt) {
+                    return Promise.resolve(false);
+                }
+                this.deferredPrompt.prompt();
+                return this.deferredPrompt.userChoice.then(function (choice) {
+                    self.deferredPrompt = null;
+                    self.canInstall = false;
+                    if (window.__dukaproPwa) {
+                        window.__dukaproPwa.deferredPrompt = null;
+                    }
+                    if (choice.outcome === 'accepted') {
+                        self.isInstalledOnDevice = true;
+                    }
+                    self.isStandalone = self.detectStandalone();
+                    return choice.outcome === 'accepted';
+                }).catch(function () {
+                    self.deferredPrompt = null;
+                    self.canInstall = false;
+                    return false;
+                });
+            },
+            installApp: function () {
+                var self = this;
+                if (this.isStandalone) {
+                    return;
+                }
+                if (this.isInstalledOnDevice && ! this.canInstall) {
+                    return;
+                }
+                this.syncDeferredPrompt();
+                if (this.deferredPrompt) {
+                    this.installMessage = 'Confirm the install prompt from your browser…';
+                    this.install().then(function (accepted) {
+                        if (accepted) {
+                            self.installMessage = '';
+                            self.isInstalledOnDevice = true;
+                        } else {
+                            self.installMessage = 'Install cancelled. Click Install again to retry.';
+                        }
+                    });
+                    return;
+                }
+                this.installMessage = 'Preparing install…';
+                this.waitForInstallPrompt(4000).then(function (ready) {
+                    if (! ready) {
+                        self.installMessage = 'Install is not available yet. Use Chrome or Edge on this site, refresh the page, then try again.';
+                        return;
+                    }
+                    self.installMessage = 'Confirm the install prompt from your browser…';
+                    self.install().then(function (accepted) {
+                        if (accepted) {
+                            self.installMessage = '';
+                            self.isInstalledOnDevice = true;
+                        } else if (! self.deferredPrompt) {
+                            self.installMessage = 'Install cancelled. Click Install again to retry.';
+                        }
+                    });
+                });
+            },
+        };
+    });
+});
+</script>
+    <script>
+document.addEventListener('alpine:init', function () {
+    Alpine.store('deleteConfirm', {
+        open: false,
+        message: 'Are you sure you want to delete this item?',
+        detail: '',
+        _form: null,
+        _callback: null,
+
+        openWith: function (form, message, detail) {
+            this._form = form || null;
+            this._callback = null;
+            this.message = message || 'Are you sure you want to delete this item?';
+            this.detail = detail || '';
+            this.open = true;
+        },
+
+        openWithCallback: function (callback, message, detail) {
+            this._form = null;
+            this._callback = typeof callback === 'function' ? callback : null;
+            this.message = message || 'Are you sure you want to delete this item?';
+            this.detail = detail || '';
+            this.open = true;
+        },
+
+        cancel: function () {
+            this.open = false;
+            this._form = null;
+            this._callback = null;
+        },
+
+        confirm: function () {
+            if (this._form) {
+                this._form.submit();
+            } else if (this._callback) {
+                this._callback();
+            }
+            this.cancel();
+        },
+    });
+
+    document.addEventListener('click', function (event) {
+        var trigger = event.target.closest('[data-delete-confirm]');
+        if (!trigger) {
+            return;
+        }
+
+        event.preventDefault();
+
+        var form = trigger.closest('form');
+        if (!form) {
+            return;
+        }
+
+        var store = Alpine.store('deleteConfirm');
+        if (!store) {
+            return;
+        }
+
+        store.openWith(
+            form,
+            trigger.getAttribute('data-delete-message') || 'Are you sure you want to delete this item?',
+            trigger.getAttribute('data-delete-detail') || ''
+        );
+    });
+});
+
+window.requestDeleteConfirmation = function (options) {
+    options = options || {};
+    var tryOpen = function () {
+        if (typeof Alpine === 'undefined' || !Alpine.store('deleteConfirm')) {
+            return false;
+        }
+        Alpine.store('deleteConfirm').openWithCallback(
+            options.onConfirm,
+            options.message,
+            options.detail
+        );
+        return true;
+    };
+    if (!tryOpen()) {
+        document.addEventListener('alpine:init', function () {
+            tryOpen();
+        }, { once: true });
+    }
+};
+</script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script>
+(function () {
+    function syncThemeToggleUi() {
+        var dark = document.documentElement.classList.contains('dark');
+        document.querySelectorAll('[data-theme-toggle]').forEach(function (btn) {
+            btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
+            var moon = btn.querySelector('[data-theme-icon="moon"]');
+            var sun = btn.querySelector('[data-theme-icon="sun"]');
+            if (moon) {
+                moon.classList.toggle('hidden', dark);
+            }
+            if (sun) {
+                sun.classList.toggle('hidden', !dark);
+            }
+        });
+    }
+
+    function setTheme(theme) {
+        var root = document.documentElement;
+        if (theme === 'dark') {
+            root.classList.add('dark');
+        } else {
+            root.classList.remove('dark');
+        }
+        try {
+            localStorage.setItem('theme', theme);
+        } catch (e) {}
+        syncThemeToggleUi();
+    }
+
+    function toggleTheme() {
+        var dark = document.documentElement.classList.contains('dark');
+        setTheme(dark ? 'light' : 'dark');
+    }
+
+    window.dukaproSetTheme = setTheme;
+    window.dukaproToggleTheme = toggleTheme;
+
+    function bindThemeToggles() {
+        syncThemeToggleUi();
+        document.querySelectorAll('[data-theme-toggle]').forEach(function (btn) {
+            if (btn.dataset.themeBound) {
+                return;
+            }
+            btn.dataset.themeBound = '1';
+            btn.addEventListener('click', toggleTheme);
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bindThemeToggles);
+    } else {
+        bindThemeToggles();
+    }
+})();
+</script>
+    <script>
+(function () {
+    var drawer = document.getElementById('modern-nav-drawer');
+    var backdrop = document.getElementById('modern-nav-backdrop');
+    var openBtn = document.getElementById('modern-nav-open');
+    var closeBtn = document.getElementById('modern-nav-close');
+
+    function openNav() {
+        if (!drawer || !backdrop) return;
+        backdrop.classList.remove('hidden');
+        drawer.classList.remove('-translate-x-full');
+        document.body.classList.add('overflow-hidden');
+    }
+
+    function closeNav() {
+        if (!drawer || !backdrop) return;
+        backdrop.classList.add('hidden');
+        drawer.classList.add('-translate-x-full');
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    openBtn?.addEventListener('click', openNav);
+    closeBtn?.addEventListener('click', closeNav);
+    backdrop?.addEventListener('click', closeNav);
+    drawer?.querySelectorAll('a').forEach(function (link) {
+        link.addEventListener('click', closeNav);
+    });
+
+    var stockToggle = document.getElementById('low-stock-notifications-toggle');
+    var stockPanel = document.getElementById('low-stock-notifications-panel');
+    var stockRoot = document.getElementById('low-stock-notifications');
+
+    function closeStockPanel() {
+        if (!stockPanel || !stockToggle) return;
+        stockPanel.classList.add('hidden');
+        stockToggle.setAttribute('aria-expanded', 'false');
+    }
+
+    stockToggle?.addEventListener('click', function (event) {
+        event.stopPropagation();
+        if (!stockPanel) return;
+        var open = stockPanel.classList.contains('hidden');
+        if (open) {
+            stockPanel.classList.remove('hidden');
+            stockToggle.setAttribute('aria-expanded', 'true');
+        } else {
+            closeStockPanel();
+        }
+    });
+
+    document.addEventListener('click', function (event) {
+        if (!stockRoot || !stockPanel || stockPanel.classList.contains('hidden')) return;
+        if (!stockRoot.contains(event.target)) {
+            closeStockPanel();
+        }
+    });
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            closeStockPanel();
+        }
+    });
+})();
+</script>
+    <script>
+(function () {
+    var endpoint = "http:\/\/localhost\/telemetry\/client-errors";
+    var reported = {};
+
+    function csrfToken() {
+        var meta = document.querySelector('meta[name="csrf-token"]');
+        return meta ? meta.getAttribute('content') : '';
+    }
+
+    function fingerprint(message, url, source) {
+        return String(message || '') + '|' + String(url || '') + '|' + String(source || '');
+    }
+
+    function collectFormPayload() {
+        var payload = { forms: [] };
+        document.querySelectorAll('form').forEach(function (form, index) {
+            if (index > 2) {
+                return;
+            }
+
+            var fields = {};
+            form.querySelectorAll('input, select, textarea').forEach(function (field) {
+                var name = field.name || field.id;
+                if (!name || field.type === 'password' || field.type === 'hidden' && name === '_token') {
+                    return;
+                }
+                if (field.type === 'checkbox' || field.type === 'radio') {
+                    if (field.checked) {
+                        fields[name] = field.value;
+                    }
+                    return;
+                }
+                if (field.value !== '') {
+                    fields[name] = String(field.value).slice(0, 500);
+                }
+            });
+
+            if (Object.keys(fields).length) {
+                payload.forms.push({
+                    action: form.getAttribute('action') || '',
+                    method: (form.getAttribute('method') || 'GET').toUpperCase(),
+                    fields: fields,
+                });
+            }
+        });
+
+        return payload;
+    }
+
+    function sendReport(data) {
+        var key = fingerprint(data.message, data.url, data.source);
+        if (reported[key]) {
+            return;
+        }
+        reported[key] = true;
+
+        var body = JSON.stringify(data);
+        var headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+        };
+        var token = csrfToken();
+        if (token) {
+            headers['X-CSRF-TOKEN'] = token;
+        }
+
+        try {
+            if (navigator.sendBeacon && !token) {
+                navigator.sendBeacon(endpoint, new Blob([body], { type: 'application/json' }));
+                return;
+            }
+        } catch (e) {}
+
+        fetch(endpoint, {
+            method: 'POST',
+            headers: headers,
+            body: body,
+            credentials: 'same-origin',
+            keepalive: true,
+        }).catch(function () {});
+    }
+
+    window.addEventListener('error', function (event) {
+        sendReport({
+            message: event.message || 'Script error',
+            stack: event.error && event.error.stack ? event.error.stack : (event.filename + ':' + event.lineno + ':' + event.colno),
+            url: window.location.href,
+            source: event.filename || 'window.onerror',
+            user_agent: navigator.userAgent,
+            payload: collectFormPayload(),
+        });
+    });
+
+    window.addEventListener('unhandledrejection', function (event) {
+        var reason = event.reason || {};
+        var message = typeof reason === 'string' ? reason : (reason.message || 'Unhandled promise rejection');
+        var stack = reason && reason.stack ? reason.stack : null;
+
+        sendReport({
+            message: message,
+            stack: stack,
+            url: window.location.href,
+            source: 'unhandledrejection',
+            user_agent: navigator.userAgent,
+            payload: collectFormPayload(),
+        });
+    });
+})();
+</script>
+    <script>
+(function () {
+    var ERROR_CLASS = 'client-field-error';
+    var INVALID_INPUT_CLASS = 'border-red-300';
+    var INVALID_RING_CLASS = 'focus:border-red-500';
+    var SKIP_IDS = ['payment-form', 'portal-form'];
+
+    function shouldSkipForm(form) {
+        if (!form || form.tagName !== 'FORM') return true;
+        if ((form.method || 'get').toUpperCase() === 'GET') return true;
+        if (form.hasAttribute('data-skip-validate')) return true;
+        if (form.id && SKIP_IDS.indexOf(form.id) !== -1) return true;
+        return false;
+    }
+
+    function fieldWrapper(field) {
+        return field.closest('[data-field-wrapper]')
+            || field.closest('.choice-picker')
+            || field.closest('div');
+    }
+
+    function clearFieldError(field) {
+        var wrapper = fieldWrapper(field);
+        if (!wrapper) return;
+        var existing = wrapper.querySelector('.' + ERROR_CLASS);
+        if (existing) existing.remove();
+        field.classList.remove(INVALID_INPUT_CLASS, INVALID_RING_CLASS, 'focus:ring-red-500');
+        field.removeAttribute('aria-invalid');
+    }
+
+    function showFieldError(field, message) {
+        clearFieldError(field);
+        var wrapper = fieldWrapper(field);
+        if (!wrapper) return;
+        field.classList.add(INVALID_INPUT_CLASS, INVALID_RING_CLASS, 'focus:ring-red-500');
+        field.setAttribute('aria-invalid', 'true');
+        var el = document.createElement('p');
+        el.className = 'mt-1 text-xs text-red-600 ' + ERROR_CLASS;
+        el.setAttribute('role', 'alert');
+        el.textContent = message;
+        wrapper.appendChild(el);
+    }
+
+    function validationMessage(field) {
+        if (field.validity.valueMissing) {
+            var label = field.labels && field.labels[0] ? field.labels[0].textContent.replace('*', '').trim() : 'This field';
+            return label + ' is required.';
+        }
+        if (field.validity.typeMismatch) {
+            if (field.type === 'email') return 'Enter a valid email address.';
+            if (field.type === 'url') return 'Enter a valid URL.';
+        }
+        if (field.validity.patternMismatch) return field.title || 'Enter a value in the correct format.';
+        if (field.validity.tooShort) return 'Enter at least ' + field.minLength + ' characters.';
+        if (field.validity.tooLong) return 'Enter no more than ' + field.maxLength + ' characters.';
+        if (field.validity.rangeUnderflow) return 'Value must be at least ' + field.min + '.';
+        if (field.validity.rangeOverflow) return 'Value must be at most ' + field.max + '.';
+        if (field.validity.stepMismatch) return 'Enter a valid step value.';
+        return field.validationMessage || 'This field is invalid.';
+    }
+
+    function validateChoicePickers(form) {
+        var valid = true;
+        form.querySelectorAll('input[type="hidden"][data-required="1"]').forEach(function (input) {
+            clearFieldError(input);
+            if (!input.value || input.value.trim() === '') {
+                var picker = input.closest('.choice-picker');
+                var labelEl = picker ? picker.querySelector('label') : null;
+                var label = labelEl ? labelEl.textContent.replace('*', '').trim() : 'Selection';
+                showFieldError(input, label + ' is required.');
+                valid = false;
+            }
+        });
+        return valid;
+    }
+
+    function validatePasswordConfirmation(form) {
+        var password = form.querySelector('input[name="password"]:not([disabled])');
+        var confirm = form.querySelector('input[name="password_confirmation"]:not([disabled])');
+        if (!password || !confirm || !password.value) return true;
+        clearFieldError(confirm);
+        if (password.value !== confirm.value) {
+            showFieldError(confirm, 'Passwords do not match.');
+            return false;
+        }
+        return true;
+    }
+
+    function validateMinCheckedGroups(form) {
+        var valid = true;
+        form.querySelectorAll('[data-min-checked]').forEach(function (group) {
+            var min = parseInt(group.getAttribute('data-min-checked'), 10) || 1;
+            var name = group.getAttribute('data-checkbox-name');
+            if (!name) return;
+            var checked = form.querySelectorAll('input[type="checkbox"][name="' + name + '"]:checked').length;
+            var existing = group.querySelector('.' + ERROR_CLASS);
+            if (existing) existing.remove();
+            if (checked < min) {
+                var el = document.createElement('p');
+                el.className = 'mt-2 text-xs text-red-600 ' + ERROR_CLASS;
+                el.setAttribute('role', 'alert');
+                el.textContent = 'Select at least ' + min + ' option' + (min === 1 ? '' : 's') + '.';
+                group.appendChild(el);
+                valid = false;
+            }
+        });
+        return valid;
+    }
+
+    function validateForm(form) {
+        form.querySelectorAll('.' + ERROR_CLASS).forEach(function (el) { el.remove(); });
+        form.querySelectorAll('[aria-invalid="true"]').forEach(function (field) {
+            field.classList.remove(INVALID_INPUT_CLASS, INVALID_RING_CLASS, 'focus:ring-red-500');
+            field.removeAttribute('aria-invalid');
+        });
+
+        var valid = true;
+        var fields = form.querySelectorAll('input, select, textarea');
+        fields.forEach(function (field) {
+            if (field.disabled || field.type === 'hidden' || field.type === 'submit' || field.type === 'button') return;
+            if (field.type === 'checkbox' || field.type === 'radio') {
+                if (field.required && !form.querySelector('[name="' + field.name + '"]:checked')) {
+                    showFieldError(field, 'This option is required.');
+                    valid = false;
+                }
+                return;
+            }
+            clearFieldError(field);
+            if (!field.checkValidity()) {
+                showFieldError(field, validationMessage(field));
+                valid = false;
+            }
+        });
+
+        if (!validateChoicePickers(form)) valid = false;
+        if (!validatePasswordConfirmation(form)) valid = false;
+        if (!validateMinCheckedGroups(form)) valid = false;
+
+        if (!valid) {
+            var firstInvalid = form.querySelector('[aria-invalid="true"]');
+            if (firstInvalid) {
+                firstInvalid.focus({ preventScroll: false });
+                firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        return valid;
+    }
+
+    function initForms() {
+        document.querySelectorAll('form').forEach(function (form) {
+            if (shouldSkipForm(form)) return;
+            if (!form.hasAttribute('novalidate')) form.setAttribute('novalidate', 'novalidate');
+        });
+    }
+
+    document.addEventListener('input', function (e) {
+        var field = e.target;
+        if (!field || !field.form || shouldSkipForm(field.form)) return;
+        if (field.matches('input, select, textarea')) clearFieldError(field);
+    });
+
+    document.addEventListener('change', function (e) {
+        var field = e.target;
+        if (!field || !field.form || shouldSkipForm(field.form)) return;
+        if (field.matches('input, select, textarea')) clearFieldError(field);
+    });
+
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (shouldSkipForm(form)) return;
+        if (!validateForm(form)) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    }, true);
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initForms);
+    } else {
+        initForms();
+    }
+})();
+</script>
+    <script>
+    (function () {
+        document.querySelectorAll('.password-toggle').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var input = btn.parentElement.querySelector('input');
+                if (!input) return;
+                var open = btn.querySelector('.eye-open');
+                var closed = btn.querySelector('.eye-closed');
+                var show = input.type === 'password';
+                input.type = show ? 'text' : 'password';
+                open.classList.toggle('hidden', show);
+                closed.classList.toggle('hidden', !show);
+            });
+        });
+
+        document.querySelectorAll('.alert-dismiss').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var banner = btn.closest('.alert-banner');
+                if (banner) banner.remove();
+            });
+        });
+
+        document.addEventListener('click', function (event) {
+            var toggle = event.target.closest('[data-reports-toggle], [data-purchases-toggle], [data-receivables-toggle], [data-transactions-toggle]');
+            if (!toggle) return;
+            event.preventDefault();
+            event.stopPropagation();
+            var container = toggle.closest('.reports-nav, .modern-reports-nav, .purchases-nav, .modern-purchases-nav, .receivables-nav, .modern-receivables-nav, .transactions-nav, .modern-transactions-nav');
+            var menu = container ? container.querySelector('[data-reports-menu], [data-purchases-menu], [data-receivables-menu], [data-transactions-menu]') : null;
+            if (!menu) return;
+            menu.classList.toggle('hidden');
+            var expanded = !menu.classList.contains('hidden');
+            toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+            var chevron = toggle.querySelector('[data-reports-chevron], [data-purchases-chevron], [data-receivables-chevron], [data-transactions-chevron]');
+            if (chevron) {
+                chevron.classList.toggle('rotate-180', expanded);
+            }
+        }, { passive: false });
+
+        var countdownEl = document.getElementById('trial-countdown');
+        if (countdownEl && countdownEl.dataset.ends) {
+            var end = new Date(countdownEl.dataset.ends).getTime();
+            function tick() {
+                var diff = end - Date.now();
+                if (diff <= 0) {
+                    countdownEl.textContent = 'Trial expired';
+                    return;
+                }
+                var d = Math.floor(diff / 86400000);
+                var h = Math.floor((diff % 86400000) / 3600000);
+                var m = Math.floor((diff % 3600000) / 60000);
+                var s = Math.floor((diff % 60000) / 1000);
+                countdownEl.textContent = d + 'd ' + h + 'h ' + m + 'm ' + s + 's';
+            }
+            tick();
+            setInterval(tick, 1000);
+        }
+
+        var modal = document.getElementById('payment-modal');
+        var openBtn = document.getElementById('open-payment-modal');
+        var closeBtn = document.getElementById('close-payment-modal');
+        var form = document.getElementById('payment-form');
+        var statusEl = document.getElementById('payment-status');
+
+        function openModal() {
+            if (modal) window.openAppModal(modal);
+        }
+        function closeModal() {
+            if (modal) window.closeAppModal(modal);
+        }
+
+        openBtn?.addEventListener('click', openModal);
+        closeBtn?.addEventListener('click', closeModal);
+
+        var planSummaryEl = document.getElementById('payment-plan-summary');
+        var planInputs = form ? form.querySelectorAll('input[name="plan"]') : [];
+
+        function formatPlanAmount(amount) {
+            var n = Number(amount);
+            if (isNaN(n)) return amount;
+            return 'UGX ' + n.toLocaleString('en-UG');
+        }
+
+        function updatePlanSummary() {
+            if (!planSummaryEl) return;
+            var selected = form.querySelector('input[name="plan"]:checked');
+            if (!selected) return;
+            var amount = selected.getAttribute('data-plan-amount');
+            var label = selected.getAttribute('data-plan-label');
+            planSummaryEl.textContent = 'Amount: ' + formatPlanAmount(amount) + ' (' + label + ') · You will receive a PIN prompt on your phone.';
+        }
+
+        planInputs.forEach(function (input) {
+            input.addEventListener('change', updatePlanSummary);
+        });
+        updatePlanSummary();
+
+        form?.addEventListener('submit', function (e) {
+            e.preventDefault();
+            var submitBtn = document.getElementById('payment-submit');
+            submitBtn.disabled = true;
+            statusEl.classList.remove('hidden');
+            statusEl.className = 'rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm text-indigo-800';
+            statusEl.textContent = 'Sending PIN prompt to your phone…';
+
+            fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: new FormData(form),
+            })
+            .then(function (r) {
+                return r.text().then(function (text) {
+                    var data = {};
+                    try {
+                        data = text ? JSON.parse(text) : {};
+                    } catch (err) {
+                        data = { message: r.status >= 500 ? 'Server error (' + r.status + '). Check storage/logs/laravel.log.' : 'Unexpected response from server.' };
+                    }
+                    return { ok: r.ok, status: r.status, data: data };
+                });
+            })
+            .then(function (res) {
+                submitBtn.disabled = false;
+                if (res.ok && res.data.success) {
+                    statusEl.className = 'rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800';
+                    statusEl.textContent = res.data.message || 'PIN prompt sent. Complete payment on your phone.';
+                    if (res.data.simulated_checkout_url) {
+                        setTimeout(function () { window.location.href = res.data.simulated_checkout_url; }, 1500);
+                    }
+                } else {
+                    statusEl.className = 'rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800';
+                    var failMsg = res.data.message;
+                    if (!failMsg && res.data.errors) {
+                        var firstKey = Object.keys(res.data.errors)[0];
+                        failMsg = firstKey ? res.data.errors[firstKey][0] : null;
+                    }
+                    statusEl.textContent = failMsg || 'Payment request failed.';
+                }
+            })
+            .catch(function () {
+                submitBtn.disabled = false;
+                statusEl.className = 'rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800';
+                statusEl.textContent = 'Network error. Please try again.';
+            });
+        });
+    })();
+    </script>
+</body>
+</html>
