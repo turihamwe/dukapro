@@ -5,10 +5,23 @@
 @section('content')
 <x-page-header :title="$customer->name" subtitle="Customer receivables profile">
     <x-slot name="actions">
+        @can('adjust-wallet-transactions')
+            <x-button variant="secondary" size="sm" type="button"
+                      data-open-opening-correction
+                      data-modal="customer-opening-correction"
+                      data-action="{{ tenant_route('tenant.customer-credit.customers.opening-balance', ['customer' => $customer]) }}"
+                      data-entity="{{ $customer->name }}"
+                      data-current="{{ format_money($customer->opening_balance) }}"
+                      data-value="{{ number_format((float) $customer->opening_balance, 2, '.', '') }}">Correct opening balance</x-button>
+        @endcan
         <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.customer-credit.customers.edit', ['customer' => $customer]) }}">Edit</x-button>
         <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.customer-credit.customers.index') }}">All customers</x-button>
     </x-slot>
 </x-page-header>
+
+@if(session('success'))
+    <x-alert type="success" class="mb-4">{{ session('success') }}</x-alert>
+@endif
 
 <div class="mb-6 grid gap-4 sm:grid-cols-3">
     <x-stat-card label="Outstanding" :value="format_money($customer->outstanding_balance)" accent="amber" />
@@ -50,6 +63,20 @@
     @endforelse
 </div>
 {{ $entries->links() }}
+
+@can('adjust-wallet-transactions')
+    @push('modals')
+        @include('partials.opening-correction-modal', [
+            'modalId' => 'customer-opening-correction',
+            'title' => 'Correct opening balance',
+            'fieldName' => 'opening_balance',
+            'fieldLabel' => 'New opening balance',
+            'step' => '0.01',
+            'currentLabel' => 'Current opening balance',
+            'warning' => 'This updates only this customer\'s opening ledger entry, then recalculates that customer\'s outstanding balance. Other customers are not changed.',
+        ])
+    @endpush
+@endcan
 
 @if($creditSales->isNotEmpty())
     <h2 class="mb-3 mt-8 text-sm font-semibold text-gray-900">Recent credit sales</h2>

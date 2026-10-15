@@ -421,7 +421,7 @@ class SupplierCreditController extends Controller
 
         return redirect()
             ->to(tenant_route('tenant.supplier-credit.bills.index'))
-            ->with('success', 'Bill removed from active records. Stock levels were not changed.');
+            ->with('success', 'Bill deleted.');
     }
 
     public function destroyPayment(Business $business, SupplierCreditPayment $payment, SupplierCreditService $service, Request $request)
@@ -434,7 +434,7 @@ class SupplierCreditController extends Controller
 
         return redirect()
             ->to(tenant_route('tenant.supplier-credit.payments.index'))
-            ->with('success', 'Payment removed. The linked bill balance was updated.');
+            ->with('success', 'Payment deleted.');
     }
 
     /**

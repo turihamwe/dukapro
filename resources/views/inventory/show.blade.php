@@ -14,6 +14,9 @@
     <x-slot name="actions">
         @can('update', $product)
             <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.inventory.edit', ['product' => $product]) }}">Edit Product</x-button>
+        @endcan
+        @include('inventory.partials.opening-quantity-button', ['product' => $product])
+        @can('update', $product)
             @if($batchModeEnabled && ! $isVariable)
                 <x-button variant="primary" size="sm" type="button" onclick="openAppModal('add-batch-modal')">+ Add New Batch</x-button>
             @endif
@@ -96,6 +99,9 @@
         <div class="space-y-4" id="variant-catalog-list">
             @foreach($product->variants as $variant)
                 <x-variant-catalog-item :variant="$variant">
+                    <div class="mb-3 flex justify-end">
+                        @include('inventory.partials.opening-quantity-button', ['product' => $variant])
+                    </div>
                     @include('inventory.partials.batch-panel', [
                         'sellable' => $variant,
                         'parentProduct' => $product,
@@ -189,6 +195,9 @@
                     <div class="text-right">
                         <p class="text-xs text-gray-500">Stock</p>
                         <p class="text-sm font-semibold text-indigo-700">{{ format_unit_quantity($variant->totalStockQuantity(), $variant->measurement_unit, $variant->business_id) }}</p>
+                        <div class="mt-2">
+                            @include('inventory.partials.opening-quantity-button', ['product' => $variant])
+                        </div>
                         <p class="mt-2 text-xs text-gray-500">Price</p>
                         <p class="text-xs font-medium text-gray-900">@money($variant->price)</p>
                     </div>
@@ -197,4 +206,18 @@
         </div>
     </x-card>
 @endif
+
+@can('adjust-wallet-transactions')
+    @push('modals')
+        @include('partials.opening-correction-modal', [
+            'modalId' => 'product-opening-quantity',
+            'title' => 'Correct opening quantity',
+            'fieldName' => 'quantity',
+            'fieldLabel' => 'New on-hand quantity',
+            'step' => '0.001',
+            'currentLabel' => 'Current on-hand quantity',
+            'warning' => 'This sets on-hand stock for this product only. The difference between the old and new quantity is applied to this product. Other products and existing batch lots are not changed.',
+        ])
+    @endpush
+@endcan
 @endsection

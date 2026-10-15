@@ -101,9 +101,8 @@
                     @can('delete-payment-wallets')
                         <x-delete-confirm-button
                             :action="tenant_route('tenant.wallets.destroy', ['wallet' => $wallet])"
-                            label="Archive"
-                            message="Archive this wallet?"
-                            detail="This hides the wallet from dropdowns and balance sheet totals. Transaction history is kept for audit. Requires Wallet ledger corrections to be enabled. Balance must be exactly zero."
+                            label="Delete"
+                            message="Delete this wallet?"
                             button-class="text-sm font-medium text-rose-600 hover:text-rose-800"
                         />
                     @endcan
@@ -411,6 +410,8 @@
         }
 
         if (typeof window.openAppModal === 'function') {
+            var editModal = document.getElementById(editModalId);
+            if (editModal) editModal.style.zIndex = '260';
             window.openAppModal(editModalId);
         }
     }
@@ -434,6 +435,8 @@
         }
 
         if (typeof window.openAppModal === 'function') {
+            var deleteModal = document.getElementById(deleteModalId);
+            if (deleteModal) deleteModal.style.zIndex = '260';
             window.openAppModal(deleteModalId);
         }
     }
@@ -441,6 +444,8 @@
     document.addEventListener('click', function (event) {
         var editBtn = event.target.closest('[data-wallet-tx-edit]');
         if (editBtn && currentWalletId) {
+            event.preventDefault();
+            event.stopPropagation();
             var txId = editBtn.getAttribute('data-wallet-tx-edit');
             loadWalletHistory(currentWalletId, { silent: true }).then(function (payload) {
                 openEditModal(findRowInPayload(payload, txId));
@@ -450,12 +455,14 @@
 
         var deleteBtn = event.target.closest('[data-wallet-tx-delete]');
         if (deleteBtn && currentWalletId) {
+            event.preventDefault();
+            event.stopPropagation();
             var delId = deleteBtn.getAttribute('data-wallet-tx-delete');
             loadWalletHistory(currentWalletId, { silent: true }).then(function (payload) {
                 openDeleteModal(findRowInPayload(payload, delId));
             });
         }
-    });
+    }, true);
 
     var saveBtn = document.getElementById(editModalId + '-save');
     if (saveBtn) {
@@ -564,7 +571,7 @@
                     if (err) {
                         var message = (data && data.errors && data.errors.transaction && data.errors.transaction[0])
                             || (data && data.message)
-                            || 'Could not remove this transaction.';
+                            || 'Could not delete this transaction.';
                         err.textContent = message;
                         err.classList.remove('hidden');
                     }
@@ -574,6 +581,8 @@
                 });
         });
     }
+
+    window.formatWalletMoney = formatMoney;
 })();
 
 window.openWalletDepositModal = function (walletId) {
@@ -588,6 +597,9 @@ window.openWalletDepositModal = function (walletId) {
 
 window.openWalletAdjustModal = function (walletId) {
     var modalId = 'wallet-adjust-modal';
+    if (typeof window.openAppModal === 'function') {
+        window.openAppModal(modalId);
+    }
     var input = document.getElementById(modalId + '-wallet-id');
     var label = document.getElementById(modalId + '-wallet-label');
     var jsonEl = document.getElementById(modalId + '-wallets-json');
@@ -606,12 +618,12 @@ window.openWalletAdjustModal = function (walletId) {
         input.value = String(walletId);
     }
     if (label) {
+        var balance = match && typeof window.formatWalletMoney === 'function'
+            ? window.formatWalletMoney(match.balance)
+            : (match ? String(match.balance) : '');
         label.textContent = match
-            ? match.name + ' · ' + (match.type_label || '') + ' · Balance ' + formatMoney(match.balance)
+            ? match.name + ' · ' + (match.type_label || '') + (balance ? ' · Balance ' + balance : '')
             : 'Wallet #' + walletId;
-    }
-    if (typeof window.openAppModal === 'function') {
-        window.openAppModal(modalId);
     }
 };
 document.addEventListener('click', function (e) {

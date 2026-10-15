@@ -98,7 +98,7 @@
                         <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.supplier-credit.bills.show', ['purchase' => $purchase]) }}">View</x-button>
                         @include('supplier-credit.partials.delete-button', [
                             'action' => tenant_route('tenant.supplier-credit.bills.destroy', ['purchase' => $purchase]),
-                            'confirm' => 'Are you sure you want to delete this bill? Stock already received will stay in inventory.',
+                            'confirm' => 'Delete this bill?',
                             'label' => 'Delete',
                         ])
                     </div>

@@ -81,7 +81,7 @@ class CustomerCreditController extends Controller
 
         return redirect()
             ->to(tenant_route('tenant.customer-credit.invoices.index'))
-            ->with('success', 'Credit invoice removed from active records. Stock levels were not changed.');
+            ->with('success', 'Invoice deleted.');
     }
 
     public function payments(Request $request)
@@ -107,7 +107,7 @@ class CustomerCreditController extends Controller
 
         return redirect()
             ->to(tenant_route('tenant.customer-credit.payments.index'))
-            ->with('success', 'Payment removed and customer balance updated.');
+            ->with('success', 'Payment deleted.');
     }
 
     public function recordPayment(

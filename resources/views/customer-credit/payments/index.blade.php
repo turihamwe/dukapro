@@ -32,7 +32,7 @@
                 </div>
                 @include('customer-credit.partials.delete-button', [
                     'action' => tenant_route('tenant.customer-credit.payments.destroy', ['ledgerEntry' => $payment]),
-                    'confirm' => 'Remove this payment record and update the customer balance?',
+                    'confirm' => 'Delete this payment?',
                 ])
             </div>
         </x-card>

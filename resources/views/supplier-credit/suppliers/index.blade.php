@@ -23,6 +23,10 @@
     </x-alert>
 @endif
 
+@if(session('success'))
+    <x-alert type="success" class="mb-4">{{ session('success') }}</x-alert>
+@endif
+
 <p class="mb-4 text-xs text-gray-500">CSV export includes <strong>all vendors</strong> for this business (full list, not paginated).</p>
 
 <x-card class="mb-6">
@@ -66,10 +70,19 @@
                                 onclick="openVendorSettleDebtModal({{ (int) $supplier->id }})"
                             >Settle debt</x-button>
                         @endif
+                        @can('adjust-wallet-transactions')
+                            <x-button variant="secondary" size="sm" type="button"
+                                      data-open-opening-correction
+                                      data-modal="supplier-opening-correction"
+                                      data-action="{{ tenant_route('tenant.supplier-credit.vendors.opening-balance', ['supplier' => $supplier]) }}"
+                                      data-entity="{{ $supplier->name }}"
+                                      data-current="{{ format_money($supplier->opening_balance) }}"
+                                      data-value="{{ number_format((float) $supplier->opening_balance, 2, '.', '') }}">Correct opening balance</x-button>
+                        @endcan
                         <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.supplier-credit.vendors.edit', ['supplier' => $supplier]) }}">Edit</x-button>
                         @include('supplier-credit.partials.delete-button', [
                             'action' => tenant_route('tenant.supplier-credit.vendors.destroy', ['supplier' => $supplier]),
-                            'confirm' => 'Are you sure you want to delete this vendor? Linked bills and payments will be hidden. Stock already received will not change.',
+                            'confirm' => 'Delete this vendor?',
                             'label' => 'Delete',
                         ])
                     </div>
@@ -82,6 +95,20 @@
 </div>
 
 @include('supplier-credit.suppliers._settle-debt-modal', ['wallets' => $wallets ?? collect()])
+
+@can('adjust-wallet-transactions')
+    @push('modals')
+        @include('partials.opening-correction-modal', [
+            'modalId' => 'supplier-opening-correction',
+            'title' => 'Correct opening balance',
+            'fieldName' => 'opening_balance',
+            'fieldLabel' => 'New opening balance',
+            'step' => '0.01',
+            'currentLabel' => 'Current opening balance',
+            'warning' => 'This updates only this vendor\'s opening bill and opening balance. Other vendors, their bills, and inventory stock are not changed.',
+        ])
+    @endpush
+@endcan
 
 @push('modals')
     <x-csv-import-modal

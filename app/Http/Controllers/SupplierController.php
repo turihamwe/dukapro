@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\AuditLogger;
 use App\Models\Business;
 use App\Models\Supplier;
+use App\Services\OpeningLedgerCorrectionService;
 use App\Services\PaymentWalletService;
 use App\Services\SupplierCreditService;
 use App\Services\SupplierCsvExportService;
@@ -290,6 +291,38 @@ class SupplierController extends Controller
 
         return redirect()
             ->to(tenant_route('tenant.supplier-credit.vendors.index'))
-            ->with('success', 'Vendor and linked bills/payments removed from active records. Stock levels were not changed.');
+            ->with('success', 'Vendor deleted.');
+    }
+
+    public function correctOpeningBalance(Request $request, Business $business, Supplier $supplier, OpeningLedgerCorrectionService $corrections)
+    {
+        $this->authorize('adjust-wallet-transactions');
+
+        if ((int) $supplier->business_id !== (int) $business->id) {
+            abort(404);
+        }
+
+        $data = $request->validate([
+            'opening_balance' => 'required|numeric|min:0',
+            'reason' => 'required|string|min:3|max:2000',
+        ]);
+
+        try {
+            $corrections->correctSupplierOpeningBalance(
+                $request->user(),
+                $supplier,
+                (float) $data['opening_balance'],
+                $data['reason']
+            );
+        } catch (ValidationException $exception) {
+            return back()
+                ->withInput()
+                ->withErrors($exception->errors())
+                ->with('open_opening_correction', 'supplier-opening-correction')
+                ->with('opening_correction_entity', $supplier->name)
+                ->with('opening_correction_current', format_money($supplier->opening_balance));
+        }
+
+        return back()->with('success', 'Opening balance corrected for ' . $supplier->name . '.');
     }
 }

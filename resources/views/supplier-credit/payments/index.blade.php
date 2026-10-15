@@ -48,7 +48,7 @@
                         @endif
                         @include('supplier-credit.partials.delete-button', [
                             'action' => tenant_route('tenant.supplier-credit.payments.destroy', ['payment' => $payment]),
-                            'confirm' => 'Are you sure you want to delete this payment? The bill balance will be recalculated.',
+                            'confirm' => 'Delete this payment?',
                             'label' => 'Delete',
                         ])
                     </div>

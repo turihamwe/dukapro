@@ -35,7 +35,7 @@
                     <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.customer-credit.invoices.show', ['sale' => $sale]) }}">View</x-button>
                     @include('customer-credit.partials.delete-button', [
                         'action' => tenant_route('tenant.customer-credit.invoices.destroy', ['sale' => $sale]),
-                        'confirm' => 'Remove this credit invoice from active records? Inventory stock will NOT be restored.',
+                        'confirm' => 'Delete this invoice?',
                     ])
                 </div>
             </div>

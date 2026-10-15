@@ -22,7 +22,10 @@
              placeholder="0" />
     @if($hasOpeningBill)
         <p class="mt-2 text-xs text-gray-600">
-            Opening balance bill already created.
+            Opening balance bill already created. This form cannot change it.
+            @can('adjust-wallet-transactions')
+                Use <span class="font-medium text-gray-800">Correct opening balance</span> when Wallet ledger corrections is enabled.
+            @endcan
             @if($supplier->openingBalancePurchase)
                 <a href="{{ tenant_route('tenant.supplier-credit.bills.show', ['purchase' => $supplier->openingBalancePurchase]) }}"
                    class="font-medium text-indigo-600 hover:text-indigo-800">View bill</a>

@@ -396,7 +396,7 @@
     <div class="rounded-xl border border-sky-200 bg-sky-50/50 p-6 space-y-5">
         <div>
             <h2 class="text-sm font-semibold text-gray-900">Wallet ledger corrections</h2>
-            <p class="mt-1 text-xs text-gray-600">Master control (level 1). When off, edit/delete on wallet transaction history is completely hidden for every tenant. Unlock individual businesses on their superadmin detail page.</p>
+            <p class="mt-1 text-xs text-gray-600">Master control (level 1). When off, wallet history edits and opening-balance or opening-quantity corrections are hidden for every tenant. Unlock individual businesses on their superadmin detail page.</p>
         </div>
 
         <label class="flex items-start gap-3 rounded-lg border border-sky-300 bg-white p-4 text-sm">

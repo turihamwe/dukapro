@@ -22,6 +22,7 @@ use App\Services\BranchStockTransferService;
 use App\Services\CatalogDiscoveryService;
 use App\Services\LowStockAlertService;
 use App\Services\ProductBatchService;
+use App\Services\OpeningLedgerCorrectionService;
 use App\Services\ProductCsvExportService;
 use App\Services\ProductCsvImportService;
 use App\Services\ProductInventoryService;
@@ -1149,5 +1150,37 @@ class InventoryController extends Controller
         }
 
         return redirect()->to(tenant_route('tenant.inventory.index'))->with('success', $message);
+    }
+
+    public function correctOpeningQuantity(Request $request, Business $business, Product $product, OpeningLedgerCorrectionService $corrections)
+    {
+        $this->authorize('adjust-wallet-transactions');
+
+        if ((int) $product->business_id !== (int) $business->id) {
+            abort(404);
+        }
+
+        $data = $request->validate([
+            'quantity' => 'required|numeric|min:0',
+            'reason' => 'required|string|min:3|max:2000',
+        ]);
+
+        try {
+            $corrections->correctProductOpeningQuantity(
+                $request->user(),
+                $product,
+                (float) $data['quantity'],
+                $data['reason']
+            );
+        } catch (ValidationException $exception) {
+            return back()
+                ->withInput()
+                ->withErrors($exception->errors())
+                ->with('open_opening_correction', 'product-opening-quantity')
+                ->with('opening_correction_entity', $product->displayName())
+                ->with('opening_correction_current', format_unit_quantity($product->stock_quantity, $product->measurement_unit, $product->business_id));
+        }
+
+        return back()->with('success', 'Opening quantity corrected for ' . $product->displayName() . '.');
     }
 }

@@ -20,7 +20,7 @@
                     <button type="submit" class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500">Restore</button>
                 </form>
             @endcan
-            <a href="{{ route('superadmin.entities.index', [$entity, 'trashed' => 1]) }}" class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100">View archived</a>
+            <a href="{{ route('superadmin.entities.index', [$entity, 'trashed' => 1]) }}" class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100">View deleted</a>
         @else
             @can('platform-full-access')
                 @if($entity === 'businesses')
@@ -52,8 +52,7 @@
 
 @if(! empty($supportsSoftDeletes) && method_exists($item, 'trashed') && $item->trashed())
     <div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-        This record was archived on {{ optional($item->deleted_at)->format('M j, Y g:i A') ?? '—' }}.
-        It is hidden from the business but preserved so linked history (for example sales line items) stays intact.
+        This record was deleted on {{ optional($item->deleted_at)->format('M j, Y g:i A') ?? '—' }}.
     </div>
 @endif
 

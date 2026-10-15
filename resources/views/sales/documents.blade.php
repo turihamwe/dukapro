@@ -103,8 +103,7 @@
                             @can('delete', $sale)
                                 <x-delete-confirm-button
                                     :action="tenant_route('tenant.sales.destroy', ['sale' => $sale])"
-                                    message="Are you sure you want to delete this item?"
-                                    :detail="'Remove sale ' . $sale->sale_number . '? Stock will not change automatically.'"
+                                    message="Delete sale {{ $sale->sale_number }}?"
                                     label="Delete"
                                     class="mt-1 sm:mt-0 sm:ml-3"
                                 />

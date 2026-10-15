@@ -214,7 +214,7 @@ class ReconciliationController extends Controller
 
         return redirect()
             ->to(tenant_route('tenant.reconciliation.index'))
-            ->with('success', 'End-of-day report removed. Sales and transaction history were not changed.');
+            ->with('success', 'End-of-day report deleted.');
     }
 
     protected function validatedSubmission(Request $request): array

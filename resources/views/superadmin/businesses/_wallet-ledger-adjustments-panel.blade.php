@@ -11,7 +11,7 @@
         <div>
             <p class="text-sm font-semibold text-gray-900">Wallet ledger corrections</p>
             <p class="mt-1 text-xs text-gray-600">
-                Makes wallet history corrections available to the business owner. The owner can optionally grant managers the same ability under Staff permissions.
+                Makes wallet history edits, customer and supplier opening-balance corrections, and product opening-quantity corrections available to the business owner. The owner can optionally grant managers the same ability under Staff permissions.
                 Other tenants never see this unless you unlock them here.
             </p>
         </div>
@@ -43,7 +43,7 @@
                        class="mt-0.5 rounded border-gray-300 text-sky-600 focus:ring-sky-500">
                 <span>
                     <span class="block text-sm font-medium text-gray-900">Enable wallet ledger corrections</span>
-                    <span class="mt-0.5 block text-xs text-gray-500">Unchecking hides edit/delete controls entirely for this business.</span>
+                    <span class="mt-0.5 block text-xs text-gray-500">Unchecking hides wallet history edits and opening balance or quantity corrections for this business.</span>
                 </span>
             </label>
             <button type="submit" class="mt-3 rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700">

@@ -144,7 +144,7 @@ class PaymentWalletController extends Controller
         $wallet->refresh();
 
         return response()->json([
-            'message' => 'Transaction removed and balance adjusted.',
+            'message' => 'Transaction deleted.',
             'wallet' => [
                 'id' => $wallet->id,
                 'current_balance' => (float) $wallet->current_balance,
@@ -298,7 +298,7 @@ class PaymentWalletController extends Controller
 
         return redirect()
             ->to(tenant_route('tenant.wallets.index'))
-            ->with('success', 'Wallet archived. Past transactions remain in your audit history.');
+            ->with('success', 'Wallet deleted.');
     }
 
     public function update(Request $request, Business $business, PaymentWallet $wallet)

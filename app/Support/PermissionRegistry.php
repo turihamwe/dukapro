@@ -62,8 +62,8 @@ class PermissionRegistry
                 'roles' => [UserRole::MANAGER, UserRole::SUPERVISOR],
             ],
             'adjust-wallet-transactions' => [
-                'label' => 'Edit wallet history',
-                'description' => 'Correct or remove lines in wallet transaction history',
+                'label' => 'Wallet ledger corrections',
+                'description' => 'Correct wallet history, customer and supplier opening balances, and product opening quantities',
                 'roles' => [UserRole::MANAGER],
             ],
             'impersonate-branches' => [

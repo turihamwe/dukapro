@@ -16,8 +16,7 @@
             <x-button variant="primary" size="sm" href="{{ tenant_route('tenant.reconciliation.edit', ['reconciliation' => $reconciliation]) }}">Edit report</x-button>
             <x-delete-confirm-button
                 :action="tenant_route('tenant.reconciliation.destroy', ['reconciliation' => $reconciliation])"
-                message="Remove this end-of-day report?"
-                detail="Sales and POS history stay unchanged. Pending shortages from this report will be cleared."
+                message="Delete this end-of-day report?"
                 label="Delete report"
                 button-class="inline-flex items-center rounded-lg border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50"
             />

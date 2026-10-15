@@ -25,7 +25,10 @@
              :disabled="$hasOpeningEntry"
              placeholder="0" />
     @if($hasOpeningEntry)
-        <p class="mt-2 text-xs text-gray-600">Opening balance entry already recorded on the ledger.</p>
+        <p class="mt-2 text-xs text-gray-600">Opening balance entry already recorded on the ledger. This form cannot change it.</p>
+        @can('adjust-wallet-transactions')
+            <p class="mt-1 text-xs text-gray-500">Use <span class="font-medium text-gray-700">Correct opening balance</span> when Wallet ledger corrections is enabled.</p>
+        @endcan
     @else
         <p class="mt-2 text-xs text-gray-500">
             Enter money customers already owe you before using {{ config('app.name', 'DukaPro') }}.

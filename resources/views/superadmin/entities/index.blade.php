@@ -45,7 +45,7 @@
         </a>
         <a href="{{ route('superadmin.entities.index', array_filter(['entity' => $entity, 'trashed' => 1, 'q' => request('q')])) }}"
            class="rounded-lg px-4 py-2 text-sm font-medium {{ ! empty($showTrashed) ? 'bg-amber-600 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50' }}">
-            Archived
+            Deleted
         </a>
     </div>
 @endif
@@ -78,7 +78,7 @@
 
 @if(!empty($showTrashed))
     <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-        Viewing archived (soft-deleted) {{ strtolower($config['label']) }}. These records are hidden from businesses but kept for history such as sales reports.
+        Viewing deleted {{ strtolower($config['label']) }}.
     </div>
 @endif
 
@@ -130,7 +130,7 @@
                         <td class="px-4 py-3 text-gray-500">
                             #{{ $record->id }}
                             @if(! empty($showTrashed) && $record->deleted_at)
-                                <span class="mt-1 block text-[10px] font-semibold uppercase tracking-wide text-amber-700">Archived</span>
+                                <span class="mt-1 block text-[10px] font-semibold uppercase tracking-wide text-amber-700">Deleted</span>
                             @endif
                         </td>
                         @foreach($config['list'] as $column)

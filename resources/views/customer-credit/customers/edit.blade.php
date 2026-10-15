@@ -20,4 +20,27 @@
         </div>
     </form>
 </x-card>
+
+@can('adjust-wallet-transactions')
+    <div class="mt-4">
+        <x-button variant="secondary" size="sm" type="button"
+                  data-open-opening-correction
+                  data-modal="customer-opening-correction"
+                  data-action="{{ tenant_route('tenant.customer-credit.customers.opening-balance', ['customer' => $customer]) }}"
+                  data-entity="{{ $customer->name }}"
+                  data-current="{{ format_money($customer->opening_balance) }}"
+                  data-value="{{ number_format((float) $customer->opening_balance, 2, '.', '') }}">Correct opening balance</x-button>
+    </div>
+    @push('modals')
+        @include('partials.opening-correction-modal', [
+            'modalId' => 'customer-opening-correction',
+            'title' => 'Correct opening balance',
+            'fieldName' => 'opening_balance',
+            'fieldLabel' => 'New opening balance',
+            'step' => '0.01',
+            'currentLabel' => 'Current opening balance',
+            'warning' => 'This updates only this customer\'s opening ledger entry, then recalculates that customer\'s outstanding balance. Other customers are not changed.',
+        ])
+    @endpush
+@endcan
 @endsection

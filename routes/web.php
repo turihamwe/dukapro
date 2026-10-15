@@ -326,6 +326,9 @@ Route::middleware(['maintenance'])->group(function () {
                         Route::put('/{product}', [InventoryController::class, 'update'])->name('update');
                         Route::post('/{product}/batches', [InventoryController::class, 'storeBatch'])->name('batches.store');
                     });
+                    Route::post('/{product}/opening-quantity', [InventoryController::class, 'correctOpeningQuantity'])
+                        ->middleware('can:adjust-wallet-transactions')
+                        ->name('opening-quantity');
                     Route::delete('/{product}', [InventoryController::class, 'destroy'])
                         ->middleware('can:delete-inventory')
                         ->name('destroy');
@@ -425,6 +428,9 @@ Route::middleware(['maintenance'])->group(function () {
                     Route::get('/customers/{customer}', [CustomerCreditCustomerController::class, 'show'])->name('customers.show');
                     Route::get('/customers/{customer}/edit', [CustomerCreditCustomerController::class, 'edit'])->name('customers.edit');
                     Route::put('/customers/{customer}', [CustomerCreditCustomerController::class, 'update'])->name('customers.update');
+                    Route::post('/customers/{customer}/opening-balance', [CustomerCreditCustomerController::class, 'correctOpeningBalance'])
+                        ->middleware('can:adjust-wallet-transactions')
+                        ->name('customers.opening-balance');
                     Route::delete('/customers/{customer}', [CustomerCreditCustomerController::class, 'destroy'])->name('customers.destroy');
                     Route::post('/customers/{customer}/payments', [CustomerCreditController::class, 'recordPayment'])->name('customers.payments.store');
                     Route::get('/invoices', [CustomerCreditController::class, 'invoices'])->name('invoices.index');
@@ -456,6 +462,9 @@ Route::middleware(['maintenance'])->group(function () {
                     Route::get('/vendors', [SupplierController::class, 'index'])->name('vendors.index');
                     Route::get('/vendors/{supplier}/edit', [SupplierController::class, 'edit'])->name('vendors.edit');
                     Route::put('/vendors/{supplier}', [SupplierController::class, 'update'])->name('vendors.update');
+                    Route::post('/vendors/{supplier}/opening-balance', [SupplierController::class, 'correctOpeningBalance'])
+                        ->middleware('can:adjust-wallet-transactions')
+                        ->name('vendors.opening-balance');
                     Route::delete('/vendors/{supplier}', [SupplierController::class, 'destroy'])->name('vendors.destroy');
                     Route::post('/vendors/{supplier}/settle-debt', [SupplierController::class, 'settleDebt'])->name('vendors.settle-debt');
                     Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers.index');
@@ -465,6 +474,9 @@ Route::middleware(['maintenance'])->group(function () {
                     Route::post('/suppliers', [SupplierController::class, 'store'])->name('suppliers.store');
                     Route::get('/suppliers/{supplier}/edit', [SupplierController::class, 'edit'])->name('suppliers.edit');
                     Route::put('/suppliers/{supplier}', [SupplierController::class, 'update'])->name('suppliers.update');
+                    Route::post('/suppliers/{supplier}/opening-balance', [SupplierController::class, 'correctOpeningBalance'])
+                        ->middleware('can:adjust-wallet-transactions')
+                        ->name('suppliers.opening-balance');
                     Route::delete('/suppliers/{supplier}', [SupplierController::class, 'destroy'])->name('suppliers.destroy');
                 });
 

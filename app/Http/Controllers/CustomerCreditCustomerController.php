@@ -9,6 +9,7 @@ use App\Services\CustomerCreditService;
 use App\Services\CustomerCsvExportService;
 use App\Services\CustomerCsvImportService;
 use App\Services\CustomerService;
+use App\Services\OpeningLedgerCorrectionService;
 use App\Services\PaymentWalletService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -280,7 +281,7 @@ class CustomerCreditCustomerController extends Controller
 
         return redirect()
             ->to(tenant_route('tenant.customer-credit.customers.index'))
-            ->with('success', 'Customer and linked invoices/payments removed from active records. Stock levels were not changed.');
+            ->with('success', 'Customer deleted.');
     }
 
     /**
@@ -300,5 +301,42 @@ class CustomerCreditCustomerController extends Controller
             ->to(tenant_route('tenant.customer-credit.customers.index'))
             ->with('success', $message)
             ->with('import_errors', array_slice($result['errors'], 0, 50));
+    }
+
+    public function correctOpeningBalance(Request $request, Business $business, Customer $customer, OpeningLedgerCorrectionService $corrections)
+    {
+        $this->authorize('adjust-wallet-transactions');
+
+        if ((int) $customer->business_id !== (int) $business->id) {
+            abort(404);
+        }
+
+        $data = $request->validate([
+            'opening_balance' => 'required|numeric|min:0',
+            'reason' => 'required|string|min:3|max:2000',
+        ]);
+
+        try {
+            $corrections->correctCustomerOpeningBalance(
+                $request->user(),
+                $customer,
+                (float) $data['opening_balance'],
+                $data['reason']
+            );
+        } catch (ValidationException $exception) {
+            return $this->redirectOpeningCorrection($customer->name, format_money($customer->opening_balance), $exception);
+        }
+
+        return back()->with('success', 'Opening balance corrected for ' . $customer->name . '.');
+    }
+
+    protected function redirectOpeningCorrection(string $entity, string $current, ValidationException $exception)
+    {
+        return back()
+            ->withInput()
+            ->withErrors($exception->errors())
+            ->with('open_opening_correction', 'customer-opening-correction')
+            ->with('opening_correction_entity', $entity)
+            ->with('opening_correction_current', $current);
     }
 }

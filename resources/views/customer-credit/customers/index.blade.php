@@ -23,6 +23,10 @@
     </x-alert>
 @endif
 
+@if(session('success'))
+    <x-alert type="success" class="mb-4">{{ session('success') }}</x-alert>
+@endif
+
 <p class="mb-4 text-xs text-gray-500">CSV export includes <strong>all credit customers</strong> for this business, not just the current page or search results.</p>
 
 <form method="GET" action="{{ tenant_route('tenant.customer-credit.customers.index') }}" class="mb-4 flex flex-wrap items-center gap-2">
@@ -63,12 +67,21 @@
                         <span class="mt-1 inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">Inactive</span>
                     @endunless
                 </div>
-                <div class="flex shrink-0 items-center gap-2">
+                <div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
                     <x-button variant="success" size="sm" type="button" onclick="openAppModal('customer-payment-modal-{{ $customer->id }}')">Record payment</x-button>
+                    @can('adjust-wallet-transactions')
+                        <x-button variant="secondary" size="sm" type="button"
+                                  data-open-opening-correction
+                                  data-modal="customer-opening-correction"
+                                  data-action="{{ tenant_route('tenant.customer-credit.customers.opening-balance', ['customer' => $customer]) }}"
+                                  data-entity="{{ $customer->name }}"
+                                  data-current="{{ format_money($customer->opening_balance) }}"
+                                  data-value="{{ number_format((float) $customer->opening_balance, 2, '.', '') }}">Correct opening balance</x-button>
+                    @endcan
                     <x-button variant="secondary" size="sm" href="{{ tenant_route('tenant.customer-credit.customers.edit', ['customer' => $customer]) }}">Edit</x-button>
                     @include('customer-credit.partials.delete-button', [
                         'action' => tenant_route('tenant.customer-credit.customers.destroy', ['customer' => $customer]),
-                        'confirm' => 'Remove this customer and hide linked invoices and payments? Stock will NOT be restored.',
+                        'confirm' => 'Delete this customer?',
                     ])
                 </div>
             </div>
@@ -110,6 +123,17 @@
             'wallets' => $wallets ?? collect(),
         ])
     @endforeach
+    @can('adjust-wallet-transactions')
+        @include('partials.opening-correction-modal', [
+            'modalId' => 'customer-opening-correction',
+            'title' => 'Correct opening balance',
+            'fieldName' => 'opening_balance',
+            'fieldLabel' => 'New opening balance',
+            'step' => '0.01',
+            'currentLabel' => 'Current opening balance',
+            'warning' => 'This updates only this customer\'s opening ledger entry, then recalculates that customer\'s outstanding balance. Other customers are not changed.',
+        ])
+    @endcan
 @endpush
 
 @push('scripts')

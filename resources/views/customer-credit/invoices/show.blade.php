@@ -44,7 +44,7 @@
 <div class="mt-6">
     @include('customer-credit.partials.delete-button', [
         'action' => tenant_route('tenant.customer-credit.invoices.destroy', ['sale' => $sale]),
-        'confirm' => 'Remove this credit invoice from active records? Inventory stock will NOT be restored.',
+        'confirm' => 'Delete this invoice?',
         'label' => 'Delete invoice',
     ])
 </div>
