@@ -1,6 +1,13 @@
 @php
     $modalId = 'wallet-adjust-modal';
-    $activeWallets = $wallets->where('is_active', true);
+    $walletAdjustOptions = $wallets->where('is_active', true)->map(function ($w) {
+        return [
+            'id' => $w->id,
+            'name' => $w->name,
+            'type_label' => $w->typeLabel(),
+            'balance' => (float) $w->current_balance,
+        ];
+    })->values();
 @endphp
 <div id="{{ $modalId }}" class="app-modal-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="{{ $modalId }}-title">
     <div class="app-modal-panel max-w-lg">
@@ -55,11 +62,4 @@
         </form>
     </div>
 </div>
-<script type="application/json" id="{{ $modalId }}-wallets-json">@json($activeWallets->map(function ($w) {
-    return [
-        'id' => $w->id,
-        'name' => $w->name,
-        'type_label' => $w->typeLabel(),
-        'balance' => (float) $w->current_balance,
-    ];
-})->values())</script>
+<script type="application/json" id="{{ $modalId }}-wallets-json">@json($walletAdjustOptions)</script>
