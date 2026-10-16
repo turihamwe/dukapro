@@ -23,6 +23,12 @@
         @yield('content')
     </main>
 
+    <footer class="border-t border-gray-200 px-4 py-4 text-center text-xs text-gray-500">
+        <a href="{{ route('privacy') }}" class="font-medium text-emerald-700 hover:text-emerald-800">Privacy policy</a>
+        <span class="mx-1.5">·</span>
+        <a href="{{ route('account.delete') }}" class="font-medium text-emerald-700 hover:text-emerald-800">Delete account</a>
+    </footer>
+
     @if(auth()->user()->affiliateProfile)
         @include('affiliate.partials.field-feedback-widget')
     @endif

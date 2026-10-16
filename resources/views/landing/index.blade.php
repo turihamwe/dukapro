@@ -410,6 +410,8 @@
                     <li><a href="{{ route('login') }}" class="transition hover:text-brand-600">Login</a></li>
                     <li><a href="{{ route('register') }}" class="transition hover:text-brand-600">Register</a></li>
                     <li><a href="{{ route('portal') }}" class="transition hover:text-brand-600">Business portal login</a></li>
+                    <li><a href="{{ route('privacy') }}" class="transition hover:text-brand-600">Privacy policy</a></li>
+                    <li><a href="{{ route('account.delete') }}" class="transition hover:text-brand-600">Delete account</a></li>
                     @if(function_exists('whatsapp_support_url') && should_show_whatsapp_float())
                         <li>
                             <a href="{{ whatsapp_support_url('Hello, I need help with ' . $brand . '.') }}"
@@ -424,7 +426,11 @@
             </div>
         </div>
         <div class="mt-10 flex flex-col items-center justify-between gap-4 border-t border-slate-200 pt-8 sm:flex-row">
-            <p class="text-sm text-slate-500">&copy; {{ date('Y') }} {{ $brand }}. All rights reserved.</p>
+            <p class="text-sm text-slate-500">
+                &copy; {{ date('Y') }} {{ $brand }}. All rights reserved.
+                <span class="mx-1.5 text-slate-300">·</span>
+                <a href="{{ route('privacy') }}" class="hover:text-brand-600">Privacy policy</a>
+            </p>
             <p class="text-sm text-slate-400">Built for African businesses · Let's go digital</p>
         </div>
     </div>

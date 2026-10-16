@@ -365,6 +365,7 @@
         <p class="text-sm text-slate-500">&copy; {{ date('Y') }} {{ $brand }}. Shareholder program terms apply.</p>
         <div class="flex flex-wrap justify-center gap-4 text-sm font-medium text-slate-600">
             <a href="{{ route('home') }}" class="hover:text-ink-900">Merchant home</a>
+            <a href="{{ route('privacy') }}" class="hover:text-ink-900">Privacy policy</a>
             <a href="{{ route('shareholder.login') }}" class="hover:text-ink-900">Shareholder login</a>
         </div>
     </div>

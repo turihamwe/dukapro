@@ -41,6 +41,12 @@
         <x-button type="submit" variant="primary">Save profile</x-button>
     </form>
 </x-card>
+
+<x-card class="mt-6 max-w-2xl">
+    <h2 class="text-sm font-semibold text-gray-900">Delete account</h2>
+    <p class="mt-2 text-sm text-gray-600">Permanently delete this login and the personal details stored on it. Shop sale totals stay with the shop. EFRIS filings stay only if the shop has switched that service on.</p>
+    <a href="{{ route('account.delete') }}" class="mt-4 inline-flex items-center rounded-lg border border-red-300 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50">Delete account</a>
+</x-card>
 @endsection
 
 @push('scripts')

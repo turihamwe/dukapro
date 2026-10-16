@@ -87,7 +87,11 @@
         </main>
 
         <footer class="border-t border-gray-200 bg-white px-4 py-4 dark:border-gray-700 dark:bg-gray-900 sm:px-8">
-            <p class="text-xs text-gray-500 dark:text-gray-400">{{ platform_footer_tagline() }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+                {{ platform_footer_tagline() }}
+                <span class="mx-1.5 text-gray-300 dark:text-gray-600">·</span>
+                <a href="{{ route('privacy') }}" class="font-medium text-emerald-600 hover:text-emerald-700">Privacy policy</a>
+            </p>
         </footer>
     </div>
 </div>

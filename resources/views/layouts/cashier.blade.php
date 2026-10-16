@@ -75,9 +75,11 @@ has-cashier-bottom-nav
                       class="inline-flex shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold"
                       role="status">Online</span>
             @endif
-            @unless(auth()->user()->canSwitchToCashierMode() && \App\Support\CashierMode::isActive())
-                <a href="{{ route('logout.get') }}" class="inline-flex min-h-[44px] items-center rounded-lg border border-gray-300 px-4 py-2 text-xs font-semibold text-gray-700">Logout</a>
-            @endunless
+            <div class="flex items-center gap-3">
+                @unless(auth()->user()->canSwitchToCashierMode() && \App\Support\CashierMode::isActive())
+                    <a href="{{ route('logout.get') }}" class="inline-flex min-h-[44px] items-center rounded-lg border border-gray-300 px-4 py-2 text-xs font-semibold text-gray-700">Logout</a>
+                @endunless
+            </div>
         </div>
     </header>
 

@@ -13,6 +13,7 @@ use App\Http\Controllers\ShareholderProgramController;
 use App\Http\Controllers\ShareholderAuthController;
 use App\Http\Controllers\Shareholder\DashboardController as ShareholderDashboardController;
 use App\Http\Controllers\Shareholder\DepositController as ShareholderDepositController;
+use App\Http\Controllers\AccountDeletionController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\BranchController;
@@ -90,6 +91,10 @@ Route::get('/logout', [AuthController::class, 'logout'])->middleware('auth')->na
 
 Route::middleware(['maintenance'])->group(function () {
     Route::get('/manifest.webmanifest', [PwaManifestController::class, 'site'])->name('pwa.manifest.site');
+    Route::view('/privacy', 'legal.privacy')->name('privacy');
+    Route::get('/account/delete', [AccountDeletionController::class, 'create'])->name('account.delete');
+    Route::post('/account/delete', [AccountDeletionController::class, 'destroy'])->middleware('throttle:6,1')->name('account.delete.store');
+    Route::get('/account/deleted', [AccountDeletionController::class, 'done'])->name('account.delete.done');
 
     Route::post('/telemetry/client-errors', [ClientErrorReportController::class, 'store'])
         ->middleware('throttle:60,1')
