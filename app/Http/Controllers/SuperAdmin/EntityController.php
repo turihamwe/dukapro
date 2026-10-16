@@ -33,6 +33,7 @@ use App\Support\EfrisGoLiveReadiness;
 use App\Support\SuperAdmin\AdminListPagination;
 use App\Support\SuperAdmin\EntityRegistry;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -317,7 +318,9 @@ class EntityController extends Controller
             case 'affiliates':
                 $data = $request->validate([
                     'name' => 'required|string|max:255',
-                    'email' => 'required|email|unique:affiliates,email',
+                    'email' => 'required|email|unique:affiliates,email|unique:users,email',
+                    'username' => 'required|string|max:50|alpha_dash|unique:users,username',
+                    'password' => 'required|string|min:8|confirmed',
                     'phone' => 'nullable|string|max:30',
                     'code' => 'nullable|string|max:32|unique:affiliates,code',
                     'commission_rate' => 'nullable|numeric|min:0|max:1',
@@ -331,18 +334,31 @@ class EntityController extends Controller
                 while (Affiliate::where('code', $code)->exists()) {
                     $code = $this->referralCodeGenerator->generateUnique();
                 }
-                $record = Affiliate::create([
-                    'name' => $data['name'],
-                    'email' => strtolower($data['email']),
-                    'phone' => $data['phone'] ?? null,
-                    'code' => $code,
-                    'commission_rate' => $data['commission_rate'] ?? \App\Support\AffiliateCommissionRates::subsequentRate(),
-                    'daily_shop_target' => $data['daily_shop_target'] ?? config('affiliates.default_daily_shop_target', 1),
-                    'status' => $data['status'],
-                    'is_active' => $request->boolean('is_active'),
-                    'approved_at' => $data['status'] === AffiliateStatus::APPROVED ? now() : null,
-                    'approved_by' => $data['status'] === AffiliateStatus::APPROVED ? $request->user()->id : null,
-                ]);
+                $record = DB::transaction(function () use ($request, $data, $code) {
+                    $affiliate = Affiliate::create([
+                        'name' => $data['name'],
+                        'email' => strtolower($data['email']),
+                        'phone' => $data['phone'] ?? null,
+                        'code' => $code,
+                        'commission_rate' => $data['commission_rate'] ?? \App\Support\AffiliateCommissionRates::subsequentRate(),
+                        'daily_shop_target' => $data['daily_shop_target'] ?? config('affiliates.default_daily_shop_target', 1),
+                        'status' => $data['status'],
+                        'is_active' => $request->boolean('is_active'),
+                        'approved_at' => $data['status'] === AffiliateStatus::APPROVED ? now() : null,
+                        'approved_by' => $data['status'] === AffiliateStatus::APPROVED ? $request->user()->id : null,
+                    ]);
+
+                    $this->createAffiliateLogin($affiliate, $data['username'], $data['password']);
+
+                    return $affiliate->fresh();
+                });
+                $this->logAffiliateCredentialChange(
+                    $request,
+                    $record,
+                    $record->user,
+                    'affiliate_login_created',
+                    'Created login for affiliate #' . $record->id . ' (' . $record->email . ')'
+                );
                 break;
 
             case 'shareholders':
@@ -692,26 +708,42 @@ class EntityController extends Controller
                     'daily_shop_target' => 'required|numeric|min:0|max:9999',
                     'status' => 'required|in:' . implode(',', AffiliateStatus::all()),
                     'is_active' => 'nullable|boolean',
+                    'username' => 'nullable|string|max:50|alpha_dash|unique:users,username',
                     'password' => 'nullable|string|min:8|confirmed',
                 ]);
                 $data['is_active'] = $request->boolean('is_active');
-                unset($data['password']);
+                unset($data['password'], $data['username']);
                 if ($data['status'] === AffiliateStatus::APPROVED && ! $item->approved_at) {
                     $data['approved_at'] = now();
                     $data['approved_by'] = $request->user()->id;
                 }
                 $item->update($data);
+                $item->refresh();
 
-                if ($request->filled('password')) {
-                    $login = $item->user;
-                    if (! $login) {
+                if (! $item->user && ($request->filled('password') || $request->filled('username'))) {
+                    if (! $request->filled('username') || ! $request->filled('password')) {
                         throw \Illuminate\Validation\ValidationException::withMessages([
-                            'password' => 'This affiliate has no login to update.',
+                            'password' => 'Enter a username and password to create this login.',
                         ]);
                     }
 
-                    $login->update(['password' => Hash::make($request->input('password'))]);
-                    $this->logAffiliatePasswordReset($request, $item, $login);
+                    if (User::query()->where('email', strtolower($item->email))->exists()) {
+                        throw \Illuminate\Validation\ValidationException::withMessages([
+                            'email' => 'A login with this email already exists.',
+                        ]);
+                    }
+
+                    $login = $this->createAffiliateLogin($item, $request->input('username'), $request->input('password'));
+                    $this->logAffiliateCredentialChange(
+                        $request,
+                        $item,
+                        $login,
+                        'affiliate_login_created',
+                        'Created login for affiliate #' . $item->id . ' (' . $item->email . ')'
+                    );
+                } elseif ($request->filled('password') && $item->user) {
+                    $item->user->update(['password' => Hash::make($request->input('password'))]);
+                    $this->logAffiliatePasswordReset($request, $item, $item->user);
                 }
                 break;
 
@@ -845,15 +877,46 @@ class EntityController extends Controller
         );
     }
 
+    protected function createAffiliateLogin(Affiliate $affiliate, string $username, string $password): User
+    {
+        $user = User::create([
+            'business_id' => null,
+            'name' => $affiliate->name,
+            'username' => strtolower(trim($username)),
+            'email' => strtolower($affiliate->email),
+            'phone' => $affiliate->phone,
+            'password' => Hash::make($password),
+            'role' => UserRole::AFFILIATE,
+            'is_active' => true,
+            'is_affiliate' => true,
+            'ui_theme' => 'modern',
+        ]);
+
+        $affiliate->update(['user_id' => $user->id]);
+
+        return $user;
+    }
+
     protected function logAffiliatePasswordReset(Request $request, Affiliate $affiliate, User $login): void
+    {
+        $this->logAffiliateCredentialChange(
+            $request,
+            $affiliate,
+            $login,
+            'affiliate_password_reset',
+            'Reset password for affiliate #' . $affiliate->id . ' (' . $affiliate->email . ')'
+        );
+    }
+
+    protected function logAffiliateCredentialChange(Request $request, Affiliate $affiliate, User $login, string $action, string $summary): void
     {
         $actor = $request->user();
 
         SystemAuditLog::create([
             'business_id' => null,
             'user_id' => $actor->id,
-            'action' => 'affiliate_password_reset',
-            'summary' => 'Reset password for affiliate #' . $affiliate->id . ' (' . $affiliate->email . ')',
+            'action' => $action,
+            'summary' => $summary,
             'metadata' => [
                 'affiliate_id' => $affiliate->id,
                 'target_user_id' => $login->id,

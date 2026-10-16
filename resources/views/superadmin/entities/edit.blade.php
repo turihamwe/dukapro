@@ -136,7 +136,13 @@
             @if($item->user)
                 @include('superadmin.entities.partials.password-reset-fields')
             @else
-                <p class="text-xs text-gray-500">This affiliate has no login yet.</p>
+                <div class="border-t border-gray-200 pt-4">
+                    <p class="text-sm font-medium text-gray-900">Create login</p>
+                    <p class="mt-1 text-xs text-gray-500">This profile has no login yet. A username and password create one.</p>
+                    <input type="text" name="username" value="{{ old('username') }}" placeholder="Username" autocomplete="off" class="mt-3 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                    @error('username')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                </div>
+                @include('superadmin.entities.partials.password-reset-fields')
             @endif
         @elseif($entity === 'shareholders')
             <input type="text" name="name" value="{{ old('name', $item->name) }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">

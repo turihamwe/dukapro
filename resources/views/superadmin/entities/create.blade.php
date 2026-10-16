@@ -78,6 +78,11 @@
         @elseif($entity === 'affiliates')
             <input type="text" name="name" value="{{ old('name') }}" required placeholder="Full name" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <input type="email" name="email" value="{{ old('email') }}" required placeholder="Email" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <input type="text" name="username" value="{{ old('username') }}" required placeholder="Username" autocomplete="off" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            @error('username')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
+            <x-password-input name="password" required autocomplete="new-password" placeholder="Password (min. 8 characters)" class="w-full" />
+            <x-password-input name="password_confirmation" required autocomplete="new-password" placeholder="Confirm password" class="w-full" />
+            @error('password')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
             <input type="text" name="phone" value="{{ old('phone') }}" placeholder="Phone" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <input type="text" name="code" value="{{ old('code') }}" placeholder="Referral code (auto-generated if empty)" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <input type="number" step="0.0001" min="0" max="1" name="commission_rate" value="{{ old('commission_rate', config('affiliates.subsequent_commission_rate', 0.10)) }}" placeholder="Display rate (0.10 = 10%)" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
