@@ -271,7 +271,7 @@
 
     @php
         $secondaryUnits = old('secondary_units');
-        if ($secondaryUnits === null && $isEdit && ! $isVariable) {
+        if ($secondaryUnits === null && $isEdit) {
             $secondaryUnits = ($product->units ?? collect())
                 ->where('is_base_unit', false)
                 ->sortBy('sort_order')
@@ -285,10 +285,10 @@
         }
         $secondaryUnits = is_array($secondaryUnits) ? $secondaryUnits : [];
     @endphp
-    <div id="secondary-units-section" class="rounded-xl border border-gray-200 bg-white p-4 {{ $variantsEnabled ? 'hidden' : '' }}" x-show="showsPackaging()" x-cloak>
+    <div id="secondary-units-section" class="rounded-xl border border-gray-200 bg-white p-4" x-show="showsPackaging()" x-cloak>
         <div class="mb-3">
             <h3 class="text-sm font-semibold text-gray-900">Packaging units <span class="font-normal text-gray-400">(optional)</span></h3>
-            <p class="mt-1 text-xs text-gray-500">Add larger units sold at the POS (e.g. 1 roll = 50 meters). Stock is always deducted in the base unit.</p>
+            <p class="mt-1 text-xs text-gray-500">Add larger units sold at the POS (e.g. 1 roll = 50 meters). Stock is always deducted in the base unit. Leave price blank to use the selling price times the pack size. Variants share these packs.</p>
         </div>
         <div id="secondary-units-rows" class="space-y-3">
             @forelse($secondaryUnits as $idx => $row)
@@ -594,7 +594,6 @@ document.addEventListener('alpine:init', function () {
     var toggle = document.getElementById('enable_variants_toggle');
     var simple = document.getElementById('simple-product-fields');
     var variant = document.getElementById('variant-product-fields');
-    var secondaryUnitsSection = document.getElementById('secondary-units-section');
     var typeInput = document.getElementById('product_type_input');
     var catalogKind = document.getElementById('catalog-item-kind');
 
@@ -603,7 +602,6 @@ document.addEventListener('alpine:init', function () {
         var on = toggle.checked;
         simple.classList.toggle('hidden', on);
         variant.classList.toggle('hidden', !on);
-        if (secondaryUnitsSection) secondaryUnitsSection.classList.toggle('hidden', on);
         if (catalogKind) catalogKind.classList.toggle('hidden', on);
         typeInput.value = on ? 'variable' : 'simple';
         simple.querySelectorAll('.simple-field').forEach(function (field) {

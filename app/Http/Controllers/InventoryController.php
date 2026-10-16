@@ -610,6 +610,10 @@ class InventoryController extends Controller
             'description' => 'nullable|string',
             'measurement_unit' => 'required|string|max:50',
             'critical_threshold' => 'nullable|integer|min:0',
+            'secondary_units' => 'nullable|array',
+            'secondary_units.*.unit_name' => 'nullable|string|max:50',
+            'secondary_units.*.conversion_factor' => 'nullable|numeric|min:0.000001',
+            'secondary_units.*.price' => 'nullable|numeric|min:0',
         ]);
 
         $rawVariants = $request->input('variants', []);
@@ -617,6 +621,7 @@ class InventoryController extends Controller
 
         $data['brand_id'] = $this->resolveBrandId($request, $businessId);
         $data['measurement_unit'] = $this->resolveMeasurementUnit($request, $businessId, $data['measurement_unit'] ?? 'piece');
+        $secondaryUnits = $this->parseSecondaryUnits($request);
 
         if ($request->user()->can('view-cost-prices')) {
             foreach ($data['variants'] as $index => $variant) {
@@ -637,7 +642,7 @@ class InventoryController extends Controller
             'measurement_unit' => $data['measurement_unit'],
             'critical_threshold' => $data['critical_threshold'] ?? 5,
             'branch_id' => $this->resolveBranchIdForOwner($request, $business),
-        ]), $data['variants'], $businessId);
+        ]), $data['variants'], $businessId, $secondaryUnits);
 
         return $this->storeRedirect($request, 'Product with ' . $parent->variants->count() . ' variants added.');
     }
@@ -654,6 +659,10 @@ class InventoryController extends Controller
             'is_active' => 'nullable|boolean',
             'deleted_variant_ids' => 'nullable|array',
             'deleted_variant_ids.*' => 'integer',
+            'secondary_units' => 'nullable|array',
+            'secondary_units.*.unit_name' => 'nullable|string|max:50',
+            'secondary_units.*.conversion_factor' => 'nullable|numeric|min:0.000001',
+            'secondary_units.*.price' => 'nullable|numeric|min:0',
         ]);
 
         $rawVariants = $request->input('variants', []);
@@ -689,7 +698,13 @@ class InventoryController extends Controller
             $parentData['branch_id'] = $branchId;
         }
 
-        $this->inventoryService->updateVariableParent($product, $parentData, $data['variants'], $deletedVariantIds);
+        $this->inventoryService->updateVariableParent(
+            $product,
+            $parentData,
+            $data['variants'],
+            $deletedVariantIds,
+            $this->parseSecondaryUnits($request)
+        );
 
         return redirect()->to(tenant_route('tenant.inventory.index'))->with('success', 'Product variants updated.');
     }

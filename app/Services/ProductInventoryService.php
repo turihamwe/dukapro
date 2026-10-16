@@ -65,7 +65,7 @@ class ProductInventoryService
         ]);
     }
 
-    public function createWithVariants(array $parentData, array $variants, int $businessId): Product
+    public function createWithVariants(array $parentData, array $variants, int $businessId, array $secondaryUnits = []): Product
     {
         if (empty($variants)) {
             throw ValidationException::withMessages([
@@ -75,7 +75,7 @@ class ProductInventoryService
 
         $this->assertUniqueVariantCombinations($variants);
 
-        return DB::transaction(function () use ($parentData, $variants, $businessId) {
+        return DB::transaction(function () use ($parentData, $variants, $businessId, $secondaryUnits) {
             $parent = Product::create(array_merge($parentData, [
                 'business_id' => $businessId,
                 'is_active' => true,
@@ -89,6 +89,8 @@ class ProductInventoryService
             foreach ($variants as $index => $variant) {
                 $this->upsertVariantChild($parent, $variant, $businessId, $index);
             }
+
+            $this->syncPackagingAcrossVariants($parent->fresh(), $secondaryUnits);
 
             AuditLogger::record('product_created', $parent, null, $parent->fresh(['variants'])->toArray());
 
@@ -120,7 +122,7 @@ class ProductInventoryService
         return $product->fresh(['units']);
     }
 
-    public function updateVariableParent(Product $product, array $parentData, array $variants, array $deletedVariantIds = []): Product
+    public function updateVariableParent(Product $product, array $parentData, array $variants, array $deletedVariantIds = [], ?array $secondaryUnits = null): Product
     {
         if ($product->parent_id !== null) {
             throw ValidationException::withMessages([
@@ -130,7 +132,7 @@ class ProductInventoryService
 
         $product->loadMissing('variants');
 
-        return DB::transaction(function () use ($product, $parentData, $variants, $deletedVariantIds) {
+        return DB::transaction(function () use ($product, $parentData, $variants, $deletedVariantIds, $secondaryUnits) {
             $old = $product->toArray();
             $product->update(array_merge($parentData, [
                 'is_sellable' => false,
@@ -170,10 +172,27 @@ class ProductInventoryService
                 $this->upsertVariantChild($product, $variant, (int) $product->business_id, $index);
             }
 
+            if ($secondaryUnits !== null) {
+                $this->syncPackagingAcrossVariants($product->fresh(), $secondaryUnits);
+            }
+
             AuditLogger::record('product_updated', $product, $old, $product->fresh(['variants'])->toArray());
 
             return $product->fresh(['variants', 'brand']);
         });
+    }
+
+    public function syncPackagingAcrossVariants(Product $parent, array $secondaryUnits): void
+    {
+        $this->unitService->syncSecondaryUnits($parent, $secondaryUnits);
+
+        $parent->variants()->update([
+            'measurement_unit' => $parent->measurement_unit,
+        ]);
+
+        foreach ($parent->variants()->get() as $child) {
+            $this->unitService->syncSecondaryUnits($child->fresh(), $secondaryUnits);
+        }
     }
 
     public function syncVariantChildren(Product $parent, array $variants): void
