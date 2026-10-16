@@ -411,7 +411,6 @@
                     <li><a href="{{ route('register') }}" class="transition hover:text-brand-600">Register</a></li>
                     <li><a href="{{ route('portal') }}" class="transition hover:text-brand-600">Business portal login</a></li>
                     <li><a href="{{ route('privacy') }}" class="transition hover:text-brand-600">Privacy policy</a></li>
-                    <li><a href="{{ route('account.delete') }}" class="transition hover:text-brand-600">Delete account</a></li>
                     @if(function_exists('whatsapp_support_url') && should_show_whatsapp_float())
                         <li>
                             <a href="{{ whatsapp_support_url('Hello, I need help with ' . $brand . '.') }}"
