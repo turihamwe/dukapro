@@ -91,16 +91,13 @@
         <section>
             <h2 class="text-lg font-semibold text-ink-900">Delete your account</h2>
             <p class="mt-2">
-                Shop owners delete their own account from the profile page in the owner area, and on the web without installing anything:
+                Shop owners can ask us to delete their account from the profile page in the owner area, and on the web:
                 <a href="{{ route('account.delete') }}" class="font-medium text-brand-700 hover:text-brand-600">{{ route('account.delete') }}</a>.
-                You confirm with your password. We then permanently delete the login and the name, username, email, phone, and password stored on it, and we sign you out. That account cannot be used again.
+                You confirm with your password and tell us what happened. Sending that form does not delete the account. We read the request and contact you before any login is removed.
                 Staff logins are not deleted from the POS or other staff screens. The owner who created the login removes it.
             </p>
             <p class="mt-2">
-                Sale totals, stock, and balances stay with the shop, with your name removed. If the shop has switched on Uganda EFRIS, the filings already sent for that service stay with it. If you are the only owner, we also close the shop, remove the shop email and phone, erase customer and supplier names and contact details, and remove the mobile-money number stored on subscription payments. Amounts and dates of those payments stay. If other staff can still sign in, delete their accounts first so the shop is not closed while they still have access.
-            </p>
-            <p class="mt-2">
-                Share and commission records for affiliates and shareholders stay without the person’s name, phone, email, or national ID. Freezing or hiding an account is not how deletion works.
+                If a login is removed after that review, sale totals, stock, and balances stay with the shop. If the shop has switched on Uganda EFRIS, the filings already sent for that service stay with it.
             </p>
         </section>
 
@@ -114,8 +111,8 @@
         <section>
             <h2 class="text-lg font-semibold text-ink-900">Your choices</h2>
             <p class="mt-2">
-                Shop owners can update their profile in the app, or delete the account from
-                <a href="{{ route('account.delete') }}" class="font-medium text-brand-700 hover:text-brand-600">the deletion page</a>.
+                Shop owners can update their profile in the app, or send a deletion request from
+                <a href="{{ route('account.delete') }}" class="font-medium text-brand-700 hover:text-brand-600">the request page</a>.
                 Staff ask the owner who created the login.
                 If you are a customer of a shop that uses {{ $brand }}, contact that shop about the records it keeps. Questions about this policy can also be sent on WhatsApp, linked below.
             </p>

@@ -39,6 +39,22 @@
         $affiliateFeedbackNewCount = 0;
     }
 @endphp
+@php
+    try {
+        $accountDeletionNewCount = \App\Models\AccountDeletionRequest::where('status', \App\Models\AccountDeletionRequest::STATUS_NEW)->count();
+    } catch (\Throwable $e) {
+        $accountDeletionNewCount = 0;
+    }
+@endphp
+<a href="{{ route('superadmin.account-deletion-requests.index') }}"
+   class="{{ $navLink }} {{ request()->routeIs('superadmin.account-deletion-requests*') ? $navActive : $navIdle }}">
+    <span class="flex flex-1 items-center justify-between gap-2">
+        <span>Deletion requests</span>
+        @if($accountDeletionNewCount > 0)
+            <span class="rounded-full bg-amber-600 px-2 py-0.5 text-[10px] font-bold text-white">{{ $accountDeletionNewCount > 99 ? '99+' : $accountDeletionNewCount }}</span>
+        @endif
+    </span>
+</a>
 <a href="{{ route('superadmin.affiliate-feedback.index') }}"
    class="{{ $navLink }} {{ request()->routeIs('superadmin.affiliate-feedback*') ? $navActive : $navIdle }}">
     <span class="flex flex-1 items-center justify-between gap-2">

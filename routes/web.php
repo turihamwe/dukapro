@@ -39,6 +39,7 @@ use App\Http\Controllers\SuperAdmin\BusinessSalesController;
 use App\Http\Controllers\SuperAdmin\UserActionController;
 use App\Http\Controllers\SuperAdmin\AffiliateActionController;
 use App\Http\Controllers\SuperAdmin\AffiliateFieldFeedbackController;
+use App\Http\Controllers\SuperAdmin\AccountDeletionRequestController;
 use App\Http\Controllers\SuperAdmin\BusinessEfrisController as SuperAdminBusinessEfrisController;
 use App\Http\Controllers\SuperAdmin\BusinessWalletLedgerController as SuperAdminBusinessWalletLedgerController;
 use App\Http\Controllers\SuperAdmin\BusinessBranchImpersonationController as SuperAdminBusinessBranchImpersonationController;
@@ -572,6 +573,8 @@ Route::prefix('superadmin')
         Route::get('/affiliates/{affiliate}', [SuperAdminAffiliateController::class, 'show'])->whereNumber('affiliate')->name('affiliates.show');
         Route::get('/affiliate-feedback', [AffiliateFieldFeedbackController::class, 'index'])->name('affiliate-feedback.index');
         Route::get('/affiliate-feedback/{affiliateFieldFeedback}', [AffiliateFieldFeedbackController::class, 'show'])->whereNumber('affiliateFieldFeedback')->name('affiliate-feedback.show');
+        Route::get('/account-deletion-requests', [AccountDeletionRequestController::class, 'index'])->name('account-deletion-requests.index');
+        Route::post('/account-deletion-requests/{accountDeletionRequest}/review', [AccountDeletionRequestController::class, 'review'])->whereNumber('accountDeletionRequest')->name('account-deletion-requests.review');
 
         Route::middleware('platform.full')->group(function () {
             Route::get('/subscriptions/extend', [BusinessSubscriptionController::class, 'index'])->name('subscriptions.extend.index');
