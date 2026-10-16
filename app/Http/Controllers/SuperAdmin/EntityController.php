@@ -17,6 +17,7 @@ use App\Models\Expense;
 use App\Models\Product;
 use App\Models\Shareholder;
 use App\Models\ShareholderEarning;
+use App\Models\SystemAuditLog;
 use App\Models\User;
 use App\Services\AffiliatePerformanceService;
 use App\Services\AffiliateReferralCodeGenerator;
@@ -691,13 +692,27 @@ class EntityController extends Controller
                     'daily_shop_target' => 'required|numeric|min:0|max:9999',
                     'status' => 'required|in:' . implode(',', AffiliateStatus::all()),
                     'is_active' => 'nullable|boolean',
+                    'password' => 'nullable|string|min:8|confirmed',
                 ]);
                 $data['is_active'] = $request->boolean('is_active');
+                unset($data['password']);
                 if ($data['status'] === AffiliateStatus::APPROVED && ! $item->approved_at) {
                     $data['approved_at'] = now();
                     $data['approved_by'] = $request->user()->id;
                 }
                 $item->update($data);
+
+                if ($request->filled('password')) {
+                    $login = $item->user;
+                    if (! $login) {
+                        throw \Illuminate\Validation\ValidationException::withMessages([
+                            'password' => 'This affiliate has no login to update.',
+                        ]);
+                    }
+
+                    $login->update(['password' => Hash::make($request->input('password'))]);
+                    $this->logAffiliatePasswordReset($request, $item, $login);
+                }
                 break;
 
             case 'affiliate_commissions':
@@ -828,6 +843,26 @@ class EntityController extends Controller
             $request->user()->id,
             ['user_id' => $user->id]
         );
+    }
+
+    protected function logAffiliatePasswordReset(Request $request, Affiliate $affiliate, User $login): void
+    {
+        $actor = $request->user();
+
+        SystemAuditLog::create([
+            'business_id' => null,
+            'user_id' => $actor->id,
+            'action' => 'affiliate_password_reset',
+            'summary' => 'Reset password for affiliate #' . $affiliate->id . ' (' . $affiliate->email . ')',
+            'metadata' => [
+                'affiliate_id' => $affiliate->id,
+                'target_user_id' => $login->id,
+                'actor_user_id' => $actor->id,
+            ],
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'created_at' => now(),
+        ]);
     }
 
     protected function uniqueBusinessSlug(string $base): string

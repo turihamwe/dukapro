@@ -14,5 +14,8 @@
             placeholder="Confirm new password"
             class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
         />
+        @error('password')
+            <p class="text-xs text-red-600">{{ $message }}</p>
+        @enderror
     </div>
 </div>

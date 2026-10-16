@@ -133,6 +133,11 @@
                 @endforeach
             </select>
             <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_active" value="1" @checked(old('is_active', $item->is_active))> Active</label>
+            @if($item->user)
+                @include('superadmin.entities.partials.password-reset-fields')
+            @else
+                <p class="text-xs text-gray-500">This affiliate has no login yet.</p>
+            @endif
         @elseif($entity === 'shareholders')
             <input type="text" name="name" value="{{ old('name', $item->name) }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             <input type="email" name="email" value="{{ old('email', $item->email) }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
